@@ -1,0 +1,19 @@
+[quality]
+# Identical Phase 2 policy to default.toml except flat-run durations are scaled
+# from 5m bars to 1m bars: warning=15 minutes, failure=60 minutes.
+allowed_missing_percentage = 0.0
+allowed_duplicate_count = 0
+maximum_consecutive_missing_intervals = 0
+
+zero_volume_warning_percentage = 0.0
+zero_volume_failure_percentage = 5.0
+
+outlier_window = 21
+outlier_min_observations = 7
+outlier_mad_threshold = 12.0
+
+stale_flat_run_warning = 15
+stale_flat_run_failure = 60
+ingestion_future_tolerance_seconds = 300
+allow_warnings_for_silver = true
+sample_limit = 10

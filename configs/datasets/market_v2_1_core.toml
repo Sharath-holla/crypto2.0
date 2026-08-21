@@ -1,0 +1,11 @@
+[dataset]
+silver_manifests = [
+  "data/silver/binance/manifests/silver-65567912c320675c08703eae.json",
+  "data/silver/binance/manifests/silver-5a1b9c3c56d74dd754ed0b0a.json",
+]
+dataset_family = "core_long_history"
+symbol = "BTCUSDT"
+interval = "5m"
+output_root = "data/gold/market_intelligence_v2_1"
+start_time = 2019-09-10T05:40:00Z
+end_time = 2026-08-01T00:00:00Z

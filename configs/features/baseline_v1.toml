@@ -1,0 +1,23 @@
+[features]
+version = "1.0.0"
+columns = [
+  "return_5m",
+  "return_15m",
+  "return_30m",
+  "return_1h",
+  "log_return_5m",
+  "candle_range_pct",
+  "candle_body_pct",
+  "relative_volume",
+  "rolling_volatility_1h",
+  "rolling_volatility_4h",
+  "ema20_distance",
+  "ema50_distance",
+  "rsi14",
+]
+relative_volume_window = 12
+volatility_1h_window = 12
+volatility_4h_window = 48
+ema_fast_span = 20
+ema_slow_span = 50
+rsi_period = 14

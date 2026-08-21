@@ -1,0 +1,10 @@
+[backtest]
+horizon_minutes = 60
+# Conservative research assumptions, configurable per experiment. These are
+# not a claim about any user's current fee tier or executable spread.
+taker_fee_bps_per_side = 4.0
+spread_bps_round_trip = 1.0
+slippage_bps_per_side = 1.0
+minimum_prediction_bps = 2.0
+minimum_expected_net_edge_bps = 0.0
+annualization_periods = 8760

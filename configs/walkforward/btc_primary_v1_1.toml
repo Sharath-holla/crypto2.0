@@ -1,0 +1,55 @@
+[walkforward]
+name = "btc-primary-v1-1"
+family = "primary"
+dataset_manifest = "data/gold/market_intelligence_v2_1/gold-v2-1-a3d74d086a912070ee63a5ec/manifest.json"
+experiment_config = "configs/models/main_model_v2_1.toml"
+backtest_config = "configs/backtests/foundation_v2_1.toml"
+funding_manifest = "data/market/silver/funding/market-silver-75a31605f2cdfeff1d4d59b1/manifest.json"
+execution_1m_silver_manifest = "data/silver/binance/manifests/silver-7f6d09b0d30767698f12f843.json"
+artifact_root = "local_artifacts/phase5_hardening/walkforward_v1_1"
+candidates = ["L0", "L5"]
+prospective_holdout_start = 2026-08-01T00:00:00Z
+seed = 42
+cost_multipliers = [0.0, 1.0, 1.25, 1.5, 2.0]
+
+[hardening]
+source_summary = "local_artifacts/phase5/walkforward/wf-btc-primary-v1-c3b30d4b831a8a576cdfd405/walkforward_summary.json"
+artifact_root = "local_artifacts/phase5_hardening/walkforward_v1_1"
+protocol_version = "1.1.0"
+
+[schedule]
+train_months = 24
+validation_months = 3
+calibration_months = 3
+test_months = 3
+step_months = 3
+embargo_minutes = 60
+window = "rolling"
+minimum_rows_per_segment = 500
+
+[calibration]
+methods = ["identity", "linear"]
+reliability_buckets = 10
+minimum_samples = 100
+
+[threshold]
+grid_bps = [2.0, 4.0, 6.0, 8.0, 10.0]
+minimum_calibration_trades = 30
+drawdown_penalty = 0.25
+low_trade_penalty = 0.0005
+
+[bootstrap]
+samples = 500
+block_rows = 288
+confidence = 0.95
+
+[qualification]
+minimum_test_folds = 5
+minimum_total_trades = 100
+minimum_reliable_folds = 3
+minimum_reliable_trades_per_fold = 30
+maximum_drawdown = 0.25
+maximum_top_fold_pnl_share = 0.50
+maximum_top_year_pnl_share = 0.65
+maximum_top_regime_pnl_share = 0.75
+required_cost_multiplier = 1.5

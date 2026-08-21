@@ -1,0 +1,13 @@
+[dataset]
+silver_manifests = [
+  "data/silver/binance/manifests/silver-5a1b9c3c56d74dd754ed0b0a.json",
+]
+funding_manifest = "data/market/silver/funding/market-silver-75a31605f2cdfeff1d4d59b1/manifest.json"
+mark_manifest = "data/market/silver/mark_kline/market-silver-v2-1-82ca015a2e4e37083c074b9e/manifest.json"
+index_manifest = "data/market/silver/index_kline/market-silver-v2-1-76dc50850e96731d7a49d952/manifest.json"
+dataset_family = "derivatives_overlap"
+symbol = "BTCUSDT"
+interval = "5m"
+output_root = "data/gold/market_intelligence_v2_1"
+start_time = 2020-01-01T00:00:00Z
+end_time = 2026-08-01T00:00:00Z

@@ -1,0 +1,7 @@
+[dataset]
+silver_manifest = "data/silver/binance/manifests/silver-7105362e4dc25f97784d8f9a.json"
+symbol = "BTCUSDT"
+interval = "5m"
+output_root = "data/gold/training_sets"
+start_time = 2026-07-01T00:00:00Z
+end_time = 2026-08-01T00:00:00Z

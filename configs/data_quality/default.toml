@@ -1,0 +1,20 @@
+[quality]
+# Missing candles and duplicates are research-corrupting by default.
+allowed_missing_percentage = 0.0
+allowed_duplicate_count = 0
+maximum_consecutive_missing_intervals = 0
+
+# Zero-volume BTC candles are warnings until they exceed this dataset share.
+zero_volume_warning_percentage = 0.0
+zero_volume_failure_percentage = 5.0
+
+# Conservative rolling median/MAD candidate detector. It never deletes rows.
+outlier_window = 21
+outlier_min_observations = 7
+outlier_mad_threshold = 12.0
+
+stale_flat_run_warning = 3
+stale_flat_run_failure = 12
+ingestion_future_tolerance_seconds = 300
+allow_warnings_for_silver = true
+sample_limit = 10

@@ -1,0 +1,34 @@
+[phase6]
+symbol = "BTCUSDT"
+decision_interval = "5m"
+
+silver_5m_manifests = [
+  "data/silver/binance/manifests/silver-65567912c320675c08703eae.json",
+  "data/silver/binance/manifests/silver-5a1b9c3c56d74dd754ed0b0a.json",
+]
+silver_12h_manifests = [
+  "data/silver/binance/manifests/silver-a935bf75925c5be98e5b8e98.json",
+  "data/silver/binance/manifests/silver-0a83673d07809128a86f2668.json",
+]
+silver_1d_manifests = [
+  "data/silver/binance/manifests/silver-79eebd2f1b7a38a13f1f0bb5.json",
+  "data/silver/binance/manifests/silver-eb25a8aeaf7de2e33c72b984.json",
+]
+silver_1m_manifest = "data/silver/binance/manifests/silver-7f6d09b0d30767698f12f843.json"
+funding_manifest = "data/market/silver/funding/market-silver-75a31605f2cdfeff1d4d59b1/manifest.json"
+mark_manifest = "data/market/silver/mark_kline/market-silver-v2-1-82ca015a2e4e37083c074b9e/manifest.json"
+index_manifest = "data/market/silver/index_kline/market-silver-v2-1-76dc50850e96731d7a49d952/manifest.json"
+
+# A month boundary lets Phase 6 use only complete official monthly archives.
+# It is more conservative than the 2026-07-09 latest-safe boundary and leaves
+# the whole July buffer unused by this phase.
+phase6_research_cutoff = 2026-07-01T00:00:00Z
+prospective_holdout_start = 2026-08-01T00:00:00Z
+
+output_root = "local_artifacts/phase6/research_v1"
+gold_root = "data/gold/phase6_research"
+sample_every_n_rows = 12
+seed = 42
+redundancy_threshold = 0.98
+ridge_alpha = 10.0
+lightgbm_estimators = 120

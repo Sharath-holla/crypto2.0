@@ -1,0 +1,222 @@
+# PROJECT STATE
+
+## COMPLETED
+
+- Phase 1: reliable Binance Spot and USD-M historical ingestion, canonical exact-decimal candle schemas, immutable Bronze Parquet, checksums, restartable manifests, and partition validation.
+- Phase 2: typed production validation, deterministic PASS/WARN/FAIL reports, quarantine references, and controlled immutable Bronze-to-Silver promotion with lineage.
+- Phase 3: a versioned, gap-safe 60-minute next-open label; 13 causal baseline features; immutable Gold datasets; chronological purged train/validation/test splits; six baseline regressors; predictive evaluation; rank metrics; target percentiles; structured feature importance; and reproducible local artifacts.
+- Phase 4: official Binance data research; public funding/mark/index/premium/OI
+  adapters and schemas; causal as-of alignment; Feature V2 and Regime V1;
+  immutable Gold V2; Main Model V2 ablations; and an OOS, cost-aware,
+  funding-aware, one-position backtest foundation.
+- Phase 4.1: official-archive bulk ingestion, archive/REST reconciliation,
+  multi-year BTCUSDT 5m history, recent 1m execution support, precise taker-flow
+  Feature V2.1, hardened causal regimes, two-tier Gold datasets, fixed-parameter
+  ablations, and expanded OOS/backtest diagnostics.
+- Phase 5: deterministic rolling 24/3/3/3-month walk-forward folds; actual
+  label-end purging; 60-minute embargoes; isolated train/validation/calibration/
+  test responsibilities; identity/linear calibration; calibration-only
+  no-trade thresholds; 1m/5m tagged execution; cost stress; predictive block
+  intervals; drift/concentration diagnostics; resumable immutable artifacts;
+  qualification gates; and a combined candidate decision.
+- Phase 5 Hardening: immutable `walkforward_v1_1` post-processing from the 66
+  frozen Phase 5 models; chronological Cal-A/Cal-B with purge/embargo;
+  fixed-policy primary and adaptive-policy secondary cost stress; separate
+  qualification/evidence statuses; reliability-safe ratios; stronger trade
+  concentration; independent lineage/checksum/holdout verification; and the
+  final **NO QUALIFIED MODEL** decision.
+- Phase 6: direct official BTCUSDT USD-M 12h/daily Bronze and Silver history;
+  exact direct-vs-derived reconciliation; completed-candle joins; isolated
+  `market_v3_research` and `label_v2_research` families; five return horizons;
+  MFE/MAE and ambiguity-safe volatility-normalized barrier labels; fixed
+  chronological probes; higher-timeframe/cross/stress ablations; coverage,
+  drift, redundancy, importance, and feature/target scorecards; zero use of the
+  permanent holdout; and no champion promotion.
+- Architecture revision: accepted Binance as the sole market-data and eventual
+  execution venue, deprecated the old CoinSwitch target, and established the
+  unified Main Market Model roadmap.
+- Preserved all implemented ingestion, validation, inspection, promotion, dataset, training, and evaluation interfaces covered by the full regression suite.
+
+## IN PROGRESS
+
+- None. Phase 6 is complete; final repository verification is recorded below.
+
+## HISTORICAL NEXT (SUPERSEDED)
+
+- Phase 5 — Full Walk-Forward Validation requires a separate explicit instruction. No account access,
+  execution, leverage, portfolio automation, or live-trading code is authorized
+  by this checkpoint.
+
+## NEXT
+
+- STOP. The prospective holdout remains unopened. Opening it, adding advanced
+  ML/assets, or starting paper/live execution requires a separate explicit
+  instruction and a newly frozen protocol. No account access, execution,
+  leverage, portfolio automation, or live-trading code is authorized.
+- No next phase is authorized. Phase 7 has not started.
+
+## DECISIONS
+
+- Binance is the sole canonical data and eventual execution venue. The former Binance-data/CoinSwitch-execution design is superseded by ADR-017.
+- Binance USD-M perpetual futures are the primary research market; Spot remains a separately identified secondary/cross-market dataset.
+- One future Main Market Model will directly consume most structured market information. LightGBM is the first candidate family, not a permanent winner.
+- CoinSwitch-specific legacy modules are deprecated and retained temporarily only for audit and possible extraction of exchange-independent concepts.
+- For prediction row `i`, use the completed candle at `i`; reference entry at `open[i+1]`; and calculate the 60-minute target at `open[i+13]` for 5-minute data.
+- Require every expected open from entry through target. Missing intervals invalidate the label; no row is synthesized or forward-filled.
+- Keep Phase 3 `baseline_v1` immutable, deliberately small, and causal. Future expanded features require a new version.
+- Use a chronological 70/15/15 development split and purge boundary rows whose label horizons overlap the next split.
+- Fit learned transforms and estimators on training data only. Validation may control LightGBM early stopping; test remains evaluation-only.
+- Treat features, labels, model outputs, actions, risk parameters, and transaction costs as distinct concepts.
+- Evaluate Phase 3 predictive quality only. No Phase 3 metric represents tradable PnL or profitability.
+- Prefer official Binance archives for bulk history and current public REST for
+  metadata, recent increments, and independently verified gap corrections.
+- Preserve `market_v2`; Feature `market_v2_1` uses precise taker-flow names and
+  never describes candle taker volume as full order-book pressure.
+- Keep OI optional and short-history. Do not truncate the core model to force
+  OI inclusion. Apply funding only at actual event timestamps and prefer a
+  validated post-signal 1m execution reference where covered.
+- Freeze the prospective holdout at `2026-08-01T00:00:00Z`. Phase 5 results are
+  retrospective walk-forward OOS only. Keep Train, Validation, Calibration,
+  and Test responsibilities separate and permit calibration-driven `NO_TRADE`.
+- Phase 5.1 preserves Phase 5 artifacts, uses Cal-A for calibration and Cal-B
+  for thresholds, and treats fixed-policy cost stress as primary.
+- Phase 6 uses the exclusive `2026-07-01T00:00:00Z` cutoff, leaving all July
+  unused and keeping the August prospective holdout untouched. Direct official
+  USD-M 12h/daily candles are canonical; exact 5m aggregation is reconciliation
+  only. Research feature/target classifications are not production approvals.
+- Qualification `PASS`/`FAIL` is distinct from scientific evidence status.
+- BTC is not representative of every coin. Future multi-asset model structure
+  must be benchmarked, normalized, and gated by liquidity/risk/portfolio.
+- Risk owns sizing/leverage and hard stops; Binance execution is downstream of
+  all gates; LLMs never issue unrestricted orders.
+
+## EXPERIMENT RESULTS
+
+- Pre-Phase 3 regression baseline: 69 tests passed.
+- Phase 3 final verification: 96 tests passed; Ruff lint and format checks, Python compilation, and `uv lock --check` passed.
+- Architecture-change baseline: 96 tests passed.
+- Phase 3 final-completion verification: 98 tests passed, 0 failed; Ruff lint/format, Python compilation, and dependency-lock validation passed.
+- Real source: Binance USD-M `BTCUSDT`, `5m`, `[2026-07-01T00:00:00Z, 2026-08-01T00:00:00Z)`, 8,928 expected and observed candles across 31 daily partitions, with no gaps, duplicates, timestamp/OHLC/volume defects, or repairs.
+- Phase 2 quality status was `WARN` only because 36 candidate statistical outliers were retained for research; report `quality-2d01975b9b0af1a8bf0711a2` and Silver dataset `silver-7105362e4dc25f97784d8f9a`.
+- Gold dataset `gold-19425b0820c974247b73fbe0`: 8,866 rows and 13 features. It excluded 49 causal-feature warm-up rows and 13 rows without a complete future horizon; zero labels were invalidated by gaps.
+- Purged split: 6,194 train, 1,318 validation, and 1,330 test rows; 12 rows were purged before each later split.
+- Experiment `experiment-5f0f09b3ee131bddba69a0b1` produced validation/test predictions, model bundles, manifests, comparison tables, feature importance, target distribution, and reload checks.
+- Test RMSE: zero `0.00395053`; historical mean `0.00397369`; momentum `0.00576612`; mean reversion `0.00444736`; Ridge `0.00401116`; LightGBM `0.00397419`.
+- No learned model beat the zero baseline on test RMSE. Mean reversion had the highest test direction accuracy (`0.5376`) and weak positive Pearson correlation (`0.0852`); this is not evidence of profitability.
+- LightGBM stopped at iteration 3 and its test correlation was approximately zero. Prediction-bucket returns were not monotonic, so no signal claim is supported.
+- The architecture revision did not modify Phase 3 source, configurations, datasets, models, predictions, or historical experiment results.
+- Final completion added verification coverage and documentation only; label, feature, Gold, split, model, configuration, and historical experiment semantics remain unchanged.
+- Phase 4 Gold `gold-v2-f59110b7f683d2fe4342c8d6` contains 8,580 rows and
+  50 enabled features from 8,928 BTCUSDT 5m candles plus 93 funding events.
+- Main Model V2 experiment `main-model-v2-7ab8dd9185dc27f90d1179b0`
+  used 5,994/1,275/1,287 purged train/validation/test rows and seven same-row
+  ablations (A0-A5, A8); basis A6 and OI A7 were unavailable for the run.
+- A8 used 42 post-redundancy features. Test MAE was `0.00277019`, RMSE
+  `0.00400915`, R-squared `-0.012705`, direction accuracy `0.464646`, Pearson
+  IC `0.123210`, and Spearman IC `0.079366`. This does not establish skill.
+- Backtest `backtest-v1-3fe833c385aba7b0d34d49a0` made zero Main Model V2
+  trades because predictions did not clear the 13 bps configured signal/cost
+  hurdle. Momentum and mean-reversion comparators lost money after costs.
+- Phase 4 final verification: 107 tests passed; Ruff lint/format, Python
+  compilation, dependency compatibility, and lock validation passed.
+- Phase 4.1 validated 724,828 contiguous active-market BTCUSDT USD-M 5m candles
+  over `[2019-09-10T05:40:00Z, 2026-08-01T00:00:00Z)` and 570,240 1m candles
+  over `[2025-07-01T00:00:00Z, 2026-08-01T00:00:00Z)`. No candle gaps,
+  duplicates, conflicting duplicates, schema/OHLC/volume/timestamp errors, or
+  unreadable/corrupt partitions remained in promoted history.
+- Historical derivatives contain 7,550 actual funding events, 692,338 mark
+  rows, and 692,339 index rows. Fourteen mark and thirteen index observations
+  absent from both official transports remain visibly missing; OI is not
+  forced into the multi-year sample.
+- Core Gold `gold-v2-1-a3d74d086a912070ee63a5ec` contains 722,395 rows and 52
+  features. Derivatives Gold `gold-v2-1-445fe8d3e2f5c2cb9e5ac6d1` contains
+  683,863 rows and 61 features.
+- Main Model V2.1 experiment `main-model-v2-1-55f7b64298b70d529a1c5e39`
+  ran L0–L5 and D0–D2 on identical rows within each family, with no HPO. L5
+  test Pearson IC was 0.03252, direction accuracy 0.49659, and bootstrap IC
+  interval crossed zero. D2 R² remained negative. Added groups did not show a
+  reliable incremental edge.
+- Backtest `backtest-v2-1-1ab164e8a1409ebbad40b155` selected only 5 of 102,580
+  opportunities at base costs. Its positive return/large mechanical ratios are
+  `INSUFFICIENT_SAMPLE`; the 2,478-trade zero-cost diagnostic lost 1.8975% and
+  had negative expectancy. The evidence classification is NO RELIABLE EDGE.
+- Phase 4.1 final verification: 133 tests passed, 0 failed; Ruff lint and format,
+  Python compilation, dependency resolution/lock validation, and diff checks
+  passed.
+- Phase 5 primary run `wf-btc-primary-v1-c3b30d4b831a8a576cdfd405`
+  produced 17 L0/L5 folds and 446,966 unique OOS rows per candidate. L0/L5
+  base policies made 12/17 trades with negative expectancy and no reliable
+  fold; both are `INCONCLUSIVE`.
+- Phase 5 derivatives run `wf-btc-derivatives-v1-c446e61dcf7a3f17e2e4f6cd`
+  produced 16 matched D0/D2 folds and 418,499 rows each. D0/D2 base expectancy
+  is negative; reliable-fold counts are 1/2. D2 value added is `INCONCLUSIVE`.
+- Combined decision `candidate_comparison.json`: **NO QUALIFIED MODEL**.
+  Prospective holdout used: false. Final verification: 156 tests passed,
+  0 failed; Ruff lint/format and Python compilation passed.
+- Phase 5.1 primary run
+  `wf-hardened-btc-primary-v1-1-80bd34e54566298fc97a4b11` completed 17 folds
+  for L0/L5. Base fixed-policy trades are 47/112; both expectancies are
+  negative and both qualification statuses are FAIL / evidence INCONCLUSIVE.
+- Phase 5.1 derivatives run
+  `wf-hardened-btc-derivatives-v1-1-5ad6d2c0eaf8b990161d25ad` completed 16
+  folds for D0/D2. Base fixed-policy trades are 9/253; both expectancies are
+  negative and both qualification statuses are FAIL / evidence INCONCLUSIVE.
+- Phase 5.1 verifier audited 66 hardened and 66 source fold manifests with 0
+  checksum/invariant failures, 0 duplicate OOS timestamps, 0 holdout rows, no
+  retraining, and unchanged features, Label V1, model configuration, and
+  qualification gates. Resume left the 1,136-file hardened tree SHA unchanged.
+- Final Phase 5.1 decision: **NO QUALIFIED MODEL**. Prospective holdout used:
+  false; maximum development `feature_time`: `2026-07-08T23:55:00Z`.
+- Phase 5.1 final verification: 164 tests passed, 0 failed, 0 skipped;
+  Ruff lint/format, Python compilation, and `uv lock --check` passed.
+- Phase 6 direct data contains 4,975 12h and 2,488 daily candles through the
+  exclusive July cutoff, each at 100% timestamp coverage with zero gaps,
+  duplicates, or invalid rows. Exact reconciliation found eight discrepant
+  shared candles in each interval; direct current Binance klines remain
+  canonical and all discrepancies are preserved in the report.
+- Phase 6 Gold `gold-phase6-btc-a6d0815c4adf041bf4107755` contains 651,862
+  rows and 127 features. Its maximum feature time is
+  `2026-06-30T19:55:00Z`; every stored 12h/daily availability is at or before
+  feature time, every 4h label ends before cutoff, and holdout rows used are 0.
+- Experiment `phase6-btc-a6d0815c4adf041bf4107755` produced 1,725,856 OOS
+  prediction rows across four purged/embargoed folds. On the fixed 1h
+  LightGBM probe, 12h adds +0.003986 pooled Spearman IC and is
+  `KEEP_CANDIDATE`; daily adds +0.000639 and is `WEAK`; current cross-timeframe
+  and stress groups reduce the reference IC and are `REJECT`.
+- The 15m/30m/1h/2h target families are retrospective `TARGET_CANDIDATE`
+  diagnostics; 4h is `RESEARCH_ONLY`. No cost, turnover, capacity, policy, or
+  profitability qualification was performed. Current model status remains
+  **NO QUALIFIED MODEL** and no champion was promoted.
+- Phase 6 final verification: 187 tests passed, 0 failed, 0 skipped; Ruff lint
+  and 105-file format checks, Python compilation, and `uv lock --check` passed.
+
+## KNOWN PROBLEMS
+
+- The historical first Phase 4 experiment remains one month. Phase 4.1 expands
+  BTC to multi-year coverage and Phase 5 adds full retrospective walk-forward
+  evaluation, but the research still has one instrument/venue. The sacred
+  prospective holdout remains deliberately unopened.
+- Phase 4 has bar-level timing, fees, funding, spread/slippage assumptions, and
+  normalized one-position accounting, but no depth replay, queue position,
+  partial-fill, impact, latency-variance, liquidation, leverage, or portfolio
+  engine. Next-open remains a reference assumption, not an execution guarantee.
+- None of the learned models demonstrated test-RMSE skill over the zero baseline. The artifacts are an engineering baseline, not a trading recommendation.
+- Historical availability and timestamp semantics are documented in
+  `BINANCE_MARKET_DATA_RESEARCH.md`. The real July run includes funding but not
+  mark/index basis or OI; those groups must not be inferred from absent data.
+- CoinSwitch-specific legacy modules contain unverified live account/order behavior, missing/undeclared components, and unsafe configuration patterns. They remain isolated, deprecated, and must not run.
+- Label V2 remains research-only; no Phase 6 target is a production target.
+- Statistical outlier windows in the inherited Phase 2 validator reset at partition boundaries.
+- The supplied checkout has no tracked Git baseline, so Git cannot provide a meaningful before/after diff; verification uses inventories, tests, static checks, and artifact manifests.
+- The base-cost Phase 4.1 result has only five trades, concentrated in bear/high
+  volatility periods and driven by a few extreme moves. Sharpe, Sortino, profit
+  factor, Calmar, and apparent return are not reliable at this sample size.
+- Bar-based 1m execution still cannot reproduce bid/ask, queue position,
+  partial fills, depth impact, or sub-minute latency. Fees/spread/slippage are
+  explicit assumptions, not account-specific observed costs.
+- Phase 6 target observations overlap strongly, especially at 2h/4h, so raw
+  row counts are not independent sample sizes. Purge, embargo, folds, and the
+  sampling stride reduce but do not eliminate research bias.
+- The 1m barrier-refinement overlap begins `2025-07-01`; earlier same-5m TP/SL
+  overlaps and same-minute overlaps remain explicitly ambiguous. Barrier
+  results are not final TP/SL settings.

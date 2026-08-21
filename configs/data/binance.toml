@@ -1,0 +1,11 @@
+[binance]
+# Primary research market: Binance USDT-margined perpetual futures.
+# Use "spot" explicitly for the secondary cross-market dataset.
+market = "usdm"
+symbol = "BTCUSDT"
+interval = "5m"
+output_root = "data/bronze/binance"
+request_limit = 1000
+timeout_seconds = 30.0
+max_retries = 5
+retry_base_seconds = 0.5

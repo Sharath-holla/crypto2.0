@@ -1,0 +1,59 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.egg-info/
+
+# Virtual environments
+.venv/
+venv/
+
+# Python/tool caches
+.uv-cache/
+.pytest_cache/
+.pytest_temp/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+secrets/
+
+# Generated market data
+data/market/bronze/
+data/market/silver/
+data/market/gold/
+data/market/quality/
+data/market/quarantine/
+data/market/coverage_failures/
+
+# Root-level generated data layers
+data/bronze/
+data/silver/
+data/gold/
+data/quality/
+data/quarantine/
+
+# Runtime/research outputs
+logs/
+models/
+local_artifacts/
+tmp/
+
+# Large generated files
+*.parquet
+*.zip
+*.CHECKSUM
+*.log
+
+# Editors / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

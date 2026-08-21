@@ -1,0 +1,10 @@
+[label]
+name = "forward_return_60m"
+version = "1.0.0"
+horizon_minutes = 60
+return_type = "simple"
+entry_reference = "next_candle_open"
+future_reference = "horizon_open"
+gap_behavior = "invalidate"
+# Used only to describe near-zero target mass; this is not a transaction-cost claim.
+near_zero_threshold_bps = 1.0
