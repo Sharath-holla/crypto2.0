@@ -349,3 +349,29 @@ is not authorized for Phase 7 evaluation. Local implementation is complete;
 the real cloud research result is pending. See the four `PHASE7_*`
 documents. No Phase 7 component accesses an account or implements allocation,
 risk, leverage, orders, or live trading.
+
+## Training-disabled context-data boundary
+
+`crypto_ai.context` is an additive public-data package beside, not inside,
+`crypto_ai.phase7`. Its provider-neutral flow is:
+
+```text
+explicit guarded public GET
+    -> content-addressed immutable raw JSON
+    -> provider-specific exact normalization
+    -> point-in-time eligibility and quality checks
+    -> versioned Parquet + checksum manifest
+    -> optional research-only feature builder
+```
+
+Alternative.me Fear & Greed history is global context and remains
+`NOT_TRAINING_ELIGIBLE` because its historical publication/knowledge time is
+not established by the provider documentation. Binance USD-M current and
+recent OI observations use ingestion as their defensible availability time and
+remain `FORWARD_ONLY`; the official recent-statistics retention is only the
+latest one month. Neither source is loaded by the Phase 7 baseline.
+
+The separate `CRYPTO_AI_ALLOW_CONTEXT_NETWORK=1` guard unlocks only explicit
+one-shot public context collection. It does not unlock the Phase 7 cloud
+pipeline, create a service, or authorize credentials, account access, trading,
+or holdout evaluation. See `CONTEXT_DATA_FOUNDATION.md`.

@@ -7,6 +7,15 @@ from pathlib import Path
 from typing import Any
 
 from crypto_ai.config import load_binance_settings
+from crypto_ai.context.commands import (
+    collect_fear_greed,
+    collect_open_interest_recent,
+    collect_open_interest_snapshot,
+    context_status,
+    fear_greed_plan,
+    open_interest_plan,
+)
+from crypto_ai.context.config import load_context_config
 from crypto_ai.data.binance import BinanceArchiveClient, BinanceRestClient
 from crypto_ai.data.ingestion import DownloadRequest, HistoricalDownloader
 from crypto_ai.data.ingestion.manifest import read_manifest
@@ -371,6 +380,34 @@ def _parser() -> argparse.ArgumentParser:
         choices=["registry", "universe", "data", "gold", "train", "report"],
     )
     phase7.add_argument("--resume", action="store_true")
+
+    context = subparsers.add_parser(
+        "context",
+        help="Inspect or collect training-disabled public context datasets",
+    )
+    context_actions = context.add_subparsers(dest="context_command", required=True)
+    context_status_parser = context_actions.add_parser(
+        "status", help="Show provider and local context-dataset status without network access"
+    )
+    context_status_parser.add_argument(
+        "--config", type=Path, default=Path("configs/context/default.toml")
+    )
+    fear_greed = context_actions.add_parser(
+        "fear-greed", help="Plan or fetch Alternative.me Fear & Greed history"
+    )
+    fear_greed.add_argument("action", nargs="?", choices=["fetch"])
+    fear_greed.add_argument("--plan", action="store_true")
+    fear_greed.add_argument("--force-refresh", action="store_true")
+    fear_greed.add_argument("--config", type=Path, default=Path("configs/context/default.toml"))
+    open_interest = context_actions.add_parser(
+        "oi", help="Plan or collect public Binance USD-M open interest"
+    )
+    open_interest.add_argument("action", nargs="?", choices=["recent", "snapshot"])
+    open_interest.add_argument("--plan", action="store_true")
+    open_interest.add_argument("--symbol", default="BTCUSDT")
+    open_interest.add_argument("--start", type=parse_datetime)
+    open_interest.add_argument("--end", type=parse_datetime)
+    open_interest.add_argument("--config", type=Path, default=Path("configs/context/default.toml"))
     return parser
 
 
@@ -945,6 +982,35 @@ def main(argv: list[str] | None = None) -> int:
             from crypto_ai.phase7.pipeline import run_phase7_cloud
 
             result = run_phase7_cloud(config, stage=args.stage, resume=args.resume)
+        print(json.dumps(result, indent=2, sort_keys=True, default=str))
+        return 0
+    if args.command == "context":
+        config = load_context_config(args.config)
+        if args.context_command == "status":
+            result = context_status(config)
+        elif args.context_command == "fear-greed":
+            if args.plan:
+                result = fear_greed_plan(config)
+            elif args.action == "fetch":
+                result = collect_fear_greed(config, force_refresh=args.force_refresh)
+            else:
+                raise ValueError("context fear-greed requires --plan or the fetch action")
+        elif args.context_command == "oi":
+            if args.plan:
+                result = open_interest_plan(config, symbol=args.symbol)
+            elif args.action == "recent":
+                result = collect_open_interest_recent(
+                    config,
+                    symbol=args.symbol,
+                    start=args.start,
+                    end=args.end,
+                )
+            elif args.action == "snapshot":
+                result = collect_open_interest_snapshot(config, symbol=args.symbol)
+            else:
+                raise ValueError("context oi requires --plan, recent, or snapshot")
+        else:  # pragma: no cover - argparse requires a known context command
+            raise AssertionError(f"Unhandled context command: {args.context_command}")
         print(json.dumps(result, indent=2, sort_keys=True, default=str))
         return 0
     raise AssertionError(f"Unhandled command: {args.command}")

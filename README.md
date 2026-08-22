@@ -212,3 +212,19 @@ Do not run it locally. See `docs/PHASE7_UNIVERSE.md`,
 `docs/PHASE7_MULTI_ASSET_FEATURES.md`,
 `docs/PHASE7_MODEL_ARCHITECTURES.md`, and
 `docs/PHASE7_CLOUD_RUNBOOK.md`.
+
+## Training-disabled context foundation
+
+Safe status and planning commands are network-free:
+
+```powershell
+uv run crypto-ai context status
+uv run crypto-ai context fear-greed --plan
+uv run crypto-ai context oi --plan --symbol BTCUSDT
+```
+
+The implemented Alternative.me Fear & Greed adapter preserves history but
+marks it training-ineligible because historical publication time is unverified.
+The Binance USD-M OI collector supports only legitimate recent history and
+forward snapshots, marked `FORWARD_ONLY`. Neither feature family is present in
+the Phase 7 market-data baseline. See `docs/CONTEXT_DATA_FOUNDATION.md`.

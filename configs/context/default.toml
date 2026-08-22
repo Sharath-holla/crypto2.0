@@ -1,0 +1,43 @@
+[context]
+enabled = true
+data_root = "data/context"
+research_cutoff = 2026-07-01T00:00:00Z
+prospective_holdout_start = 2026-08-01T00:00:00Z
+july_2026_used = false
+prospective_holdout_used = false
+
+[context.alternative_me]
+enabled = true
+training_enabled = false
+historical_fetch_enabled = true
+base_url = "https://api.alternative.me"
+endpoint = "/fng/"
+cache_max_age_hours = 20.0
+feature_max_staleness_hours = 48.0
+
+[context.open_interest]
+enabled = true
+training_enabled = false
+recent_history_enabled = true
+current_snapshot_enabled = true
+base_url = "https://fapi.binance.com"
+current_endpoint = "/fapi/v1/openInterest"
+history_endpoint = "/futures/data/openInterestHist"
+period = "5m"
+history_limit = 500
+recent_history_days = 30
+symbols = ["BTCUSDT"]
+
+[context.cryptopanic]
+enabled = false
+
+[context.arkham]
+enabled = false
+
+[context.reddit]
+enabled = false
+
+[context.http]
+timeout_seconds = 20.0
+max_retries = 3
+retry_base_seconds = 0.5

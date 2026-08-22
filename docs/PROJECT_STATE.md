@@ -35,6 +35,11 @@
 - Architecture revision: accepted Binance as the sole market-data and eventual
   execution venue, deprecated the old CoinSwitch target, and established the
   unified Main Market Model roadmap.
+- Safe pre-baseline context foundation: provider-neutral public context
+  records, Alternative.me Fear & Greed historical ingestion, Binance USD-M
+  recent/forward open-interest collection, explicit point-in-time eligibility,
+  immutable raw/normalized datasets, manifests, optional feature builders, and
+  guarded one-shot CLI commands. Neither feature family is active in Phase 7.
 - Preserved all implemented ingestion, validation, inspection, promotion, dataset, training, and evaluation interfaces covered by the full regression suite.
 
 ## IN PROGRESS
@@ -65,6 +70,24 @@ NOT RUN
 Phase 7 actual model training:
 NOT RUN
 
+Phase 7 baseline context:
+MARKET DATA ONLY
+
+Fear & Greed collector:
+IMPLEMENTED / NOT ACTIVE IN MODEL / HISTORICAL KNOWLEDGE TIME UNVERIFIED
+
+Open Interest collector:
+IMPLEMENTED / FORWARD COLLECTION ONLY / NOT ACTIVE IN MODEL
+
+CryptoPanic:
+NOT IMPLEMENTED
+
+Arkham:
+NOT IMPLEMENTED
+
+Reddit:
+NOT IMPLEMENTED
+
 Phase 7 overall:
 IN PROGRESS
 
@@ -92,7 +115,8 @@ NOT STARTED
 
 ## NEXT
 
-- Review, commit, and push the local Phase 7 implementation.
+- Review and commit the safe context foundation without enabling it in the
+  Phase 7 baseline.
 - Manually start the existing Google Cloud VM and follow
   `PHASE7_CLOUD_RUNBOOK.md`: restore data, rerun checks, plan, execute the
   guarded resume-safe batch, verify checksums/results, back up outputs, and
@@ -116,6 +140,14 @@ NOT STARTED
 - CORE and EXPANDING architecture results are reported separately. Expansion
   selection cannot use future listing, survival, liquidity, returns,
   profitability, model accuracy, or TEST outcomes.
+- Alternative.me Fear & Greed is one global context series. Its documented
+  historical timestamp does not establish historical publication time, so
+  historical rows remain `NOT_TRAINING_ELIGIBLE`.
+- Binance USD-M OI is collected only from the public current and recent
+  statistics endpoints. The official history is limited to the latest one
+  month; records are `FORWARD_ONLY`, and no multi-year history is fabricated.
+- The separate context config cannot alter Phase 7 features, folds, universes,
+  architectures, targets, costs, cutoff, or locked holdout.
 - For prediction row `i`, use the completed candle at `i`; reference entry at `open[i+1]`; and calculate the 60-minute target at `open[i+13]` for 5-minute data.
 - Require every expected open from entry through target. Missing intervals invalidate the label; no row is synthesized or forward-filled.
 - Keep Phase 3 `baseline_v1` immutable, deliberately small, and causal. Future expanded features require a new version.
@@ -251,6 +283,12 @@ NOT STARTED
   fixtures; no heavy cloud run or real Phase 7 result was produced. The sole
   warning is joblib's harmless Windows physical-core detection fallback to the
   configured logical-core limit.
+- Safe context-foundation verification: 280 tests passed, 0 failed, 0 skipped;
+  the 39 focused context tests and all 54 Phase 7 tests passed. Ruff lint,
+  141-file formatting, Python compilation, `uv lock --check`, and
+  `git diff --check` passed. All safe Phase 7 CLI outputs matched the pre-change
+  normalized baseline, all context status/plan commands used no network, and
+  historical artifact inventories and fingerprints were unchanged.
 
 ## KNOWN PROBLEMS
 
@@ -267,6 +305,10 @@ NOT STARTED
 - Historical availability and timestamp semantics are documented in
   `BINANCE_MARKET_DATA_RESEARCH.md`. The real July run includes funding but not
   mark/index basis or OI; those groups must not be inferred from absent data.
+- Alternative.me historical Fear & Greed knowledge time is not proven. The
+  collected history is preserved but intentionally unavailable to research
+  features until reviewed. Binance OI has only recent provider coverage, so it
+  cannot support the current multi-year Phase 7 baseline.
 - CoinSwitch-specific legacy modules contain unverified live account/order behavior, missing/undeclared components, and unsafe configuration patterns. They remain isolated, deprecated, and must not run.
 - Label V2 remains research-only; no Phase 6 target is a production target.
 - Statistical outlier windows in the inherited Phase 2 validator reset at partition boundaries.

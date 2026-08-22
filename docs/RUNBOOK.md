@@ -217,3 +217,31 @@ evaluate the holdout.
 Do not set that guard on the laptop. For VM start/SSH, restore, tmux,
 stage/resume, verification, Cloud Storage backup, and mandatory shutdown
 commands, follow `PHASE7_CLOUD_RUNBOOK.md`.
+
+## Training-disabled context collection
+
+Inspect and plan locally without network access:
+
+```powershell
+uv run crypto-ai context status
+uv run crypto-ai context fear-greed --plan
+uv run crypto-ai context oi --plan --symbol BTCUSDT
+```
+
+One-shot real collection requires a separate guard and uses only unauthenticated
+public endpoints:
+
+```powershell
+$env:CRYPTO_AI_ALLOW_CONTEXT_NETWORK = "1"
+uv run crypto-ai context fear-greed fetch
+uv run crypto-ai context oi recent --symbol BTCUSDT
+uv run crypto-ai context oi snapshot --symbol BTCUSDT
+Remove-Item Env:CRYPTO_AI_ALLOW_CONTEXT_NETWORK
+```
+
+Fear & Greed history remains training-ineligible until its historical
+publication time is proven. OI is recent/forward-only and is never extended
+into fake multi-year history. Neither dataset enters the current Phase 7
+baseline. Do not set `PHASE7_ALLOW_CLOUD_RESEARCH=1`, start training, or create
+a scheduler for these operations. See `CONTEXT_DATA_FOUNDATION.md` for schemas,
+storage, and existing-bucket backup/restore commands.

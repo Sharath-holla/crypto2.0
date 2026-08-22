@@ -195,3 +195,33 @@ Model checkpoint identity additionally binds experiment/config, research view,
 registry, core universe, expansion policy, exact fold membership, Gold
 manifest, feature/target versions, horizon/type, architecture, fold, and Phase
 7 code version; a mismatch is not reusable.
+
+## External context datasets
+
+All context records carry `provider`, `source_endpoint`,
+`provider_timestamp`, `availability_time`, `ingested_at`, `raw_identifier`,
+`raw_payload_checksum`, `normalized_schema_version`, `source_version`,
+`observation_class`, `training_eligibility`, `training_eligible`, `eligibility_reason`, and
+`availability_policy`.
+
+`alternative_me_fear_greed_v1` is global, not per-symbol. Its key is
+`(scope, provider_timestamp)` and its value fields are integer `value` and
+`value_classification`. Historical `availability_time` is null and
+`observation_class=HISTORICAL_RESEARCH_DATA` while
+`training_eligibility=NOT_TRAINING_ELIGIBLE` because documented provider time
+does not prove historical publication time.
+
+`binance_open_interest_history_v1` uses
+`(symbol, period, provider_timestamp)` and stores exact-decimal
+`sum_open_interest` and `sum_open_interest_value`. The timestamp is the
+provider's period end. `binance_open_interest_snapshot_v1` uses
+`(symbol, provider_timestamp)` and stores exact-decimal `open_interest`.
+Both datasets use `availability_time=ingested_at`, are `FORWARD_ONLY`, and are
+`observation_class=FORWARD_OBSERVATION_DATA`; they are excluded from current
+Phase 7 training.
+
+Context manifests are `context_manifest_v1`. They record requested and actual
+coverage, rows/new rows/duplicates, bounded missing timestamps, raw and Parquet
+paths/checksums, Git/config identities, eligibility, coverage limitation, and
+previous dataset version. Exact retries reuse an existing validated version;
+conflicting duplicate identities fail.

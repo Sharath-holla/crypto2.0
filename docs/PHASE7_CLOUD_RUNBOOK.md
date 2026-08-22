@@ -12,6 +12,10 @@ SSH; pull/clone; `uv sync`; restore existing Cloud Storage inputs; run tests;
 validate; plan and inspect; enable the guard; start `tmux`; run `--resume`;
 verify; back up to the existing bucket; and stop the VM.
 
+The Phase 7 baseline is market-data-only. The separate Fear & Greed and open
+interest collectors documented in `CONTEXT_DATA_FOUNDATION.md` are not Phase 7
+model inputs and must not be enabled during this baseline run.
+
 ## 1. Review, commit, and push locally
 
 Complete the local pre-push audit first. Review `git diff`, then commit and push
@@ -215,3 +219,33 @@ gcloud compute instances stop $env:PHASE7_GCP_VM `
 Stopping the VM is mandatory after verification and backup. This Phase 7 batch
 job does not authorize Cloud Run, GKE, Vertex endpoints, background services,
 account access, leverage, or order submission.
+
+## Optional later context-data maintenance
+
+This is a separate operation after the baseline, not a Phase 7 training step.
+Restore the validated context directory before collecting so retries reuse
+existing versions:
+
+```bash
+export CONTEXT_CLOUD_STORAGE_ROOT="gs://<existing-bucket>/data/context"
+gcloud storage rsync --recursive \
+  "${CONTEXT_CLOUD_STORAGE_ROOT}" ./data/context
+
+uv run crypto-ai context status
+uv run crypto-ai context fear-greed --plan
+uv run crypto-ai context oi --plan --symbol BTCUSDT
+
+export CRYPTO_AI_ALLOW_CONTEXT_NETWORK=1
+uv run crypto-ai context fear-greed fetch
+uv run crypto-ai context oi recent --symbol BTCUSDT
+uv run crypto-ai context oi snapshot --symbol BTCUSDT
+unset CRYPTO_AI_ALLOW_CONTEXT_NETWORK
+
+uv run pytest tests/context
+gcloud storage rsync --recursive \
+  ./data/context "${CONTEXT_CLOUD_STORAGE_ROOT}"
+```
+
+Do not set the Phase 7 cloud-research guard for this maintenance, create a new
+bucket, add credentials, schedule a daemon, or feed the resulting columns into
+the current baseline.

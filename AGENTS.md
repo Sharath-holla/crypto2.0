@@ -33,8 +33,13 @@ research run is pending and must be started manually on the existing VM.
   pipeline requires `PHASE7_ALLOW_CLOUD_RESEARCH=1` and manual execution on the
   existing training VM. Do not start, resize, or modify cloud resources from
   ordinary local development tasks.
-- Do not add portfolio/risk/leverage logic, final TP/SL or Fear engines,
-  sentiment, cloud services/deployment, Binance execution, or live trading.
+- The small `crypto_ai.context` foundation may collect public Alternative.me
+  Fear & Greed and Binance USD-M open interest only through the separate
+  explicit context-network guard. Both feature families remain disabled from
+  Phase 7 training; historical Fear & Greed is knowledge-time unverified and OI
+  is recent/forward-only. Do not implement CryptoPanic, Arkham, or Reddit.
+- Do not add portfolio/risk/leverage logic, final TP/SL or dynamic Fear engines,
+  other sentiment, cloud services/deployment, Binance execution, or live trading.
 - Do not run `main_trader.py`, `pipeline/live_trader.py`, `dashboard.py`, or any command that can access an account or submit an order.
 
 ## Engineering rules
