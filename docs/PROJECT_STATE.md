@@ -39,7 +39,50 @@
 
 ## IN PROGRESS
 
-- None. Phase 6 is complete; final repository verification is recorded below.
+- Phase 7 cloud research. Local code, configuration, deterministic fixture
+  tests, safe plan/dry-run commands, the stable `core_universe_v1`, causal
+  fold-local `expansion_universe_v1`, separately labeled CORE/EXPANDING
+  evaluations, bounded Gold construction, G0/C0/P0/H0 architecture runners,
+  matched-coverage reporting, checkpoint/resume, and the Google Cloud runbook
+  are implemented. The existing VM remains stopped and no real multi-asset
+  Phase 7 result exists yet.
+
+## PHASE 7 PRE-PUSH STATUS
+
+```text
+Phase 1–6:
+COMPLETE
+
+Phase 7 implementation:
+COMPLETE
+
+Phase 7 pre-push verification:
+COMPLETE
+
+Phase 7 real multi-asset acquisition:
+NOT RUN
+
+Phase 7 actual model training:
+NOT RUN
+
+Phase 7 overall:
+IN PROGRESS
+
+Qualified model:
+NONE
+
+July 2026:
+UNUSED
+
+Prospective holdout:
+LOCKED / UNUSED
+
+Prospective holdout evaluation authorized:
+false
+
+Phase 8:
+NOT STARTED
+```
 
 ## HISTORICAL NEXT (SUPERSEDED)
 
@@ -49,11 +92,15 @@
 
 ## NEXT
 
-- STOP. The prospective holdout remains unopened. Opening it, adding advanced
-  ML/assets, or starting paper/live execution requires a separate explicit
-  instruction and a newly frozen protocol. No account access, execution,
-  leverage, portfolio automation, or live-trading code is authorized.
-- No next phase is authorized. Phase 7 has not started.
+- Review, commit, and push the local Phase 7 implementation.
+- Manually start the existing Google Cloud VM and follow
+  `PHASE7_CLOUD_RUNBOOK.md`: restore data, rerun checks, plan, execute the
+  guarded resume-safe batch, verify checksums/results, back up outputs, and
+  stop the VM.
+- Do not claim Phase 7 complete until the cloud research and verification are
+  complete. The prospective holdout remains `LOCKED_UNUSED`, is not authorized
+  for Phase 7 evaluation, and must remain unopened. No account access,
+  execution, leverage, portfolio automation, or live trading is authorized.
 
 ## DECISIONS
 
@@ -61,6 +108,14 @@
 - Binance USD-M perpetual futures are the primary research market; Spot remains a separately identified secondary/cross-market dataset.
 - One future Main Market Model will directly consume most structured market information. LightGBM is the first candidate family, not a permanent winner.
 - CoinSwitch-specific legacy modules are deprecated and retained temporarily only for audit and possible extraction of exchange-independent concepts.
+- Phase 7 keeps a stable 20-symbol pre-2022 `core_universe_v1` benchmark and a
+  separate causal expansion policy. Newer symbols may enter only at a fold's
+  TRAIN end after verified availability, 365 days of history, required data
+  quality/higher-timeframe coverage, and causal trailing-liquidity gates. The
+  expanding view is capped at 10 additions and 30 total symbols per fold.
+- CORE and EXPANDING architecture results are reported separately. Expansion
+  selection cannot use future listing, survival, liquidity, returns,
+  profitability, model accuracy, or TEST outcomes.
 - For prediction row `i`, use the completed candle at `i`; reference entry at `open[i+1]`; and calculate the 60-minute target at `open[i+13]` for 5-minute data.
 - Require every expected open from entry through target. Missing intervals invalidate the label; no row is synthesized or forward-filled.
 - Keep Phase 3 `baseline_v1` immutable, deliberately small, and causal. Future expanded features require a new version.
@@ -189,13 +244,21 @@
   **NO QUALIFIED MODEL** and no champion was promoted.
 - Phase 6 final verification: 187 tests passed, 0 failed, 0 skipped; Ruff lint
   and 105-file format checks, Python compilation, and `uv lock --check` passed.
+- Phase 7 pre-push and newer-coin hardening verification: 241 tests passed, 0
+  failed, 0 skipped; Ruff lint and 129-file format checks, Python compilation,
+  `uv lock --check`, and `git diff --check` passed. The 54 Phase 7 tests include
+  13 focused cold-start/expansion tests and remain deterministic local
+  fixtures; no heavy cloud run or real Phase 7 result was produced. The sole
+  warning is joblib's harmless Windows physical-core detection fallback to the
+  configured logical-core limit.
 
 ## KNOWN PROBLEMS
 
 - The historical first Phase 4 experiment remains one month. Phase 4.1 expands
   BTC to multi-year coverage and Phase 5 adds full retrospective walk-forward
-  evaluation, but the research still has one instrument/venue. The sacred
-  prospective holdout remains deliberately unopened.
+  evaluation, but completed research through Phase 6 still has one instrument.
+  Phase 7 multi-asset cloud research is pending. The sacred prospective
+  holdout remains deliberately unopened.
 - Phase 4 has bar-level timing, fees, funding, spread/slippage assumptions, and
   normalized one-position accounting, but no depth replay, queue position,
   partial-fill, impact, latency-variance, liquidation, leverage, or portfolio
@@ -207,7 +270,8 @@
 - CoinSwitch-specific legacy modules contain unverified live account/order behavior, missing/undeclared components, and unsafe configuration patterns. They remain isolated, deprecated, and must not run.
 - Label V2 remains research-only; no Phase 6 target is a production target.
 - Statistical outlier windows in the inherited Phase 2 validator reset at partition boundaries.
-- The supplied checkout has no tracked Git baseline, so Git cannot provide a meaningful before/after diff; verification uses inventories, tests, static checks, and artifact manifests.
+- Git provides the tracked baseline for this Phase 7 change. Verification also
+  uses inventories, tests, static checks, and artifact manifests.
 - The base-cost Phase 4.1 result has only five trades, concentrated in bear/high
   volatility periods and driven by a few extreme moves. Sharpe, Sortino, profit
   factor, Calmar, and apparent return are not reliable at this sample size.

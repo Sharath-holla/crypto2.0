@@ -367,3 +367,36 @@
 - Consequences: Historical Phase 3/4 datasets and experiment IDs remain valid.
   Phase 4.1 adds explicit cutoff-bound artifacts and prepares—but does not
   implement—Phase 5 walk-forward validation.
+
+## ADR-023 - Benchmark multi-asset architectures with a historical universe
+
+- Date: 2026-08-22
+- Status: Accepted for Phase 7 retrospective research.
+- Decision: Build a current-plus-historical Binance USD-M symbol registry,
+  freeze a deterministic 20-symbol `core_universe_v1` at
+  `2022-01-01T00:00:00Z`, and separately freeze an
+  `expansion_universe_v1` admission policy. The expanding view admits newer
+  symbols only from evidence strictly before each fold's TRAIN end, after 365
+  days and configured data-quality/liquidity gates, with 10 expansion and 30
+  total symbols maximum per fold. Retain historically delisted contracts when
+  official archive evidence proves their existence; later survival cannot
+  change earlier eligibility.
+- Models: Compare Global (G0), TRAIN-only Cluster (C0), eligible Per-coin (P0),
+  and global-with-fallback Hybrid (H0) LightGBM architectures. Test explicit
+  symbol identity and equal-symbol training mass. Report CORE and EXPANDING
+  views separately, including native coverage and identical-observation
+  matched architecture comparisons.
+- Features/targets: Version multi-asset features, membership-aware market
+  context, and raw plus ex-ante-volatility-normalized 15/30/60/120-minute
+  targets separately from Phase 6. Retest 12h and daily context independently.
+- Validation: Preserve 24/3/3/3 rolling folds, actual label-end purging, and
+  chronological Cal-A/Cal-B. Use a 120-minute embargo for the longest target.
+  Clusters, liquidity tiers, calibration, and thresholds never use TEST.
+- Resources: Use bounded symbol/year Parquet and time chunks. Heavy public-data
+  acquisition/training is VM-only, manually started, non-interactive,
+  checkpointed, and resume-safe. No cloud service or GPU is required.
+- Consequences: Local implementation does not complete Phase 7. A real cloud
+  run, verification, backup, and VM shutdown remain required. July 2026 and the
+  August holdout remain unused. The holdout status is `LOCKED_UNUSED` and
+  evaluation is not authorized. No account, portfolio, risk, leverage, order,
+  or live-trading authority is introduced.

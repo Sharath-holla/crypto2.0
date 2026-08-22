@@ -103,3 +103,22 @@ The fixed same-row 1h ablation classifies 12h as `KEEP_CANDIDATE`, daily as
 These are retrospective classifications, not production selection. Exact
 definitions, coverage, stability, redundancy, and results are in
 `PHASE6_FEATURE_RESEARCH.md`.
+
+## Multiasset Features V1
+
+Phase 7 adds `multiasset_features_v1` without modifying prior feature families.
+It combines causal coin-local normalized price/volatility/volume/trade/taker
+features with listing age, history, liquidity/volatility percentiles, rolling
+BTC beta/correlation, ETH correlation, relative strength, BTC/ETH anchors,
+point-in-time market breadth, completed 12h/daily context, and aligned public
+funding/mark/index basis.
+
+All rolling state is symbol-local and resets at reported 5m gaps. Anchor joins
+require exact timestamps. Market aggregates use only registry-active symbols
+available at that timestamp and persist a membership hash. Higher-timeframe
+values require `availability_time <= feature_time`; 12h and daily streams are
+aligned independently.
+
+A0-A6 and independent BASE/12h/1d controls are defined in
+`PHASE7_MULTI_ASSET_FEATURES.md`. They are research schemas, not production
+feature approval.

@@ -48,6 +48,13 @@ from crypto_ai.phase5.hardening import (
 )
 from crypto_ai.phase5.verification import verify_hardened_runs
 from crypto_ai.phase6 import load_phase6_config, run_phase6_research
+from crypto_ai.phase7 import (
+    load_phase7_config,
+    phase7_dry_run,
+    phase7_plan,
+    test_phase7_universe,
+    validate_phase7_configuration,
+)
 from crypto_ai.research.config import (
     DatasetBuildConfig,
     load_dataset_config,
@@ -345,6 +352,25 @@ def _parser() -> argparse.ArgumentParser:
         "phase6-research", help="Run isolated retrospective Phase 6 feature/target research"
     )
     phase6.add_argument("--config", type=Path, required=True)
+    phase7 = subparsers.add_parser(
+        "phase7-research",
+        help="Plan, validate, or run survivorship-safe Phase 7 multi-asset research",
+    )
+    phase7.add_argument(
+        "--config",
+        type=Path,
+        default=Path("configs/phase7/research_v1.toml"),
+    )
+    local_action = phase7.add_mutually_exclusive_group()
+    local_action.add_argument("--plan", action="store_true")
+    local_action.add_argument("--validate-config", action="store_true")
+    local_action.add_argument("--dry-run", action="store_true")
+    local_action.add_argument("--test-universe", action="store_true")
+    local_action.add_argument(
+        "--stage",
+        choices=["registry", "universe", "data", "gold", "train", "report"],
+    )
+    phase7.add_argument("--resume", action="store_true")
     return parser
 
 
@@ -903,6 +929,22 @@ def main(argv: list[str] | None = None) -> int:
         return _verify_hardened(args)
     if args.command == "phase6-research":
         result = run_phase6_research(load_phase6_config(args.config))
+        print(json.dumps(result, indent=2, sort_keys=True, default=str))
+        return 0
+    if args.command == "phase7-research":
+        config = load_phase7_config(args.config)
+        if args.plan:
+            result = phase7_plan(config)
+        elif args.validate_config:
+            result = validate_phase7_configuration(config)
+        elif args.dry_run:
+            result = phase7_dry_run(config)
+        elif args.test_universe:
+            result = test_phase7_universe(config)
+        else:
+            from crypto_ai.phase7.pipeline import run_phase7_cloud
+
+            result = run_phase7_cloud(config, stage=args.stage, resume=args.resume)
         print(json.dumps(result, indent=2, sort_keys=True, default=str))
         return 0
     raise AssertionError(f"Unhandled command: {args.command}")

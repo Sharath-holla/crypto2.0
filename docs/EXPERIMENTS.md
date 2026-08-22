@@ -241,3 +241,21 @@ is `RESEARCH_ONLY`; costs and policy economics were not evaluated. MFE/MAE and
 volatility-normalized barriers are descriptive labels only. No champion is
 promoted, the permanent holdout contributes zero rows, and current status is
 **NO QUALIFIED MODEL**.
+
+## Phase 7 local implementation checkpoint
+
+Phase 7 has no real experiment result yet. The checked-in local implementation
+defines the future cloud run and passes deterministic synthetic multi-asset
+tests, but it has not selected the actual historical registry/pilot, downloaded
+the full pilot data, trained the model matrix, or opened any TEST/holdout data
+outside its fixture.
+
+The preregistered cloud matrix compares G0/C0/P0/H0 on A6 across raw and
+normalized 15/30/60/120-minute targets, G0 identity/weight controls,
+incremental A0-A5 ablations, and independent 12h/1d controls over 16 planned
+rolling folds. Required outputs include predictive macro/micro/coverage/
+cross-sectional metrics and Cal-B-selected liquidity-cost economics.
+
+The only honest current conclusion is **NO QUALIFIED MODEL / CLOUD RESEARCH
+PENDING**. `PHASE7_RESULTS.md` must not be created until the real cloud run and
+artifact verification finish.

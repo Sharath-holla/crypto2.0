@@ -58,3 +58,16 @@ MFE, MAE, barrier outcomes, entry/future references, and target timestamps are
 never feature inputs. A 5-minute TP/SL overlap is resolved with validated
 1-minute data only when ordering is unambiguous; otherwise it remains
 `AMBIGUOUS`. See `PHASE6_TARGET_RESEARCH.md` for definitions and evidence.
+
+## Phase 7 Multiasset Targets V1
+
+`multiasset_targets_v1` reuses the gap-safe next-open Phase 6 return/MFE/MAE
+engine per symbol for 15m, 30m, 1h, and 2h. Phase 7 stores both the raw forward
+return and an ex-ante-volatility-normalized target. The scale is the causal
+daily volatility already present on the matching `(symbol, feature_time)` row;
+future volatility is never read.
+
+Every label requires `label_end_time < 2026-07-01T00:00:00Z`. July and the
+August holdout are therefore absent. Normalized predictions must be multiplied
+by the stored ex-ante scale before raw expected-return and cost evaluation.
+MFE/MAE remain labels, never inputs.

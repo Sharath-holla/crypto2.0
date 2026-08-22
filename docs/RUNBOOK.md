@@ -193,4 +193,27 @@ The command verifies input checksums, reconciles direct 12h/1d candles against
 exact derived candles, applies completed-candle joins, builds immutable
 research Gold, and runs fixed chronological probes. Identical output identity
 is verified rather than overwritten. It performs no account access, model
-promotion, backtest optimization, order submission, or Phase 7 work.
+promotion, backtest optimization, or order submission.
+
+## Phase 7 safe local checks
+
+```powershell
+uv run crypto-ai phase7-research --config configs/phase7/research_v1.toml --validate-config
+uv run crypto-ai phase7-research --config configs/phase7/research_v1.toml --plan
+uv run crypto-ai phase7-research --config configs/phase7/research_v1.toml --test-universe
+uv run crypto-ai phase7-research --config configs/phase7/research_v1.toml --dry-run
+```
+
+These commands use no account credentials. Plan, validation, and fixture modes
+make no network request; dry-run writes no files. Running without one of those
+safe flags enters the heavy pipeline and is rejected unless
+`PHASE7_ALLOW_CLOUD_RESEARCH=1` is explicitly set on the training VM.
+
+Safe output must report `prospective_holdout_status=LOCKED_UNUSED`,
+`prospective_holdout_used=false`, and
+`prospective_holdout_evaluation_authorized=false`. The cloud run may not
+evaluate the holdout.
+
+Do not set that guard on the laptop. For VM start/SSH, restore, tmux,
+stage/resume, verification, Cloud Storage backup, and mandatory shutdown
+commands, follow `PHASE7_CLOUD_RUNBOOK.md`.

@@ -140,3 +140,58 @@ The manifest classifies the dataset `RETROSPECTIVE_RESEARCH`, records every
 cutoff and prospective boundary, declares zero holdout use, and checksums the
 immutable Parquet file. MFE/MAE, barrier outcomes, and timestamps are labels or
 metadata and are excluded from the feature allowlist.
+
+## Phase 7 registry, universe, Gold, and model artifacts
+
+`symbol_registry_v1` is immutable JSON keyed by symbol. Each record stores
+base/quote assets, contract type, current status, onboard date when known,
+first/last verified market-data timestamps, point-in-time availability bounds,
+history length, supported intervals, family coverage summaries, and metadata
+sources. The registry freezes its research cutoff and content hash.
+`onboard_date` never substitutes for data evidence. `available_from` is the
+inclusive evidence boundary; `available_until` is exclusive;
+`first_market_data_time`/`last_market_data_time` describe the evidence range;
+and `availability_evidence` distinguishes verified timestamps from official
+archive-period evidence. No missing onboard/listing timestamp is invented.
+
+`core_universe_v1` stores the registry identity, pre-2022 selection
+cutoff/method, ordered members with liquidity/volatility/history percentiles,
+every point-in-time exclusion and reason, and a core hash.
+`expansion_universe_v1` stores the frozen fold-TRAIN-end admission policy,
+quality/history/liquidity requirements, age-bucket edges, and expansion/total
+caps—not a future-informed static symbol list. `dual_universe_v2` identifies
+the combined research definition.
+
+Per-fold membership manifests store the separately labeled CORE or EXPANDING
+view, eligible core and expansion symbols, total active symbols, membership
+hash, and one record per known candidate with fold ID, source,
+`available_from`, TRAIN-end history/age bucket and liquidity, quality status,
+eligibility, and reason. They also store TRAIN-only cluster mapping,
+descriptors, and liquidity tiers.
+
+Phase 7 Gold rows use `(symbol, feature_time, horizon_minutes)` and include:
+
+- feature/market-context/target versions and membership hash;
+- ordered A0-A6 feature inputs;
+- next-open `entry_time` and per-horizon `label_end_time`;
+- `raw_future_return`, `ex_ante_volatility_scale`, and
+  `normalized_future_return`; and
+- long/short MFE/MAE evaluation labels.
+
+The dataset is partitioned by symbol/year. Its manifest records all partition
+checksums, registry/core/expansion/combined-universe hashes, source lineage,
+feature groups, coverage,
+bounded chunk IDs, the exclusive cutoff, and explicit false holdout/July-use
+flags. It also stores `prospective_holdout_status=LOCKED_UNUSED` and
+`prospective_holdout_evaluation_authorized=false`.
+Partition paths are POSIX-style and relative to the manifest directory so the
+same verified dataset can be restored under a different Windows or Linux root.
+
+Model artifacts store architecture, ordered feature schema, target type,
+symbol/cluster mappings, weighting mode, estimator identities, hybrid fallback
+corrections, calibration, Cal-B thresholds, TEST metrics, cost stress, and a
+frozen pre-TEST identity. Checkpoints checksum every required file.
+Model checkpoint identity additionally binds experiment/config, research view,
+registry, core universe, expansion policy, exact fold membership, Gold
+manifest, feature/target versions, horizon/type, architecture, fold, and Phase
+7 code version; a mismatch is not reusable.

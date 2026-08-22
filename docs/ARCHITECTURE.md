@@ -313,6 +313,39 @@ barrier outcomes.
 The resulting Gold and fixed Ridge/LightGBM probes are classified
 `RETROSPECTIVE_RESEARCH`. They cannot promote a champion or call private APIs.
 The cutoff is `2026-07-01T00:00:00Z`, all July is unused by Phase 6, and the
-permanent `2026-08-01T00:00:00Z` holdout remains unopened. Phase 7, additional
-assets, final TP/SL, fear, risk, leverage, portfolio, and execution systems are
-outside this boundary.
+permanent `2026-08-01T00:00:00Z` holdout remains unopened. Final TP/SL, fear,
+risk, leverage, portfolio, and execution systems remain outside this boundary.
+
+## Phase 7 multi-asset research boundary
+
+`crypto_ai.phase7` is an isolated, public-data, retrospective research package.
+Its source flow is:
+
+```text
+official current metadata + official historical archive catalog
+    -> immutable historical symbol registry
+    -> point-in-time quality/liquidity/history gates
+    -> frozen 20-symbol core benchmark + causal fold-local expansion policy
+    -> separately labeled CORE and EXPANDING fold_active_symbols
+    -> 5m/12h/1d/funding/mark/index Silver families
+    -> bounded yearly multi-asset Gold partitions
+    -> rolling G0/C0/P0/H0 experiments
+    -> native/matched coverage, macro/micro/cold-start/economic scorecards
+```
+
+The local and cloud modes call the same package. Local mode exposes plan,
+configuration, universe-fixture, and in-memory dry-run operations. Heavy stages
+require an explicit VM-only environment guard. The pipeline uses atomic
+artifacts and checksum-verified stage plus fold/experiment checkpoints.
+
+Gold is partitioned by symbol/year and built in bounded time chunks. Cross-
+asset market context is computed only from point-in-time active members.
+Clusters and liquidity tiers are TRAIN-only; Cal-A owns calibration, Cal-B owns
+threshold selection, and TEST is released only after a frozen identity exists.
+
+The exclusive research cutoff remains `2026-07-01T00:00:00Z`, so July remains
+unused, and the permanent August holdout is `LOCKED_UNUSED`, has zero rows, and
+is not authorized for Phase 7 evaluation. Local implementation is complete;
+the real cloud research result is pending. See the four `PHASE7_*`
+documents. No Phase 7 component accesses an account or implements allocation,
+risk, leverage, orders, or live trading.

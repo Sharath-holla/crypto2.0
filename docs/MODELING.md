@@ -140,3 +140,24 @@ Qualification status (`PASS`/`FAIL`) is deterministic and separate from
 evidence interpretation (`NEGATIVE`, `INCONCLUSIVE`, `WEAK_POSITIVE`, or
 `PROMISING_UNVALIDATED`). This separation cannot upgrade a candidate or change
 the frozen qualification gates.
+
+## Phase 7 multi-asset architecture control
+
+Phase 7 benchmarks G0 global, C0 TRAIN-only cluster, P0 eligible per-coin, and
+H0 global-plus-symbol/cluster-fallback LightGBM architectures. Separate G0
+controls test explicit symbol identity and equal-total-mass symbol weighting.
+P0 requires minimum Train, Validation, and Calibration rows before fit.
+Per-coin and cluster gaps are reported with coverage and exclusion reasons, not
+silently dropped.
+
+The experiment matrix covers four horizons and raw/normalized targets on A6,
+incremental A0-A5 tests, and independent BASE/12h/1d controls. TRAIN fits
+models/clusters/tiers, Validation controls early stopping, Cal-A fits
+calibration, Cal-B selects thresholds, and TEST is read only after a combined
+identity is frozen. Outputs require micro, equal-symbol macro, per-coin,
+per-cluster, cross-sectional IC, coverage, conditioning, cost, no-trade, and
+concentration diagnostics.
+
+See `PHASE7_MODEL_ARCHITECTURES.md`. The cloud benchmark is pending; no Phase 7
+model has been selected or approved. The prospective holdout is
+`LOCKED_UNUSED` and is not authorized for this benchmark.

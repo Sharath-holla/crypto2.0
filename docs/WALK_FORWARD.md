@@ -194,3 +194,18 @@ uv run crypto-ai verify-hardened `
   --derivatives-summary <derivatives-hardened-summary.json> `
   --output local_artifacts/phase5_hardening/walkforward_v1_1/verification_report.json
 ```
+
+## Phase 7 multi-asset extension
+
+Phase 7 preserves the 24/3/3/3 rolling schedule and three-month step but uses a
+120-minute embargo for its longest target. The Calibration window remains
+chronologically split: Cal-A owns identity/linear calibration and Cal-B owns
+the predeclared edge threshold. Actual label-end purging applies at every
+boundary.
+
+Before slicing each fold, symbols are rechecked at TRAIN end. TRAIN-only
+descriptors fit clusters and liquidity tiers, which are frozen for the rest of
+that fold. Every architecture/horizon/target/ablation has an independent
+checksum checkpoint. TEST remains vaulted until model, calibrator, and
+threshold identities are frozen; the permanent prospective holdout is never
+part of fold planning or loading.

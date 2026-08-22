@@ -1,0 +1,119 @@
+[phase7]
+name = "phase7-multiasset-research-v1-1"
+mode = "cloud"
+data_start = 2020-01-01T00:00:00Z
+research_cutoff = 2026-07-01T00:00:00Z
+prospective_holdout_start = 2026-08-01T00:00:00Z
+prospective_holdout_status = "LOCKED_UNUSED"
+prospective_holdout_used = false
+prospective_holdout_evaluation_authorized = false
+decision_interval = "5m"
+required_intervals = ["5m", "12h", "1d"]
+derivative_datasets = ["funding", "mark", "index"]
+binance_config = "configs/data/binance.toml"
+quality_config = "configs/data_quality/default.toml"
+
+[paths]
+data_root = "data"
+artifact_root = "local_artifacts/phase7"
+gold_root = "data/gold/phase7"
+checkpoint_root = "local_artifacts/phase7/checkpoints"
+# Set with PHASE7_CLOUD_STORAGE_ROOT on the VM, for example
+# gs://<existing-bucket>/artifacts/phase7.
+
+[universe]
+core_target_size = 20
+core_selection_cutoff = 2022-01-01T00:00:00Z
+enable_expansion = true
+expansion_as_of = "fold_train_end"
+expansion_max_symbols_per_fold = 10
+total_max_symbols_per_fold = 30
+minimum_history_days = 365
+age_bucket_edges_days = [365, 730, 1460]
+minimum_coverage_ratio = 0.995
+warning_coverage_ratio = 0.999
+minimum_trailing_quote_volume = 0.0
+selection_lookback_days = 90
+required_anchor_symbols = ["BTCUSDT", "ETHUSDT"]
+required_intervals = ["5m", "12h", "1d"]
+quote_asset = "USDT"
+contract_type = "PERPETUAL"
+
+[features]
+correlation_window_rows = 2016
+liquidity_window_rows = 2016
+volatility_window_rows = 2016
+daily_volatility_rows = 288
+seven_day_volatility_rows = 2016
+include_12h = true
+include_1d = true
+include_derivatives = true
+include_rejected_negative_controls = false
+
+[targets]
+horizons_minutes = [15, 30, 60, 120]
+target_types = ["raw", "volatility_normalized"]
+normalization_floor = 1e-8
+
+[models]
+architectures = ["G0", "C0", "P0", "H0"]
+cluster_count = 4
+include_symbol_id_ablation = true
+compare_symbol_balanced_weights = true
+minimum_train_rows_per_coin = 20000
+minimum_validation_rows_per_coin = 2000
+minimum_calibration_rows_per_coin = 2000
+learning_rate = 0.02
+n_estimators = 500
+num_leaves = 31
+max_depth = -1
+min_child_samples = 100
+subsample = 0.9
+colsample_bytree = 0.9
+reg_alpha = 0.1
+reg_lambda = 1.0
+early_stopping_rounds = 50
+seed = 42
+
+[resources]
+max_workers = 4
+model_threads = 4
+batch_size = 250000
+memory_guard_gb = 8.0
+require_gpu = false
+
+[schedule]
+train_months = 24
+validation_months = 3
+calibration_months = 3
+test_months = 3
+step_months = 3
+embargo_minutes = 120
+window = "rolling"
+minimum_rows_per_segment = 500
+
+[calibration]
+methods = ["identity", "linear"]
+reliability_buckets = 10
+minimum_samples = 100
+
+[costs]
+assumption_classification = "RESEARCH COST ASSUMPTIONS"
+fixed_policy_multipliers = [1.0, 1.25, 1.5, 2.0]
+threshold_grid_bps = [2.0, 4.0, 6.0, 8.0, 10.0]
+minimum_calibration_trades = 30
+
+[cost_tiers.high_liquidity]
+taker_fee_bps_per_side = 4.0
+spread_bps_round_trip = 1.0
+slippage_bps_per_side = 1.0
+
+[cost_tiers.medium_liquidity]
+taker_fee_bps_per_side = 4.0
+spread_bps_round_trip = 2.0
+slippage_bps_per_side = 2.0
+
+[cost_tiers.lower_liquidity]
+taker_fee_bps_per_side = 4.0
+spread_bps_round_trip = 4.0
+slippage_bps_per_side = 4.0

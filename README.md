@@ -2,6 +2,8 @@
 
 The repository has completed Phases 1 through 6, including the verified Phase
 5.1 hardening protocol and isolated Phase 6 higher-timeframe/target research.
+Phase 7's local multi-asset architecture is implemented; its real Google Cloud
+data acquisition and training run remains pending.
 Binance USD-M futures are primary; Spot remains an isolated secondary dataset.
 All completed work is public-data and offline research only:
 there is no account access, order execution, leverage, or live trading.
@@ -165,7 +167,8 @@ secondary diagnostic. The prospective holdout remains locked and unused.
 The future multi-asset, expected-return distribution, MFE/MAE, dynamic TP/SL,
 fear/euphoria, liquidity, risk, position sizing, leverage, portfolio, and
 trade-management design is documentation-only in
-`docs/FUTURE_TRADING_SYSTEM.md`. No next phase is authorized.
+`docs/FUTURE_TRADING_SYSTEM.md`. At the Phase 5.1 checkpoint no next phase was
+authorized; the later Phase 7 instruction supersedes only that stop boundary.
 
 ## Phase 6 higher-timeframe and target research
 
@@ -179,5 +182,33 @@ separate `market_v3_research` features and `label_v2_research` targets. The
 final immutable experiment is `phase6-btc-a6d0815c4adf041bf4107755`; model
 status remains **NO QUALIFIED MODEL** and the August holdout remains unused.
 See `docs/PHASE6_FEATURE_RESEARCH.md` and
-`docs/PHASE6_TARGET_RESEARCH.md`. Phase 7 has not started and is not
-authorized.
+`docs/PHASE6_TARGET_RESEARCH.md`.
+
+## Phase 7 multi-asset research
+
+Safe local commands use the same package as the VM pipeline but never download
+multi-year multi-coin data or train the full model matrix:
+
+```powershell
+uv run crypto-ai phase7-research --config configs/phase7/research_v1.toml --validate-config
+uv run crypto-ai phase7-research --config configs/phase7/research_v1.toml --plan
+uv run crypto-ai phase7-research --config configs/phase7/research_v1.toml --test-universe
+uv run crypto-ai phase7-research --config configs/phase7/research_v1.toml --dry-run
+```
+
+The implementation provides a historical/delisted symbol registry, a frozen
+point-in-time 20-symbol pilot method, per-fold eligibility, normalized
+multi-asset/BTC/ETH/market/12h/1d/derivatives features, raw and normalized
+15/30/60/120-minute targets, G0/C0/P0/H0 LightGBM architectures, macro and
+cross-sectional metrics, liquidity-tier costs, no-trade, and checksum-backed
+resume. The research cutoff remains `2026-07-01T00:00:00Z`; July and the
+August holdout remain unused. The formal status is
+`prospective_holdout_status=LOCKED_UNUSED`, `prospective_holdout_used=false`,
+and `prospective_holdout_evaluation_authorized=false`; Phase 7 may not evaluate
+or unlock it.
+
+The heavy command is VM-only and protected by an explicit environment guard.
+Do not run it locally. See `docs/PHASE7_UNIVERSE.md`,
+`docs/PHASE7_MULTI_ASSET_FEATURES.md`,
+`docs/PHASE7_MODEL_ARCHITECTURES.md`, and
+`docs/PHASE7_CLOUD_RUNBOOK.md`.

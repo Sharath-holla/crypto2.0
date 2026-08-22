@@ -60,7 +60,8 @@ frozen L0/L5/D0/D2 candidates and locked the prospective holdout at
 cost stress, separate adaptive stress, deterministic qualification versus
 evidence status, reliability suppression, and stronger concentration fields.
 It reuses frozen model and TEST-prediction artifacts and introduces no new
-label, feature, hyperparameter, or model. No next phase is authorized.
+label, feature, hyperparameter, or model. At that checkpoint no next phase was
+authorized; the later Phase 7 authorization supersedes only that stop state.
 
 ## Completed: Phase 6
 
@@ -69,14 +70,34 @@ as-of joins, isolated Feature V3/Label V2 research families, multi-horizon
 returns, MFE/MAE, ambiguity-safe barrier labels, fixed chronological probes,
 and feature/target scorecards. Its exclusive cutoff is
 `2026-07-01T00:00:00Z`; all July and the permanent August holdout remain
-unused. It promotes no champion and implements no Phase 7, advanced model,
-asset expansion, TP/SL engine, fear engine, risk/leverage, or execution path.
-No next phase is authorized.
+unused. It promotes no champion and implements no advanced model, TP/SL
+engine, fear engine, risk/leverage, or execution path.
+
+## In progress: Phase 7
+
+Phase 7 local implementation is complete and the cloud research is pending.
+The protocol adds a historical USD-M symbol registry, point-in-time 20-symbol
+pilot selection, fold-local eligibility, bounded symbol/year multi-asset Gold,
+raw and normalized 15/30/60/120-minute targets, and controlled G0/C0/P0/H0
+LightGBM comparisons. It retains the exclusive `2026-07-01T00:00:00Z` cutoff,
+leaves July and the permanent holdout unused, and preserves Train/Validation/
+Cal-A/Cal-B/TEST ownership.
+
+The holdout contract is `prospective_holdout_status=LOCKED_UNUSED`,
+`prospective_holdout_used=false`, and
+`prospective_holdout_evaluation_authorized=false`. Holdout evaluation is not a
+pending Phase 7 task; it is unauthorized.
+
+Heavy acquisition and training are permitted only as a manually started,
+checkpointed batch on the existing VM after local review/commit/push. Local
+implementation creates no Phase 7 result and authorizes no model, account
+access, portfolio/risk/leverage, order, or live-trading path.
 
 ## Canonical roadmap
 
 Status lock: roadmap items 1 through 6, including Phase 4.1 and Phase 5
-Hardening, are complete. Items 7 onward remain future concepts and are not
+Hardening, are complete. Item 7 local implementation is complete and its cloud
+research is in progress. Items 8 onward remain future concepts and are not
 authorized by their presence in this roadmap.
 
 1. Phase 1 — BTC Data Foundation — done.
@@ -85,7 +106,8 @@ authorized by their presence in this roadmap.
 4. Phase 4 — Binance Market Intelligence + Advanced Structured Features + Main Model V2 + Backtest Foundation.
 5. Phase 5 — Full Walk-Forward Validation + Purging + Embargo + Final Holdout.
 6. Phase 6 — Feature Research + Ablations — done.
-7. Phase 7 — ETH + Multi-Asset Expansion.
+7. Phase 7 — ETH + Multi-Asset Expansion — local implementation complete,
+   cloud research pending.
 8. Phase 8 — Advanced Temporal Models.
 9. Phase 9 — Regime Engine V2.
 10. Phase 10 — Ensemble + Meta-Labeling.
@@ -120,4 +142,5 @@ authorized by their presence in this roadmap.
 - Risk and liquidity may veto any model; ML may never disable a hard risk stop.
 - Expected profit is a distribution, never a guarantee. See
   `FUTURE_TRADING_SYSTEM.md` for the locked future contracts.
-- No next phase is authorized by this specification.
+- No phase after the authorized Phase 7 research is authorized by this
+  specification.
