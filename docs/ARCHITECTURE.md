@@ -193,6 +193,11 @@ offline research boundary.
 - `crypto_ai.phase5`: calendar rolling folds, boundary purge/embargo,
   calibration, threshold policy, execution-aware test evaluation, aggregation,
   qualification, and prospective-holdout enforcement.
+- `crypto_ai.contracts`: side-effect-free semantic versioning, event envelopes,
+  model/prediction/deployment metadata, future execution and portfolio ports,
+  observability/failure interfaces, dashboard read models, and the approved
+  Phase 7 scientific freeze. It contains no exchange, account, cloud, training,
+  or runtime activation implementation.
 - `crypto_ai.cli`: data, validation, dataset, training, and evaluation commands.
 
 Legacy root and `pipeline/` execution modules are outside `src/`, unpackaged, untested, and deprecated.
@@ -375,3 +380,19 @@ The separate `CRYPTO_AI_ALLOW_CONTEXT_NETWORK=1` guard unlocks only explicit
 one-shot public context collection. It does not unlock the Phase 7 cloud
 pipeline, create a service, or authorize credentials, account access, trading,
 or holdout evaluation. See `CONTEXT_DATA_FOUNDATION.md`.
+
+## Phase 7.1B contract and baseline-freeze boundary
+
+Phase 7.1B adds interfaces around Phase 7 without importing them into the
+scientific path. `phase7_scientific_baseline_v1` byte-freezes every Phase 7
+source file and the approved research config, while typed assertions freeze the
+safe validation, plan, dry-run and causal-universe outputs. A mismatch is a
+`PHASE7_1B_CORRECTNESS_BLOCKER` and cannot be repaired by silently refreshing
+hashes.
+
+Future model serving, event storage, execution, portfolio, observability and
+dashboard components must implement the protocols in `crypto_ai.contracts` or
+introduce an explicitly reviewed new major contract. The only concrete adapter
+is disabled and side-effect-free. No private Binance access, order capability,
+cloud action, portfolio automation, or automatic leverage exists in this
+foundation. See `PHASE7_1B_ARCHITECTURE_FOUNDATION.md`.

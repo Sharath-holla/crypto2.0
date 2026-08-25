@@ -182,7 +182,7 @@ def fit_architecture(
     explicit_symbol_id: bool = False,
     symbol_balanced: bool = False,
     hybrid_calibration: pa.Table | None = None,
-    eligibility_calibration: pa.Table | None = None,
+    eligibility_calibration_a: pa.Table | None = None,
 ) -> Phase7ModelBundle:
     if architecture not in {"G0", "C0", "P0", "H0"}:
         raise ValueError(f"unknown Phase 7 architecture: {architecture}")
@@ -190,8 +190,8 @@ def fit_architecture(
     train_symbols = _symbols(train)
     validation_symbols = _symbols(validation)
     calibration_symbols = (
-        _symbols(eligibility_calibration)
-        if eligibility_calibration is not None
+        _symbols(eligibility_calibration_a)
+        if eligibility_calibration_a is not None
         else np.asarray([], dtype=object)
     )
     train_x = _matrix(train, feature_columns)
@@ -264,21 +264,21 @@ def fit_architecture(
             calibration_mask = calibration_symbols == symbol
             train_count = int(np.count_nonzero(train_mask))
             validation_count = int(np.count_nonzero(validation_mask))
-            calibration_count = int(np.count_nonzero(calibration_mask))
+            calibration_a_count = int(np.count_nonzero(calibration_mask))
             reasons: list[str] = []
             if train_count < config.minimum_train_rows_per_coin:
                 reasons.append("insufficient_train_rows")
             if validation_count < config.minimum_validation_rows_per_coin:
                 reasons.append("insufficient_validation_rows")
-            if calibration_count < config.minimum_calibration_rows_per_coin:
-                reasons.append("insufficient_calibration_rows")
+            if calibration_a_count < config.minimum_calibration_rows_per_coin:
+                reasons.append("insufficient_calibration_a_rows")
             if reasons:
                 per_symbol_eligibility[symbol] = {
                     "status": "PER_COIN_INELIGIBLE",
                     "reasons": reasons,
                     "train_rows": train_count,
                     "validation_rows": validation_count,
-                    "calibration_rows": calibration_count,
+                    "calibration_a_rows": calibration_a_count,
                 }
                 continue
             estimators[f"symbol:{symbol}"] = _fit(
@@ -294,7 +294,7 @@ def fit_architecture(
                 "status": "PER_COIN_ELIGIBLE",
                 "train_rows": train_count,
                 "validation_rows": validation_count,
-                "calibration_rows": calibration_count,
+                "calibration_a_rows": calibration_a_count,
             }
     if not estimators:
         raise ValueError(f"{architecture} produced no eligible estimators")

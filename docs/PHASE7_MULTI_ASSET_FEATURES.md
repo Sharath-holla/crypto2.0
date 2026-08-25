@@ -2,16 +2,26 @@
 
 ## Identity and timing
 
-Phase 7 introduces `multiasset_features_v1`, `market_context_v1`, and
-`multiasset_targets_v1`. The canonical feature key is:
+Phase 7.1 uses `multiasset_features_v2`, `market_context_v2`, and
+`multiasset_targets_v2`. The canonical feature key is:
 
 ```text
 (symbol, feature_time)
 ```
 
 For a 5-minute candle opened at `t`, `feature_time = t + 5m`. The candle must
-be complete. Entry remains the next 5-minute open. Target horizons are 15, 30,
-60, and 120 minutes after that entry reference. All ranges are half-open UTC.
+be complete. Target v2 then reserves one complete decision-latency bar and
+references entry at `t + 10m`, the open after feature availability. Thus for
+row `i`, `feature_time=open[i+1]`, `entry_time=open[i+2]`, and an `H`-bar
+horizon ends at `open[i+2+H]`. Target horizons are 15, 30, 60, and 120 minutes
+from that simulated entry. The 4h horizon is not configured in Phase 7. All
+ranges are half-open UTC.
+
+The superseded `multiasset_targets_v1` is retained as an explicit audit-only
+function. It reproduces the prior same-boundary `entry_time == feature_time`
+construction, but it is no longer the configured target identity and must not
+be used for Phase 7 economic qualification. Existing Phase 1–6 labels and
+artifacts were not changed or overwritten.
 Every label requires a complete consecutive future path and
 `label_end_time < 2026-07-01T00:00:00Z`.
 
@@ -75,17 +85,21 @@ altcoin prices and assert that earlier features are unchanged.
 
 ## Market context and survivorship
 
-At each feature timestamp, market means, medians, positive/negative breadth,
-dispersion, median volatility, median taker-flow imbalance, and member count
-use only registry-active symbols with a row available then. Each row stores a
-hash of that timestamp's membership. A symbol appearing later cannot change an
-earlier breadth value.
+At acquisition/Gold construction, market context is explicitly marked
+`ACQUISITION_UNION_PREVIEW`; it is not model-ready because the bounded
+acquisition union contains symbols admitted by later folds. Source values for
+liquidity, volatility and trade intensity are retained as non-model helper
+columns.
+
+After causal fold eligibility filtering, every model-facing percentile, mean,
+median, breadth, dispersion, volatility, taker-flow, member count and membership
+hash is recomputed from that fold's frozen active-symbol rows and marked
+`FOLD_ACTIVE_SYMBOLS`. Training never consumes the preview values.
 
 The data stage may contain the bounded union of symbols admitted by at least
-one historical expansion fold, but market context remains timestamp-local. A
-symbol has no membership before official evidence and cannot affect earlier
-normalization, percentiles, breadth, feature statistics, or symbol counts.
-Future survival and post-TRAIN liquidity are never consulted.
+one historical expansion fold. A non-admitted symbol cannot affect a fold's
+model normalization, percentiles, breadth, feature statistics or symbol count.
+Future survival and post-TRAIN liquidity are never consulted for admission.
 
 Phase 7 evaluates the same features in two labeled views: `CORE`, using
 eligible `core_universe_v1` members, and `EXPANDING`, using

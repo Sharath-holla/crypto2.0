@@ -13,7 +13,7 @@ from crypto_ai.phase7.features import (
 )
 from crypto_ai.phase7.fixtures import synthetic_candles, synthetic_registry
 from crypto_ai.phase7.metrics import evaluate_predictions
-from crypto_ai.phase7.targets import generate_multiasset_targets
+from crypto_ai.phase7.targets import generate_multiasset_targets, generate_multiasset_targets_v1
 
 
 def _config() -> FeatureConfig:
@@ -196,6 +196,79 @@ def test_normalized_target_uses_feature_time_scale_and_round_trips() -> None:
     valid = np.isfinite(normalized) & np.isfinite(scale)
     assert np.count_nonzero(valid)
     assert np.allclose(normalized[valid] * scale[valid], raw[valid])
+
+
+def test_target_v2_entry_is_strictly_after_feature_time_and_horizon_starts_at_entry() -> None:
+    candles = synthetic_candles(rows_per_symbol=180)
+    features = generate_multiasset_features(
+        candles, registry=synthetic_registry(), config=_config()
+    )
+    targets = generate_multiasset_targets(
+        candles,
+        features.table,
+        config=TargetConfig(),
+        research_cutoff=datetime(2026, 7, 1, tzinfo=UTC),
+    ).table
+    feature_times = targets.column("feature_time").combine_chunks().cast(pa.int64()).to_numpy()
+    entry_times = targets.column("entry_time").combine_chunks().cast(pa.int64()).to_numpy()
+    label_ends = targets.column("label_end_time").combine_chunks().cast(pa.int64()).to_numpy()
+    horizons_us = (
+        np.asarray(targets.column("horizon_minutes").to_pylist(), dtype=np.int64) * 60_000_000
+    )
+    assert np.all(entry_times - feature_times == 5 * 60_000_000)
+    assert np.all(label_ends - entry_times == horizons_us)
+    assert set(targets.column("target_version").to_pylist()) == {"multiasset_targets_v2"}
+
+
+def test_target_v1_remains_reproducible_but_is_not_the_default() -> None:
+    candles = synthetic_candles(rows_per_symbol=180)
+    features = generate_multiasset_features(
+        candles, registry=synthetic_registry(), config=_config()
+    )
+    legacy = generate_multiasset_targets_v1(
+        candles,
+        features.table,
+        config=TargetConfig(),
+        research_cutoff=datetime(2026, 7, 1, tzinfo=UTC),
+    ).table
+    feature_times = legacy.column("feature_time").combine_chunks().cast(pa.int64()).to_numpy()
+    entry_times = legacy.column("entry_time").combine_chunks().cast(pa.int64()).to_numpy()
+    assert np.array_equal(entry_times, feature_times)
+    assert set(legacy.column("target_version").to_pylist()) == {"multiasset_targets_v1"}
+
+
+def test_target_decision_latency_cannot_be_disabled() -> None:
+    with pytest.raises(ValueError):
+        TargetConfig(decision_latency_bars=0)
+
+
+def test_target_v2_invalidates_any_future_path_crossing_a_missing_candle() -> None:
+    candles = synthetic_candles(rows_per_symbol=180)
+    symbols = np.asarray(candles.column("symbol").to_pylist(), dtype=object)
+    times = candles.column("open_time").combine_chunks().cast(pa.int64()).to_numpy()
+    sol_indices = np.flatnonzero(symbols == "SOLUSDT")
+    missing_index = int(sol_indices[100])
+    missing_time = int(times[missing_index])
+    keep = np.arange(candles.num_rows) != missing_index
+    with_gap = candles.filter(pa.array(keep))
+    features = generate_multiasset_features(
+        with_gap, registry=synthetic_registry(), config=_config()
+    )
+    targets = generate_multiasset_targets(
+        with_gap,
+        features.table,
+        config=TargetConfig(),
+        research_cutoff=datetime(2026, 7, 1, tzinfo=UTC),
+    ).table
+    target_symbols = np.asarray(targets.column("symbol").to_pylist(), dtype=object)
+    feature_times = targets.column("feature_time").combine_chunks().cast(pa.int64()).to_numpy()
+    label_ends = targets.column("label_end_time").combine_chunks().cast(pa.int64()).to_numpy()
+    crossing_gap = (
+        (target_symbols == "SOLUSDT")
+        & (feature_times <= missing_time)
+        & (label_ends > missing_time)
+    )
+    assert not np.any(crossing_gap)
 
 
 def test_duplicate_multiasset_primary_key_is_rejected() -> None:

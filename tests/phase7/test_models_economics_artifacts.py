@@ -68,7 +68,7 @@ def test_all_four_model_architectures_fit_and_predict() -> None:
             cluster_mapping=mapping,
             symbol_balanced=True,
             hybrid_calibration=validation if architecture == "H0" else None,
-            eligibility_calibration=validation,
+            eligibility_calibration_a=validation,
         )
         predicted, covered = model.predict(validation)
         assert np.all(covered)

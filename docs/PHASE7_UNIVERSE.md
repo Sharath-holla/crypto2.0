@@ -149,6 +149,12 @@ fold_active_symbols =
     causally eligible, cap-selected expansion symbols
 ```
 
+The acquisition layer may contain the bounded union of symbols needed by later
+folds, but that union is not a model universe. After the membership above is
+frozen, Phase 7.1 rebinds every cross-sectional percentile and market-context
+field to the current fold's rows. The acquisition-union preview is explicitly
+tagged and cannot be mistaken for model-facing context.
+
 Each manifest persists fold ID, symbol, `CORE`/`EXPANSION` source,
 `available_from`, history days and age bucket as of TRAIN end, causal
 liquidity, quality status, eligibility, reason, and a membership hash. Symbols
@@ -172,7 +178,7 @@ manifest records its explicit ineligibility reason. Duplicate `(symbol,
 feature_time)` keys are fatal.
 
 The local tests cover delayed admission, minimum history, no retroactive
-membership, future survival/liquidity perturbations, breadth and cluster
+membership, future survival/liquidity perturbations, fold-bound breadth and cluster
 causality, per-coin maturity, hybrid fallback, unknown-symbol global scoring,
 fold caps, delisted-symbol retention, and point-in-time existence.
 

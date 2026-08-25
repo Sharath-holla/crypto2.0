@@ -14,6 +14,7 @@ from sklearn.preprocessing import StandardScaler
 from crypto_ai.phase5.config import ScheduleConfig
 from crypto_ai.phase5.folds import FoldPlan, HardenedFoldData, plan_folds, slice_hardened_fold
 from crypto_ai.phase7.config import UniverseConfig
+from crypto_ai.phase7.features import bind_fold_cross_sectional_context
 from crypto_ai.phase7.registry import SymbolRegistry
 from crypto_ai.phase7.universe import (
     ExpansionUniversePolicy,
@@ -192,7 +193,7 @@ def slice_multiasset_fold(
     eligible_symbols = set(membership.active_symbols)
     if not eligible_symbols:
         raise ValueError(f"{plan.fold_id} has no point-in-time eligible symbols")
-    eligible_table = _filter_symbols(table, eligible_symbols)
+    eligible_table = bind_fold_cross_sectional_context(_filter_symbols(table, eligible_symbols))
     sliced: HardenedFoldData = slice_hardened_fold(
         eligible_table,
         plan,

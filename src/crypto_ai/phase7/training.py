@@ -394,14 +394,22 @@ def _run_one(
     output_root: Path,
     checkpoint_identity: dict[str, Any],
 ) -> tuple[dict[str, Any], list[Path]]:
+    for segment_name, segment in (
+        ("TRAIN", fold.train),
+        ("VALIDATION", fold.validation),
+        ("CAL_A", fold.calibration_a),
+        ("CAL_B", fold.calibration_b),
+    ):
+        if "cross_sectional_context_scope" not in segment.column_names:
+            raise ValueError(f"{segment_name} is missing fold-bound cross-sectional context")
+        scopes = set(segment.column("cross_sectional_context_scope").to_pylist())
+        if scopes != {"FOLD_ACTIVE_SYMBOLS"}:
+            raise ValueError(f"{segment_name} contains non-fold cross-sectional context: {scopes}")
     target = _prediction_target(spec)
     train = _finite(fold.train, feature_columns, target)
     validation = _finite(fold.validation, feature_columns, target)
     calibration_a = _finite(fold.calibration_a, feature_columns, target)
     calibration_b = _finite(fold.calibration_b, feature_columns, target)
-    eligibility_calibration = pa.concat_tables(
-        [calibration_a, calibration_b], promote_options="default"
-    )
     model = fit_architecture(
         spec.architecture,  # type: ignore[arg-type]
         train,
@@ -414,7 +422,7 @@ def _run_one(
         explicit_symbol_id=spec.explicit_symbol_id,
         symbol_balanced=spec.symbol_balanced,
         hybrid_calibration=validation if spec.architecture == "H0" else None,
-        eligibility_calibration=eligibility_calibration,
+        eligibility_calibration_a=calibration_a,
     )
     cal_a_raw, cal_a_covered = model.predict(calibration_a)
     cal_a_table, cal_a_predictions = _subset_covered(calibration_a, cal_a_raw, cal_a_covered)

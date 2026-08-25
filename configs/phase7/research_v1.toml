@@ -52,6 +52,7 @@ include_rejected_negative_controls = false
 
 [targets]
 horizons_minutes = [15, 30, 60, 120]
+decision_latency_bars = 1
 target_types = ["raw", "volatility_normalized"]
 normalization_floor = 1e-8
 

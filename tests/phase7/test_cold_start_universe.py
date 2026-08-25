@@ -4,9 +4,14 @@ from datetime import UTC, datetime, timedelta
 
 import numpy as np
 import pyarrow as pa
+import pytest
 
 from crypto_ai.phase7.config import FeatureConfig, ModelConfig, UniverseConfig
-from crypto_ai.phase7.features import MARKET_CONTEXT_COLUMNS, generate_multiasset_features
+from crypto_ai.phase7.features import (
+    MARKET_CONTEXT_COLUMNS,
+    bind_fold_cross_sectional_context,
+    generate_multiasset_features,
+)
 from crypto_ai.phase7.fixtures import synthetic_candles
 from crypto_ai.phase7.folds import fit_train_only_clusters
 from crypto_ai.phase7.models import fit_architecture
@@ -270,6 +275,69 @@ def test_future_listed_symbol_does_not_change_historical_breadth() -> None:
         assert np.allclose(before, after, equal_nan=True)
 
 
+def test_fold_context_excludes_acquired_symbol_until_fold_admission() -> None:
+    registry = _registry()
+    candles = synthetic_candles(rows_per_symbol=180, start=datetime(2024, 1, 1, tzinfo=UTC))
+    config = FeatureConfig(
+        correlation_window_rows=24,
+        liquidity_window_rows=24,
+        volatility_window_rows=24,
+        daily_volatility_rows=24,
+        seven_day_volatility_rows=48,
+        include_12h=False,
+        include_1d=False,
+        include_derivatives=False,
+    )
+    acquired = generate_multiasset_features(candles, registry=registry, config=config).table
+    symbols = np.asarray(acquired.column("symbol").to_pylist(), dtype=object)
+    eligible = acquired.filter(pa.array(np.isin(symbols, ["BTCUSDT", "ETHUSDT"])))
+    bound = bind_fold_cross_sectional_context(eligible)
+    baseline_candles = candles.filter(
+        pa.array(
+            np.isin(
+                np.asarray(candles.column("symbol").to_pylist(), dtype=object),
+                ["BTCUSDT", "ETHUSDT"],
+            )
+        )
+    )
+    baseline = bind_fold_cross_sectional_context(
+        generate_multiasset_features(baseline_candles, registry=registry, config=config).table
+    )
+    assert set(bound.column("cross_sectional_context_scope").to_pylist()) == {"FOLD_ACTIVE_SYMBOLS"}
+    for column in (
+        *MARKET_CONTEXT_COLUMNS,
+        "trailing_liquidity_percentile",
+        "trailing_volatility_percentile",
+        "trade_intensity_percentile",
+    ):
+        assert np.allclose(
+            np.asarray(bound.column(column).to_pylist(), dtype=np.float64),
+            np.asarray(baseline.column(column).to_pylist(), dtype=np.float64),
+            equal_nan=True,
+        )
+    assert (
+        bound.column("market_membership_hash").to_pylist()
+        == baseline.column("market_membership_hash").to_pylist()
+    )
+
+
+def test_p0_eligibility_uses_cal_a_only() -> None:
+    train = _model_table({"BTCUSDT": 120})
+    validation = _model_table({"BTCUSDT": 25})
+    too_small_cal_a = _model_table({"BTCUSDT": 10})
+    with pytest.raises(ValueError, match="P0 produced no eligible estimators"):
+        fit_architecture(
+            "P0",
+            train,
+            validation,
+            feature_columns=("f1",),
+            target_column="target",
+            config=_model_config(),
+            model_threads=1,
+            eligibility_calibration_a=too_small_cal_a,
+        )
+
+
 def test_future_behavior_does_not_change_train_only_cluster_assignment() -> None:
     train_end = datetime(2024, 7, 1, tzinfo=UTC)
     descriptors = [
@@ -341,7 +409,7 @@ def test_young_symbol_remains_per_coin_ineligible_until_mature() -> None:
         config=_model_config(),
         model_threads=1,
         cluster_mapping={"BTCUSDT": 0, "NEWUSDT": 0},
-        eligibility_calibration=calibration,
+        eligibility_calibration_a=calibration,
     )
     assert model.metadata["per_symbol_eligibility"]["NEWUSDT"]["status"] == ("PER_COIN_INELIGIBLE")
     assert model.metadata["per_symbol_eligibility"]["NEWUSDT"]["reasons"] == [
@@ -362,7 +430,7 @@ def test_young_hybrid_symbol_uses_cluster_then_global_fallback() -> None:
         model_threads=1,
         cluster_mapping={"BTCUSDT": 0, "NEWUSDT": 0},
         hybrid_calibration=validation,
-        eligibility_calibration=validation,
+        eligibility_calibration_a=validation,
     )
     assert "NEWUSDT" not in model.symbol_corrections
     assert 0 in model.cluster_corrections
@@ -392,7 +460,7 @@ def test_global_models_handle_unknown_eligible_symbol_safely() -> None:
             config=_model_config(),
             model_threads=1,
             explicit_symbol_id=explicit_symbol_id,
-            eligibility_calibration=validation,
+            eligibility_calibration_a=validation,
         )
         predicted, covered = model.predict(unseen)
         assert np.all(covered)

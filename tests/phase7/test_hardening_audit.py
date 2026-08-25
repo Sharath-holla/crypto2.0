@@ -469,8 +469,8 @@ def test_normalization_scale_is_unchanged_by_future_price_perturbation() -> None
         )
     )
     changed_by_key = {
-        key: value
-        for key, value in zip(
+        key: (scale, raw)
+        for key, scale, raw in zip(
             zip(
                 changed_targets.column("symbol").to_pylist(),
                 _times(changed_targets, "feature_time"),
@@ -478,13 +478,20 @@ def test_normalization_scale_is_unchanged_by_future_price_perturbation() -> None
                 strict=True,
             ),
             changed_targets.column("ex_ante_volatility_scale").to_pylist(),
+            changed_targets.column("raw_future_return").to_pylist(),
             strict=True,
         )
     }
     baseline_scales = baseline_targets.column("ex_ante_volatility_scale").to_pylist()
-    for key, scale in zip(baseline_keys, baseline_scales, strict=True):
+    baseline_raw = baseline_targets.column("raw_future_return").to_pylist()
+    baseline_label_ends = _times(baseline_targets, "label_end_time")
+    for key, scale, raw, label_end in zip(
+        baseline_keys, baseline_scales, baseline_raw, baseline_label_ends, strict=True
+    ):
         if key[0] == "SOLUSDT" and key[1] < split:
-            assert changed_by_key[key] == pytest.approx(scale)
+            assert changed_by_key[key][0] == pytest.approx(scale)
+            if label_end < split:
+                assert changed_by_key[key][1] == pytest.approx(raw)
 
 
 def test_cross_sectional_ic_is_grouped_by_timestamp() -> None:
@@ -544,7 +551,7 @@ def test_per_coin_minimum_calibration_and_hybrid_global_fallback() -> None:
         config=config,
         model_threads=1,
         cluster_mapping=mapping,
-        eligibility_calibration=calibration,
+        eligibility_calibration_a=calibration,
     )
     assert sorted(per_coin.estimators) == ["symbol:A"]
     assert per_coin.metadata["per_symbol_eligibility"]["B"]["status"] == ("PER_COIN_INELIGIBLE")
@@ -570,7 +577,7 @@ def test_per_coin_minimum_calibration_and_hybrid_global_fallback() -> None:
         model_threads=1,
         cluster_mapping=mapping,
         hybrid_calibration=validation,
-        eligibility_calibration=calibration,
+        eligibility_calibration_a=calibration,
     )
     predicted, covered = hybrid.predict(validation)
     global_only = hybrid.estimators["global"].predict(
@@ -600,7 +607,7 @@ def test_global_symbol_id_ablation_changes_estimator_input_schema() -> None:
         config=config,
         model_threads=1,
         cluster_mapping=mapping,
-        eligibility_calibration=calibration,
+        eligibility_calibration_a=calibration,
     )
     with_id = fit_architecture(
         "G0",
@@ -612,7 +619,7 @@ def test_global_symbol_id_ablation_changes_estimator_input_schema() -> None:
         model_threads=1,
         cluster_mapping=mapping,
         explicit_symbol_id=True,
-        eligibility_calibration=calibration,
+        eligibility_calibration_a=calibration,
     )
     assert without_id.estimators["global"].n_features_in_ == 1
     assert with_id.estimators["global"].n_features_in_ == 3

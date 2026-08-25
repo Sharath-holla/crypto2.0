@@ -4,8 +4,14 @@
 
 The local implementation and fixture tests are complete. The existing Google
 Cloud VM is still stopped, and no cloud data acquisition or training has been
-run. Execute these commands only after reviewing, committing, and pushing the
-local changes. Do not create a new VM, project, service, or GPU.
+run. Phase 7.1 resolved the same-boundary target defect with
+`multiasset_targets_v2`: entry is the open one complete 5-minute bar after
+feature availability, and horizons begin at that entry. The old v1 remains
+audit-only and reproducible. On 2026-08-25, the independent reviewer accepted
+`artifact_fingerprint_v1` as the authoritative preservation baseline and
+resolved R-13. The local gate is therefore **READY FOR CLOUD BASELINE**. This
+status is readiness, not an instruction for an ordinary local task to start
+the VM. Do not create a new VM, project, service, or GPU.
 
 The required order is: review and commit/push locally; start the existing VM;
 SSH; pull/clone; `uv sync`; restore existing Cloud Storage inputs; run tests;
@@ -19,8 +25,10 @@ model inputs and must not be enabled during this baseline run.
 ## 1. Review, commit, and push locally
 
 Complete the local pre-push audit first. Review `git diff`, then commit and push
-only after the audit verdict is `READY_FOR_CLOUD`. This runbook does not perform
-those Git actions automatically.
+only after the audit verdict is `READY_FOR_CLOUD`. The present verdict is
+`READY_FOR_CLOUD_BASELINE`, and source control is `SAFE_TO_COMMIT`, subject to
+the recorded final checks. This runbook does not perform Git or cloud actions
+automatically.
 
 ## 2. Set local identifiers and start the existing VM
 
@@ -106,6 +114,8 @@ These commands make no network request and perform no heavy training. Confirm:
 - `expansion_universe_v1` uses `fold_train_end`, at most 10 additions, and a
   30-symbol total fold cap;
 - both `CORE` and `EXPANDING` research views are planned separately;
+- model-facing cross-sectional context is `FOLD_ACTIVE_SYMBOLS`, never the
+  acquisition-union preview;
 - 16 calendar folds end at the exclusive 2026-07-01 research cutoff;
 - July 2026 remains unused and the 2026-08-01 holdout is `LOCKED_UNUSED`;
 - `prospective_holdout_evaluation_authorized=false`; and

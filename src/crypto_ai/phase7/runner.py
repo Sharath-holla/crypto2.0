@@ -9,7 +9,7 @@ import pyarrow as pa
 
 from crypto_ai.phase5.folds import calibration_split_time, plan_folds
 from crypto_ai.phase7.artifacts import resource_snapshot
-from crypto_ai.phase7.config import FeatureConfig, Phase7Config
+from crypto_ai.phase7.config import TARGET_VERSION, FeatureConfig, Phase7Config
 from crypto_ai.phase7.features import generate_multiasset_features
 from crypto_ai.phase7.fixtures import (
     FIXTURE_SYMBOLS,
@@ -53,6 +53,8 @@ def validate_phase7_configuration(config: Phase7Config) -> dict[str, Any]:
         "heavy_local_execution_locked": True,
         "phase7_research_status": "NOT_RUN",
         "qualified_model": "NONE",
+        "target_version": TARGET_VERSION,
+        "target_decision_latency_bars": config.targets.decision_latency_bars,
         "artifact_root": str(phase7_root),
         "gold_root": str(config.paths.gold_root.resolve()),
     }
@@ -105,6 +107,7 @@ def phase7_plan(config: Phase7Config) -> dict[str, Any]:
         "folds": fold_payloads,
         "architectures": list(config.models.architectures),
         "target_horizons_minutes": list(config.targets.horizons_minutes),
+        "target_decision_latency_bars": config.targets.decision_latency_bars,
         "target_types": list(config.targets.target_types),
         "feature_ablation_order": ["A0", "A1", "A2", "A3", "A4", "A5", "A6"],
         "stages": ["registry", "universe", "data", "gold", "train", "report"],
@@ -223,6 +226,8 @@ def phase7_dry_run(config: Phase7Config) -> dict[str, Any]:
         "feature_count": len(features.feature_columns),
         "target_rows": targets.table.num_rows,
         "target_horizons_minutes": list(targets.horizons_minutes),
+        "target_version": targets.target_version,
+        "target_decision_latency_bars": config.targets.decision_latency_bars,
         "zero_baseline_metrics_60m": {
             "micro": metrics["micro"],
             "macro": metrics["macro"],

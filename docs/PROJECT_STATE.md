@@ -40,6 +40,12 @@
   recent/forward open-interest collection, explicit point-in-time eligibility,
   immutable raw/normalized datasets, manifests, optional feature builders, and
   guarded one-shot CLI commands. Neither feature family is active in Phase 7.
+- Phase 7.1B architecture foundation: semantic contract versioning, immutable
+  event envelopes, model/prediction/deployment metadata, execution adapter
+  capability protocols with a disabled-only implementation, portfolio read and
+  decision interfaces, observability/failure contracts, query-only dashboard
+  projections, and a machine-readable byte freeze of the approved Phase 7
+  scientific source/config baseline.
 - Preserved all implemented ingestion, validation, inspection, promotion, dataset, training, and evaluation interfaces covered by the full regression suite.
 
 ## IN PROGRESS
@@ -49,8 +55,18 @@
   fold-local `expansion_universe_v1`, separately labeled CORE/EXPANDING
   evaluations, bounded Gold construction, G0/C0/P0/H0 architecture runners,
   matched-coverage reporting, checkpoint/resume, and the Google Cloud runbook
-  are implemented. The existing VM remains stopped and no real multi-asset
-  Phase 7 result exists yet.
+  are implemented. Phase 7.1 re-audit corrected fold-local cross-sectional
+  context and Cal-A/Cal-B ownership, added `multiasset_targets_v2` with a full
+  post-signal decision-latency bar, and completed 35 pure race simulations. The
+  existing VM remains stopped and no real multi-asset Phase 7 result exists yet.
+  On 2026-08-25, the independent reviewer accepted canonical
+  `artifact_fingerprint_v1` as the authoritative baseline and resolved R-13.
+  The old undocumented digest remains non-comparable historical metadata only.
+  Phase 7.1B adds side-effect-free future contracts without importing them into
+  the scientific path; the approved Phase 7 source and config are byte-frozen
+  by `phase7_scientific_baseline_v1`. Local source and cloud-baseline readiness
+  gates remain passed; the actual commit/push and manual cloud run remain
+  pending.
 
 ## PHASE 7 PRE-PUSH STATUS
 
@@ -61,8 +77,14 @@ COMPLETE
 Phase 7 implementation:
 COMPLETE
 
-Phase 7 pre-push verification:
-COMPLETE
+Phase 7.1 re-audit verification:
+COMPLETE / PASS / SAFE TO COMMIT
+
+Phase 7.1B architecture foundation:
+COMPLETE / PASS / SCIENTIFIC BASELINE UNCHANGED
+
+Phase 7 cloud baseline gate:
+READY FOR CLOUD BASELINE
 
 Phase 7 real multi-asset acquisition:
 NOT RUN
@@ -76,8 +98,14 @@ MARKET DATA ONLY
 Fear & Greed collector:
 IMPLEMENTED / NOT ACTIVE IN MODEL / HISTORICAL KNOWLEDGE TIME UNVERIFIED
 
+Fear & Greed Phase 7 training:
+DISABLED
+
 Open Interest collector:
 IMPLEMENTED / FORWARD COLLECTION ONLY / NOT ACTIVE IN MODEL
+
+Open Interest Phase 7 training:
+DISABLED
 
 CryptoPanic:
 NOT IMPLEMENTED
@@ -100,6 +128,9 @@ UNUSED
 Prospective holdout:
 LOCKED / UNUSED
 
+Prospective holdout used:
+false
+
 Prospective holdout evaluation authorized:
 false
 
@@ -115,12 +146,12 @@ NOT STARTED
 
 ## NEXT
 
-- Review and commit the safe context foundation without enabling it in the
-  Phase 7 baseline.
-- Manually start the existing Google Cloud VM and follow
-  `PHASE7_CLOUD_RUNBOOK.md`: restore data, rerun checks, plan, execute the
-  guarded resume-safe batch, verify checksums/results, back up outputs, and
-  stop the VM.
+- Review the Phase 7.1/7.1B audit, risk register, baseline freeze and final
+  verification report, then commit/push only in a separately requested Git
+  action.
+- After that source is available on the existing VM, follow
+  `PHASE7_CLOUD_RUNBOOK.md` manually. Do not set
+  `PHASE7_ALLOW_CLOUD_RESEARCH=1` during ordinary local work.
 - Do not claim Phase 7 complete until the cloud research and verification are
   complete. The prospective holdout remains `LOCKED_UNUSED`, is not authorized
   for Phase 7 evaluation, and must remain unopened. No account access,
@@ -148,7 +179,27 @@ NOT STARTED
   month; records are `FORWARD_ONLY`, and no multi-year history is fabricated.
 - The separate context config cannot alter Phase 7 features, folds, universes,
   architectures, targets, costs, cutoff, or locked holdout.
-- For prediction row `i`, use the completed candle at `i`; reference entry at `open[i+1]`; and calculate the 60-minute target at `open[i+13]` for 5-minute data.
+- `multiasset_features_v2` labels acquisition-union context preview-only and
+  rebuilds all universe-dependent values from `fold_active_symbols` before
+  model slicing. P0 eligibility uses Cal-A only; Cal-B owns policy thresholds.
+- `multiasset_targets_v1` remains reproducible only for audit; its exact
+  next-open reference equals feature availability and is excluded from new
+  economic qualification. Configured `multiasset_targets_v2` reserves one full
+  5-minute decision-latency bar.
+- For Phase 7 prediction row `i`, use the completed candle at `i`, stamp the
+  feature at `open[i+1]`, reference entry at `open[i+2]`, and calculate the
+  60-minute target at `open[i+14]`. Phase 1–6 target versions remain unchanged.
+- `artifact_fingerprint_v1` is the authoritative preservation baseline from
+  2026-08-25. The earlier undocumented `11a00ed1...` combined digest is retained
+  only as historical metadata and is not directly comparable with canonical
+  v1.
+- `phase7_scientific_baseline_v1` is the authoritative Phase 7.1B scientific
+  source/config freeze. Future architecture services may depend on the additive
+  `crypto_ai.contracts` package, but Phase 7 scientific modules must not import
+  it. Any hash or safe-output drift is a `PHASE7_1B_CORRECTNESS_BLOCKER`.
+- Dashboard state is a read-only projection, and PAPER/SHADOW/LIVE adapter names
+  are capability declarations rather than authorizations. The only Phase 7.1B
+  implementation is disabled and cannot perform network, account, or order I/O.
 - Require every expected open from entry through target. Missing intervals invalidate the label; no row is synthesized or forward-filled.
 - Keep Phase 3 `baseline_v1` immutable, deliberately small, and causal. Future expanded features require a new version.
 - Use a chronological 70/15/15 development split and purge boundary rows whose label horizons overlap the next split.
@@ -289,6 +340,14 @@ NOT STARTED
   `git diff --check` passed. All safe Phase 7 CLI outputs matched the pre-change
   normalized baseline, all context status/plan commands used no network, and
   historical artifact inventories and fingerprints were unchanged.
+- Phase 7.1B final verification: 353 tests passed, 0 failed, 0 skipped, including
+  25 contract/baseline-freeze tests and the existing Phase 7 and control-plane
+  suites. Ruff lint, 161-file formatting, Python compilation, `uv lock --check`,
+  and `git diff --check` passed. All 20 Phase 7 scientific source/config files
+  remained byte-identical to the pre-7.1B state, and validation/plan/dry-run/
+  universe outputs matched `phase7_scientific_baseline_v1`. The read-only
+  canonical artifact fingerprint remained `ad44fe62a5bae2df4c9b21f3d39f02b2141fe4dd6db7db022bb3fe6ee62103f1`.
+  No cloud, account, private API, order, July, or holdout access occurred.
 
 ## KNOWN PROBLEMS
 

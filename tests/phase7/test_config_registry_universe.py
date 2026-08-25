@@ -30,6 +30,8 @@ def test_repository_phase7_config_is_locked_and_plannable() -> None:
     assert plan["core_universe_target_size"] == 20
     assert plan["expansion_max_symbols_per_fold"] == 10
     assert plan["total_max_symbols_per_fold"] == 30
+    assert plan["target_version"] == "multiasset_targets_v2"
+    assert plan["target_decision_latency_bars"] == 1
     assert plan["network_used"] is False
     assert plan["stages"] == ["registry", "universe", "data", "gold", "train", "report"]
 
@@ -37,6 +39,12 @@ def test_repository_phase7_config_is_locked_and_plannable() -> None:
 def test_invalid_research_boundary_is_rejected() -> None:
     with pytest.raises(ValueError, match="research cutoff is locked"):
         Phase7Config(research_cutoff=datetime(2026, 7, 2, tzinfo=UTC))
+
+
+def test_embargo_cannot_be_shorter_than_longest_target() -> None:
+    baseline = Phase7Config()
+    with pytest.raises(ValueError, match="embargo must cover"):
+        Phase7Config(schedule=baseline.schedule.model_copy(update={"embargo_minutes": 60}))
 
 
 def test_heavy_cloud_pipeline_is_environment_locked(monkeypatch: pytest.MonkeyPatch) -> None:

@@ -4,7 +4,7 @@
 
 `crypto_ai.context` is a small provider-neutral foundation for public external
 context data. It is additive to Phase 7; it does not change
-`multiasset_features_v1`, `market_context_v1`, `multiasset_targets_v1`, the
+`multiasset_features_v2`, `market_context_v2`, `multiasset_targets_v2`, the
 G0/C0/P0/H0 architecture matrix, walk-forward folds, universe membership,
 costs, thresholds, or model inputs.
 

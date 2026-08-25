@@ -75,6 +75,11 @@ MARKET_CONTEXT_COLUMNS = (
     "market_median_taker_flow_imbalance",
     "market_member_count",
 )
+CROSS_SECTIONAL_SOURCE_COLUMNS = (
+    "cross_sectional_trailing_liquidity_source",
+    "cross_sectional_volatility_source",
+    "cross_sectional_trade_intensity_source",
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -363,6 +368,80 @@ def validate_multiasset_primary_key(table: pa.Table) -> None:
         raise ValueError("duplicate multi-asset primary key (symbol, feature_time)")
 
 
+def bind_fold_cross_sectional_context(table: pa.Table) -> pa.Table:
+    """Rebuild model-facing cross-sectional context from one frozen fold universe.
+
+    The acquisition dataset can contain symbols admitted by later folds.  Its
+    preview context must therefore never be consumed by a model.  This binding
+    runs after fold eligibility filtering and replaces every universe-dependent
+    value using only rows from that fold's frozen active-symbol set.
+    """
+
+    required = {
+        "symbol",
+        "feature_time",
+        "return_5m",
+        "realized_volatility_1h",
+        "taker_flow_imbalance",
+        *CROSS_SECTIONAL_SOURCE_COLUMNS,
+        *MARKET_CONTEXT_COLUMNS,
+        "trailing_liquidity_percentile",
+        "trailing_volatility_percentile",
+        "trade_intensity_percentile",
+        "market_membership_hash",
+    }
+    missing = required - set(table.column_names)
+    if missing:
+        raise ValueError(f"fold context binding missing columns: {sorted(missing)}")
+    symbols = np.asarray(table.column("symbol").combine_chunks().to_pylist(), dtype=object)
+    feature_times = _times(table, "feature_time")
+    active = np.ones(table.num_rows, dtype=bool)
+    replacements: dict[str, np.ndarray | list[str]] = {
+        "trailing_liquidity_percentile": _cross_sectional_percentile(
+            feature_times,
+            _float_column(table, CROSS_SECTIONAL_SOURCE_COLUMNS[0]),
+            active,
+        ),
+        "trailing_volatility_percentile": _cross_sectional_percentile(
+            feature_times,
+            _float_column(table, CROSS_SECTIONAL_SOURCE_COLUMNS[1]),
+            active,
+        ),
+        "trade_intensity_percentile": _cross_sectional_percentile(
+            feature_times,
+            _float_column(table, CROSS_SECTIONAL_SOURCE_COLUMNS[2]),
+            active,
+        ),
+    }
+    market, membership = _market_context(
+        symbols,
+        feature_times,
+        active,
+        _float_column(table, "return_5m"),
+        _float_column(table, "realized_volatility_1h"),
+        _float_column(table, "taker_flow_imbalance"),
+    )
+    replacements.update(market)
+    replacements["market_membership_hash"] = [
+        hashlib.sha256("|".join(membership[int(timestamp)]).encode()).hexdigest()[:16]
+        for timestamp in feature_times
+    ]
+    result = table
+    for name, values in replacements.items():
+        result = result.set_column(result.schema.get_field_index(name), name, pa.array(values))
+    scope = pa.array(["FOLD_ACTIVE_SYMBOLS"] * result.num_rows)
+    if "cross_sectional_context_scope" in result.column_names:
+        result = result.set_column(
+            result.schema.get_field_index("cross_sectional_context_scope"),
+            "cross_sectional_context_scope",
+            scope,
+        )
+    else:
+        result = result.append_column("cross_sectional_context_scope", scope)
+    validate_multiasset_primary_key(result)
+    return result
+
+
 def generate_multiasset_features(
     candles: pa.Table,
     *,
@@ -563,11 +642,15 @@ def generate_multiasset_features(
         "feature_time": pa.array(feature_times, type=pa.timestamp("us", tz="UTC")),
         "feature_version": [FEATURE_VERSION] * table.num_rows,
         "market_context_version": [MARKET_CONTEXT_VERSION] * table.num_rows,
+        "cross_sectional_context_scope": ["ACQUISITION_UNION_PREVIEW"] * table.num_rows,
         "market_membership_hash": [
             hashlib.sha256("|".join(membership[int(timestamp)]).encode()).hexdigest()[:16]
             for timestamp in feature_times
         ],
     }
+    payload[CROSS_SECTIONAL_SOURCE_COLUMNS[0]] = trailing_liquidity
+    payload[CROSS_SECTIONAL_SOURCE_COLUMNS[1]] = arrays["seven_day_volatility"]
+    payload[CROSS_SECTIONAL_SOURCE_COLUMNS[2]] = trade_intensity
     for name in BASE_FEATURE_COLUMNS:
         payload[name] = arrays[name]
     payload.update(coin_context)

@@ -19,7 +19,8 @@ scope.
   fit using only liquidity, volatility, BTC beta/correlation, funding
   variability, trade intensity, and history known at TRAIN end.
 - P0 Per-coin: independent models only for symbols meeting minimum Train,
-  Validation, and Calibration sample gates. Ineligible symbols receive an
+  Validation, and Cal-A sample gates. Cal-B cannot determine estimator
+  availability. Ineligible symbols receive an
   explicit `PER_COIN_INELIGIBLE` reason; missing coverage is never hidden.
 - H0 Hybrid: a global model with symbol correction when adequately supported,
   otherwise a TRAIN-frozen cluster correction, otherwise the global output.
@@ -66,7 +67,8 @@ chronologically into Cal-A and Cal-B. Actual `label_end_time` purging and a
 - Train fits model parameters, symbol balancing, clusters, and liquidity tiers.
 - Validation controls LightGBM early stopping and hybrid residual structure.
 - Cal-A fits identity/linear prediction calibration.
-- Cal-B selects the fixed threshold grid globally, by cluster, or per coin.
+- Cal-B selects the fixed threshold grid globally, by cluster, or per coin; it
+  does not create/remove a P0 estimator.
 - TEST is released only after model, calibrator, and threshold identities are frozen.
 
 The permanent holdout beginning `2026-08-01T00:00:00Z` is never loaded. July
@@ -92,11 +94,13 @@ and slippage while retaining the declared taker fee. Cal-B may select a global,
 cluster, or per-coin edge threshold. Insufficient Cal-B trades produce
 `NO_TRADE`.
 
-TEST trades are non-overlapping per symbol and unleveraged. Fixed-policy stress
-preserves trade ID, entry, exit, and direction at 1.0x, 1.25x, 1.5x, and 2.0x
-costs. A separately labeled adaptive diagnostic lets the frozen policy know the
-stressed cost before eligibility, without retuning thresholds. Reports include
-asset/time concentration and MFE/MAE by liquidity tier.
+TEST trades are non-overlapping per symbol and unleveraged. Their v2 entry
+reference is the 5-minute open strictly one complete bar after feature
+availability; horizons and MFE/MAE paths begin at that reference. Fixed-policy
+stress preserves trade ID, entry, exit, and direction at 1.0x, 1.25x, 1.5x,
+and 2.0x costs. A separately labeled adaptive diagnostic lets the frozen policy
+know the stressed cost before eligibility, without retuning thresholds. Reports
+include asset/time concentration and MFE/MAE by liquidity tier.
 This is evidence for later risk research, not a TP/SL or portfolio engine.
 
 All configured tier values are labeled **RESEARCH COST ASSUMPTIONS**, not exact
@@ -117,5 +121,9 @@ out-of-sample evidence justifies its coverage and complexity. Valid conclusions
 include global generalization, cluster value, per-coin value, hybrid value, or
 no architecture generalizes reliably.
 
-No architecture is approved, qualified, or deployable until the cloud run
-finishes and its artifacts are independently verified.
+No architecture is approved, qualified, or deployable. Phase 7.1 replaced the
+configured exact-boundary target with explicitly versioned
+`multiasset_targets_v2` and deterministic timing/gap/cutoff/purge tests. The
+legacy v1 target remains reproducible but is excluded from new Phase 7 economic
+qualification. Cloud execution still requires the separate artifact/source
+review and manual authorization described in the runbook.

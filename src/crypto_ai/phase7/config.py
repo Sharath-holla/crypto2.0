@@ -13,14 +13,14 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator, model_valida
 from crypto_ai.phase5.config import CalibrationConfig, ScheduleConfig
 from crypto_ai.phase5.folds import add_calendar_months
 
-PHASE7_VERSION = "1.1.0"
+PHASE7_VERSION = "1.3.0"
 SYMBOL_REGISTRY_VERSION = "symbol_registry_v1"
 UNIVERSE_VERSION = "dual_universe_v2"
 CORE_UNIVERSE_VERSION = "core_universe_v1"
 EXPANSION_UNIVERSE_VERSION = "expansion_universe_v1"
-FEATURE_VERSION = "multiasset_features_v1"
-MARKET_CONTEXT_VERSION = "market_context_v1"
-TARGET_VERSION = "multiasset_targets_v1"
+FEATURE_VERSION = "multiasset_features_v2"
+MARKET_CONTEXT_VERSION = "market_context_v2"
+TARGET_VERSION = "multiasset_targets_v2"
 RESEARCH_CUTOFF = datetime(2026, 7, 1, tzinfo=UTC)
 PROSPECTIVE_HOLDOUT = datetime(2026, 8, 1, tzinfo=UTC)
 PROSPECTIVE_HOLDOUT_STATUS = "LOCKED_UNUSED"
@@ -144,6 +144,7 @@ class FeatureConfig(_Frozen):
 
 class TargetConfig(_Frozen):
     horizons_minutes: tuple[int, ...] = (15, 30, 60, 120)
+    decision_latency_bars: Literal[1] = 1
     target_types: tuple[Literal["raw", "volatility_normalized"], ...] = (
         "raw",
         "volatility_normalized",
@@ -273,7 +274,7 @@ class Phase7Config(_Frozen):
     models: ModelConfig = ModelConfig()
     resources: ResourceConfig = ResourceConfig()
     costs: CostConfig = CostConfig()
-    schedule: ScheduleConfig = ScheduleConfig()
+    schedule: ScheduleConfig = ScheduleConfig(embargo_minutes=120)
     calibration: CalibrationConfig = CalibrationConfig()
 
     @field_validator("data_start", "research_cutoff", "prospective_holdout_start")
@@ -321,6 +322,8 @@ class Phase7Config(_Frozen):
             raise ValueError("Core universe selection cutoff must precede the research cutoff")
         if self.universe.fixture_mode:
             raise ValueError("fixture_mode is not valid in the Phase 7 research configuration")
+        if self.schedule.embargo_minutes < max(self.targets.horizons_minutes):
+            raise ValueError("Phase 7 embargo must cover the longest configured target horizon")
         return self
 
     @property

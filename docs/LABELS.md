@@ -59,13 +59,19 @@ never feature inputs. A 5-minute TP/SL overlap is resolved with validated
 1-minute data only when ordering is unambiguous; otherwise it remains
 `AMBIGUOUS`. See `PHASE6_TARGET_RESEARCH.md` for definitions and evidence.
 
-## Phase 7 Multiasset Targets V1
+## Phase 7 Multiasset Targets V2
 
-`multiasset_targets_v1` reuses the gap-safe next-open Phase 6 return/MFE/MAE
-engine per symbol for 15m, 30m, 1h, and 2h. Phase 7 stores both the raw forward
-return and an ex-ante-volatility-normalized target. The scale is the causal
-daily volatility already present on the matching `(symbol, feature_time)` row;
-future volatility is never read.
+`multiasset_targets_v2` uses a gap-safe post-signal reference per symbol for
+15m, 30m, 1h, and 2h. If candle `i` completes at `feature_time=open[i+1]`, one
+full decision-latency bar is reserved and entry is `open[i+2]`; every horizon
+and MFE/MAE path starts there. Phase 7 stores both the raw forward return and an
+ex-ante-volatility-normalized target. The scale is the causal daily volatility
+already present on the matching `(symbol, feature_time)` row; future volatility
+is never read.
+
+The former `multiasset_targets_v1` same-boundary behavior remains callable only
+for audit reproducibility. It is not the configured Phase 7 target and no
+existing Phase 1–6 label or artifact was changed.
 
 Every label requires `label_end_time < 2026-07-01T00:00:00Z`. July and the
 August holdout are therefore absent. Normalized predictions must be multiplied
