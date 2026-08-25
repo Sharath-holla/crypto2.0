@@ -47,6 +47,9 @@ exchange changes force reconciliation before new risk.
 - Unknown, conflicting or sequence-gapped events enter reconcile-required state
   and block new exposure. Restart replays durable events, then reconciles before
   enabling commands.
+- `SystemHealth` defaults fail closed: network, freshness, reconciliation and
+  single-writer readiness require observed positive evidence, and the kill
+  switch requires explicit release.
 - A kill switch stops new intents and attempts policy-defined reduction; it must
   not falsely label positions closed before exchange confirmation.
 - Protective orders are reduce-only where the venue supports them. Stop updates

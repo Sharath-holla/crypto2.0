@@ -418,3 +418,13 @@ def test_35_unprotected_position_has_explicit_alarm_and_blocks_exposure() -> Non
     assert state.status == PositionStatus.ERROR_SAFE
     assert state.safe_error_reason == "UNPROTECTED_POSITION_QUANTITY"
     assert "POSITION_PROTECTION_UNHEALTHY" in new_exposure_blockers(SystemHealth(), state)
+
+
+def test_36_system_health_defaults_fail_closed_without_observed_evidence() -> None:
+    assert new_exposure_blockers(SystemHealth()) == (
+        "KILL_SWITCH_ACTIVE",
+        "NETWORK_DISCONNECTED",
+        "STALE_MARKET_DATA",
+        "RECONCILIATION_UNHEALTHY",
+        "SINGLE_WRITER_LEASE_MISSING",
+    )

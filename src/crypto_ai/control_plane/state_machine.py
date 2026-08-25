@@ -123,11 +123,11 @@ class AccountReconciliation:
 
 @dataclass(frozen=True, slots=True)
 class SystemHealth:
-    network_connected: bool = True
-    market_data_fresh: bool = True
-    reconciliation_healthy: bool = True
-    single_writer_lease: bool = True
-    kill_switch_active: bool = False
+    network_connected: bool = False
+    market_data_fresh: bool = False
+    reconciliation_healthy: bool = False
+    single_writer_lease: bool = False
+    kill_switch_active: bool = True
 
 
 def _digest(*values: object) -> str:
