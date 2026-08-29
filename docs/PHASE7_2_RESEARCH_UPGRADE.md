@@ -155,8 +155,8 @@ multi-engine consistency justify it.
 ## 13. Baseline-preservation rules
 
 - `configs/phase7/research_v1.toml` and every `crypto_ai.phase7` file remain
-  byte-frozen by `phase7_scientific_baseline_v1_1` after the authorized
-  onboard-boundary correctness amendment.
+  byte-frozen by `phase7_scientific_baseline_v1_2` after the authorized
+  onboard-boundary and exact interval-archive boundary correctness amendments.
 - Phase 7 modules do not import `crypto_ai.phase7_2`.
 - Phase 7.2 defaults disable micro features, competing risks, ranking,
   CatBoost/XGBoost, capture, cloud/private/live activity, leverage and Phase 8.

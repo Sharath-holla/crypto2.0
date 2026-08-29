@@ -69,6 +69,14 @@ class ArchiveObject:
         return f"{self.relative_url}.CHECKSUM"
 
 
+@dataclass(frozen=True, slots=True)
+class ArchiveCandleBounds:
+    first_open_time: datetime
+    last_open_time: datetime
+    end_exclusive: datetime
+    inspected_objects: tuple[str, ...]
+
+
 def monthly_objects(
     dataset: ArchiveDataset,
     *,
@@ -136,6 +144,7 @@ class BinanceArchiveClient:
         self._cached_object: ArchiveObject | None = None
         self._cached_candles: tuple[Candle, ...] = ()
         self._cached_metadata: dict[str, Any] | None = None
+        self._boundary_cache: dict[ArchiveObject, tuple[tuple[Candle, ...], dict[str, Any]]] = {}
 
     def __enter__(self) -> BinanceArchiveClient:
         return self
@@ -175,13 +184,83 @@ class BinanceArchiveClient:
             interval=interval,
             period=date(start.year, start.month, 1),
         )
-        if self._cached_object != archive_object:
-            captured = (ingested_at or datetime.now(UTC)).astimezone(UTC)
-            content, metadata = self._load_object(archive_object)
-            self._cached_candles = tuple(self._parse_candle_rows(content, archive_object, captured))
+        boundary = self._boundary_cache.get(archive_object)
+        if boundary is not None:
+            self._cached_candles, self._cached_metadata = boundary
             self._cached_object = archive_object
-            self._cached_metadata = metadata
+        elif self._cached_object != archive_object:
+            captured = (ingested_at or datetime.now(UTC)).astimezone(UTC)
+            self._cached_candles, self._cached_metadata = self._load_candles(
+                archive_object,
+                captured,
+            )
+            self._cached_object = archive_object
         return [row for row in self._cached_candles if start <= row.open_time < end]
+
+    def inspect_interval_bounds(
+        self,
+        *,
+        symbol: str,
+        interval: str,
+        archive_start: datetime,
+        archive_end: datetime,
+        ingested_at: datetime | None = None,
+    ) -> ArchiveCandleBounds:
+        """Verify exact outer candle bounds from official monthly archive contents."""
+
+        objects = monthly_objects(
+            self.dataset,
+            symbol=symbol,
+            interval=interval,
+            start=archive_start,
+            end=archive_end,
+        )
+        if not objects:
+            raise ArchiveNotFoundError(f"No archive months exist for {symbol} {interval}")
+        captured = (ingested_at or datetime.now(UTC)).astimezone(UTC)
+        inspected: list[str] = []
+        first_index: int | None = None
+        first_open: datetime | None = None
+        for index, archive_object in enumerate(objects):
+            inspected.append(archive_object.filename)
+            try:
+                candles, metadata = self._load_candles(archive_object, captured)
+            except ArchiveNotFoundError:
+                continue
+            if not candles:
+                continue
+            self._boundary_cache[archive_object] = (candles, metadata)
+            first_index = index
+            first_open = candles[0].open_time
+            break
+        if first_index is None or first_open is None:
+            raise ArchiveNotFoundError(f"No non-empty archive exists for {symbol} {interval}")
+
+        last_open: datetime | None = None
+        for index in range(len(objects) - 1, first_index - 1, -1):
+            archive_object = objects[index]
+            cached = self._boundary_cache.get(archive_object)
+            if cached is None:
+                inspected.append(archive_object.filename)
+                try:
+                    cached = self._load_candles(archive_object, captured)
+                except ArchiveNotFoundError:
+                    continue
+                if cached[0]:
+                    self._boundary_cache[archive_object] = cached
+            if cached[0]:
+                last_open = cached[0][-1].open_time
+                break
+        if last_open is None:
+            raise ArchiveNotFoundError(f"No final archive candle exists for {symbol} {interval}")
+        if last_open < first_open:
+            raise ValueError(f"Archive interval bounds are reversed for {symbol} {interval}")
+        return ArchiveCandleBounds(
+            first_open_time=first_open,
+            last_open_time=last_open,
+            end_exclusive=last_open + timedelta(milliseconds=interval_milliseconds(interval)),
+            inspected_objects=tuple(inspected),
+        )
 
     def source_metadata(self, start: datetime, _: datetime) -> dict[str, Any] | None:
         if self._cached_object is None or (
@@ -190,6 +269,28 @@ class BinanceArchiveClient:
         ) != (start.year, start.month):
             return None
         return dict(self._cached_metadata or {})
+
+    def _load_candles(
+        self,
+        archive_object: ArchiveObject,
+        captured: datetime,
+    ) -> tuple[tuple[Candle, ...], dict[str, Any]]:
+        content, metadata = self._load_object(archive_object)
+        candles = tuple(self._parse_candle_rows(content, archive_object, captured))
+        if candles:
+            metadata = {
+                **metadata,
+                "exact_first_open_time": candles[0].open_time.isoformat(),
+                "exact_last_open_time": candles[-1].open_time.isoformat(),
+                "exact_end_exclusive": (
+                    candles[-1].open_time
+                    + timedelta(milliseconds=interval_milliseconds(archive_object.interval))
+                ).isoformat(),
+                "archive_row_count": len(candles),
+            }
+        else:
+            metadata = {**metadata, "archive_row_count": 0}
+        return candles, metadata
 
     def _get(self, path: str) -> bytes:
         last_error: Exception | None = None

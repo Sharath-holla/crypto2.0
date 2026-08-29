@@ -9,7 +9,7 @@ import pytest
 from crypto_ai.phase7.config import Phase7Config, UniverseConfig, load_phase7_config
 from crypto_ai.phase7.fixtures import synthetic_descriptors, synthetic_registry
 from crypto_ai.phase7.pipeline import run_phase7_cloud
-from crypto_ai.phase7.registry import build_symbol_registry
+from crypto_ai.phase7.registry import SymbolRegistry, build_symbol_registry
 from crypto_ai.phase7.runner import phase7_plan
 from crypto_ai.phase7.runner import test_phase7_universe as run_universe_test
 from crypto_ai.phase7.sources import BinancePublicDiscoveryClient
@@ -183,15 +183,59 @@ def test_official_archive_discovery_uses_s3_xml_catalog_path() -> None:
               <IsTruncated>false</IsTruncated>
               <CommonPrefixes><Prefix>data/futures/um/monthly/klines/BTCUSDT/</Prefix></CommonPrefixes>
             </ListBucketResult>"""
-        else:
+        elif "/5m/" in prefix:
             body = """<?xml version="1.0"?>
             <ListBucketResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
               <IsTruncated>false</IsTruncated>
               <Contents><Key>data/futures/um/monthly/klines/BTCUSDT/5m/BTCUSDT-5m-2021-01.zip</Key></Contents>
+              <Contents><Key>data/futures/um/monthly/klines/BTCUSDT/5m/BTCUSDT-5m-2021-04.zip</Key></Contents>
+            </ListBucketResult>"""
+        else:
+            body = """<?xml version="1.0"?>
+            <ListBucketResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
+              <IsTruncated>false</IsTruncated>
+              <Contents><Key>data/futures/um/monthly/klines/BTCUSDT/1d/BTCUSDT-1d-2021-03.zip</Key></Contents>
+              <Contents><Key>data/futures/um/monthly/klines/BTCUSDT/1d/BTCUSDT-1d-2021-04.zip</Key></Contents>
             </ListBucketResult>"""
         return httpx.Response(200, text=body)
 
     with BinancePublicDiscoveryClient(transport=httpx.MockTransport(handler)) as client:
-        evidence = client.historical_evidence(intervals=("5m",))
+        evidence = client.historical_evidence(intervals=("5m", "1d"))
     assert evidence[0]["symbol"] == "BTCUSDT"
     assert evidence[0]["first_market_data_time"] == "2021-01-01T00:00:00+00:00"
+    assert evidence[0]["interval_archive_periods"] == [
+        {
+            "interval": "1d",
+            "first_month": "2021-03-01T00:00:00+00:00",
+            "last_month_exclusive": "2021-05-01T00:00:00+00:00",
+        },
+        {
+            "interval": "5m",
+            "first_month": "2021-01-01T00:00:00+00:00",
+            "last_month_exclusive": "2021-05-01T00:00:00+00:00",
+        },
+    ]
+    registry = build_symbol_registry(
+        {"symbols": []},
+        evidence,
+        observed_at=datetime(2026, 6, 1, tzinfo=UTC),
+        research_cutoff=datetime(2026, 7, 1, tzinfo=UTC),
+    )
+    record = registry.records[0]
+    daily = record.archive_period_for("1d")
+    five_minute = record.archive_period_for("5m")
+    assert daily is not None and daily.first_month == datetime(2021, 3, 1, tzinfo=UTC)
+    assert five_minute is not None
+    assert five_minute.first_month == datetime(2021, 1, 1, tzinfo=UTC)
+
+
+def test_registry_identity_remains_backward_safe_without_interval_periods() -> None:
+    registry = synthetic_registry()
+    payload = registry.model_dump(mode="json")
+    for record in payload["records"]:
+        record.pop("interval_archive_periods", None)
+
+    restored = SymbolRegistry.model_validate(payload)
+
+    assert restored.registry_hash == registry.registry_hash
+    assert all(not record.interval_archive_periods for record in restored.records)

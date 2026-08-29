@@ -42,7 +42,13 @@ def test_phase7_scientific_source_and_config_are_byte_frozen() -> None:
     expected_paths = {
         path.relative_to(ROOT).as_posix() for path in (ROOT / "src/crypto_ai/phase7").glob("*.py")
     }
-    expected_paths.add("configs/phase7/research_v1.toml")
+    expected_paths.update(
+        {
+            "configs/phase7/research_v1.toml",
+            "src/crypto_ai/data/binance/__init__.py",
+            "src/crypto_ai/data/binance/archive.py",
+        }
+    )
     assert set(source_freeze) == expected_paths
     for relative_path, expected_sha256 in source_freeze.items():
         actual = hashlib.sha256((ROOT / relative_path).read_bytes()).hexdigest()

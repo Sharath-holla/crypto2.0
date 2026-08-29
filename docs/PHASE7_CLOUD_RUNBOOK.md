@@ -147,6 +147,13 @@ view/fold/experiment has a checksum-validated checkpoint. Membership, core,
 expansion-policy, Gold, and configuration identities invalidate stale work.
 After interruption, run the identical `--resume` command.
 
+Archive acquisition resolves interval-specific exact outer bounds from the
+first and last non-empty checksum-verified monthly ZIPs. A corrected request has
+a new deterministic identity, so an earlier failed broad-range manifest remains
+as audit evidence while the corrected manifest can complete. Existing immutable
+raw ZIPs and valid overlapping Bronze partitions are reused; nothing is deleted
+or overwritten. Missing interior partitions remain hard failures.
+
 For deliberate staged execution, run in order:
 
 ```bash

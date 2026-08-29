@@ -58,6 +58,46 @@ def _transport(content: bytes, *, checksum: str | None = None) -> httpx.MockTran
     return httpx.MockTransport(handler)
 
 
+def _monthly_archive(
+    *,
+    symbol: str,
+    interval: str,
+    period: str,
+    opens: list[datetime],
+) -> bytes:
+    interval_ms = {
+        "5m": 5 * 60_000,
+        "12h": 12 * 60 * 60_000,
+        "1d": 24 * 60 * 60_000,
+    }[interval]
+    rows = []
+    for opened in opens:
+        open_ms = int(opened.timestamp() * 1_000)
+        rows.append(f"{open_ms},100,102,99,101,10,{open_ms + interval_ms - 1},1010,20,6,606,0")
+    buffer = io.BytesIO()
+    with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as archive:
+        archive.writestr(f"{symbol}-{interval}-{period}.csv", "\n".join(rows) + "\n")
+    return buffer.getvalue()
+
+
+def _boundary_transport(
+    objects: dict[str, bytes],
+    content_reads: list[str],
+) -> httpx.MockTransport:
+    def handler(request: httpx.Request) -> httpx.Response:
+        path = request.url.path
+        for filename, content in objects.items():
+            if path.endswith(f"{filename}.CHECKSUM"):
+                digest = hashlib.sha256(content).hexdigest()
+                return httpx.Response(200, content=f"{digest}  {filename}\n".encode())
+            if path.endswith(filename):
+                content_reads.append(filename)
+                return httpx.Response(200, content=content)
+        return httpx.Response(404)
+
+    return httpx.MockTransport(handler)
+
+
 def test_archive_object_urls_and_month_coverage() -> None:
     item = ArchiveObject(
         dataset=ArchiveDataset.KLINES,
@@ -161,3 +201,134 @@ def test_archive_reports_missing_official_object(tmp_path: Path) -> None:
             start=datetime(2026, 7, 1, tzinfo=UTC),
             end=datetime(2026, 7, 2, tzinfo=UTC),
         )
+
+
+def test_exact_interval_bounds_inspect_only_outer_objects_and_reuse_cache(
+    tmp_path: Path,
+) -> None:
+    symbol = "1000BTTCUSDT"
+    january_opens = [datetime(2022, 1, day, tzinfo=UTC) for day in range(26, 32)]
+    april_opens = [datetime(2022, 4, day, tzinfo=UTC) for day in range(1, 12)]
+    objects = {
+        f"{symbol}-1d-2022-01.zip": _monthly_archive(
+            symbol=symbol,
+            interval="1d",
+            period="2022-01",
+            opens=january_opens,
+        ),
+        f"{symbol}-1d-2022-04.zip": _monthly_archive(
+            symbol=symbol,
+            interval="1d",
+            period="2022-04",
+            opens=april_opens,
+        ),
+    }
+    content_reads: list[str] = []
+    transport = _boundary_transport(objects, content_reads)
+    client = BinanceArchiveClient(
+        raw_root=tmp_path,
+        metadata_client=_MetadataClient(),
+        transport=transport,
+        sleeper=lambda _: None,
+    )
+
+    bounds = client.inspect_interval_bounds(
+        symbol=symbol,
+        interval="1d",
+        archive_start=datetime(2022, 1, 1, tzinfo=UTC),
+        archive_end=datetime(2022, 5, 1, tzinfo=UTC),
+    )
+    first = client.fetch_klines(
+        symbol=symbol,
+        interval="1d",
+        start=datetime(2022, 1, 26, tzinfo=UTC),
+        end=datetime(2022, 1, 27, tzinfo=UTC),
+    )
+    last = client.fetch_klines(
+        symbol=symbol,
+        interval="1d",
+        start=datetime(2022, 4, 11, tzinfo=UTC),
+        end=datetime(2022, 4, 12, tzinfo=UTC),
+    )
+    metadata = client.source_metadata(
+        datetime(2022, 4, 11, tzinfo=UTC),
+        datetime(2022, 4, 12, tzinfo=UTC),
+    )
+    client.close()
+
+    assert bounds.first_open_time == datetime(2022, 1, 26, tzinfo=UTC)
+    assert bounds.last_open_time == datetime(2022, 4, 11, tzinfo=UTC)
+    assert bounds.end_exclusive == datetime(2022, 4, 12, tzinfo=UTC)
+    assert bounds.inspected_objects == (
+        f"{symbol}-1d-2022-01.zip",
+        f"{symbol}-1d-2022-04.zip",
+    )
+    assert len(first) == len(last) == 1
+    assert content_reads == list(bounds.inspected_objects)
+    assert metadata is not None
+    assert metadata["exact_first_open_time"] == "2022-04-01T00:00:00+00:00"
+    assert metadata["exact_last_open_time"] == "2022-04-11T00:00:00+00:00"
+
+    second = BinanceArchiveClient(
+        raw_root=tmp_path,
+        metadata_client=_MetadataClient(),
+        transport=transport,
+        sleeper=lambda _: None,
+    )
+    assert (
+        second.inspect_interval_bounds(
+            symbol=symbol,
+            interval="1d",
+            archive_start=datetime(2022, 1, 1, tzinfo=UTC),
+            archive_end=datetime(2022, 5, 1, tzinfo=UTC),
+        )
+        == bounds
+    )
+    second.close()
+    assert content_reads == list(bounds.inspected_objects)
+
+
+def test_legacy_coarse_range_probes_inward_to_interval_first_month(tmp_path: Path) -> None:
+    symbol = "LEGACYUSDT"
+    objects = {
+        f"{symbol}-1d-2022-03.zip": _monthly_archive(
+            symbol=symbol,
+            interval="1d",
+            period="2022-03",
+            opens=[datetime(2022, 3, 10, tzinfo=UTC)],
+        ),
+        f"{symbol}-1d-2022-04.zip": _monthly_archive(
+            symbol=symbol,
+            interval="1d",
+            period="2022-04",
+            opens=[datetime(2022, 4, 11, tzinfo=UTC)],
+        ),
+    }
+    content_reads: list[str] = []
+    client = BinanceArchiveClient(
+        raw_root=tmp_path,
+        metadata_client=_MetadataClient(),
+        transport=_boundary_transport(objects, content_reads),
+        sleeper=lambda _: None,
+    )
+
+    bounds = client.inspect_interval_bounds(
+        symbol=symbol,
+        interval="1d",
+        archive_start=datetime(2022, 1, 1, tzinfo=UTC),
+        archive_end=datetime(2022, 5, 1, tzinfo=UTC),
+    )
+    client.close()
+
+    assert bounds.first_open_time == datetime(2022, 3, 10, tzinfo=UTC)
+    assert bounds.end_exclusive == datetime(2022, 4, 12, tzinfo=UTC)
+    assert bounds.inspected_objects == (
+        f"{symbol}-1d-2022-01.zip",
+        f"{symbol}-1d-2022-02.zip",
+        f"{symbol}-1d-2022-03.zip",
+        f"{symbol}-1d-2022-04.zip",
+    )
+    assert content_reads == [
+        f"{symbol}-1d-2022-03.zip",
+        f"{symbol}-1d-2022-04.zip",
+    ]

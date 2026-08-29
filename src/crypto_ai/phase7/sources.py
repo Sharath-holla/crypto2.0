@@ -113,6 +113,7 @@ class BinancePublicDiscoveryClient:
                 continue
             months: list[datetime] = []
             available: list[str] = []
+            interval_archive_periods: list[dict[str, str]] = []
             for interval in intervals:
                 keys = self.monthly_keys(symbol, interval)
                 parsed: list[datetime] = []
@@ -130,6 +131,13 @@ class BinancePublicDiscoveryClient:
                 if parsed:
                     months.extend(parsed)
                     available.append(interval)
+                    interval_archive_periods.append(
+                        {
+                            "interval": interval,
+                            "first_month": min(parsed).isoformat(),
+                            "last_month_exclusive": _next_month(max(parsed)).isoformat(),
+                        }
+                    )
             if not months:
                 continue
             first = min(months)
@@ -147,6 +155,10 @@ class BinancePublicDiscoveryClient:
                     "available_until": available_until.isoformat(),
                     "availability_evidence": "OFFICIAL_ARCHIVE_PERIOD_EVIDENCE",
                     "available_intervals": sorted(set(available)),
+                    "interval_archive_periods": sorted(
+                        interval_archive_periods,
+                        key=lambda item: item["interval"],
+                    ),
                     "metadata_sources": [
                         "official_binance_public_archive_object_listing",
                         OFFICIAL_ARCHIVE_URL,

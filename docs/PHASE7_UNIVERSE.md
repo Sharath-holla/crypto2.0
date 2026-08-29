@@ -39,6 +39,16 @@ Archive-catalog-only bounds are labeled `OFFICIAL_ARCHIVE_PERIOD_EVIDENCE`;
 they are not presented as invented exact listing timestamps. Actual feature
 rows still require verified canonical candles.
 
+The registry also preserves coarse monthly catalog coverage independently for
+each required interval in `interval_archive_periods`. Before a candle-family
+download, the archive reader verifies the first and last non-empty official
+monthly ZIPs and derives exact outer bounds from their candle rows. The start is
+the first open time and the exclusive end is one interval after the last open
+time. This removes only absent outer partitions; onboard metadata can make the
+start later, and the normal downloader still rejects every missing interior
+partition. Inactive and delisted symbols follow the same rule and are never
+silently skipped.
+
 ## Point-in-time existence
 
 A symbol exists at time `t` only when:

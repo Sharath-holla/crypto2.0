@@ -10,7 +10,7 @@ import numpy as np
 import pyarrow as pa
 
 from crypto_ai.config import BinanceSettings, load_binance_settings
-from crypto_ai.data.binance import BinanceArchiveClient, BinanceRestClient
+from crypto_ai.data.binance import ArchiveCandleBounds, BinanceArchiveClient, BinanceRestClient
 from crypto_ai.data.ingestion import DownloadRequest, HistoricalDownloader
 from crypto_ai.data.ingestion.manifest import read_manifest
 from crypto_ai.data.quality.engine import QualityEngine
@@ -118,6 +118,7 @@ def plan_candle_download_request(
     interval: str,
     start: datetime,
     end: datetime,
+    exact_bounds: ArchiveCandleBounds | None = None,
 ) -> DownloadRequest | None:
     """Plan a bounded request while retaining the candle containing onboard time."""
 
@@ -125,9 +126,24 @@ def plan_candle_download_request(
     requested_end = end.astimezone(UTC)
     symbol_start = max(requested_start, record.candle_available_from(interval))
     symbol_end = min(requested_end, record.available_until or requested_end)
+    if exact_bounds is not None:
+        symbol_start = max(symbol_start, exact_bounds.first_open_time)
+        symbol_end = min(symbol_end, exact_bounds.end_exclusive)
     if symbol_start >= symbol_end:
         return None
     return DownloadRequest(start=symbol_start, end=symbol_end)
+
+
+def _interval_archive_range(
+    record: SymbolRecord,
+    *,
+    interval: str,
+    requested_end: datetime,
+) -> tuple[datetime, datetime]:
+    period = record.archive_period_for(interval)
+    if period is not None:
+        return period.first_month, period.last_month_exclusive
+    return record.available_from, record.available_until or requested_end.astimezone(UTC)
 
 
 def acquire_candle_family(
@@ -148,13 +164,13 @@ def acquire_candle_family(
     manifests: dict[str, str] = {}
     for position, symbol in enumerate(symbols, start=1):
         record = records[symbol]
-        request = plan_candle_download_request(
+        coarse_request = plan_candle_download_request(
             record,
             interval=interval,
             start=start,
             end=end,
         )
-        if request is None:
+        if coarse_request is None:
             continue
         settings = _candle_settings(
             config,
@@ -170,6 +186,26 @@ def acquire_candle_family(
             max_retries=settings.max_retries,
             retry_base_seconds=settings.retry_base_seconds,
         ) as client:
+            archive_start, archive_end = _interval_archive_range(
+                record,
+                interval=interval,
+                requested_end=end,
+            )
+            exact_bounds = client.inspect_interval_bounds(
+                symbol=symbol,
+                interval=interval,
+                archive_start=archive_start,
+                archive_end=archive_end,
+            )
+            request = plan_candle_download_request(
+                record,
+                interval=interval,
+                start=start,
+                end=end,
+                exact_bounds=exact_bounds,
+            )
+            if request is None:
+                continue
             bronze_manifest = HistoricalDownloader(settings, client).download(request)
         manifests[symbol] = str(_promote_candles(config, paths, bronze_manifest).resolve())
     return manifests

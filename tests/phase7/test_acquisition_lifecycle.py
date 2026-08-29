@@ -4,6 +4,7 @@ from datetime import UTC, datetime, timedelta
 
 import pytest
 
+from crypto_ai.data.binance import ArchiveCandleBounds
 from crypto_ai.phase7.acquisition import plan_candle_download_request
 from crypto_ai.phase7.config import UniverseConfig
 from crypto_ai.phase7.registry import SymbolRecord, build_symbol_registry
@@ -39,6 +40,15 @@ def _record(*, onboard_date: datetime | None, available_from: datetime) -> Symbo
         research_cutoff=RESEARCH_CUTOFF,
     )
     return registry.records[0]
+
+
+def _exact_bounds(first: datetime, last: datetime, interval: timedelta) -> ArchiveCandleBounds:
+    return ArchiveCandleBounds(
+        first_open_time=first,
+        last_open_time=last,
+        end_exclusive=last + interval,
+        inspected_objects=("first.zip", "last.zip"),
+    )
 
 
 @pytest.mark.parametrize(
@@ -119,3 +129,112 @@ def test_later_onboard_date_prevents_causal_pre_listing_eligibility() -> None:
     assert record.history_days_at(before_onboard) == 0.0
     expected_history = (record.last_market_data_time - ONBOARD_DATE).total_seconds() / 86_400
     assert record.history_days == pytest.approx(expected_history)
+
+
+@pytest.mark.parametrize(
+    ("interval", "first", "last", "duration"),
+    [
+        (
+            "1d",
+            datetime(2022, 1, 26, tzinfo=UTC),
+            datetime(2022, 4, 11, tzinfo=UTC),
+            timedelta(days=1),
+        ),
+        (
+            "12h",
+            datetime(2022, 1, 26, 12, tzinfo=UTC),
+            datetime(2022, 4, 11, 12, tzinfo=UTC),
+            timedelta(hours=12),
+        ),
+        (
+            "5m",
+            datetime(2022, 1, 26, 0, 5, tzinfo=UTC),
+            datetime(2022, 4, 11, 23, 55, tzinfo=UTC),
+            timedelta(minutes=5),
+        ),
+    ],
+)
+def test_exact_interval_bounds_trim_only_partial_outer_months(
+    interval: str,
+    first: datetime,
+    last: datetime,
+    duration: timedelta,
+) -> None:
+    record = _record(onboard_date=None, available_from=datetime(2022, 1, 1, tzinfo=UTC))
+    bounds = _exact_bounds(first, last, duration)
+
+    request = plan_candle_download_request(
+        record,
+        interval=interval,
+        start=datetime(2022, 1, 1, tzinfo=UTC),
+        end=datetime(2022, 5, 1, tzinfo=UTC),
+        exact_bounds=bounds,
+    )
+
+    assert request is not None
+    assert request.start_utc == first
+    assert request.end_utc == last + duration
+
+
+def test_exact_data_start_wins_when_onboard_precedes_verified_interval_rows() -> None:
+    record = _record(
+        onboard_date=datetime(2022, 1, 10, tzinfo=UTC),
+        available_from=datetime(2022, 1, 1, tzinfo=UTC),
+    )
+    exact_start = datetime(2022, 1, 26, tzinfo=UTC)
+
+    request = plan_candle_download_request(
+        record,
+        interval="1d",
+        start=datetime(2022, 1, 1, tzinfo=UTC),
+        end=datetime(2022, 5, 1, tzinfo=UTC),
+        exact_bounds=_exact_bounds(
+            exact_start,
+            datetime(2022, 4, 11, tzinfo=UTC),
+            timedelta(days=1),
+        ),
+    )
+
+    assert request is not None
+    assert request.start_utc == exact_start
+
+
+def test_later_onboard_bucket_still_wins_over_exact_archive_start() -> None:
+    record = _record(onboard_date=ONBOARD_DATE, available_from=COARSE_ARCHIVE_START)
+
+    request = plan_candle_download_request(
+        record,
+        interval="1d",
+        start=COARSE_ARCHIVE_START,
+        end=datetime(2025, 7, 1, tzinfo=UTC),
+        exact_bounds=_exact_bounds(
+            datetime(2025, 6, 1, tzinfo=UTC),
+            datetime(2025, 6, 30, tzinfo=UTC),
+            timedelta(days=1),
+        ),
+    )
+
+    assert request is not None
+    assert request.start_utc == datetime(2025, 6, 5, tzinfo=UTC)
+
+
+@pytest.mark.parametrize("status", ["INACTIVE", "TRADING"])
+def test_exact_bounds_do_not_filter_symbols_by_current_status(status: str) -> None:
+    record = _record(onboard_date=None, available_from=datetime(2022, 1, 1, tzinfo=UTC))
+    record = record.model_copy(update={"current_status": status})
+
+    request = plan_candle_download_request(
+        record,
+        interval="1d",
+        start=datetime(2022, 1, 1, tzinfo=UTC),
+        end=datetime(2022, 5, 1, tzinfo=UTC),
+        exact_bounds=_exact_bounds(
+            datetime(2022, 1, 26, tzinfo=UTC),
+            datetime(2022, 4, 11, tzinfo=UTC),
+            timedelta(days=1),
+        ),
+    )
+
+    assert request is not None
+    assert request.start_utc == datetime(2022, 1, 26, tzinfo=UTC)
+    assert request.end_utc == datetime(2022, 4, 12, tzinfo=UTC)

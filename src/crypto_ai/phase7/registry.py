@@ -67,6 +67,41 @@ class CoverageSummary(_Frozen):
         return self
 
 
+class IntervalArchivePeriod(_Frozen):
+    """Coarse official monthly-object coverage for one candle interval."""
+
+    interval: str
+    first_month: datetime
+    last_month_exclusive: datetime
+
+    @field_validator("interval")
+    @classmethod
+    def normalize_interval(cls, value: str) -> str:
+        normalized = value.strip()
+        interval_milliseconds(normalized)
+        return normalized
+
+    @field_validator("first_month", "last_month_exclusive", mode="before")
+    @classmethod
+    def normalize_time(cls, value: object) -> datetime:
+        normalized = _utc(value)  # type: ignore[arg-type]
+        if normalized is None:
+            raise ValueError("interval archive period timestamps are required")
+        return normalized
+
+    @model_validator(mode="after")
+    def validate_period(self) -> Self:
+        if self.first_month.day != 1 or self.first_month.time() != datetime.min.time():
+            raise ValueError("first archive month must begin at UTC month start")
+        if (
+            self.last_month_exclusive.day != 1
+            or self.last_month_exclusive.time() != datetime.min.time()
+            or self.last_month_exclusive <= self.first_month
+        ):
+            raise ValueError("last archive month must be a later exclusive UTC month start")
+        return self
+
+
 class SymbolRecord(_Frozen):
     symbol: str
     base_asset: str
@@ -83,6 +118,7 @@ class SymbolRecord(_Frozen):
     available_until: datetime | None = None
     history_days: float = Field(ge=0)
     available_intervals: tuple[str, ...]
+    interval_archive_periods: tuple[IntervalArchivePeriod, ...] = ()
     coverage_5m: CoverageSummary = CoverageSummary()
     coverage_12h: CoverageSummary = CoverageSummary()
     coverage_1d: CoverageSummary = CoverageSummary()
@@ -126,6 +162,11 @@ class SymbolRecord(_Frozen):
             raise ValueError("available_from cannot follow first verified market data")
         if self.available_until and self.available_until <= self.available_from:
             raise ValueError("available_until must follow available_from")
+        period_intervals = tuple(item.interval for item in self.interval_archive_periods)
+        if period_intervals != tuple(sorted(set(period_intervals))):
+            raise ValueError("interval archive periods must be unique and interval-sorted")
+        if not set(period_intervals).issubset(self.available_intervals):
+            raise ValueError("interval archive periods require matching available intervals")
         return self
 
     def exists_at(self, timestamp: datetime) -> bool:
@@ -160,6 +201,12 @@ class SymbolRecord(_Frozen):
         value = _utc(timestamp)
         assert value is not None
         return max(0.0, (value - self.causal_available_from).total_seconds() / 86_400)
+
+    def archive_period_for(self, interval: str) -> IntervalArchivePeriod | None:
+        return next(
+            (item for item in self.interval_archive_periods if item.interval == interval),
+            None,
+        )
 
 
 class SymbolRegistry(_Frozen):
@@ -196,11 +243,17 @@ class SymbolRegistry(_Frozen):
 
 
 def registry_identity(records: tuple[SymbolRecord, ...], research_cutoff: datetime) -> str:
+    serialized_records: list[dict[str, Any]] = []
+    for record in records:
+        payload = record.model_dump(mode="json")
+        if not record.interval_archive_periods:
+            payload.pop("interval_archive_periods", None)
+        serialized_records.append(payload)
     return stable_hash(
         {
             "version": SYMBOL_REGISTRY_VERSION,
             "research_cutoff": _utc(research_cutoff),
-            "records": [record.model_dump(mode="json") for record in records],
+            "records": serialized_records,
         }
     )
 
@@ -277,6 +330,15 @@ def build_symbol_registry(
             )
         if not interval_values:
             interval_values = ("5m",)
+        interval_archive_periods = tuple(
+            sorted(
+                (
+                    IntervalArchivePeriod.model_validate(item)
+                    for item in evidence.get("interval_archive_periods", ())
+                ),
+                key=lambda item: item.interval,
+            )
+        )
         sources = tuple(
             sorted(
                 set(evidence.get("metadata_sources", ()))
@@ -305,6 +367,7 @@ def build_symbol_registry(
                 (effective_last - max(first, onboard or first)).total_seconds() / 86_400,
             ),
             available_intervals=interval_values,
+            interval_archive_periods=interval_archive_periods,
             coverage_5m=_coverage(evidence.get("coverage_5m")),
             coverage_12h=_coverage(evidence.get("coverage_12h")),
             coverage_1d=_coverage(evidence.get("coverage_1d")),

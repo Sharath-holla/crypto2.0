@@ -1,4 +1,5 @@
 from crypto_ai.data.binance.archive import (
+    ArchiveCandleBounds,
     ArchiveDataset,
     ArchiveFrequency,
     ArchiveNotFoundError,
@@ -9,6 +10,7 @@ from crypto_ai.data.binance.archive import (
 from crypto_ai.data.binance.client import BinanceAPIError, BinanceRestClient
 
 __all__ = [
+    "ArchiveCandleBounds",
     "ArchiveDataset",
     "ArchiveFrequency",
     "ArchiveNotFoundError",
