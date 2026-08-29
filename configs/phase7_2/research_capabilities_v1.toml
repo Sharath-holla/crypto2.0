@@ -1,0 +1,51 @@
+[phase7_2]
+config_version = "phase7_2_capabilities_v1"
+baseline_configuration_hash = "68e4b39899f8c9f0542d227b"
+baseline_feature_version = "multiasset_features_v2"
+baseline_feature_count = 54
+baseline_target_version = "multiasset_targets_v2"
+baseline_decision_latency_bars = 1
+baseline_architectures = ["G0", "C0", "P0", "H0"]
+baseline_fold_count = 16
+baseline_training_interval = "5m"
+research_cutoff = 2026-07-01T00:00:00Z
+july_2026_used = false
+prospective_holdout_start = 2026-08-01T00:00:00Z
+prospective_holdout_status = "LOCKED_UNUSED"
+prospective_holdout_used = false
+prospective_holdout_evaluation_authorized = false
+fear_greed_training_enabled = false
+open_interest_historical_training_enabled = false
+cloud_execution_enabled = false
+private_binance_enabled = false
+live_orders_enabled = false
+leverage_enabled = false
+phase8_enabled = false
+
+[phase7_2.micro_1m_context]
+enabled = false
+research_only = true
+schema_version = "micro_1m_context_v1"
+training_row_interval = "5m"
+pilot_symbols = ["BTCUSDT", "ETHUSDT"]
+
+[phase7_2.competing_risk]
+enabled = false
+research_only = true
+target_version = "competing_risk_targets_v1"
+
+[phase7_2.ranking]
+enabled = false
+research_only = true
+dataset_version = "cross_asset_ranking_v1"
+membership_source = "fold_active_symbols"
+
+[phase7_2.tree_challengers]
+catboost_enabled = false
+xgboost_enabled = false
+training_enabled = false
+
+[phase7_2.prospective_capture]
+enabled = false
+network_enabled = false
+collector_started = false

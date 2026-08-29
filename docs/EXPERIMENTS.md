@@ -259,3 +259,23 @@ cross-sectional metrics and Cal-B-selected liquidity-cost economics.
 The only honest current conclusion is **NO QUALIFIED MODEL / CLOUD RESEARCH
 PENDING**. `PHASE7_RESULTS.md` must not be created until the real cloud run and
 artifact verification finish.
+
+## Phase 7.2 future trial registry
+
+Phase 7.2 prepares trial identities but runs none. Every future declaration
+must record `trial_family`, hypothesis, exact feature/target/model changes,
+primary metric, promotion rule, random seed, data manifest, universe and cost
+assumptions. Failed trials remain registered.
+
+| Family | Registered members | Current status |
+|---|---|---|
+| `P7_BASELINE_TREE` | Ridge; G0/C0/P0/H0 LightGBM | first cloud run pending |
+| `P7_TREE_CHALLENGERS` | CatBoost; XGBoost | disabled / not benchmarked |
+| `P7_MICRO_1M` | 5m baseline; same rows plus `micro_1m_context_v1` | disabled / BTC+ETH pilot not run |
+| `P7_TARGET_CHALLENGERS` | `multiasset_targets_v2`; `competing_risk_targets_v1` | v2 baseline frozen; challenger not trained |
+| `P7_RANKING` | regression-score ranking; direct LambdaMART ranking | disabled / label not selected |
+| `P8_TEMPORAL` | reserved only | not authorized |
+
+All comparisons use identical `ModelComparisonKey` intersections and report
+native plus matched coverage. The experiment order and promotion gates are in
+`PHASE7_2_EXPERIMENT_ROADMAP.md` and `PHASE7_2_PROMOTION_POLICY.md`.

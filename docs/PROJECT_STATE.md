@@ -46,6 +46,13 @@
   decision interfaces, observability/failure contracts, query-only dashboard
   projections, and a machine-readable byte freeze of the approved Phase 7
   scientific source/config baseline.
+- Phase 7.2 capability foundation: isolated `canonical_market_1m_v1`, strict
+  completed-window 1m-to-5m aggregation, disabled `micro_1m_context_v1`,
+  competing-risk/ambiguity contracts, fold-active ranking groups,
+  interpretable monitor-only OOD, matched tree-challenger interfaces,
+  prospective OI/BBO/depth/liquidation/metadata/EventContext schemas, trial
+  declarations and predeclared promotion/cost controls. These capabilities are
+  prepared but inactive; no new research result or qualified model exists.
 - Preserved all implemented ingestion, validation, inspection, promotion, dataset, training, and evaluation interfaces covered by the full regression suite.
 
 ## IN PROGRESS
@@ -65,8 +72,8 @@
   Phase 7.1B adds side-effect-free future contracts without importing them into
   the scientific path; the approved Phase 7 source and config are byte-frozen
   by `phase7_scientific_baseline_v1`. Local source and cloud-baseline readiness
-  gates remain passed; the actual commit/push and manual cloud run remain
-  pending.
+  gates remain passed. Phase 7.2 adds only disabled research capabilities in a
+  separate namespace. The manual cloud run remains pending.
 
 ## PHASE 7 PRE-PUSH STATUS
 
@@ -82,6 +89,9 @@ COMPLETE / PASS / SAFE TO COMMIT
 
 Phase 7.1B architecture foundation:
 COMPLETE / PASS / SCIENTIFIC BASELINE UNCHANGED
+
+Phase 7.2 capabilities:
+PREPARED LOCALLY / DISABLED / SCIENTIFIC BASELINE UNCHANGED
 
 Phase 7 cloud baseline gate:
 READY FOR CLOUD BASELINE
@@ -106,6 +116,18 @@ IMPLEMENTED / FORWARD COLLECTION ONLY / NOT ACTIVE IN MODEL
 
 Open Interest Phase 7 training:
 DISABLED
+
+1m enhancement:
+NOT PROVEN / DISABLED
+
+Competing-risk target:
+NOT PROVEN / DISABLED
+
+Ranking model:
+NOT PROVEN / DISABLED
+
+CatBoost/XGBoost:
+NOT YET BENCHMARKED / DISABLED
 
 CryptoPanic:
 NOT IMPLEMENTED
@@ -147,8 +169,9 @@ NOT STARTED
 ## NEXT
 
 - Review the Phase 7.1/7.1B audit, risk register, baseline freeze and final
-  verification report, then commit/push only in a separately requested Git
-  action.
+- Review the Phase 7.2 capability upgrade, adoption matrix, risk register and
+  final verification report, then commit/push only in a separately requested
+  Git action.
 - After that source is available on the existing VM, follow
   `PHASE7_CLOUD_RUNBOOK.md` manually. Do not set
   `PHASE7_ALLOW_CLOUD_RESEARCH=1` during ordinary local work.
@@ -197,6 +220,16 @@ NOT STARTED
   source/config freeze. Future architecture services may depend on the additive
   `crypto_ai.contracts` package, but Phase 7 scientific modules must not import
   it. Any hash or safe-output drift is a `PHASE7_1B_CORRECTNESS_BLOCKER`.
+- Phase 7.2 remains an additive namespace. The first cloud baseline stays 5m,
+  54 features, `multiasset_targets_v2`, one-bar latency, 16 folds and
+  G0/C0/P0/H0 LightGBM. `micro_1m_context_v1`, competing risks, ranking,
+  CatBoost/XGBoost, prospective capture and every Phase 8 model are disabled.
+- One-minute information may later be aggregated into matched 5m rows for a
+  BTC/ETH pilot. It must demonstrate incremental OOS value before symbol or
+  history expansion; full-universe 1m training is not authorized.
+- Prospective market records use event/receive/availability time and explicit
+  missing/stale/invalid/provider-error states. OI remains forward-only and book,
+  depth, liquidation, metadata and EventContext collectors were not started.
 - Dashboard state is a read-only projection, and PAPER/SHADOW/LIVE adapter names
   are capability declarations rather than authorizations. The only Phase 7.1B
   implementation is disabled and cannot perform network, account, or order I/O.
@@ -348,6 +381,14 @@ NOT STARTED
   universe outputs matched `phase7_scientific_baseline_v1`. The read-only
   canonical artifact fingerprint remained `ad44fe62a5bae2df4c9b21f3d39f02b2141fe4dd6db7db022bb3fe6ee62103f1`.
   No cloud, account, private API, order, July, or holdout access occurred.
+- Phase 7.2 final local verification: 400 tests passed, 0 failed, 0 skipped,
+  including 46 focused capability/non-interference tests. Ruff lint, 178-file
+  formatting, Python compilation, `uv lock --check`, safe validation/plan/
+  dry-run/test-universe and `git diff --check` passed. The Phase 7 hash remains
+  `68e4b39899f8c9f0542d227b`, and the accepted artifact fingerprint remains
+  `ad44fe62a5bae2df4c9b21f3d39f02b2141fe4dd6db7db022bb3fe6ee62103f1`.
+  No capability was activated and no cloud, network collection, private API,
+  order, July, holdout, leverage or Phase 8 activity occurred.
 
 ## KNOWN PROBLEMS
 
