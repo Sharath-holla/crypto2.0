@@ -1,6 +1,6 @@
 [phase7_2]
 config_version = "phase7_2_capabilities_v1"
-baseline_configuration_hash = "68e4b39899f8c9f0542d227b"
+baseline_configuration_hash = "cc550337f1f4ee4654124bf6"
 baseline_feature_version = "multiasset_features_v2"
 baseline_feature_count = 54
 baseline_target_version = "multiasset_targets_v2"

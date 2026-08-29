@@ -27,7 +27,7 @@ The authoritative baseline is:
 |---|---|
 | Baseline identity | `phase7_scientific_baseline_v1` |
 | Phase 7 version | `1.3.0` |
-| Configuration hash | `68e4b39899f8c9f0542d227b` |
+| Configuration hash | `cc550337f1f4ee4654124bf6` |
 | Feature contract | `multiasset_features_v2` |
 | Market context contract | `market_context_v2` |
 | Target contract | `multiasset_targets_v2` |
@@ -44,6 +44,10 @@ The authoritative baseline is:
 | Holdout used | `false` |
 | Holdout evaluation authorized | `false` |
 | Phase 7 model qualification | NONE |
+
+Phase 7.2.1 corrected path serialization in the authoritative configuration
+identity. The former `68e4b39899f8c9f0542d227b` value is retained only as
+historical Windows-host metadata; it is not a portable semantic identity.
 
 The same manifest records the reviewer-accepted canonical
 `artifact_fingerprint_v1` values. The source freeze is distinct from the

@@ -385,10 +385,18 @@ NOT STARTED
   including 46 focused capability/non-interference tests. Ruff lint, 178-file
   formatting, Python compilation, `uv lock --check`, safe validation/plan/
   dry-run/test-universe and `git diff --check` passed. The Phase 7 hash remains
-  `68e4b39899f8c9f0542d227b`, and the accepted artifact fingerprint remains
+  `68e4b39899f8c9f0542d227b` on the audit's Windows host, and the accepted
+  artifact fingerprint remains
   `ad44fe62a5bae2df4c9b21f3d39f02b2141fe4dd6db7db022bb3fe6ee62103f1`.
   No capability was activated and no cloud, network collection, private API,
   order, July, holdout, leverage or Phase 8 activity occurred.
+- Phase 7.2.1 replaces that host-dependent path serialization with canonical
+  POSIX logical paths at the authoritative Phase 7 configuration-identity
+  layer. The cross-platform hash is `cc550337f1f4ee4654124bf6`; the old
+  `68e4b39899f8c9f0542d227b` is historical Windows metadata only. Actual
+  label-end purging proves the 125-minute maximum feature-to-label span at
+  every boundary, while the separate 120-minute next-segment embargo remains
+  correct. No model-facing scientific value or row assignment changed.
 
 ## KNOWN PROBLEMS
 

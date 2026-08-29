@@ -5,7 +5,7 @@ import json
 import os
 import tomllib
 from datetime import UTC, datetime
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from typing import Any, Literal, Self
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
@@ -29,6 +29,12 @@ PROSPECTIVE_HOLDOUT_STATUS = "LOCKED_UNUSED"
 def stable_hash(payload: Any, *, length: int = 24) -> str:
     encoded = json.dumps(payload, sort_keys=True, separators=(",", ":"), default=str).encode()
     return hashlib.sha256(encoded).hexdigest()[:length]
+
+
+def _canonical_logical_path(value: Path) -> str:
+    """Serialize a path-typed logical value independently of the host OS."""
+
+    return PurePosixPath(str(value).replace("\\", "/")).as_posix()
 
 
 class _Frozen(BaseModel):
@@ -328,7 +334,19 @@ class Phase7Config(_Frozen):
 
     @property
     def configuration_hash(self) -> str:
-        return stable_hash(self.model_dump(mode="json"))
+        return stable_hash(self.configuration_identity_payload())
+
+    def configuration_identity_payload(self) -> dict[str, Any]:
+        """Return the semantic configuration using canonical logical paths."""
+
+        payload = self.model_dump(mode="json")
+        payload["binance_config"] = _canonical_logical_path(self.binance_config)
+        payload["quality_config"] = _canonical_logical_path(self.quality_config)
+        path_payload = dict(payload["paths"])
+        for field in ("data_root", "artifact_root", "gold_root", "checkpoint_root"):
+            path_payload[field] = _canonical_logical_path(getattr(self.paths, field))
+        payload["paths"] = path_payload
+        return payload
 
     def holdout_status_payload(self) -> dict[str, Any]:
         return {

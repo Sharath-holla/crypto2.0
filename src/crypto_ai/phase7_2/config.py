@@ -10,7 +10,7 @@ from typing import Literal, Self
 from pydantic import BaseModel, ConfigDict, field_validator, model_validator
 
 PHASE7_2_CONFIG_VERSION = "phase7_2_capabilities_v1"
-PHASE7_CONFIGURATION_HASH = "68e4b39899f8c9f0542d227b"
+PHASE7_CONFIGURATION_HASH = "cc550337f1f4ee4654124bf6"
 PHASE7_FEATURE_VERSION = "multiasset_features_v2"
 PHASE7_TARGET_VERSION = "multiasset_targets_v2"
 PHASE7_RESEARCH_CUTOFF = datetime(2026, 7, 1, tzinfo=UTC)
@@ -55,7 +55,7 @@ class ProspectiveCaptureToggle(_Frozen):
 
 class Phase72Config(_Frozen):
     config_version: Literal["phase7_2_capabilities_v1"] = PHASE7_2_CONFIG_VERSION
-    baseline_configuration_hash: Literal["68e4b39899f8c9f0542d227b"] = PHASE7_CONFIGURATION_HASH
+    baseline_configuration_hash: Literal["cc550337f1f4ee4654124bf6"] = PHASE7_CONFIGURATION_HASH
     baseline_feature_version: Literal["multiasset_features_v2"] = PHASE7_FEATURE_VERSION
     baseline_feature_count: Literal[54] = 54
     baseline_target_version: Literal["multiasset_targets_v2"] = PHASE7_TARGET_VERSION

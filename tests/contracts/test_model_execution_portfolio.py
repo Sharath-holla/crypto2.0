@@ -79,7 +79,7 @@ def test_model_contract_carries_lineage_and_cutoff_without_runtime_behavior() ->
         architecture=ModelArchitecture.G0,
         feature_contract="multiasset_features_v2",
         target_contract="multiasset_targets_v2",
-        configuration_hash="68e4b39899f8c9f0542d227b",
+        configuration_hash="cc550337f1f4ee4654124bf6",
         code_revision="dd978b9",
         artifact_sha256=DIGEST,
         input_schema_sha256=DIGEST,

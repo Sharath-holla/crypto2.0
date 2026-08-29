@@ -101,7 +101,7 @@ def test_phase7_baseline_feature_matrix_has_no_context_columns() -> None:
 def test_context_foundation_does_not_change_versioned_phase7_plan() -> None:
     config = load_phase7_config(Path("configs/phase7/research_v1.toml"))
     plan = phase7_plan(config)
-    assert config.configuration_hash == "68e4b39899f8c9f0542d227b"
+    assert config.configuration_hash == "cc550337f1f4ee4654124bf6"
     assert config.targets.decision_latency_bars == 1
     assert plan["calendar_fold_count"] == 16
     assert plan["architectures"] == ["G0", "C0", "P0", "H0"]
