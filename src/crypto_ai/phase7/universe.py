@@ -276,7 +276,7 @@ def evaluate_eligibility(
             reasons=("required_interval_archive_coverage_missing",),
             descriptor=descriptor,
         )
-    history_days = (cutoff - record.available_from).total_seconds() / 86_400
+    history_days = record.history_days_at(cutoff)
     if descriptor is None or history_days < config.minimum_history_days:
         return EligibilityDecision(
             symbol=record.symbol,
@@ -391,7 +391,7 @@ def select_core_universe(
         train_end=cutoff,
         config=config,
         candidate_symbols={
-            record.symbol for record in registry.records if record.available_from < cutoff
+            record.symbol for record in registry.records if record.causal_available_from < cutoff
         },
     )
     eligible = [
@@ -584,8 +584,8 @@ def select_fold_active_universe(
         record.symbol
         for record in registry.records
         if record.symbol not in core_universe.symbols
-        and record.available_from >= core_universe.selection_cutoff
-        and record.available_from < cutoff
+        and record.causal_available_from >= core_universe.selection_cutoff
+        and record.causal_available_from < cutoff
     }
     expansion_decisions = fold_local_eligibility(
         registry,
@@ -639,13 +639,13 @@ def select_fold_active_universe(
             reason = "expansion_fold_cap"
         else:
             reason = ";".join(decision.reasons) or decision.status.value.lower()
-        history_days = (cutoff - record.available_from).total_seconds() / 86_400
+        history_days = record.history_days_at(cutoff)
         members.append(
             FoldUniverseMember(
                 fold_id=fold_id,
                 symbol=symbol,
                 source=source,  # type: ignore[arg-type]
-                available_from=record.available_from,
+                available_from=record.causal_available_from,
                 history_days_as_of_fold=history_days,
                 age_bucket=cold_start_age_bucket(history_days, config.age_bucket_edges_days),
                 liquidity_as_of_fold=(

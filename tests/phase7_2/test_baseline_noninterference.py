@@ -16,7 +16,7 @@ from crypto_ai.phase7_2 import Phase72Config
 from crypto_ai.phase7_2.config import load_phase7_2_config
 
 ROOT = Path(__file__).resolve().parents[2]
-BASELINE_MANIFEST = ROOT / "configs/contracts/phase7_scientific_baseline_v1.json"
+BASELINE_MANIFEST = ROOT / "configs/contracts" / f"{PHASE7_APPROVED_BASELINE.baseline_id}.json"
 PHASE7_2_CONFIG = ROOT / "configs/phase7_2/research_capabilities_v1.toml"
 
 

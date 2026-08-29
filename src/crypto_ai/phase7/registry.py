@@ -9,6 +9,7 @@ from typing import Any, Literal, Self
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
+from crypto_ai.domain import interval_milliseconds
 from crypto_ai.phase7.config import SYMBOL_REGISTRY_VERSION, stable_hash
 
 OFFICIAL_EXCHANGE_INFO_URL = (
@@ -17,6 +18,7 @@ OFFICIAL_EXCHANGE_INFO_URL = (
     "#exchange-information"
 )
 OFFICIAL_ARCHIVE_URL = "https://github.com/binance/binance-public-data/blob/master/README.md"
+_EPOCH = datetime(1970, 1, 1, tzinfo=UTC)
 
 
 def _utc(value: datetime | str | int | float | None) -> datetime | None:
@@ -129,9 +131,35 @@ class SymbolRecord(_Frozen):
     def exists_at(self, timestamp: datetime) -> bool:
         value = _utc(timestamp)
         assert value is not None
-        return self.available_from <= value and (
+        return self.causal_available_from <= value and (
             self.available_until is None or value < self.available_until
         )
+
+    @property
+    def causal_available_from(self) -> datetime:
+        """Exact lifecycle boundary used for point-in-time eligibility."""
+
+        return max(self.available_from, self.onboard_date or self.available_from)
+
+    def candle_available_from(self, interval: str) -> datetime:
+        """Earliest candle-open boundary supported by lifecycle evidence."""
+
+        if self.onboard_date is None:
+            return self.available_from
+        interval_us = interval_milliseconds(interval) * 1_000
+        elapsed = self.onboard_date - _EPOCH
+        elapsed_us = (
+            elapsed.days * 86_400_000_000 + elapsed.seconds * 1_000_000 + elapsed.microseconds
+        )
+        onboard_bucket = _EPOCH + timedelta(microseconds=(elapsed_us // interval_us) * interval_us)
+        return max(self.available_from, onboard_bucket)
+
+    def history_days_at(self, timestamp: datetime) -> float:
+        """Causal history duration at a timezone-aware point in time."""
+
+        value = _utc(timestamp)
+        assert value is not None
+        return max(0.0, (value - self.causal_available_from).total_seconds() / 86_400)
 
 
 class SymbolRegistry(_Frozen):
@@ -272,7 +300,10 @@ def build_symbol_registry(
             ),
             available_from=available_from,
             available_until=available_until,
-            history_days=max(0.0, (effective_last - first).total_seconds() / 86_400),
+            history_days=max(
+                0.0,
+                (effective_last - max(first, onboard or first)).total_seconds() / 86_400,
+            ),
             available_intervals=interval_values,
             coverage_5m=_coverage(evidence.get("coverage_5m")),
             coverage_12h=_coverage(evidence.get("coverage_12h")),

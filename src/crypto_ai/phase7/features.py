@@ -562,10 +562,10 @@ def generate_multiasset_features(
             continue
         current = datetime.fromtimestamp(int(timestamp) / 1_000_000, tz=UTC)
         coin_context["listing_age_days"][index] = (
-            current - record.available_from
+            current - record.causal_available_from
         ).total_seconds() / 86_400
         coin_context["history_length_days"][index] = (
-            current - record.available_from
+            current - record.causal_available_from
         ).total_seconds() / 86_400
     coin_context["trailing_liquidity_percentile"] = _cross_sectional_percentile(
         feature_times, trailing_liquidity, active

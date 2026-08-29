@@ -16,7 +16,7 @@ from crypto_ai.phase7 import (
 )
 
 ROOT = Path(__file__).resolve().parents[2]
-MANIFEST_PATH = ROOT / "configs" / "contracts" / "phase7_scientific_baseline_v1.json"
+MANIFEST_PATH = ROOT / "configs" / "contracts" / f"{PHASE7_APPROVED_BASELINE.baseline_id}.json"
 
 
 def _manifest() -> dict[str, object]:
@@ -28,6 +28,7 @@ def test_machine_readable_baseline_matches_typed_contract() -> None:
     scientific = manifest["scientific_contract"]
     assert isinstance(scientific, dict)
     assert manifest["baseline_id"] == PHASE7_APPROVED_BASELINE.baseline_id
+    assert manifest["contract_version"] == PHASE7_APPROVED_BASELINE.contract_version
     assert scientific["configuration_hash"] == PHASE7_APPROVED_BASELINE.configuration_hash
     assert scientific["target_version"] == PHASE7_APPROVED_BASELINE.target_version
     assert scientific["decision_latency_bars"] == PHASE7_APPROVED_BASELINE.decision_latency_bars

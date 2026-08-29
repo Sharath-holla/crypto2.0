@@ -143,6 +143,32 @@ def test_manifest_timestamp_range_mismatch_fails(tmp_path: Path) -> None:
     assert "manifest_timestamp_range" in _codes(report, ValidationStatus.FAIL)
 
 
+def test_empty_requested_partition_remains_a_hard_failure(tmp_path: Path) -> None:
+    manifest_path, _ = _continuous_dataset(tmp_path)
+    manifest = read_manifest(manifest_path)
+    assert manifest is not None
+    empty = manifest["partitions"][0]
+    empty.update(
+        {
+            "status": "empty",
+            "row_count": 0,
+            "file": None,
+            "sha256": None,
+            "quality": {"is_valid": False},
+        }
+    )
+    manifest["file_locations"] = [
+        record["file"] for record in manifest["partitions"] if record.get("file")
+    ]
+    manifest["row_count"] = sum(record["row_count"] for record in manifest["partitions"])
+    write_manifest(manifest_path, manifest)
+
+    report = QualityEngine().validate_manifest(manifest_path)
+
+    assert report.overall_status is ValidationStatus.FAIL
+    assert "empty_partition" in _codes(report, ValidationStatus.FAIL)
+
+
 def test_missing_manifest_referenced_file_fails(tmp_path: Path) -> None:
     manifest_path, _ = _continuous_dataset(tmp_path)
     manifest = read_manifest(manifest_path)

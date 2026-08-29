@@ -70,10 +70,11 @@
   `artifact_fingerprint_v1` as the authoritative baseline and resolved R-13.
   The old undocumented digest remains non-comparable historical metadata only.
   Phase 7.1B adds side-effect-free future contracts without importing them into
-  the scientific path; the approved Phase 7 source and config are byte-frozen
-  by `phase7_scientific_baseline_v1`. Local source and cloud-baseline readiness
-  gates remain passed. Phase 7.2 adds only disabled research capabilities in a
-  separate namespace. The manual cloud run remains pending.
+  the scientific path. The original approved source/config freeze remains
+  preserved as `phase7_scientific_baseline_v1`; the authorized pre-cloud
+  onboard-boundary correction is frozen separately by
+  `phase7_scientific_baseline_v1_1`. Phase 7.2 adds only disabled research
+  capabilities in a separate namespace. The manual cloud run remains pending.
 
 ## PHASE 7 PRE-PUSH STATUS
 
@@ -216,10 +217,12 @@ NOT STARTED
   2026-08-25. The earlier undocumented `11a00ed1...` combined digest is retained
   only as historical metadata and is not directly comparable with canonical
   v1.
-- `phase7_scientific_baseline_v1` is the authoritative Phase 7.1B scientific
-  source/config freeze. Future architecture services may depend on the additive
+- `phase7_scientific_baseline_v1_1` is the authoritative pre-cloud scientific
+  source/config freeze after the interval-aware onboard-boundary correctness
+  amendment. Its predecessor `phase7_scientific_baseline_v1` remains immutable
+  historical evidence. Future architecture services may depend on the additive
   `crypto_ai.contracts` package, but Phase 7 scientific modules must not import
-  it. Any hash or safe-output drift is a `PHASE7_1B_CORRECTNESS_BLOCKER`.
+  it. Any unreviewed hash or safe-output drift remains a correctness blocker.
 - Phase 7.2 remains an additive namespace. The first cloud baseline stays 5m,
   54 features, `multiasset_targets_v2`, one-bar latency, 16 folds and
   G0/C0/P0/H0 LightGBM. `micro_1m_context_v1`, competing risks, ranking,

@@ -153,7 +153,7 @@ def _universe_stage(
         return {
             symbol: manifest
             for symbol, manifest in discovery.items()
-            if registry_map[symbol].available_from < window_end
+            if registry_map[symbol].causal_available_from < window_end
             and (
                 registry_map[symbol].available_until is None
                 or registry_map[symbol].available_until > window_start
@@ -458,7 +458,7 @@ def _fold_descriptors(
         manifests = {
             symbol: manifest
             for symbol, manifest in data["candle_silver_manifests"]["1d"].items()
-            if registry_map[symbol].available_from < plan.train_end
+            if registry_map[symbol].causal_available_from < plan.train_end
             and (
                 registry_map[symbol].available_until is None
                 or registry_map[symbol].available_until > start

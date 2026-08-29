@@ -170,7 +170,7 @@ def build_point_in_time_descriptors(
                 ),
                 btc_beta=beta,
                 btc_correlation=correlation,
-                history_days=(cutoff - record.available_from).total_seconds() / 86_400,
+                history_days=record.history_days_at(cutoff),
                 coverage_ratio=min(1.0, len(observed_times) / expected),
                 gap_count=gap_count,
                 duplicate_count=len(rows) - len(observed_times),

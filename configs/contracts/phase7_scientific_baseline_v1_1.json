@@ -1,0 +1,86 @@
+{
+  "artifact_fingerprint": {
+    "algorithm": "artifact_fingerprint_v1",
+    "combined": {
+      "byte_count": 2875078792,
+      "file_count": 18885,
+      "sha256": "ad44fe62a5bae2df4c9b21f3d39f02b2141fe4dd6db7db022bb3fe6ee62103f1"
+    },
+    "roots": {
+      "data": {
+        "byte_count": 1955207062,
+        "file_count": 16754,
+        "sha256": "c2060c9ec37917df8cbc31eab0dd437523eaebbef01ba0e74fb5b911d6e510d2"
+      },
+      "local_artifacts": {
+        "byte_count": 919871730,
+        "file_count": 2131,
+        "sha256": "c6121785ca4d07bd6278199d706df4b9e582b4f064b299f7478c87a3d1d50af8"
+      }
+    }
+  },
+  "baseline_id": "phase7_scientific_baseline_v1_1",
+  "contract_version": "1.0.2",
+  "correctness_amendment": {
+    "causal_data_handling_corrected": true,
+    "configuration_changed": false,
+    "predecessor_baseline_id": "phase7_scientific_baseline_v1",
+    "reason": "Interval-aware onboard boundaries prevent pre-listing requests and eligibility while retaining the listing candle bucket.",
+    "scientific_contract_changed": false
+  },
+  "scientific_contract": {
+    "architectures": [
+      "G0",
+      "C0",
+      "P0",
+      "H0"
+    ],
+    "configuration_hash": "cc550337f1f4ee4654124bf6",
+    "core_universe_version": "core_universe_v1",
+    "decision_latency_bars": 1,
+    "expansion_universe_version": "expansion_universe_v1",
+    "feature_count": 54,
+    "feature_version": "multiasset_features_v2",
+    "fold_count": 16,
+    "july_2026_used": false,
+    "market_context_version": "market_context_v2",
+    "prospective_holdout_evaluation_authorized": false,
+    "prospective_holdout_start": "2026-08-01T00:00:00+00:00",
+    "prospective_holdout_status": "LOCKED_UNUSED",
+    "prospective_holdout_used": false,
+    "research_cutoff_exclusive": "2026-07-01T00:00:00+00:00",
+    "research_views": [
+      "CORE",
+      "EXPANDING"
+    ],
+    "target_horizons_minutes": [
+      15,
+      30,
+      60,
+      120
+    ],
+    "target_version": "multiasset_targets_v2"
+  },
+  "source_freeze": {
+    "configs/phase7/research_v1.toml": "75a5878cba0ca786163a347464db1d17b9f7b555875ab1624ab4f325f8344b29",
+    "src/crypto_ai/phase7/__init__.py": "ac6a1d89621ac68d2d18410f22cb3ab080414b056ddc08b09a18193f3d81ec1b",
+    "src/crypto_ai/phase7/acquisition.py": "ee37cf0056693b523226f4853e5950f46e5410780376781ceb57bcd80fd70903",
+    "src/crypto_ai/phase7/artifacts.py": "1f802c2ad766c62a7f4a83b9c2b3f288eaaaef6b363e7ae74ff4fd23e5d434c6",
+    "src/crypto_ai/phase7/config.py": "108a294d887352a7dd41bdd72c498bc36d83749bd0159289b9f2d9d3d29741c3",
+    "src/crypto_ai/phase7/economics.py": "5345589c367cea00633f1498e58915f94f5ebb13e5347acd30a09290c7b12b25",
+    "src/crypto_ai/phase7/features.py": "2bb752b76c12aabd6bf6eecdb79f0c7f1fcdeeb8657a8eb867576f7efd25da61",
+    "src/crypto_ai/phase7/fixtures.py": "c878ebc0da1df698d5f98a78edb1090e7a5ea45827e1c4796604ff67a6a4f4e7",
+    "src/crypto_ai/phase7/folds.py": "5760763b9b788a5e93609ede9610e309bfcfad1f96497cde0d00a2d3f068bca1",
+    "src/crypto_ai/phase7/gold.py": "78b7e0496bfc7168277e65b371143ba80b8141ebbc21d67cbbb79ed61820daf5",
+    "src/crypto_ai/phase7/metrics.py": "30ae63598ef80ab509f37efb3da65ce033953b0c4e87118e48221bad8e3cf47e",
+    "src/crypto_ai/phase7/models.py": "207a05fae8fa09cd38ecfb42081f2d8f73582740174f2ed05f87e8e81b6fe387",
+    "src/crypto_ai/phase7/pipeline.py": "720fddad46e000b449b62c6fae174d37049a810efb704c566d797ddec6c9bf70",
+    "src/crypto_ai/phase7/quality.py": "81a2efcb65acd68f79b20b9cd903f9443c259400af1b7e503f2fa124bf8aae54",
+    "src/crypto_ai/phase7/registry.py": "88c8f380d9052563452c2174cba45ed6a0f64cf4adaeed5b46eae7bb8affdd01",
+    "src/crypto_ai/phase7/runner.py": "824e0b2dbdd9fd6866e1b1635f415016da6121167a76faea28d63d5adc021293",
+    "src/crypto_ai/phase7/sources.py": "dbc36dc642e6acf559cd2f0268259d2510ac36fae5aa27eea637fbfe64ebca39",
+    "src/crypto_ai/phase7/targets.py": "93c5688f9906c379009102a56fb282e5bf99a622af70e38e1e50169d19095b78",
+    "src/crypto_ai/phase7/training.py": "cff9cf24c4565d41a02d3bcb81a6994b606180231015ab5b70f81f8f9de69296",
+    "src/crypto_ai/phase7/universe.py": "ba0e8214a930d49b8c7aedf46658a9a5ae025497463449c99fd83991654a25c9"
+  }
+}

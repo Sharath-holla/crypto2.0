@@ -27,7 +27,7 @@ from crypto_ai.phase4.market_data import (
 )
 from crypto_ai.phase4_1.archive_market import ingest_archive_market_data
 from crypto_ai.phase7.config import Phase7Config
-from crypto_ai.phase7.registry import SymbolRegistry
+from crypto_ai.phase7.registry import SymbolRecord, SymbolRegistry
 
 _DATE_PARTITION = re.compile(r"(?:^|/)date=(\d{4}-\d{2}-\d{2})(?:/|$)")
 
@@ -112,6 +112,24 @@ def _promote_candles(
     return result.promotion_manifest
 
 
+def plan_candle_download_request(
+    record: SymbolRecord,
+    *,
+    interval: str,
+    start: datetime,
+    end: datetime,
+) -> DownloadRequest | None:
+    """Plan a bounded request while retaining the candle containing onboard time."""
+
+    requested_start = start.astimezone(UTC)
+    requested_end = end.astimezone(UTC)
+    symbol_start = max(requested_start, record.candle_available_from(interval))
+    symbol_end = min(requested_end, record.available_until or requested_end)
+    if symbol_start >= symbol_end:
+        return None
+    return DownloadRequest(start=symbol_start, end=symbol_end)
+
+
 def acquire_candle_family(
     config: Phase7Config,
     registry: SymbolRegistry,
@@ -130,9 +148,13 @@ def acquire_candle_family(
     manifests: dict[str, str] = {}
     for position, symbol in enumerate(symbols, start=1):
         record = records[symbol]
-        symbol_start = max(start.astimezone(UTC), record.available_from)
-        symbol_end = min(end.astimezone(UTC), record.available_until or end.astimezone(UTC))
-        if symbol_start >= symbol_end:
+        request = plan_candle_download_request(
+            record,
+            interval=interval,
+            start=start,
+            end=end,
+        )
+        if request is None:
             continue
         settings = _candle_settings(
             config,
@@ -148,9 +170,7 @@ def acquire_candle_family(
             max_retries=settings.max_retries,
             retry_base_seconds=settings.retry_base_seconds,
         ) as client:
-            bronze_manifest = HistoricalDownloader(settings, client).download(
-                DownloadRequest(start=symbol_start, end=symbol_end)
-            )
+            bronze_manifest = HistoricalDownloader(settings, client).download(request)
         manifests[symbol] = str(_promote_candles(config, paths, bronze_manifest).resolve())
     return manifests
 
@@ -175,7 +195,8 @@ def acquire_discovery_daily(
         if record.quote_asset == config.universe.quote_asset
         and record.contract_type == config.universe.contract_type
         and set(config.universe.required_intervals).issubset(record.available_intervals)
-        and record.available_from < end - timedelta(days=config.universe.minimum_history_days)
+        and record.causal_available_from
+        < end - timedelta(days=config.universe.minimum_history_days)
     )
     return acquire_candle_family(
         config,
@@ -244,7 +265,7 @@ def acquire_derivative_family(
     result: dict[str, dict[str, str]] = {}
     for position, symbol in enumerate(symbols, start=1):
         record = records[symbol]
-        symbol_start = max(start, record.available_from)
+        symbol_start = max(start, record.causal_available_from)
         symbol_end = min(end, record.available_until or end)
         settings = _candle_settings(config, paths, symbol=symbol, interval="5m")
         print(
