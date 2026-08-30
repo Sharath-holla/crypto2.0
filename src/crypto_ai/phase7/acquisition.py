@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 import re
+from copy import deepcopy
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -13,7 +14,7 @@ import pyarrow as pa
 from crypto_ai.config import BinanceSettings, load_binance_settings
 from crypto_ai.data.binance import ArchiveCandleBounds, BinanceArchiveClient, BinanceRestClient
 from crypto_ai.data.ingestion import DownloadRequest, HistoricalDownloader
-from crypto_ai.data.ingestion.manifest import read_manifest
+from crypto_ai.data.ingestion.manifest import read_manifest, write_manifest
 from crypto_ai.data.quality.engine import QualityEngine
 from crypto_ai.data.quality.models import DatasetQualityReport, ValidationStatus
 from crypto_ai.data.quality.policy import load_quality_policy
@@ -32,6 +33,13 @@ from crypto_ai.phase4_1.equivalence import compare_candle_transports
 from crypto_ai.phase4_1.reconcile import reconcile_archive_with_rest
 from crypto_ai.phase7.config import Phase7Config, stable_hash
 from crypto_ai.phase7.registry import SymbolRecord, SymbolRegistry
+from crypto_ai.phase7.segments import (
+    AcquisitionOutcome,
+    AcquisitionStatus,
+    CandleFamilyAcquisition,
+    CausalDataGap,
+    ReconciliationStatus,
+)
 
 _DATE_PARTITION = re.compile(r"(?:^|/)date=(\d{4}-\d{2}-\d{2})(?:/|$)")
 logger = logging.getLogger(__name__)
@@ -89,6 +97,17 @@ class QualityGateRejected(ValueError):
         self.manifest = manifest.resolve()
         self.report = report
         super().__init__(f"Phase 7 quality gate rejected {manifest}: {report.overall_status}")
+
+
+@dataclass(frozen=True, slots=True)
+class ReconciliationAttempt:
+    corrected_manifest: Path | None = None
+    segment_source_manifest: Path | None = None
+    gaps: tuple[CausalDataGap, ...] = ()
+
+    @property
+    def identical_invalid(self) -> bool:
+        return self.segment_source_manifest is not None and bool(self.gaps)
 
 
 class _RegistryMetadata:
@@ -177,12 +196,12 @@ def _failed_market_value_partitions(report: DatasetQualityReport) -> tuple[str, 
     return tuple(sorted({str(check.partition) for check in failures}))
 
 
-def _reconcile_failed_archive_partitions(
+def _attempt_archive_reconciliation(
     config: Phase7Config,
     paths: AcquisitionPaths,
     registry: SymbolRegistry,
     rejection: QualityGateRejected,
-) -> Path | None:
+) -> ReconciliationAttempt:
     """Compose proven REST corrections for archive-only market-value failures.
 
     This is deliberately one-shot and narrow. The original archive manifest,
@@ -193,10 +212,10 @@ def _reconcile_failed_archive_partitions(
 
     manifest = read_manifest(rejection.manifest)
     if manifest is None or manifest.get("source") != "binance_public_archive":
-        return None
+        return ReconciliationAttempt()
     partition_keys = _failed_market_value_partitions(rejection.report)
     if not partition_keys:
-        return None
+        return ReconciliationAttempt()
     records = {
         str(record.get("partition_key")): record
         for record in manifest.get("partitions", [])
@@ -207,7 +226,7 @@ def _reconcile_failed_archive_partitions(
         record is None or record.get("status") != "complete" or not record.get("file")
         for record in selected
     ):
-        return None
+        return ReconciliationAttempt()
 
     symbol = str(manifest["symbol"])
     interval = str(manifest["interval"])
@@ -215,6 +234,7 @@ def _reconcile_failed_archive_partitions(
     settings = _candle_settings(config, paths, symbol=symbol, interval=interval)
     rest_manifests: list[Path] = []
     comparison_reports: list[Path] = []
+    gaps: list[CausalDataGap] = []
     with BinanceRestClient(settings) as rest:
         client = _RestReconciliationClient(rest, metadata)
         for key, record in zip(partition_keys, selected, strict=True):
@@ -239,12 +259,57 @@ def _reconcile_failed_archive_partitions(
                 output_path=comparison_path,
             )
             expected_rows = int(record.get("row_count", 0))
-            if (
-                comparison.get("equivalent") is not False
-                or comparison.get("timestamps_equal") is not True
-                or comparison.get("left_rows") != expected_rows
-                or comparison.get("right_rows") != expected_rows
-            ):
+            exact_identity = (
+                comparison.get("equivalent") is True
+                and comparison.get("timestamps_equal") is True
+                and comparison.get("left_rows") == expected_rows
+                and comparison.get("right_rows") == expected_rows
+            )
+            exact_correction = (
+                comparison.get("equivalent") is False
+                and comparison.get("timestamps_equal") is True
+                and comparison.get("left_rows") == expected_rows
+                and comparison.get("right_rows") == expected_rows
+            )
+            if exact_identity:
+                quality_report = paths.quality / f"{rejection.report.report_id}.json"
+                quarantine = paths.quarantine / f"{rejection.report.report_id}.json"
+                if not quality_report.is_file() or not quarantine.is_file():
+                    raise FileNotFoundError(
+                        "Identical invalid reconciliation is missing quality/quarantine lineage"
+                    )
+                failed_checks = tuple(
+                    sorted(
+                        {
+                            check.check_name
+                            for check in rejection.report.checks
+                            if check.status is ValidationStatus.FAIL and str(check.partition) == key
+                        }
+                    )
+                )
+                gaps.append(
+                    CausalDataGap(
+                        symbol=symbol,
+                        interval=interval,
+                        start=start,
+                        end=end,
+                        partition=key,
+                        failed_checks=failed_checks,
+                        source_manifest=str(rejection.manifest),
+                        source_manifest_sha256=file_sha256(rejection.manifest),
+                        quality_report=str(quality_report.resolve()),
+                        quality_report_sha256=file_sha256(quality_report),
+                        quarantine=str(quarantine.resolve()),
+                        quarantine_sha256=file_sha256(quarantine),
+                        rest_manifest=str(rest_manifest.resolve()),
+                        rest_manifest_sha256=file_sha256(rest_manifest),
+                        comparison_report=str(comparison_path.resolve()),
+                        comparison_report_sha256=file_sha256(comparison_path),
+                        reconciliation_status=ReconciliationStatus.IDENTICAL_INVALID,
+                    )
+                )
+                continue
+            if not exact_correction:
                 logger.error(
                     "Archive/REST reconciliation did not prove an exact-row correction",
                     extra={
@@ -255,27 +320,228 @@ def _reconcile_failed_archive_partitions(
                         "comparison_report": str(comparison_path),
                     },
                 )
-                return None
+                return ReconciliationAttempt()
             rest_manifests.append(rest_manifest)
             comparison_reports.append(comparison_path)
 
-    reconciled = reconcile_archive_with_rest(
-        rejection.manifest,
-        tuple(rest_manifests),
-        equivalence_reports=tuple(comparison_reports),
+    base_manifest = rejection.manifest
+    if rest_manifests:
+        base_manifest = reconcile_archive_with_rest(
+            rejection.manifest,
+            tuple(rest_manifests),
+            equivalence_reports=tuple(comparison_reports),
+        )
+        logger.warning(
+            "Retrying Phase 7 quality gate with proven official REST corrections",
+            extra={
+                "event": "phase7_archive_rest_reconciliation_created",
+                "symbol": symbol,
+                "interval": interval,
+                "archive_manifest": str(rejection.manifest),
+                "reconciled_manifest": str(base_manifest),
+                "partition_count": len(rest_manifests),
+            },
+        )
+    if gaps:
+        logger.error(
+            "Archive and REST contain identical structurally invalid rows",
+            extra={
+                "event": "phase7_identical_invalid_segments",
+                "symbol": symbol,
+                "interval": interval,
+                "partition_count": len(gaps),
+                "partitions": [gap.partition for gap in gaps],
+            },
+        )
+        return ReconciliationAttempt(
+            segment_source_manifest=base_manifest,
+            gaps=tuple(gaps),
+        )
+    return ReconciliationAttempt(corrected_manifest=base_manifest if rest_manifests else None)
+
+
+def _reconcile_failed_archive_partitions(
+    config: Phase7Config,
+    paths: AcquisitionPaths,
+    registry: SymbolRegistry,
+    rejection: QualityGateRejected,
+) -> Path | None:
+    """Compatibility wrapper returning only a proven corrected manifest."""
+
+    return _attempt_archive_reconciliation(config, paths, registry, rejection).corrected_manifest
+
+
+def _partition_time(record: dict[str, Any], name: str) -> datetime:
+    value = record.get(name)
+    if not isinstance(value, str):
+        raise ValueError(f"Segment partition is missing {name}")
+    parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    if parsed.tzinfo is None or parsed.utcoffset() is None:
+        raise ValueError(f"Segment partition {name} must be timezone-aware")
+    return parsed.astimezone(UTC)
+
+
+def _contiguous_partition_groups(
+    partitions: list[dict[str, Any]],
+    rejected: set[str],
+) -> tuple[tuple[dict[str, Any], ...], ...]:
+    groups: list[list[dict[str, Any]]] = []
+    current: list[dict[str, Any]] = []
+    previous_end: datetime | None = None
+    for raw_record in sorted(partitions, key=lambda item: _partition_time(item, "start")):
+        record = deepcopy(raw_record)
+        if str(record.get("partition_key")) in rejected:
+            if current:
+                groups.append(current)
+                current = []
+            previous_end = None
+            continue
+        if record.get("status") != "complete" or not record.get("file"):
+            raise ValueError("Causal segmentation requires complete source partitions")
+        start = _partition_time(record, "start")
+        end = _partition_time(record, "end")
+        if previous_end is not None and start != previous_end:
+            if current:
+                groups.append(current)
+            current = []
+        current.append(record)
+        previous_end = end
+    if current:
+        groups.append(current)
+    return tuple(tuple(group) for group in groups)
+
+
+def _segment_manifest(
+    source_manifest: Path,
+    source: dict[str, Any],
+    records: tuple[dict[str, Any], ...],
+    *,
+    position: int,
+    gaps: tuple[CausalDataGap, ...],
+) -> Path:
+    start = _partition_time(records[0], "start")
+    end = _partition_time(records[-1], "end")
+    identity = {
+        "source_manifest": str(source_manifest.resolve()),
+        "source_manifest_sha256": file_sha256(source_manifest),
+        "position": position,
+        "start": start.isoformat(),
+        "end": end.isoformat(),
+        "partitions": [str(record["partition_key"]) for record in records],
+        "gaps": [gap.model_dump(mode="json") for gap in gaps],
+        "segmenter_version": "causal_segment_quarantine_v1",
+    }
+    market = str(source.get("market", "usdm")).lower()
+    symbol = str(source["symbol"]).lower()
+    interval = str(source["interval"]).lower()
+    run_id = f"segmented-{market}-{symbol}-{interval}-{position:03d}-{stable_hash(identity)}"
+    path = source_manifest.parent / f"{run_id}.json"
+    payload = deepcopy(source)
+    payload.update(
+        {
+            "run_id": run_id,
+            "source": "binance_official_public_causal_segment",
+            "source_transport": "validated_source_segment",
+            "start": start.isoformat(),
+            "end": end.isoformat(),
+            "partitions": list(records),
+            "file_locations": [str(record["file"]) for record in records],
+            "row_count": sum(int(record.get("row_count", 0)) for record in records),
+            "segment_identity": identity,
+            "causal_segment": {
+                "position": position,
+                "half_open_range": [start.isoformat(), end.isoformat()],
+                "source_manifest": str(source_manifest.resolve()),
+                "unusable_segments": [gap.model_dump(mode="json") for gap in gaps],
+                "raw_sources_mutated": False,
+            },
+        }
     )
-    logger.warning(
-        "Retrying Phase 7 quality gate with proven official REST corrections",
-        extra={
-            "event": "phase7_archive_rest_reconciliation_created",
-            "symbol": symbol,
-            "interval": interval,
-            "archive_manifest": str(rejection.manifest),
-            "reconciled_manifest": str(reconciled),
-            "partition_count": len(partition_keys),
-        },
-    )
-    return reconciled
+    payload.pop("created_at", None)
+    payload.pop("last_updated_at", None)
+    existing = read_manifest(path)
+    if existing is not None:
+        if existing.get("segment_identity") != identity:
+            raise ValueError(f"Existing causal segment identity mismatch: {path}")
+        return path
+    write_manifest(path, payload)
+    return path
+
+
+def _promote_causal_segments(
+    config: Phase7Config,
+    paths: AcquisitionPaths,
+    attempt: ReconciliationAttempt,
+) -> Path:
+    if attempt.segment_source_manifest is None or not attempt.gaps:
+        raise ValueError("Causal segment promotion requires identical-invalid gap evidence")
+    source_manifest = attempt.segment_source_manifest.resolve()
+    source = read_manifest(source_manifest)
+    if source is None:
+        raise FileNotFoundError(source_manifest)
+    rejected = {gap.partition for gap in attempt.gaps}
+    groups = _contiguous_partition_groups(list(source.get("partitions", [])), rejected)
+    if not groups:
+        raise ValueError("Every source partition was rejected; no valid causal segment remains")
+
+    segments: list[dict[str, Any]] = []
+    for position, records in enumerate(groups, start=1):
+        bronze_segment = _segment_manifest(
+            source_manifest,
+            source,
+            records,
+            position=position,
+            gaps=attempt.gaps,
+        )
+        silver_segment = _promote_candles(config, paths, bronze_segment)
+        silver = read_manifest(silver_segment)
+        if silver is None or silver.get("quality_status") not in {"PASS", "WARN"}:
+            raise ValueError("Causal segment did not pass the unchanged quality gate")
+        segments.append(
+            {
+                "position": position,
+                "start": _partition_time(records[0], "start").isoformat(),
+                "end": _partition_time(records[-1], "end").isoformat(),
+                "bronze_manifest": str(bronze_segment.resolve()),
+                "bronze_manifest_sha256": file_sha256(bronze_segment),
+                "silver_manifest": str(silver_segment.resolve()),
+                "silver_manifest_sha256": file_sha256(silver_segment),
+                "validation_report_id": silver["validation_report_id"],
+                "quality_status": silver["quality_status"],
+            }
+        )
+
+    identity = {
+        "source_manifest": str(source_manifest),
+        "source_manifest_sha256": file_sha256(source_manifest),
+        "segments": segments,
+        "unusable_segments": [gap.model_dump(mode="json") for gap in attempt.gaps],
+        "segmenter_version": "causal_segment_quarantine_v1",
+    }
+    group_id = f"segment-group-{stable_hash(identity)}"
+    group_path = paths.silver / "manifests" / f"{group_id}.json"
+    payload = {
+        "manifest_kind": "phase7_causal_segment_group",
+        "schema_version": "1.0.0",
+        "group_id": group_id,
+        "symbol": source["symbol"],
+        "interval": source["interval"],
+        "quality_status": "SEGMENTED_VALID",
+        "source_manifest": str(source_manifest),
+        "source_manifest_sha256": file_sha256(source_manifest),
+        "segments": segments,
+        "unusable_segments": [gap.model_dump(mode="json") for gap in attempt.gaps],
+        "raw_sources_mutated": False,
+        "corrupt_rows_promoted": False,
+        "segment_identity": identity,
+    }
+    existing = read_manifest(group_path)
+    if existing is not None:
+        if existing.get("segment_identity") != identity:
+            raise ValueError(f"Existing Silver segment group identity mismatch: {group_path}")
+        return group_path
+    write_manifest(group_path, payload)
+    return group_path
 
 
 def plan_candle_download_request(
@@ -320,14 +586,15 @@ def acquire_candle_family(
     interval: str,
     start: datetime,
     end: datetime,
-) -> dict[str, str]:
+    strict_symbols: frozenset[str] = frozenset(),
+) -> CandleFamilyAcquisition:
     """Acquire checksum-verified official archives and promote through the quality gate."""
 
     config.assert_cloud_execution_allowed()
     paths = AcquisitionPaths.from_config(config)
     metadata = _RegistryMetadata(registry)
     records = registry.by_symbol()
-    manifests: dict[str, str] = {}
+    outcomes: list[AcquisitionOutcome] = []
     for position, symbol in enumerate(symbols, start=1):
         record = records[symbol]
         coarse_request = plan_candle_download_request(
@@ -337,6 +604,14 @@ def acquire_candle_family(
             end=end,
         )
         if coarse_request is None:
+            outcomes.append(
+                AcquisitionOutcome(
+                    symbol=symbol,
+                    interval=interval,
+                    status=AcquisitionStatus.LIFECYCLE_ABSENCE,
+                    reason="no causal source overlap with requested range",
+                )
+            )
             continue
         settings = _candle_settings(
             config,
@@ -371,28 +646,72 @@ def acquire_candle_family(
                 exact_bounds=exact_bounds,
             )
             if request is None:
+                outcomes.append(
+                    AcquisitionOutcome(
+                        symbol=symbol,
+                        interval=interval,
+                        status=AcquisitionStatus.LIFECYCLE_ABSENCE,
+                        reason="official archive has no exact rows in requested range",
+                    )
+                )
                 continue
             bronze_manifest = HistoricalDownloader(settings, client).download(request)
         try:
             silver_manifest = _promote_candles(config, paths, bronze_manifest)
         except QualityGateRejected as rejection:
-            reconciled_manifest = _reconcile_failed_archive_partitions(
+            attempt = _attempt_archive_reconciliation(
                 config,
                 paths,
                 registry,
                 rejection,
             )
-            if reconciled_manifest is None:
+            if attempt.corrected_manifest is not None:
+                silver_manifest = _promote_candles(
+                    config,
+                    paths,
+                    attempt.corrected_manifest,
+                )
+            elif attempt.identical_invalid:
+                if symbol in strict_symbols:
+                    logger.error(
+                        "Required core/context symbol contains an unrecoverable causal gap",
+                        extra={
+                            "event": "phase7_core_segment_hard_stop",
+                            "symbol": symbol,
+                            "interval": interval,
+                            "partitions": [gap.partition for gap in attempt.gaps],
+                        },
+                    )
+                    raise
+                silver_manifest = _promote_causal_segments(config, paths, attempt)
+                outcomes.append(
+                    AcquisitionOutcome(
+                        symbol=symbol,
+                        interval=interval,
+                        status=AcquisitionStatus.QUALITY_REJECTED_SEGMENT,
+                        silver_manifest=str(silver_manifest.resolve()),
+                        reason="identical structurally invalid archive and REST row",
+                        gaps=attempt.gaps,
+                    )
+                )
+                continue
+            else:
                 raise
-            silver_manifest = _promote_candles(config, paths, reconciled_manifest)
-        manifests[symbol] = str(silver_manifest.resolve())
-    return manifests
+        outcomes.append(
+            AcquisitionOutcome(
+                symbol=symbol,
+                interval=interval,
+                status=AcquisitionStatus.VALID,
+                silver_manifest=str(silver_manifest.resolve()),
+            )
+        )
+    return CandleFamilyAcquisition(tuple(outcomes))
 
 
 def acquire_discovery_daily(
     config: Phase7Config,
     registry: SymbolRegistry,
-) -> dict[str, str]:
+) -> CandleFamilyAcquisition:
     """Acquire bounded 1d evidence for core selection and causal fold admissions.
 
     The wider discovery catalog is not model membership. Each expansion fold
@@ -422,6 +741,29 @@ def acquire_discovery_daily(
     )
 
 
+def _silver_segment_manifests(manifest_path: Path, payload: dict[str, Any]) -> tuple[Path, ...]:
+    if payload.get("manifest_kind") != "phase7_causal_segment_group":
+        return (manifest_path,)
+    segments = payload.get("segments")
+    if not isinstance(segments, list) or not segments:
+        raise ValueError(f"Causal segment group has no segments: {manifest_path}")
+    paths: list[Path] = []
+    previous_end: datetime | None = None
+    for segment in segments:
+        if not isinstance(segment, dict):
+            raise ValueError(f"Invalid causal segment record: {manifest_path}")
+        child = Path(str(segment.get("silver_manifest", ""))).resolve()
+        if not child.is_file() or file_sha256(child) != segment.get("silver_manifest_sha256"):
+            raise ValueError(f"Causal segment Silver lineage mismatch: {child}")
+        start = datetime.fromisoformat(str(segment["start"]).replace("Z", "+00:00"))
+        end = datetime.fromisoformat(str(segment["end"]).replace("Z", "+00:00"))
+        if previous_end is not None and start <= previous_end:
+            raise ValueError("Causal Silver segments must be ordered and non-overlapping")
+        previous_end = end
+        paths.append(child)
+    return tuple(paths)
+
+
 def load_candle_family(
     manifests: dict[str, str],
     *,
@@ -433,27 +775,35 @@ def load_candle_family(
     for symbol, manifest in sorted(manifests.items()):
         manifest_path = Path(manifest).resolve()
         payload = read_manifest(manifest_path)
-        if payload is None or payload.get("quality_status") not in {"PASS", "WARN"}:
+        if payload is None or payload.get("quality_status") not in {
+            "PASS",
+            "WARN",
+            "SEGMENTED_VALID",
+        }:
             raise ValueError(f"Ineligible Silver manifest: {manifest_path}")
-        root = manifest_path.parent.parent
         selected: list[pa.Table] = []
-        for record in payload.get("output_files", []):
-            relative = str(record["file"])
-            match = _DATE_PARTITION.search(relative.replace("\\", "/"))
-            if match:
-                partition_date = datetime.fromisoformat(match.group(1)).date()
-                if partition_date < start.date() or partition_date > end.date():
-                    continue
-            path = root / relative
-            if not path.exists() or file_sha256(path) != record.get("sha256"):
-                raise ValueError(f"Silver checksum mismatch: {path}")
-            table = read_candle_parquet(path)
-            times = table.column("open_time").combine_chunks().cast(pa.int64()).to_numpy()
-            start_us = int(start.astimezone(UTC).timestamp() * 1_000_000)
-            end_us = int(end.astimezone(UTC).timestamp() * 1_000_000)
-            mask = (times >= start_us) & (times < end_us)
-            if np.any(mask):
-                selected.append(table.filter(pa.array(mask)))
+        for child_manifest in _silver_segment_manifests(manifest_path, payload):
+            child_payload = read_manifest(child_manifest)
+            if child_payload is None or child_payload.get("quality_status") not in {"PASS", "WARN"}:
+                raise ValueError(f"Ineligible Silver segment manifest: {child_manifest}")
+            root = child_manifest.parent.parent
+            for record in child_payload.get("output_files", []):
+                relative = str(record["file"])
+                match = _DATE_PARTITION.search(relative.replace("\\", "/"))
+                if match:
+                    partition_date = datetime.fromisoformat(match.group(1)).date()
+                    if partition_date < start.date() or partition_date > end.date():
+                        continue
+                path = root / relative
+                if not path.exists() or file_sha256(path) != record.get("sha256"):
+                    raise ValueError(f"Silver checksum mismatch: {path}")
+                table = read_candle_parquet(path)
+                times = table.column("open_time").combine_chunks().cast(pa.int64()).to_numpy()
+                start_us = int(start.astimezone(UTC).timestamp() * 1_000_000)
+                end_us = int(end.astimezone(UTC).timestamp() * 1_000_000)
+                mask = (times >= start_us) & (times < end_us)
+                if np.any(mask):
+                    selected.append(table.filter(pa.array(mask)))
         if not selected:
             raise ValueError(f"No {symbol} {interval} rows exist in requested window")
         symbol_table = pa.concat_tables(selected).sort_by([("open_time", "ascending")])

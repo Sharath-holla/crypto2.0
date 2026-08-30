@@ -106,7 +106,7 @@ def test_context_foundation_does_not_change_versioned_phase7_plan() -> None:
     assert plan["calendar_fold_count"] == 16
     assert plan["architectures"] == ["G0", "C0", "P0", "H0"]
     assert plan["core_universe_version"] == "core_universe_v1"
-    assert plan["expansion_universe_version"] == "expansion_universe_v1"
+    assert plan["expansion_universe_version"] == "expansion_universe_v2"
     assert plan["research_cutoff_exclusive"] == "2026-07-01T00:00:00+00:00"
     assert plan["prospective_holdout_used"] is False
 

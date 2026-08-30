@@ -19,7 +19,9 @@ zero-volume quality semantics are frozen by
 integrity-liquidity separation is frozen by
 `configs/contracts/phase7_scientific_baseline_v1_4.json`. Evidence-gated
 official archive-versus-REST reconciliation is frozen by
-`configs/contracts/phase7_scientific_baseline_v1_5.json`; contract tests fail
+`configs/contracts/phase7_scientific_baseline_v1_5.json`. Causal segment
+quarantine for identical-invalid official rows is frozen by
+`configs/contracts/phase7_scientific_baseline_v1_6.json`; contract tests fail
 on any further byte drift in the authoritative successor.
 
 The only concrete execution adapter is `DisabledExecutionAdapter`. It performs
@@ -34,8 +36,8 @@ The authoritative baseline is:
 
 | Property | Frozen value |
 |---|---|
-| Baseline identity | `phase7_scientific_baseline_v1_5` |
-| Phase 7 version | `1.5.0` |
+| Baseline identity | `phase7_scientific_baseline_v1_6` |
+| Phase 7 version | `1.6.0` |
 | Configuration hash | `cc550337f1f4ee4654124bf6` |
 | Feature contract | `multiasset_features_v2` |
 | Market context contract | `market_context_v2` |
@@ -45,7 +47,7 @@ The authoritative baseline is:
 | Folds | 16 |
 | Research views | CORE, EXPANDING |
 | Core universe | `core_universe_v1` |
-| Expansion universe | `expansion_universe_v1` |
+| Expansion universe | `expansion_universe_v2` |
 | Research cutoff | exclusive `2026-07-01T00:00:00Z` |
 | July 2026 | UNUSED |
 | Holdout start | `2026-08-01T00:00:00Z` |

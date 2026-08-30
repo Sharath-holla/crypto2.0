@@ -207,7 +207,7 @@ def test_local_universe_command_contract() -> None:
     assert result["status"] == "PASS"
     assert result["future_descriptor_perturbation_invariant"] is True
     assert result["core_universe_version"] == "core_universe_v1"
-    assert result["expansion_universe_version"] == "expansion_universe_v1"
+    assert result["expansion_universe_version"] == "expansion_universe_v2"
     assert result["expansion_as_of"] == "fold_train_end"
     assert result["prospective_holdout_used"] is False
 

@@ -184,4 +184,4 @@ def test_acquire_candle_family_passes_verified_bounds_to_downloader(
     assert len(requests) == 1
     assert requests[0].start_utc == FIRST_OPEN
     assert requests[0].end_utc == END_EXCLUSIVE
-    assert result == {"1000BTTCUSDT": str((tmp_path / "silver-manifest.json").resolve())}
+    assert result.manifests == {"1000BTTCUSDT": str((tmp_path / "silver-manifest.json").resolve())}

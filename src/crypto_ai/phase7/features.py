@@ -218,6 +218,22 @@ def _contiguous_segments(times: np.ndarray, step_us: int) -> tuple[np.ndarray, .
     return tuple(segment for segment in np.split(np.arange(len(times)), boundaries) if len(segment))
 
 
+def _segmented_higher_timeframe_values(
+    table: pa.Table,
+    interval: str,
+) -> dict[str, np.ndarray]:
+    """Reset every higher-timeframe transform at explicit source gaps."""
+
+    times = _times(table, "open_time")
+    outputs: dict[str, np.ndarray] = {}
+    for segment in _contiguous_segments(times, interval_milliseconds(interval) * 1_000):
+        selected = table.take(pa.array(segment, type=pa.int64()))
+        values = _higher_timeframe_values(selected, interval)
+        for name, value in values.items():
+            outputs.setdefault(name, np.full(table.num_rows, np.nan))[segment] = value
+    return outputs
+
+
 def _asof_higher_context(
     symbols: np.ndarray,
     feature_times: np.ndarray,
@@ -238,6 +254,11 @@ def _asof_higher_context(
         context.column("symbol").combine_chunks().to_pylist(), dtype=object
     )
     availability = _times(context, "availability_time")
+    valid_until = (
+        _times(context, "valid_until")
+        if "valid_until" in context.column_names
+        else np.full(context.num_rows, np.iinfo(np.int64).max, dtype=np.int64)
+    )
     for symbol in sorted(set(symbols.tolist())):
         target_rows = np.flatnonzero(symbols == symbol)
         for name in columns:
@@ -251,6 +272,8 @@ def _asof_higher_context(
             source_times = availability[order]
             positions = np.searchsorted(source_times, feature_times[target_rows], side="right") - 1
             valid = positions >= 0
+            positioned = np.maximum(positions, 0)
+            valid &= feature_times[target_rows] < valid_until[order][positioned]
             source = _float_column(context, name)[order]
             outputs[name][target_rows[valid]] = source[positions[valid]]
             if np.any(source_times[positions[valid]] > feature_times[target_rows[valid]]):
@@ -279,12 +302,16 @@ def build_higher_timeframe_context(
                 [("open_time", "ascending")]
             )
             source_times = _times(selected, "open_time")
-            values = _higher_timeframe_values(selected, interval)
+            values = _segmented_higher_timeframe_values(selected, interval)
             payload: dict[str, Any] = {
                 "symbol": [str(symbol)] * selected.num_rows,
                 "source_time": pa.array(source_times, type=pa.timestamp("us", tz="UTC")),
                 "availability_time": pa.array(
                     source_times + interval_milliseconds(interval) * 1_000,
+                    type=pa.timestamp("us", tz="UTC"),
+                ),
+                "valid_until": pa.array(
+                    source_times + interval_milliseconds(interval) * 2_000,
                     type=pa.timestamp("us", tz="UTC"),
                 ),
             }

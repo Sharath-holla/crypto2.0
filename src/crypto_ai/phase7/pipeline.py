@@ -33,6 +33,7 @@ from crypto_ai.phase7.registry import (
     read_registry,
     write_registry,
 )
+from crypto_ai.phase7.segments import CausalDataGap
 from crypto_ai.phase7.sources import (
     BinancePublicDiscoveryClient,
     source_verification_manifest,
@@ -143,7 +144,9 @@ def _universe_stage(
     tuple[str, ...],
     list[Path],
 ]:
-    discovery = acquire_discovery_daily(config, registry)
+    discovery_result = acquire_discovery_daily(config, registry)
+    discovery = discovery_result.manifests
+    discovery_gaps = discovery_result.gaps
     start = config.universe.core_selection_cutoff - timedelta(
         days=config.universe.selection_lookback_days
     )
@@ -171,6 +174,7 @@ def _universe_stage(
         registry,
         as_of=config.universe.core_selection_cutoff,
         lookback_days=config.universe.selection_lookback_days,
+        unusable_segments=discovery_gaps,
     )
     core_universe = select_core_universe(
         registry,
@@ -185,6 +189,20 @@ def _universe_stage(
         config.prospective_holdout_start,
         config.schedule,
     )
+    core_gap = next(
+        (
+            gap
+            for gap in discovery_gaps
+            if gap.symbol in core_universe.symbols
+            and any(gap.intersects(plan.train_start, plan.test_end) for plan in plans)
+        ),
+        None,
+    )
+    if core_gap is not None:
+        raise ValueError(
+            "Required core symbol has an unrecoverable causal segment: "
+            f"{core_gap.symbol} {core_gap.interval} {core_gap.partition}"
+        )
     descriptor_by_key = {(item.symbol, item.as_of): item for item in core_descriptors}
     memberships = []
     for plan in plans:
@@ -200,6 +218,7 @@ def _universe_stage(
             registry,
             as_of=plan.train_end,
             lookback_days=config.universe.selection_lookback_days,
+            unusable_segments=discovery_gaps,
         )
         for descriptor in fold_descriptors:
             descriptor_by_key[(descriptor.symbol, descriptor.as_of)] = descriptor
@@ -213,6 +232,9 @@ def _universe_stage(
                 expansion_policy=expansion_policy,
                 config=config.universe,
                 research_view="EXPANDING",
+                unusable_segments=discovery_gaps,
+                required_start=plan.train_start,
+                required_end=plan.test_end,
             )
         )
     descriptors = sorted(descriptor_by_key.values(), key=lambda item: (item.as_of, item.symbol))
@@ -223,7 +245,11 @@ def _universe_stage(
         raise ValueError("Causal acquisition plan unexpectedly omitted a core benchmark symbol")
     root = run_root / "universe"
     discovery_path = atomic_json(
-        root / "discovery_data.json", {"daily_silver_manifests": discovery}
+        root / "discovery_data.json",
+        {
+            "daily_silver_manifests": discovery,
+            **discovery_result.model_dump(),
+        },
     )
     descriptor_path = atomic_json(
         root / "selection_descriptors.json",
@@ -249,6 +275,16 @@ def _universe_stage(
     )
     files = [discovery_path, descriptor_path, core_path, policy_path, memberships_path]
     files.extend(Path(value) for value in discovery.values())
+    for gap in discovery_gaps:
+        files.extend(
+            Path(value)
+            for value in (
+                gap.quality_report,
+                gap.quarantine,
+                gap.rest_manifest,
+                gap.comparison_report,
+            )
+        )
     return core_universe, expansion_policy, descriptors, acquisition_symbols, files
 
 
@@ -261,15 +297,21 @@ def _data_stage(
     acquisition_symbols: tuple[str, ...],
 ) -> tuple[dict[str, Any], list[Path]]:
     candle_manifests: dict[str, dict[str, str]] = {}
+    candle_outcomes: dict[str, dict[str, object]] = {}
+    unusable_segments: list[dict[str, object]] = []
     for interval in config.required_intervals:
-        candle_manifests[interval] = acquire_candle_family(
+        acquisition = acquire_candle_family(
             config,
             registry,
             symbols=acquisition_symbols,
             interval=interval,
             start=config.data_start,
             end=config.research_cutoff,
+            strict_symbols=frozenset(universe.symbols),
         )
+        candle_manifests[interval] = acquisition.manifests
+        candle_outcomes[interval] = acquisition.model_dump()
+        unusable_segments.extend(gap.model_dump(mode="json") for gap in acquisition.gaps)
     derivatives = acquire_derivative_family(
         config,
         registry,
@@ -295,6 +337,8 @@ def _data_stage(
             "end_exclusive": config.research_cutoff.isoformat(),
         },
         "candle_silver_manifests": candle_manifests,
+        "candle_acquisition_outcomes": candle_outcomes,
+        "unusable_segments": unusable_segments,
         "derivative_silver_manifests": derivatives,
         "api_key_required": False,
         **config.holdout_status_payload(),
@@ -452,6 +496,9 @@ def _fold_descriptors(
         config.schedule,
     )
     descriptors: list[SymbolDescriptor] = []
+    unusable_segments = tuple(
+        CausalDataGap.model_validate(item) for item in data.get("unusable_segments", [])
+    )
     registry_map = registry.by_symbol()
     for plan in plans:
         start = plan.train_end - timedelta(days=config.universe.selection_lookback_days)
@@ -476,6 +523,7 @@ def _fold_descriptors(
                 registry,
                 as_of=plan.train_end,
                 lookback_days=config.universe.selection_lookback_days,
+                unusable_segments=unusable_segments,
             )
         )
     return descriptors
@@ -633,6 +681,9 @@ def run_phase7_cloud(
                 universe=universe,
                 expansion_policy=expansion_policy,
                 descriptors=descriptors,
+                unusable_segments=tuple(
+                    CausalDataGap.model_validate(item) for item in data.get("unusable_segments", [])
+                ),
                 checkpoint_store=checkpoints,
                 run_root=run_root,
                 resume=resume,

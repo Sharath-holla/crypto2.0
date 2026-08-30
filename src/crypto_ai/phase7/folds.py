@@ -16,6 +16,7 @@ from crypto_ai.phase5.folds import FoldPlan, HardenedFoldData, plan_folds, slice
 from crypto_ai.phase7.config import UniverseConfig
 from crypto_ai.phase7.features import bind_fold_cross_sectional_context
 from crypto_ai.phase7.registry import SymbolRegistry
+from crypto_ai.phase7.segments import CausalDataGap
 from crypto_ai.phase7.universe import (
     ExpansionUniversePolicy,
     FrozenUniverse,
@@ -178,6 +179,7 @@ def slice_multiasset_fold(
     holdout_start: datetime,
     cluster_count: int,
     seed: int,
+    unusable_segments: tuple[CausalDataGap, ...] = (),
 ) -> MultiAssetFoldData:
     policy = expansion_policy or build_expansion_policy(universe, universe_config)
     membership = select_fold_active_universe(
@@ -189,6 +191,9 @@ def slice_multiasset_fold(
         expansion_policy=policy,
         config=universe_config,
         research_view=research_view,
+        unusable_segments=unusable_segments,
+        required_start=plan.train_start,
+        required_end=plan.test_end,
     )
     eligible_symbols = set(membership.active_symbols)
     if not eligible_symbols:
@@ -227,6 +232,11 @@ def slice_multiasset_fold(
         "fold_active_symbols": list(membership.active_symbols),
         "fold_membership_hash": membership.membership_hash,
         "fold_membership": [item.model_dump(mode="json") for item in membership.members],
+        "unusable_segments": [
+            gap.model_dump(mode="json")
+            for gap in unusable_segments
+            if gap.intersects(plan.train_start, plan.test_end)
+        ],
         "core_universe_version": universe.version,
         "core_universe_hash": universe.universe_hash,
         "core_candidate_symbols": list(universe.symbols),

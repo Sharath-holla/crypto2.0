@@ -376,6 +376,34 @@
   Phase 4.1 adds explicit cutoff-bound artifacts and prepares—but does not
   implement—Phase 5 walk-forward validation.
 
+## ADR-022 - Quarantine unrecoverable corruption as causal segments
+
+- Date: 2026-08-30
+- Status: Accepted for Phase 7 retrospective research.
+- Decision: When an archive row fails a structural market-value check and the
+  bounded same-interval REST attempt returns the identical invalid row, retain
+  both official observations as immutable evidence and represent the affected
+  half-open interval as an explicit unusable data gap. Do not promote the row,
+  reconstruct it, interpolate it, or weaken the quality gate.
+- Acquisition: A discovery candidate returns a typed
+  `QUALITY_REJECTED_SEGMENT` outcome and independent symbols continue. Silver
+  is an immutable group of separately quality-validated contiguous child
+  segments with source, quality, quarantine, REST, and comparison lineage.
+- Causality: A symbol is excluded only from folds whose admission, feature,
+  target, training, validation, calibration, or test information range crosses
+  the gap. Folds ending before a future gap are unchanged. Re-entry requires a
+  new clean segment to satisfy the existing minimum-history and complete-fold
+  rules; no recovery duration is added.
+- Derivations: Rolling features, higher-timeframe context, and targets reset at
+  segment boundaries. Missing intervals are never treated as continuous.
+- Core: Unrecoverable gaps in mandatory core/context symbols remain strict hard
+  stops; only expansion/discovery candidates receive fold-local quarantine.
+- Versioning: These acquisition and universe-eligibility semantics are frozen
+  in `phase7_scientific_baseline_v1_6`, `dual_universe_v3`, and
+  `expansion_universe_v2`. The configuration hash, 54 features,
+  `multiasset_targets_v2`, 16 folds, latency, cutoff, and holdout lock are
+  unchanged. All predecessor baselines remain immutable.
+
 ## ADR-023 - Benchmark multi-asset architectures with a historical universe
 
 - Date: 2026-08-22

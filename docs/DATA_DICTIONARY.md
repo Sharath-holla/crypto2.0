@@ -157,9 +157,9 @@ archive-period evidence. No missing onboard/listing timestamp is invented.
 `core_universe_v1` stores the registry identity, pre-2022 selection
 cutoff/method, ordered members with liquidity/volatility/history percentiles,
 every point-in-time exclusion and reason, and a core hash.
-`expansion_universe_v1` stores the frozen fold-TRAIN-end admission policy,
+`expansion_universe_v2` stores the frozen fold-TRAIN-end admission policy,
 quality/history/liquidity requirements, age-bucket edges, and expansion/total
-caps—not a future-informed static symbol list. `dual_universe_v2` identifies
+caps—not a future-informed static symbol list. `dual_universe_v3` identifies
 the combined research definition.
 
 Per-fold membership manifests store the separately labeled CORE or EXPANDING

@@ -384,10 +384,11 @@ or holdout evaluation. See `CONTEXT_DATA_FOUNDATION.md`.
 ## Phase 7.1B contract and baseline-freeze boundary
 
 Phase 7.1B adds interfaces around Phase 7 without importing them into the
-scientific path. `phase7_scientific_baseline_v1_5` byte-freezes every Phase 7
+scientific path. `phase7_scientific_baseline_v1_6` byte-freezes every Phase 7
 source file after the authorized acquisition-boundary, manifest-level
 zero-volume aggregation, valid-no-trade integrity corrections, and
-evidence-gated official archive-versus-REST reconciliation, including the
+evidence-gated official archive-versus-REST reconciliation plus causal segment
+quarantine for identical-invalid official rows, including the
 active archive, REST ingestion, reconciliation, and quality pipeline
 dependencies together with the approved research config. Typed assertions
 freeze the safe validation, plan, dry-run and causal-universe outputs. A mismatch is a

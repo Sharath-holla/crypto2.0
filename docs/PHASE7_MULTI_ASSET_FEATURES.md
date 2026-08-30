@@ -104,7 +104,7 @@ Future survival and post-TRAIN liquidity are never consulted for admission.
 Phase 7 evaluates the same features in two labeled views: `CORE`, using
 eligible `core_universe_v1` members, and `EXPANDING`, using
 `fold_active_symbols`, the eligible core plus causally admitted
-`expansion_universe_v1` members. The views have separate reports and
+`expansion_universe_v2` members. The views have separate reports and
 checkpoints; their results are never silently mixed.
 
 ## Higher-timeframe and derivatives joins
@@ -133,7 +133,7 @@ documentation.
 Gold is partitioned by symbol and year. The cloud builder processes bounded
 year chunks with only the required 5-minute and higher-timeframe warm-up and
 future-label buffer. It does not require one all-coins/all-years feature matrix
-in memory. Every manifest freezes the registry, `dual_universe_v2` definition,
+in memory. Every manifest freezes the registry, `dual_universe_v3` definition,
 `core_universe_v1`, expansion-policy and acquisition-union hashes,
 feature/target versions, source lineage, file checksums, coverage, and the
 unused holdout flags. Fold reports additionally freeze their exact active

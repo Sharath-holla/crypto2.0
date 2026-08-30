@@ -111,7 +111,7 @@ uv run crypto-ai phase7-research \
 These commands make no network request and perform no heavy training. Confirm:
 
 - `core_universe_v1` has a 20-symbol target selected at the first TRAIN end;
-- `expansion_universe_v1` uses `fold_train_end`, at most 10 additions, and a
+- `expansion_universe_v2` uses `fold_train_end`, at most 10 additions, and a
   30-symbol total fold cap;
 - both `CORE` and `EXPANDING` research views are planned separately;
 - model-facing cross-sectional context is `FOLD_ACTIVE_SYMBOLS`, never the
@@ -193,8 +193,11 @@ Review the final report for:
   `prospective_holdout_used: false`,
   `prospective_holdout_evaluation_authorized: false`, and
   `july_2026_used: false`;
-- registry, `dual_universe_v2`, core-universe, expansion-policy, and fold
+- registry, `dual_universe_v3`, core-universe, expansion-policy, and fold
   membership identities;
+- typed acquisition outcomes and causal segment lineage, with no rejected row
+  in Silver and no fold, feature, higher-timeframe context, or target crossing
+  an unusable gap;
 - separately labeled `CORE` and `EXPANDING` scorecards;
 - the persisted `fold_active_symbols` source, age, liquidity, quality, and
   reason records, with no pre-listing or future-survival admission;

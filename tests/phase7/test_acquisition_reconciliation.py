@@ -20,6 +20,7 @@ from crypto_ai.phase7 import acquisition
 from crypto_ai.phase7.acquisition import (
     AcquisitionPaths,
     QualityGateRejected,
+    _attempt_archive_reconciliation,
     _failed_market_value_partitions,
     _promote_candles,
     _reconcile_failed_archive_partitions,
@@ -242,8 +243,26 @@ def test_identical_invalid_rest_row_cannot_bypass_quality_gate(
 
     monkeypatch.setattr(acquisition, "BinanceRestClient", FakeRestClient)
 
+    source_before = manifest_path.read_bytes()
+    report_path = paths.quality / f"{rejection.report.report_id}.json"
+    quarantine_path = paths.quarantine / f"{rejection.report.report_id}.json"
+    report_before = report_path.read_bytes()
+    quarantine_before = quarantine_path.read_bytes()
+    attempt = _attempt_archive_reconciliation(config, paths, _registry(), rejection)
+
+    assert attempt.corrected_manifest is None
+    assert attempt.segment_source_manifest == manifest_path.resolve()
+    assert len(attempt.gaps) == 1
+    gap = attempt.gaps[0]
+    assert gap.failed_checks == ("taker_buy_base_exceeds_volume",)
+    assert gap.start == START
+    assert gap.end == END
+    assert gap.unusable_data_gap is True
     assert _reconcile_failed_archive_partitions(config, paths, _registry(), rejection) is None
     assert not list(manifest_path.parent.glob("reconciled-*.json"))
+    assert manifest_path.read_bytes() == source_before
+    assert report_path.read_bytes() == report_before
+    assert quarantine_path.read_bytes() == quarantine_before
 
 
 def test_non_market_value_failure_is_never_reconciled(tmp_path: Path) -> None:

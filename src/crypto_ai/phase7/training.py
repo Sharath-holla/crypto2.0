@@ -37,6 +37,7 @@ from crypto_ai.phase7.metrics import (
 )
 from crypto_ai.phase7.models import fit_architecture, load_model, save_model
 from crypto_ai.phase7.registry import SymbolRegistry
+from crypto_ai.phase7.segments import CausalDataGap
 from crypto_ai.phase7.universe import ExpansionUniversePolicy, FrozenUniverse, SymbolDescriptor
 
 RESEARCH_VIEWS = ("CORE", "EXPANDING")
@@ -552,6 +553,7 @@ def run_phase7_training(
     checkpoint_store: CheckpointStore,
     run_root: Path,
     resume: bool,
+    unusable_segments: tuple[CausalDataGap, ...] = (),
 ) -> dict[str, Any]:
     config.assert_cloud_execution_allowed()
     manifest = _load_gold_manifest(gold_manifest_path)
@@ -584,6 +586,7 @@ def run_phase7_training(
                     holdout_start=config.prospective_holdout_start,
                     cluster_count=config.models.cluster_count,
                     seed=config.models.seed,
+                    unusable_segments=unusable_segments,
                 )
                 for horizon, table in fold_tables.items()
             }

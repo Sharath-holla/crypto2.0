@@ -59,7 +59,7 @@
 
 - Phase 7 cloud research. Local code, configuration, deterministic fixture
   tests, safe plan/dry-run commands, the stable `core_universe_v1`, causal
-  fold-local `expansion_universe_v1`, separately labeled CORE/EXPANDING
+  fold-local `expansion_universe_v2`, separately labeled CORE/EXPANDING
   evaluations, bounded Gold construction, G0/C0/P0/H0 architecture runners,
   matched-coverage reporting, checkpoint/resume, and the Google Cloud runbook
   are implemented. Phase 7.1 re-audit corrected fold-local cross-sectional
@@ -77,7 +77,7 @@
   v1_2. The manifest-level zero-volume aggregation is frozen by v1_3, the
   integrity-liquidity separation is frozen by v1_4, and the evidence-gated
   official archive-versus-REST reconciliation is frozen by
-  `phase7_scientific_baseline_v1_5`. Phase 7.2 adds only disabled research
+  `phase7_scientific_baseline_v1_6`. Phase 7.2 adds only disabled research
   capabilities in a separate namespace. The manual cloud run remains pending.
 
 ## PHASE 7 PRE-PUSH STATUS
@@ -221,10 +221,12 @@ NOT STARTED
   2026-08-25. The earlier undocumented `11a00ed1...` combined digest is retained
   only as historical metadata and is not directly comparable with canonical
   v1.
-- `phase7_scientific_baseline_v1_5` is the authoritative pre-cloud scientific
-  source/config freeze after adding evidence-gated official archive-versus-REST
-  reconciliation for archive-only market-value corruption. Its v1 through v1_4
-  predecessors remain immutable historical evidence. Future architecture
+- `phase7_scientific_baseline_v1_6` is the authoritative cloud scientific
+  source/config freeze after adding causal segment quarantine for an
+  identical-invalid official archive/REST row. Its v1 through v1_5
+  predecessors remain immutable historical evidence. `dual_universe_v3` and
+  `expansion_universe_v2` make affected expansion eligibility fold-local while
+  preserving strict core/context behavior. Future architecture
   services may depend on the additive `crypto_ai.contracts` package, but Phase 7 scientific modules must not import
   it. Any unreviewed hash or safe-output drift remains a correctness blocker.
 - Phase 7.2 remains an additive namespace. The first cloud baseline stays 5m,

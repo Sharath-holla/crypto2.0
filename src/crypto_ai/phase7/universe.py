@@ -19,6 +19,7 @@ from crypto_ai.phase7.config import (
     stable_hash,
 )
 from crypto_ai.phase7.registry import SymbolRecord, SymbolRegistry
+from crypto_ai.phase7.segments import CausalDataGap
 
 
 def _utc(value: datetime) -> datetime:
@@ -139,8 +140,8 @@ class FrozenUniverse(_Frozen):
 
 
 class ExpansionUniversePolicy(_Frozen):
-    version: Literal["expansion_universe_v1"] = EXPANSION_UNIVERSE_VERSION
-    definition_version: Literal["dual_universe_v2"] = UNIVERSE_VERSION
+    version: Literal["expansion_universe_v2"] = EXPANSION_UNIVERSE_VERSION
+    definition_version: Literal["dual_universe_v3"] = UNIVERSE_VERSION
     core_universe_version: Literal["core_universe_v1"] = CORE_UNIVERSE_VERSION
     core_universe_hash: str
     as_of_rule: Literal["fold_train_end"] = "fold_train_end"
@@ -177,6 +178,7 @@ class FoldUniverseMember(_Frozen):
     quality_status: str
     eligible: bool
     reason: str
+    unusable_segments: tuple[str, ...] = ()
 
     @field_validator("symbol")
     @classmethod
@@ -193,13 +195,13 @@ class FoldUniverseMember(_Frozen):
 
 
 class FoldActiveUniverse(_Frozen):
-    definition_version: Literal["dual_universe_v2"] = UNIVERSE_VERSION
+    definition_version: Literal["dual_universe_v3"] = UNIVERSE_VERSION
     research_view: Literal["CORE", "EXPANDING"]
     fold_id: str
     as_of: datetime
     core_universe_version: Literal["core_universe_v1"] = CORE_UNIVERSE_VERSION
     core_universe_hash: str
-    expansion_policy_version: Literal["expansion_universe_v1"] = EXPANSION_UNIVERSE_VERSION
+    expansion_policy_version: Literal["expansion_universe_v2"] = EXPANSION_UNIVERSE_VERSION
     expansion_policy_hash: str
     core_eligible_symbols: tuple[str, ...]
     expansion_eligible_symbols: tuple[str, ...]
@@ -563,6 +565,9 @@ def select_fold_active_universe(
     expansion_policy: ExpansionUniversePolicy,
     config: UniverseConfig,
     research_view: Literal["CORE", "EXPANDING"],
+    unusable_segments: tuple[CausalDataGap, ...] = (),
+    required_start: datetime | None = None,
+    required_end: datetime | None = None,
 ) -> FoldActiveUniverse:
     """Apply frozen policy with only descriptors sourced before this fold's TRAIN end."""
 
@@ -576,6 +581,26 @@ def select_fold_active_universe(
         config=config,
         candidate_symbols=set(core_universe.symbols),
     )
+    fold_start = _utc(required_start) if required_start is not None else cutoff
+    fold_end = _utc(required_end) if required_end is not None else cutoff
+
+    def apply_segment_gate(decision: EligibilityDecision) -> EligibilityDecision:
+        relevant = tuple(
+            gap.partition
+            for gap in unusable_segments
+            if gap.symbol == decision.symbol and gap.intersects(fold_start, fold_end)
+        )
+        if not relevant:
+            return decision
+        return EligibilityDecision(
+            symbol=decision.symbol,
+            as_of=decision.as_of,
+            status=EligibilityStatus.INELIGIBLE_DATA_QUALITY,
+            reasons=("causal_unusable_segment_in_fold_required_range", *relevant),
+            descriptor=decision.descriptor,
+        )
+
+    core_decisions = tuple(apply_segment_gate(item) for item in core_decisions)
     core_eligible = tuple(sorted(item.symbol for item in core_decisions if _is_eligible(item)))
 
     # Symbols not evidenced strictly before the fold cutoff are deliberately
@@ -594,6 +619,7 @@ def select_fold_active_universe(
         config=config,
         candidate_symbols=expansion_candidates,
     )
+    expansion_decisions = tuple(apply_segment_gate(item) for item in expansion_decisions)
     ranked_expansion = sorted(
         (
             item
@@ -654,6 +680,11 @@ def select_fold_active_universe(
                 quality_status=decision.status.value,
                 eligible=selected,
                 reason=reason,
+                unusable_segments=tuple(
+                    gap.partition
+                    for gap in unusable_segments
+                    if gap.symbol == symbol and gap.intersects(fold_start, fold_end)
+                ),
             )
         )
     active = tuple(sorted((*core_eligible, *selected_expansion)))

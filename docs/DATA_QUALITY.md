@@ -141,12 +141,24 @@ public Binance USD-M REST and proceeds only when:
   remain immutable; and
 - the composed manifest passes the unchanged quality policy on a fresh retry.
 
-REST agreement with the invalid archive row, missing rows, timestamp drift, any
-unrelated failure, or a persistent quality failure remains a hard stop. The REST
-overlay, comparison report, and composed manifest are immutable lineage; Bronze
-is never edited and no candle is fabricated, interpolated, or inferred. This
-acquisition amendment is frozen by `phase7_scientific_baseline_v1_5` and changes
-no feature, target, universe, fold, cutoff, holdout, or modeling contract value.
+REST agreement with the invalid archive row creates an explicit causal data gap
+for an expansion/discovery candidate. The corrupt row remains rejected and is
+absent from Silver; validated contiguous child segments are promoted separately
+and referenced by an immutable segment-group manifest. Missing rows, timestamp
+drift, unrelated failures, persistent failures inside a retained segment, and
+unrecoverable mandatory core/context gaps remain hard stops. The REST overlay,
+comparison report, quality report, quarantine record, child manifests, and
+segment group are immutable lineage. Bronze is never edited and no candle is
+fabricated, interpolated, inferred, or silently dropped. The original REST
+correction is frozen by `phase7_scientific_baseline_v1_5`; segment quarantine is
+frozen by `phase7_scientific_baseline_v1_6`.
+
+Downstream rolling features and higher-timeframe transforms reset at each gap.
+Targets require exact consecutive source times. Fold membership excludes a
+symbol when any required fold interval crosses a recorded gap, while later
+corruption cannot change an earlier fold whose complete information set ends
+before it. Post-gap re-entry uses the existing contiguous minimum-history and
+fold-range requirements without a new recovery threshold.
 
 ## Known follow-up: stale flat runs
 

@@ -183,7 +183,7 @@ def test_model_comparison_identity_and_matched_coverage() -> None:
         feature_time=datetime(2025, 1, 1, tzinfo=UTC),
         target="multiasset_targets_v2:60m:raw",
         horizon_minutes=60,
-        universe_version="expansion_universe_v1",
+        universe_version="expansion_universe_v2",
         fold_id="fold-001",
         cost_model="phase7_costs_v1",
         feature_schema="multiasset_features_v2",

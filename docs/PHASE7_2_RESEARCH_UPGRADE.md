@@ -155,7 +155,7 @@ multi-engine consistency justify it.
 ## 13. Baseline-preservation rules
 
 - `configs/phase7/research_v1.toml` and every `crypto_ai.phase7` file remain
-  byte-frozen by `phase7_scientific_baseline_v1_5` after the authorized
+  byte-frozen by `phase7_scientific_baseline_v1_6` after the authorized
   acquisition-boundary, zero-volume aggregation, integrity-liquidity
   separation, and evidence-gated official archive-versus-REST reconciliation.
 - Phase 7 modules do not import `crypto_ai.phase7_2`.

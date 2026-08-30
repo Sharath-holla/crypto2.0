@@ -94,7 +94,7 @@ def phase7_plan(config: Phase7Config) -> dict[str, Any]:
         "core_universe_version": "core_universe_v1",
         "core_universe_target_size": config.universe.core_target_size,
         "core_universe_selection_cutoff": (config.universe.core_selection_cutoff.isoformat()),
-        "expansion_universe_version": "expansion_universe_v1",
+        "expansion_universe_version": "expansion_universe_v2",
         "expansion_as_of": config.universe.expansion_as_of,
         "expansion_max_symbols_per_fold": config.universe.expansion_max_symbols_per_fold,
         "total_max_symbols_per_fold": config.universe.total_max_symbols_per_fold,

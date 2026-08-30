@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Iterable
 from datetime import UTC, datetime, timedelta
 
 import numpy as np
@@ -7,6 +8,7 @@ import pyarrow as pa
 
 from crypto_ai.domain import interval_milliseconds
 from crypto_ai.phase7.registry import CoverageSummary, SymbolRegistry
+from crypto_ai.phase7.segments import CausalDataGap
 from crypto_ai.phase7.universe import SymbolDescriptor
 
 
@@ -93,7 +95,10 @@ def _return_mapping(table: pa.Table, symbol: str, before_us: int) -> dict[int, f
     rows = rows[np.argsort(times[rows], kind="mergesort")]
     result: dict[int, float] = {}
     for previous, current in zip(rows, rows[1:], strict=False):
-        if closes[previous] > 0:
+        if (
+            times[current] - times[previous] == interval_milliseconds("1d") * 1_000
+            and closes[previous] > 0
+        ):
             result[int(times[current])] = float(closes[current] / closes[previous] - 1.0)
     return result
 
@@ -104,6 +109,7 @@ def build_point_in_time_descriptors(
     *,
     as_of: datetime,
     lookback_days: int,
+    unusable_segments: Iterable[CausalDataGap] = (),
 ) -> list[SymbolDescriptor]:
     if as_of.tzinfo is None or as_of.utcoffset() is None:
         raise ValueError("descriptor as_of must be timezone-aware")
@@ -124,6 +130,7 @@ def build_point_in_time_descriptors(
     btc_returns = _return_mapping(daily_candles, "BTCUSDT", cutoff_us)
     descriptors: list[SymbolDescriptor] = []
     registry_map = registry.by_symbol()
+    gaps = tuple(unusable_segments)
     for symbol in sorted(set(symbols.tolist())):
         record = registry_map.get(str(symbol))
         if record is None or not record.exists_at(cutoff - timedelta(microseconds=1)):
@@ -132,11 +139,15 @@ def build_point_in_time_descriptors(
         rows = rows[np.argsort(times[rows], kind="mergesort")]
         if len(rows) < 2:
             continue
-        returns = closes[rows][1:] / closes[rows][:-1] - 1.0
+        return_times = times[rows][1:]
+        return_values = closes[rows][1:] / closes[rows][:-1] - 1.0
+        contiguous_returns = np.diff(times[rows]) == interval_milliseconds("1d") * 1_000
+        return_times = return_times[contiguous_returns]
+        returns = return_values[contiguous_returns]
         paired = [
-            (float(returns[index - 1]), btc_returns[int(times[rows[index]])])
-            for index in range(1, len(rows))
-            if int(times[rows[index]]) in btc_returns
+            (float(value), btc_returns[int(timestamp)])
+            for value, timestamp in zip(returns, return_times, strict=True)
+            if int(timestamp) in btc_returns
         ]
         if len(paired) >= 2:
             left = np.asarray([item[0] for item in paired])
@@ -153,6 +164,17 @@ def build_point_in_time_descriptors(
         expected = max(1, lookback_days)
         observed_times = np.unique(times[rows])
         gap_count = max(0, expected - len(observed_times))
+        known_gaps = [gap for gap in gaps if gap.symbol == str(symbol) and gap.start < cutoff]
+        contiguous_start = max([record.causal_available_from, *(gap.end for gap in known_gaps)])
+        contiguous_history_days = max(
+            0.0,
+            (cutoff - contiguous_start).total_seconds() / 86_400,
+        )
+        warnings: list[str] = []
+        if gap_count:
+            warnings.append("daily_discovery_gaps")
+        if known_gaps:
+            warnings.append("causal_segment_history_reset")
         descriptors.append(
             SymbolDescriptor(
                 symbol=str(symbol),
@@ -170,15 +192,12 @@ def build_point_in_time_descriptors(
                 ),
                 btc_beta=beta,
                 btc_correlation=correlation,
-                history_days=record.history_days_at(cutoff),
+                history_days=contiguous_history_days,
                 coverage_ratio=min(1.0, len(observed_times) / expected),
                 gap_count=gap_count,
                 duplicate_count=len(rows) - len(observed_times),
                 invalid_count=0,
-                warnings=("daily_discovery_gaps" if gap_count else "",),
+                warnings=tuple(warnings),
             )
         )
-    return [
-        item.model_copy(update={"warnings": tuple(value for value in item.warnings if value)})
-        for item in descriptors
-    ]
+    return descriptors

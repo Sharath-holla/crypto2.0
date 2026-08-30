@@ -108,9 +108,9 @@ class Phase7ScientificBaseline:
 
 
 PHASE7_APPROVED_BASELINE = Phase7ScientificBaseline(
-    baseline_id="phase7_scientific_baseline_v1_5",
-    contract_version="1.0.6",
-    phase7_version="1.5.0",
+    baseline_id="phase7_scientific_baseline_v1_6",
+    contract_version="1.0.7",
+    phase7_version="1.6.0",
     configuration_hash="cc550337f1f4ee4654124bf6",
     feature_version="multiasset_features_v2",
     market_context_version="market_context_v2",
@@ -118,7 +118,7 @@ PHASE7_APPROVED_BASELINE = Phase7ScientificBaseline(
     decision_latency_bars=1,
     architectures=("G0", "C0", "P0", "H0"),
     core_universe_version="core_universe_v1",
-    expansion_universe_version="expansion_universe_v1",
+    expansion_universe_version="expansion_universe_v2",
     research_cutoff_exclusive=datetime(2026, 7, 1, tzinfo=UTC),
     prospective_holdout_start=datetime(2026, 8, 1, tzinfo=UTC),
     prospective_holdout_status="LOCKED_UNUSED",

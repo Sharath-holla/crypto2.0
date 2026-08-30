@@ -92,7 +92,7 @@ This core membership is never backfilled with a contract first evidenced
 after the cutoff. Its purpose is stable multi-year architecture comparison,
 not coverage of every asset that exists later.
 
-## Causal expansion: `expansion_universe_v1`
+## Causal expansion: `expansion_universe_v2`
 
 The expansion universe freezes a selection policy, not a 2026-informed symbol
 list. At each fold, it uses `fold.train_end` as the as-of boundary and accepts
