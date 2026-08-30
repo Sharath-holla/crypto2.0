@@ -125,6 +125,29 @@ Silver retains the canonical Candle schema and exact Decimal/UTC values. The onl
 
 Each Silver file embeds source file/checksum, source manifest and dataset version, quality report ID, validator version, Silver dataset version, and exact-duplicate removal count. Validator 1.2.0 writes under a deterministic `versions/silver_dataset_version=.../` namespace, so earlier immutable Silver can coexist with new quality semantics. The Silver manifest records the same lineage for the complete promoted dataset.
 
+## Phase 7 official-source reconciliation
+
+The generic quality engine and Silver promoter remain offline validators and
+never repair market values. Phase 7 acquisition has one narrower retry path for
+an official archive partition that fails exclusively on partition-scoped
+market-value integrity checks. It downloads the same half-open partition from
+public Binance USD-M REST and proceeds only when:
+
+- every failed check is an approved market-value check with a complete source
+  partition;
+- REST returns the exact expected row count and identical timestamps;
+- field-level comparison proves the two official transports are not equivalent;
+- the original archive manifest, files, quality report, and quarantine evidence
+  remain immutable; and
+- the composed manifest passes the unchanged quality policy on a fresh retry.
+
+REST agreement with the invalid archive row, missing rows, timestamp drift, any
+unrelated failure, or a persistent quality failure remains a hard stop. The REST
+overlay, comparison report, and composed manifest are immutable lineage; Bronze
+is never edited and no candle is fabricated, interpolated, or inferred. This
+acquisition amendment is frozen by `phase7_scientific_baseline_v1_5` and changes
+no feature, target, universe, fold, cutoff, holdout, or modeling contract value.
+
 ## Known follow-up: stale flat runs
 
 `stale_flat_run` remains partition-scoped and applies only to repeated flat

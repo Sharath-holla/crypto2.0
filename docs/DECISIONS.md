@@ -358,9 +358,17 @@
   short-retention source such as open interest. OI is an optional separate
   ablation only when its shared sample is legitimate.
 - Integrity: Archive bytes, checksums, canonical Bronze partitions, REST gap
-  evidence, reconciliation reports, and Silver lineage remain immutable. A
-  current REST partition may replace an archive partition in a composed Silver
-  manifest only after field-level discrepancy evidence is persisted.
+  evidence, reconciliation reports, and Silver lineage remain immutable. When
+  an archive-only market-value check is the sole cause of failure, Phase 7 may
+  build a composed manifest only after public REST returns the exact same row
+  count and timestamps, field-level non-equivalence evidence is persisted, and
+  the composed manifest passes the unchanged quality gate. Any non-market-value
+  failure, row/timestamp disagreement, identical invalid REST row, or persistent
+  quality failure remains a hard stop.
+- Versioning: The evidence-gated archive-versus-REST acquisition amendment is
+  frozen in `phase7_scientific_baseline_v1_5`. It changes no feature, target,
+  fold, universe, cutoff, holdout, policy, or modeling contract value, and all
+  predecessor baselines remain immutable.
 - Experiment discipline: Funding, basis, and OI comparisons use identical rows
   within their family. The fixed LightGBM configuration receives no broad HPO,
   and cost/no-trade thresholds are never lowered merely to manufacture trades.

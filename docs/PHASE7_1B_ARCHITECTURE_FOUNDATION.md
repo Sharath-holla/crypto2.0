@@ -17,7 +17,9 @@ archive-boundary correction is frozen separately by
 zero-volume quality semantics are frozen by
 `configs/contracts/phase7_scientific_baseline_v1_3.json`. The approved
 integrity-liquidity separation is frozen by
-`configs/contracts/phase7_scientific_baseline_v1_4.json`; contract tests fail
+`configs/contracts/phase7_scientific_baseline_v1_4.json`. Evidence-gated
+official archive-versus-REST reconciliation is frozen by
+`configs/contracts/phase7_scientific_baseline_v1_5.json`; contract tests fail
 on any further byte drift in the authoritative successor.
 
 The only concrete execution adapter is `DisabledExecutionAdapter`. It performs
@@ -32,8 +34,8 @@ The authoritative baseline is:
 
 | Property | Frozen value |
 |---|---|
-| Baseline identity | `phase7_scientific_baseline_v1_4` |
-| Phase 7 version | `1.4.0` |
+| Baseline identity | `phase7_scientific_baseline_v1_5` |
+| Phase 7 version | `1.5.0` |
 | Configuration hash | `cc550337f1f4ee4654124bf6` |
 | Feature contract | `multiasset_features_v2` |
 | Market context contract | `market_context_v2` |
@@ -239,7 +241,11 @@ records the authorized interval-aware onboard-boundary correction;
 `phase7_scientific_baseline_v1_2` retains both predecessors and records the
 exact per-interval archive-boundary correction. V1_3 retains all three prior contracts and records versioned manifest-level
 zero-volume aggregation. V1_4 retains every predecessor and records the approved
-separation of valid no-trade liquidity from source corruption. Before accepting another manifest, review must compare feature values, target values, folds, universes, row membership,
+separation of valid no-trade liquidity from source corruption. V1_5 retains all
+predecessors and records evidence-gated official archive-versus-REST
+reconciliation through immutable source overlays and composed manifests. Before
+accepting another manifest, review must compare feature values, target values,
+folds, universes, row membership,
 predictions and economics on identical fixtures/artifacts.
 
 If the Phase 7 source/config hashes change during Phase 7.1B, or any safe CLI

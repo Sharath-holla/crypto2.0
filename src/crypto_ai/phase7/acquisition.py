@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import re
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
@@ -14,6 +15,7 @@ from crypto_ai.data.binance import ArchiveCandleBounds, BinanceArchiveClient, Bi
 from crypto_ai.data.ingestion import DownloadRequest, HistoricalDownloader
 from crypto_ai.data.ingestion.manifest import read_manifest
 from crypto_ai.data.quality.engine import QualityEngine
+from crypto_ai.data.quality.models import DatasetQualityReport, ValidationStatus
 from crypto_ai.data.quality.policy import load_quality_policy
 from crypto_ai.data.quality.promotion import SilverPromoter
 from crypto_ai.data.storage import file_sha256, read_candle_parquet
@@ -26,10 +28,34 @@ from crypto_ai.phase4.market_data import (
     read_market_dataset,
 )
 from crypto_ai.phase4_1.archive_market import ingest_archive_market_data
-from crypto_ai.phase7.config import Phase7Config
+from crypto_ai.phase4_1.equivalence import compare_candle_transports
+from crypto_ai.phase4_1.reconcile import reconcile_archive_with_rest
+from crypto_ai.phase7.config import Phase7Config, stable_hash
 from crypto_ai.phase7.registry import SymbolRecord, SymbolRegistry
 
 _DATE_PARTITION = re.compile(r"(?:^|/)date=(\d{4}-\d{2}-\d{2})(?:/|$)")
+logger = logging.getLogger(__name__)
+
+_RECONCILABLE_MARKET_VALUE_CHECKS = frozenset(
+    {
+        "high_below_open",
+        "high_below_close",
+        "high_below_low",
+        "low_above_open",
+        "low_above_close",
+        "non_positive_price",
+        "invalid_ohlc",
+        "negative_base_volume",
+        "negative_quote_volume",
+        "negative_taker_buy_base_volume",
+        "negative_taker_buy_quote_volume",
+        "negative_trade_count",
+        "taker_buy_base_exceeds_volume",
+        "taker_buy_quote_exceeds_volume",
+        "positive_volume_without_trades",
+        "zero_base_volume_with_activity",
+    }
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -39,6 +65,7 @@ class AcquisitionPaths:
     quality: Path
     silver: Path
     quarantine: Path
+    reconciliation: Path
     market: Path
 
     @classmethod
@@ -50,8 +77,18 @@ class AcquisitionPaths:
             quality=root / "quality",
             silver=root / "silver" / "binance",
             quarantine=root / "quarantine",
+            reconciliation=root / "reconciliation",
             market=root / "market",
         )
+
+
+class QualityGateRejected(ValueError):
+    """Structured Phase 7 rejection retaining the immutable quality report."""
+
+    def __init__(self, manifest: Path, report: DatasetQualityReport) -> None:
+        self.manifest = manifest.resolve()
+        self.report = report
+        super().__init__(f"Phase 7 quality gate rejected {manifest}: {report.overall_status}")
 
 
 class _RegistryMetadata:
@@ -72,6 +109,24 @@ class _RegistryMetadata:
             ),
             "source": "phase7_historical_symbol_registry",
         }
+
+
+class _RestReconciliationClient:
+    """Public REST candle transport with historical registry metadata."""
+
+    source_identity = "binance"
+    row_source = "binance_usdm_futures_rest"
+    source_transport = "rest"
+
+    def __init__(self, client: BinanceRestClient, metadata: _RegistryMetadata) -> None:
+        self._client = client
+        self._metadata = metadata
+
+    def fetch_exchange_info(self, symbol: str) -> dict[str, Any]:
+        return self._metadata.fetch_exchange_info(symbol)
+
+    def fetch_klines(self, **kwargs: Any):
+        return self._client.fetch_klines(**kwargs)
 
 
 def _candle_settings(
@@ -108,8 +163,119 @@ def _promote_candles(
         quarantine_root=paths.quarantine,
     )
     if not result.promoted or result.promotion_manifest is None:
-        raise ValueError(f"Phase 7 quality gate rejected {manifest}: {report.overall_status}")
+        raise QualityGateRejected(manifest, report)
     return result.promotion_manifest
+
+
+def _failed_market_value_partitions(report: DatasetQualityReport) -> tuple[str, ...]:
+    failures = [check for check in report.checks if check.status is ValidationStatus.FAIL]
+    if not failures or any(
+        check.check_name not in _RECONCILABLE_MARKET_VALUE_CHECKS or check.partition is None
+        for check in failures
+    ):
+        return ()
+    return tuple(sorted({str(check.partition) for check in failures}))
+
+
+def _reconcile_failed_archive_partitions(
+    config: Phase7Config,
+    paths: AcquisitionPaths,
+    registry: SymbolRegistry,
+    rejection: QualityGateRejected,
+) -> Path | None:
+    """Compose proven REST corrections for archive-only market-value failures.
+
+    This is deliberately one-shot and narrow. The original archive manifest,
+    quality report, quarantine reference, raw archive, and REST overlay all
+    remain immutable. Any non-market-value failure, timestamp disagreement, or
+    persistent REST inconsistency remains a hard stop.
+    """
+
+    manifest = read_manifest(rejection.manifest)
+    if manifest is None or manifest.get("source") != "binance_public_archive":
+        return None
+    partition_keys = _failed_market_value_partitions(rejection.report)
+    if not partition_keys:
+        return None
+    records = {
+        str(record.get("partition_key")): record
+        for record in manifest.get("partitions", [])
+        if isinstance(record, dict)
+    }
+    selected = [records.get(key) for key in partition_keys]
+    if any(
+        record is None or record.get("status") != "complete" or not record.get("file")
+        for record in selected
+    ):
+        return None
+
+    symbol = str(manifest["symbol"])
+    interval = str(manifest["interval"])
+    metadata = _RegistryMetadata(registry)
+    settings = _candle_settings(config, paths, symbol=symbol, interval=interval)
+    rest_manifests: list[Path] = []
+    comparison_reports: list[Path] = []
+    with BinanceRestClient(settings) as rest:
+        client = _RestReconciliationClient(rest, metadata)
+        for key, record in zip(partition_keys, selected, strict=True):
+            assert record is not None
+            start = datetime.fromisoformat(str(record["start"]).replace("Z", "+00:00"))
+            end = datetime.fromisoformat(str(record["end"]).replace("Z", "+00:00"))
+            rest_manifest = HistoricalDownloader(settings, client).download(
+                DownloadRequest(start=start, end=end)
+            )
+            comparison_id = stable_hash(
+                {
+                    "archive_manifest": str(rejection.manifest),
+                    "archive_partition": key,
+                    "rest_manifest": str(rest_manifest.resolve()),
+                    "comparison": "field_exact_archive_rest_v1",
+                }
+            )
+            comparison_path = paths.reconciliation / f"archive-rest-{comparison_id}.json"
+            comparison = compare_candle_transports(
+                rejection.manifest,
+                rest_manifest,
+                output_path=comparison_path,
+            )
+            expected_rows = int(record.get("row_count", 0))
+            if (
+                comparison.get("equivalent") is not False
+                or comparison.get("timestamps_equal") is not True
+                or comparison.get("left_rows") != expected_rows
+                or comparison.get("right_rows") != expected_rows
+            ):
+                logger.error(
+                    "Archive/REST reconciliation did not prove an exact-row correction",
+                    extra={
+                        "event": "phase7_archive_rest_reconciliation_rejected",
+                        "symbol": symbol,
+                        "interval": interval,
+                        "partition": key,
+                        "comparison_report": str(comparison_path),
+                    },
+                )
+                return None
+            rest_manifests.append(rest_manifest)
+            comparison_reports.append(comparison_path)
+
+    reconciled = reconcile_archive_with_rest(
+        rejection.manifest,
+        tuple(rest_manifests),
+        equivalence_reports=tuple(comparison_reports),
+    )
+    logger.warning(
+        "Retrying Phase 7 quality gate with proven official REST corrections",
+        extra={
+            "event": "phase7_archive_rest_reconciliation_created",
+            "symbol": symbol,
+            "interval": interval,
+            "archive_manifest": str(rejection.manifest),
+            "reconciled_manifest": str(reconciled),
+            "partition_count": len(partition_keys),
+        },
+    )
+    return reconciled
 
 
 def plan_candle_download_request(
@@ -207,7 +373,19 @@ def acquire_candle_family(
             if request is None:
                 continue
             bronze_manifest = HistoricalDownloader(settings, client).download(request)
-        manifests[symbol] = str(_promote_candles(config, paths, bronze_manifest).resolve())
+        try:
+            silver_manifest = _promote_candles(config, paths, bronze_manifest)
+        except QualityGateRejected as rejection:
+            reconciled_manifest = _reconcile_failed_archive_partitions(
+                config,
+                paths,
+                registry,
+                rejection,
+            )
+            if reconciled_manifest is None:
+                raise
+            silver_manifest = _promote_candles(config, paths, reconciled_manifest)
+        manifests[symbol] = str(silver_manifest.resolve())
     return manifests
 
 
