@@ -21,8 +21,11 @@ integrity-liquidity separation is frozen by
 official archive-versus-REST reconciliation is frozen by
 `configs/contracts/phase7_scientific_baseline_v1_5.json`. Causal segment
 quarantine for identical-invalid official rows is frozen by
-`configs/contracts/phase7_scientific_baseline_v1_6.json`; contract tests fail
-on any further byte drift in the authoritative successor.
+`configs/contracts/phase7_scientific_baseline_v1_6.json`. The operational-only
+progress reporter is frozen by
+`configs/contracts/phase7_scientific_baseline_v1_7.json`; contract tests fail
+on any further byte drift in the authoritative successor. It retains Phase 7
+version 1.6.0 because it changes no scientific identity or result.
 
 The only concrete execution adapter is `DisabledExecutionAdapter`. It performs
 no I/O and returns `EXECUTION_DISABLED_PHASE7_1B` for submit and cancel
@@ -36,7 +39,7 @@ The authoritative baseline is:
 
 | Property | Frozen value |
 |---|---|
-| Baseline identity | `phase7_scientific_baseline_v1_6` |
+| Baseline identity | `phase7_scientific_baseline_v1_7` |
 | Phase 7 version | `1.6.0` |
 | Configuration hash | `cc550337f1f4ee4654124bf6` |
 | Feature contract | `multiasset_features_v2` |

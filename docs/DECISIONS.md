@@ -436,3 +436,22 @@
   August holdout remain unused. The holdout status is `LOCKED_UNUSED` and
   evaluation is not authorized. No account, portfolio, risk, leverage, order,
   or live-trading authority is introduced.
+
+## ADR-024 - Side-effect-only Phase 7 runtime observability
+
+- Date: 2026-08-30
+- Status: Accepted for the Phase 7 cloud research run.
+- Decision: Add stable structured progress events, concise human rendering, a
+  low-frequency model-fit heartbeat, and an atomic resumable runtime
+  `progress.json`. The same supplied runtime/result objects feed both renderings.
+- Metrics: Fold economics and predictive values are displayed only when they
+  already exist in the approved OOS report. Unavailable values render as `N/A`;
+  no new backtest, estimator, model callback, or metric is introduced.
+- Non-interference: Reporting does not alter data order, features, targets,
+  folds, model configuration/state, calibration, thresholds, costs,
+  qualification, July exclusion, or the August holdout lock. The canonical
+  configuration hash remains `cc550337f1f4ee4654124bf6`.
+- Versioning: `phase7_progress_v1` is the operational reporter identity. The
+  source freeze advances to `phase7_scientific_baseline_v1_7` solely because
+  existing contract tests byte-freeze every Phase 7 module; Phase 7 remains
+  version 1.6.0 and every scientific contract value is unchanged.

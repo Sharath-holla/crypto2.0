@@ -125,18 +125,19 @@ These commands make no network request and perform no heavy training. Confirm:
 
 ```bash
 export PHASE7_ALLOW_CLOUD_RESEARCH=1
-tmux new -s phase7
+export PHASE7_CLOUD_STORAGE_ROOT=gs://crypto-ai-data-83921/artifacts/phase7
+tmux new -s phase7-auto
 cd ~/crypto2.0
 
 uv run crypto-ai phase7-research \
   --config configs/phase7/research_v1.toml \
-  --resume 2>&1 | tee local_artifacts/phase7-cloud-run.log
+  --resume 2>&1 | tee -a local_artifacts/phase7-cloud-run.log
 ```
 
 Detach with `Ctrl+B`, then `D`. Reattach with:
 
 ```bash
-tmux attach -t phase7
+tmux attach -t phase7-auto
 ```
 
 The monolithic command executes `registry`, `universe`, `data`, `gold`,
@@ -146,6 +147,14 @@ full-resolution acquisition. Each completed stage and each
 view/fold/experiment has a checksum-validated checkpoint. Membership, core,
 expansion-policy, Gold, and configuration identities invalidate stale work.
 After interruption, run the identical `--resume` command.
+
+High-level structured events and concise human blocks supplement the existing
+detailed logs. The current stage, symbol or chunk progress, active fold/model,
+elapsed fit heartbeat, OOS fold evaluation, and final research status are also
+atomically mirrored to `local_artifacts/phase7/progress.json`. This mutable
+runtime file is observability only: it is not checkpointed, model-facing, or
+part of scientific identity. Unavailable metrics are shown as `N/A`; the
+reporter never computes a replacement backtest or reads excluded/holdout data.
 
 Quality validator 1.1 evaluates zero-volume prevalence over the complete
 manifest, while each physical partition retains auditable warning metrics.

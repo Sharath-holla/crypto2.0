@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 import re
+from collections.abc import Callable
 from copy import deepcopy
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
@@ -43,6 +44,7 @@ from crypto_ai.phase7.segments import (
 
 _DATE_PARTITION = re.compile(r"(?:^|/)date=(\d{4}-\d{2}-\d{2})(?:/|$)")
 logger = logging.getLogger(__name__)
+AcquisitionProgress = Callable[[int, int, str, str, str], None]
 
 _RECONCILABLE_MARKET_VALUE_CHECKS = frozenset(
     {
@@ -587,6 +589,7 @@ def acquire_candle_family(
     start: datetime,
     end: datetime,
     strict_symbols: frozenset[str] = frozenset(),
+    progress: AcquisitionProgress | None = None,
 ) -> CandleFamilyAcquisition:
     """Acquire checksum-verified official archives and promote through the quality gate."""
 
@@ -612,6 +615,14 @@ def acquire_candle_family(
                     reason="no causal source overlap with requested range",
                 )
             )
+            if progress is not None:
+                progress(
+                    position,
+                    len(symbols),
+                    symbol,
+                    interval,
+                    AcquisitionStatus.LIFECYCLE_ABSENCE.value,
+                )
             continue
         settings = _candle_settings(
             config,
@@ -654,6 +665,14 @@ def acquire_candle_family(
                         reason="official archive has no exact rows in requested range",
                     )
                 )
+                if progress is not None:
+                    progress(
+                        position,
+                        len(symbols),
+                        symbol,
+                        interval,
+                        AcquisitionStatus.LIFECYCLE_ABSENCE.value,
+                    )
                 continue
             bronze_manifest = HistoricalDownloader(settings, client).download(request)
         try:
@@ -694,6 +713,14 @@ def acquire_candle_family(
                         gaps=attempt.gaps,
                     )
                 )
+                if progress is not None:
+                    progress(
+                        position,
+                        len(symbols),
+                        symbol,
+                        interval,
+                        AcquisitionStatus.QUALITY_REJECTED_SEGMENT.value,
+                    )
                 continue
             else:
                 raise
@@ -705,12 +732,22 @@ def acquire_candle_family(
                 silver_manifest=str(silver_manifest.resolve()),
             )
         )
+        if progress is not None:
+            progress(
+                position,
+                len(symbols),
+                symbol,
+                interval,
+                AcquisitionStatus.VALID.value,
+            )
     return CandleFamilyAcquisition(tuple(outcomes))
 
 
 def acquire_discovery_daily(
     config: Phase7Config,
     registry: SymbolRegistry,
+    *,
+    progress: AcquisitionProgress | None = None,
 ) -> CandleFamilyAcquisition:
     """Acquire bounded 1d evidence for core selection and causal fold admissions.
 
@@ -738,6 +775,7 @@ def acquire_discovery_daily(
         interval="1d",
         start=start,
         end=end,
+        progress=progress,
     )
 
 
@@ -822,6 +860,7 @@ def acquire_derivative_family(
     symbols: tuple[str, ...],
     start: datetime,
     end: datetime,
+    progress: AcquisitionProgress | None = None,
 ) -> dict[str, dict[str, str]]:
     config.assert_cloud_execution_allowed()
     paths = AcquisitionPaths.from_config(config)
@@ -884,6 +923,8 @@ def acquire_derivative_family(
             "mark": str(mark_manifest.resolve()),
             "index": str(index_manifest.resolve()),
         }
+        if progress is not None:
+            progress(position, len(symbols), symbol, "derivatives", AcquisitionStatus.VALID.value)
     return result
 
 

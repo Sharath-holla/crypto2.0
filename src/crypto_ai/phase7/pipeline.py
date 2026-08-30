@@ -19,13 +19,14 @@ from crypto_ai.phase7.acquisition import (
     load_candle_family,
 )
 from crypto_ai.phase7.artifacts import CheckpointStore, atomic_json, resource_snapshot
-from crypto_ai.phase7.config import UNIVERSE_VERSION, Phase7Config
+from crypto_ai.phase7.config import TARGET_VERSION, UNIVERSE_VERSION, Phase7Config
 from crypto_ai.phase7.features import (
     MultiAssetFeatureResult,
     build_higher_timeframe_context,
     generate_multiasset_features,
 )
 from crypto_ai.phase7.gold import build_multiasset_gold_chunks
+from crypto_ai.phase7.progress import ProgressReporter
 from crypto_ai.phase7.quality import build_point_in_time_descriptors
 from crypto_ai.phase7.registry import (
     SymbolRegistry,
@@ -137,6 +138,7 @@ def _universe_stage(
     config: Phase7Config,
     run_root: Path,
     registry: SymbolRegistry,
+    reporter: ProgressReporter | None = None,
 ) -> tuple[
     FrozenUniverse,
     ExpansionUniversePolicy,
@@ -144,7 +146,24 @@ def _universe_stage(
     tuple[str, ...],
     list[Path],
 ]:
-    discovery_result = acquire_discovery_daily(config, registry)
+    discovery_result = acquire_discovery_daily(
+        config,
+        registry,
+        progress=(
+            lambda completed, total, symbol, interval, status: (
+                reporter.progress(
+                    stage="discovery",
+                    completed=completed,
+                    total=total,
+                    current=symbol,
+                    interval=interval,
+                    status=status,
+                )
+                if reporter is not None
+                else None
+            )
+        ),
+    )
     discovery = discovery_result.manifests
     discovery_gaps = discovery_result.gaps
     start = config.universe.core_selection_cutoff - timedelta(
@@ -295,6 +314,7 @@ def _data_stage(
     universe: FrozenUniverse,
     expansion_policy: ExpansionUniversePolicy,
     acquisition_symbols: tuple[str, ...],
+    reporter: ProgressReporter | None = None,
 ) -> tuple[dict[str, Any], list[Path]]:
     candle_manifests: dict[str, dict[str, str]] = {}
     candle_outcomes: dict[str, dict[str, object]] = {}
@@ -308,6 +328,24 @@ def _data_stage(
             start=config.data_start,
             end=config.research_cutoff,
             strict_symbols=frozenset(universe.symbols),
+            progress=(
+                lambda completed, total, symbol, current_interval, status: (
+                    reporter.progress(
+                        stage=(
+                            "required_5m_acquisition"
+                            if current_interval == "5m"
+                            else "higher_timeframe_acquisition"
+                        ),
+                        completed=completed,
+                        total=total,
+                        current=symbol,
+                        interval=current_interval,
+                        status=status,
+                    )
+                    if reporter is not None
+                    else None
+                )
+            ),
         )
         candle_manifests[interval] = acquisition.manifests
         candle_outcomes[interval] = acquisition.model_dump()
@@ -318,6 +356,20 @@ def _data_stage(
         symbols=acquisition_symbols,
         start=config.data_start,
         end=config.research_cutoff,
+        progress=(
+            lambda completed, total, symbol, current_interval, status: (
+                reporter.progress(
+                    stage="derivative_acquisition",
+                    completed=completed,
+                    total=total,
+                    current=symbol,
+                    interval=current_interval,
+                    status=status,
+                )
+                if reporter is not None
+                else None
+            )
+        ),
     )
     payload = {
         "universe_definition_version": UNIVERSE_VERSION,
@@ -364,6 +416,9 @@ def _gold_chunk(
     data: dict[str, Any],
     start: datetime,
     end: datetime,
+    reporter: ProgressReporter | None = None,
+    chunk_position: int = 1,
+    chunks_total: int = 1,
 ) -> tuple[str, MultiAssetFeatureResult, MultiAssetTargetResult]:
     lookback = timedelta(
         minutes=5
@@ -397,18 +452,59 @@ def _gold_chunk(
         end=end,
     )
     context = build_higher_timeframe_context(candles_12h, candles_1d)
+    if reporter is not None:
+        reporter.emit(
+            "phase7_progress",
+            stage="feature_construction",
+            fields={
+                "chunk": chunk_position,
+                "chunks_total": chunks_total,
+                "range_start": start.isoformat(),
+                "range_end_exclusive": end.isoformat(),
+                "input_rows": candles_5m.num_rows,
+            },
+        )
     features = generate_multiasset_features(
         candles_5m,
         registry=registry,
         config=config.features,
         higher_timeframe_context=context,
     )
+    if reporter is not None:
+        reporter.chunk_progress(
+            stage="feature_construction",
+            chunk=chunk_position,
+            chunks_total=chunks_total,
+            rows=features.table.num_rows,
+            start=start,
+            end=end,
+        )
+        reporter.emit(
+            "phase7_progress",
+            stage="target_construction",
+            fields={
+                "chunk": chunk_position,
+                "chunks_total": chunks_total,
+                "feature_rows": features.table.num_rows,
+                "target_identity": TARGET_VERSION,
+                "target_horizons_minutes": config.targets.horizons_minutes,
+            },
+        )
     targets = generate_multiasset_targets(
         candles_5m,
         features.table,
         config=config.targets,
         research_cutoff=config.research_cutoff,
     )
+    if reporter is not None:
+        reporter.chunk_progress(
+            stage="target_construction",
+            chunk=chunk_position,
+            chunks_total=chunks_total,
+            rows=targets.table.num_rows,
+            start=start,
+            end=end,
+        )
     feature_table = _core_range(features.table, start, end, "feature_time")
     target_table = _core_range(targets.table, start, end, "feature_time")
     membership = {
@@ -441,6 +537,7 @@ def _gold_stage(
     universe: FrozenUniverse,
     expansion_policy: ExpansionUniversePolicy,
     data: dict[str, Any],
+    reporter: ProgressReporter | None = None,
 ) -> tuple[dict[str, Any], list[Path]]:
     config.assert_cloud_execution_allowed()
     boundaries: list[tuple[datetime, datetime]] = []
@@ -449,8 +546,28 @@ def _gold_stage(
         end = min(add_calendar_months(cursor, 12), config.research_cutoff)
         boundaries.append((cursor, end))
         cursor = end
-    first = _gold_chunk(config, registry, data, *boundaries[0])
-    remaining = (_gold_chunk(config, registry, data, start, end) for start, end in boundaries[1:])
+    first = _gold_chunk(
+        config,
+        registry,
+        data,
+        *boundaries[0],
+        reporter=reporter,
+        chunk_position=1,
+        chunks_total=len(boundaries),
+    )
+    remaining = (
+        _gold_chunk(
+            config,
+            registry,
+            data,
+            start,
+            end,
+            reporter=reporter,
+            chunk_position=position,
+            chunks_total=len(boundaries),
+        )
+        for position, (start, end) in enumerate(boundaries[1:], start=2)
+    )
     data_manifest_path = (run_root / "data" / "data_manifest.json").resolve()
     lineage = {
         "data_manifest": str(data_manifest_path),
@@ -608,18 +725,32 @@ def run_phase7_cloud(
             f"only {resources['disk_free_gb']:.2f} GB is free"
         )
     run_identity, run_root, observed_at = _run_context(config)
+    reporter = ProgressReporter(
+        config,
+        run_identity=run_identity,
+        run_started_at=observed_at,
+        repository_root=Path.cwd(),
+    )
     checkpoints = CheckpointStore(config.paths.checkpoint_root, run_identity)
     selected = (stage,) if stage else STAGES
     completed: list[str] = []
-    for current in selected:
+    for stage_position, current in enumerate(selected, start=1):
         if current not in STAGES:
             raise ValueError(f"Unknown Phase 7 stage: {current}")
         prior = STAGES[: STAGES.index(current)]
         missing = [name for name in prior if not checkpoints.is_complete(name)]
         if missing:
             raise RuntimeError(f"Stage {current} requires completed dependencies: {missing}")
+        reporter.stage_started(current, stage_position, len(selected))
         if resume and checkpoints.is_complete(current):
             print(f"[phase7:{current}] checkpoint verified; reusing", flush=True)
+            reporter.stage_completed(
+                current,
+                stage_position,
+                len(selected),
+                metadata={"checkpoint": "verified"},
+                reused=True,
+            )
             completed.append(current)
             continue
         if not resume and any(path.exists() for path in _required_stage_files(run_root, current)):
@@ -632,7 +763,7 @@ def run_phase7_cloud(
         elif current == "universe":
             registry = read_registry(run_root / "registry" / "symbol_registry.json")
             universe, expansion_policy, _, acquisition_symbols, files = _universe_stage(
-                config, run_root, registry
+                config, run_root, registry, reporter
             )
             metadata = {
                 "core_universe_hash": universe.universe_hash,
@@ -656,6 +787,7 @@ def run_phase7_cloud(
                 universe,
                 expansion_policy,
                 acquisition_symbols,
+                reporter,
             )
             metadata = {
                 "symbol_count": len(acquisition_symbols),
@@ -664,7 +796,15 @@ def run_phase7_cloud(
             }
         elif current == "gold":
             registry, universe, expansion_policy, data = _load_stage_state(run_root)
-            gold, files = _gold_stage(config, run_root, registry, universe, expansion_policy, data)
+            gold, files = _gold_stage(
+                config,
+                run_root,
+                registry,
+                universe,
+                expansion_policy,
+                data,
+                reporter,
+            )
             metadata = gold
         elif current == "train":
             registry, universe, expansion_policy, data = _load_stage_state(run_root)
@@ -687,6 +827,7 @@ def run_phase7_cloud(
                 checkpoint_store=checkpoints,
                 run_root=run_root,
                 resume=resume,
+                reporter=reporter,
             )
             files = [descriptor_path, run_root / "training_summary.json"]
             files.extend(run_root.glob("models/**/*.joblib"))
@@ -700,6 +841,19 @@ def run_phase7_cloud(
             report, files = _report_stage(config, run_root)
             metadata = {"scorecard_rows": len(report["scorecard"])}
         checkpoints.complete(current, list(files), metadata)
+        reporter.stage_completed(
+            current,
+            stage_position,
+            len(selected),
+            metadata=metadata,
+        )
+        if current == "report":
+            training = json.loads((run_root / "training_summary.json").read_text(encoding="utf-8"))
+            reporter.final_summary(
+                report,
+                training,
+                report_path=run_root / "phase7_report.json",
+            )
         completed.append(current)
     return {
         "status": "COMPLETE",

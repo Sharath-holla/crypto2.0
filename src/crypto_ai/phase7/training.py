@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import hashlib
 import json
+import time
+from contextlib import nullcontext
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any
@@ -36,6 +38,7 @@ from crypto_ai.phase7.metrics import (
     time_concentration,
 )
 from crypto_ai.phase7.models import fit_architecture, load_model, save_model
+from crypto_ai.phase7.progress import ProgressReporter, oos_trade_summary
 from crypto_ai.phase7.registry import SymbolRegistry
 from crypto_ai.phase7.segments import CausalDataGap
 from crypto_ai.phase7.universe import ExpansionUniversePolicy, FrozenUniverse, SymbolDescriptor
@@ -394,7 +397,12 @@ def _run_one(
     config: Phase7Config,
     output_root: Path,
     checkpoint_identity: dict[str, Any],
+    *,
+    reporter: ProgressReporter | None = None,
+    fold_position: int = 1,
+    folds_total: int = 1,
 ) -> tuple[dict[str, Any], list[Path]]:
+    experiment_started = time.monotonic()
     for segment_name, segment in (
         ("TRAIN", fold.train),
         ("VALIDATION", fold.validation),
@@ -411,20 +419,47 @@ def _run_one(
     validation = _finite(fold.validation, feature_columns, target)
     calibration_a = _finite(fold.calibration_a, feature_columns, target)
     calibration_b = _finite(fold.calibration_b, feature_columns, target)
-    model = fit_architecture(
-        spec.architecture,  # type: ignore[arg-type]
-        train,
-        validation,
-        feature_columns=feature_columns,
-        target_column=target,
-        config=config.models,
-        model_threads=config.resources.model_threads,
-        cluster_mapping=fold.cluster_mapping,
-        explicit_symbol_id=spec.explicit_symbol_id,
-        symbol_balanced=spec.symbol_balanced,
-        hybrid_calibration=validation if spec.architecture == "H0" else None,
-        eligibility_calibration_a=calibration_a,
+    if reporter is not None:
+        reporter.training_started(
+            fold_position=fold_position,
+            folds_total=folds_total,
+            spec=asdict(spec),
+            eligible_coins=len(fold.eligibility_manifest["eligible_symbols"]),
+            train_rows=train.num_rows,
+            validation_rows=validation.num_rows,
+            feature_count=len(feature_columns),
+            train_start=fold.plan.train_start,
+            train_end=fold.plan.train_end,
+            validation_start=fold.plan.validation_start,
+            validation_end=fold.plan.validation_end,
+        )
+    fit_context = (
+        reporter.model_fit(
+            fold_position=fold_position,
+            folds_total=folds_total,
+            spec=asdict(spec),
+            feature_count=len(feature_columns),
+            train_rows=train.num_rows,
+            validation_rows=validation.num_rows,
+        )
+        if reporter is not None
+        else nullcontext()
     )
+    with fit_context:
+        model = fit_architecture(
+            spec.architecture,  # type: ignore[arg-type]
+            train,
+            validation,
+            feature_columns=feature_columns,
+            target_column=target,
+            config=config.models,
+            model_threads=config.resources.model_threads,
+            cluster_mapping=fold.cluster_mapping,
+            explicit_symbol_id=spec.explicit_symbol_id,
+            symbol_balanced=spec.symbol_balanced,
+            hybrid_calibration=validation if spec.architecture == "H0" else None,
+            eligibility_calibration_a=calibration_a,
+        )
     cal_a_raw, cal_a_covered = model.predict(calibration_a)
     cal_a_table, cal_a_predictions = _subset_covered(calibration_a, cal_a_raw, cal_a_covered)
     calibrator, calibration_report = fit_calibrator(
@@ -539,6 +574,14 @@ def _run_one(
     report_path = atomic_json(output_root / "report.json", report)
     model_path = output_root / "model.joblib"
     save_model(model, model_path)
+    if reporter is not None:
+        reporter.fold_evaluation(
+            report,
+            trade_summary=oos_trade_summary(trades),
+            elapsed_seconds=time.monotonic() - experiment_started,
+            fold_position=fold_position,
+            folds_total=folds_total,
+        )
     return report, [model_path, report_path]
 
 
@@ -554,6 +597,7 @@ def run_phase7_training(
     run_root: Path,
     resume: bool,
     unusable_segments: tuple[CausalDataGap, ...] = (),
+    reporter: ProgressReporter | None = None,
 ) -> dict[str, Any]:
     config.assert_cloud_execution_allowed()
     manifest = _load_gold_manifest(gold_manifest_path)
@@ -591,6 +635,14 @@ def run_phase7_training(
                 for horizon, table in fold_tables.items()
             }
             reference_fold = sliced[horizons[0]]
+            if reporter is not None:
+                reporter.fold_started(
+                    fold_position=fold_position,
+                    folds_total=len(folds),
+                    research_view=research_view,
+                    eligible_coins=len(reference_fold.eligibility_manifest["eligible_symbols"]),
+                    plan=plan,
+                )
             for symbol in reference_fold.eligibility_manifest["eligible_symbols"]:
                 key = f"{research_view}:{symbol}"
                 eligible_fold_ids_by_symbol.setdefault(key, set()).add(plan.fold_id)
@@ -664,6 +716,9 @@ def run_phase7_training(
                         config,
                         output,
                         checkpoint_identity,
+                        reporter=reporter,
+                        fold_position=fold_position,
+                        folds_total=len(folds),
                     )
                 except ValueError as exc:
                     report = {
@@ -682,6 +737,8 @@ def run_phase7_training(
                     files = [atomic_json(report_path, report)]
                 checkpoint_store.complete(stage, files, checkpoint_identity)
                 reports.append(report)
+        if reporter is not None:
+            reporter.fold_completed(fold_position, len(folds), plan.fold_id)
     fold_completion = summarize_fold_completion(
         tuple(plan.fold_id for plan in folds),
         eligible_fold_ids_by_symbol,
@@ -701,4 +758,6 @@ def run_phase7_training(
         **config.holdout_status_payload(),
     }
     atomic_json(run_root / "training_summary.json", summary)
+    if reporter is not None:
+        reporter.training_completed(summary)
     return summary

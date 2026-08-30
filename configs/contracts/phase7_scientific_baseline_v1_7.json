@@ -1,0 +1,104 @@
+{
+  "artifact_fingerprint": {
+    "algorithm": "artifact_fingerprint_v1",
+    "combined": {
+      "byte_count": 2875078792,
+      "file_count": 18885,
+      "sha256": "ad44fe62a5bae2df4c9b21f3d39f02b2141fe4dd6db7db022bb3fe6ee62103f1"
+    },
+    "roots": {
+      "data": {
+        "byte_count": 1955207062,
+        "file_count": 16754,
+        "sha256": "c2060c9ec37917df8cbc31eab0dd437523eaebbef01ba0e74fb5b911d6e510d2"
+      },
+      "local_artifacts": {
+        "byte_count": 919871730,
+        "file_count": 2131,
+        "sha256": "c6121785ca4d07bd6278199d706df4b9e582b4f064b299f7478c87a3d1d50af8"
+      }
+    }
+  },
+  "baseline_id": "phase7_scientific_baseline_v1_7",
+  "contract_version": "1.0.8",
+  "correctness_amendment": {
+    "acquisition_semantics_changed": false,
+    "configuration_changed": false,
+    "observability_changed": true,
+    "predecessor_baseline_id": "phase7_scientific_baseline_v1_6",
+    "quality_policy_semantics_changed": false,
+    "raw_or_historical_artifacts_changed": false,
+    "reason": "Adds side-effect-only structured and human-readable Phase 7 progress reporting, an atomic resumable runtime progress file, and a model-state-independent training heartbeat. No data, feature, target, fold, model, calibration, threshold, cost, qualification, or holdout behavior changes.",
+    "scientific_contract_values_changed": false,
+    "universe_eligibility_semantics_changed": false
+  },
+  "scientific_contract": {
+    "architectures": [
+      "G0",
+      "C0",
+      "P0",
+      "H0"
+    ],
+    "configuration_hash": "cc550337f1f4ee4654124bf6",
+    "core_universe_version": "core_universe_v1",
+    "decision_latency_bars": 1,
+    "expansion_universe_version": "expansion_universe_v2",
+    "feature_count": 54,
+    "feature_version": "multiasset_features_v2",
+    "fold_count": 16,
+    "july_2026_used": false,
+    "market_context_version": "market_context_v2",
+    "prospective_holdout_evaluation_authorized": false,
+    "prospective_holdout_start": "2026-08-01T00:00:00+00:00",
+    "prospective_holdout_status": "LOCKED_UNUSED",
+    "prospective_holdout_used": false,
+    "research_cutoff_exclusive": "2026-07-01T00:00:00+00:00",
+    "research_views": [
+      "CORE",
+      "EXPANDING"
+    ],
+    "target_horizons_minutes": [
+      15,
+      30,
+      60,
+      120
+    ],
+    "target_version": "multiasset_targets_v2"
+  },
+  "source_freeze": {
+    "configs/data_quality/default.toml": "659f7e942fc9865b0f23b3c91e9d686326f049d82d363534a06f07e26adc6571",
+    "configs/phase7/research_v1.toml": "75a5878cba0ca786163a347464db1d17b9f7b555875ab1624ab4f325f8344b29",
+    "src/crypto_ai/data/binance/__init__.py": "f42636c96afdf8cc83cc773cd38a751c4e8040f44ccc725b209281251d65abb1",
+    "src/crypto_ai/data/binance/archive.py": "98b1152877d0c1d8f2f8cadd6cf46e04997ef60c82ba216c334356869ed0dfe1",
+    "src/crypto_ai/data/binance/client.py": "06c1e99396dde02df817171015ebfdad9d0863518924eb6a6651084fe04c0820",
+    "src/crypto_ai/data/ingestion/downloader.py": "fcc8f2dede205d30a21d6c51c0878f7c1e1917bfbbf7b3fc74718fd972ce7be6",
+    "src/crypto_ai/data/quality/checks.py": "f11652120dd241b15b696690787088df5c89f63f9e4097e11704e200785e4595",
+    "src/crypto_ai/data/quality/engine.py": "36f1fa3805f2a44fe0f221ac60443b663eabfec2811479697af8ecb7743caad5",
+    "src/crypto_ai/data/quality/models.py": "407c23ac41ccdd378442cfad7b4d75255dff4c534c5f704f026a0b56935d7a69",
+    "src/crypto_ai/data/quality/policy.py": "c74cc6aecf08054900424cfae06659390117ee7f239b6ac6ea4902a61d566b90",
+    "src/crypto_ai/data/quality/promotion.py": "f65b9845b551aa57cb8736c8e90d0be1ece3a2da8432cb33a523c5978045abdf",
+    "src/crypto_ai/phase4_1/equivalence.py": "a19ee8b185605a75d3abe5c1644cdb55a24a4dd1bb9928afacdf1459df7a6a79",
+    "src/crypto_ai/phase4_1/reconcile.py": "150b1ffa9bd4df79cb531f9236ecb02638d3b6879855d6abb3b32a70d260b7f6",
+    "src/crypto_ai/phase7/__init__.py": "ac6a1d89621ac68d2d18410f22cb3ab080414b056ddc08b09a18193f3d81ec1b",
+    "src/crypto_ai/phase7/acquisition.py": "08401396d1bc0988a248506c915553fc7eef24162ea564e8417f79e3aad81922",
+    "src/crypto_ai/phase7/artifacts.py": "1f802c2ad766c62a7f4a83b9c2b3f288eaaaef6b363e7ae74ff4fd23e5d434c6",
+    "src/crypto_ai/phase7/config.py": "8c7da8af299da9715a2b8a45e53193894146150f4a207a18bb2fabc53063dfa0",
+    "src/crypto_ai/phase7/economics.py": "5345589c367cea00633f1498e58915f94f5ebb13e5347acd30a09290c7b12b25",
+    "src/crypto_ai/phase7/features.py": "36767fedd19cbd0a12187bc95b8559db45b1947130b4e476a37823ba458c23c6",
+    "src/crypto_ai/phase7/fixtures.py": "c878ebc0da1df698d5f98a78edb1090e7a5ea45827e1c4796604ff67a6a4f4e7",
+    "src/crypto_ai/phase7/folds.py": "bf18a59e339a8c890cbc6f2029b4cb445134e5e742d67bad0875a1895d07c6d5",
+    "src/crypto_ai/phase7/gold.py": "78b7e0496bfc7168277e65b371143ba80b8141ebbc21d67cbbb79ed61820daf5",
+    "src/crypto_ai/phase7/metrics.py": "30ae63598ef80ab509f37efb3da65ce033953b0c4e87118e48221bad8e3cf47e",
+    "src/crypto_ai/phase7/models.py": "207a05fae8fa09cd38ecfb42081f2d8f73582740174f2ed05f87e8e81b6fe387",
+    "src/crypto_ai/phase7/pipeline.py": "4ac4e9e3340d8e6f650072b929d589d2be50735f22a41df9bc10939327201186",
+    "src/crypto_ai/phase7/progress.py": "337a61c4d5f7afd8b52a90f079f81a5f71fcd66b0a7603cf030c96073972cfe0",
+    "src/crypto_ai/phase7/quality.py": "7d00f78983144ed40d0bbbeb073b5002ba52039eea3bb3621cf276132ddb5518",
+    "src/crypto_ai/phase7/registry.py": "3e912e3071250ccf386b3e0d136ebb05d38b2b9fbcede28657114c433cc14463",
+    "src/crypto_ai/phase7/runner.py": "250f5ba5dd6a7faac284ef91711e94b152f34e367ac640825a072090861a1ea9",
+    "src/crypto_ai/phase7/segments.py": "0beca63b9252dff61b823998f7bca3db48d4e4f2403623df1ee2b0b3134ee031",
+    "src/crypto_ai/phase7/sources.py": "9ad4eb11f6eff62ced0492dcd324ad5c95cc7018bae5b5a0ba8cf3294cbe52bd",
+    "src/crypto_ai/phase7/targets.py": "93c5688f9906c379009102a56fb282e5bf99a622af70e38e1e50169d19095b78",
+    "src/crypto_ai/phase7/training.py": "75a9a07497f39f0e27f15f86f4844745bf2c8553f9ca085ac2506b5cb03cc3cc",
+    "src/crypto_ai/phase7/universe.py": "e35b0dbcc802bcdb837dc34ae02a265c7fc3a5c16c609365e86e5b93b4df24db"
+  }
+}
