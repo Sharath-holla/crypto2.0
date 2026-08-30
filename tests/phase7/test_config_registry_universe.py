@@ -129,6 +129,47 @@ def test_universe_ignores_future_descriptor_perturbation() -> None:
     assert baseline.universe_hash == perturbed.universe_hash
 
 
+def test_future_zero_trade_descriptor_cannot_remove_earlier_fold_symbol() -> None:
+    config = UniverseConfig(
+        core_target_size=4,
+        fixture_mode=True,
+        expansion_max_symbols_per_fold=2,
+        total_max_symbols_per_fold=6,
+        minimum_history_days=90,
+        age_bucket_edges_days=(90, 180, 365),
+        minimum_trailing_quote_volume=500_000,
+        selection_lookback_days=30,
+    )
+    registry = synthetic_registry()
+    descriptors = synthetic_descriptors(as_of=datetime(2022, 1, 1, tzinfo=UTC))
+    symbol = descriptors[0].symbol
+    descriptors.append(
+        descriptors[0].model_copy(
+            update={
+                "as_of": datetime(2024, 1, 1, tzinfo=UTC),
+                "trailing_quote_volume": 0.0,
+                "trade_intensity": 0.0,
+                "warnings": ("zero_volume_candles_present",),
+            }
+        )
+    )
+
+    decisions = fold_local_eligibility(
+        registry,
+        descriptors,
+        train_end=datetime(2023, 1, 1, tzinfo=UTC),
+        config=config,
+        candidate_symbols={symbol},
+    )
+
+    assert decisions[0].status in {
+        EligibilityStatus.ELIGIBLE,
+        EligibilityStatus.ELIGIBLE_WITH_WARNING,
+    }
+    assert decisions[0].descriptor is not None
+    assert decisions[0].descriptor.as_of == datetime(2022, 1, 1, tzinfo=UTC)
+
+
 def test_fold_liquidity_eligibility_uses_only_train_known_descriptor() -> None:
     config = UniverseConfig(
         core_target_size=4,

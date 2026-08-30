@@ -1,6 +1,6 @@
 # Data Quality and Silver Promotion
 
-Validator version: `1.1.0`
+Validator version: `1.2.0`
 Report schema version: `1.0.0`
 
 ## Architecture
@@ -63,9 +63,9 @@ The deterministic gate returns `FAIL` if any check fails, otherwise `WARN` if an
 - Gap classification: unknown causes are recorded as `UNKNOWN_GAP`; maintenance, listing, and delisting causes are never fabricated.
 - OHLC: positive prices and every high/low/open/close relationship.
 - Volume and trades: non-negative base/quote/taker volumes and trade counts, taker volume not exceeding total volume, positive volume with zero trades, and zero base volume with any non-zero quote/trade/taker activity.
-- Zero volume: partition-level count, percentage, runs and timestamp samples remain warnings; warning/failure percentage severity is applied to the complete logical manifest or standalone file.
+- Zero volume: partition-level and manifest-level count, percentage, runs, and timestamp samples remain auditable liquidity warnings; prevalence alone never establishes corruption.
 - Outliers: trailing fractional returns with rolling median and median absolute deviation (MAD). Candidates are warnings and are never deleted.
-- Staleness: configurable repeated flat-candle runs.
+- Staleness: configurable repeated flat-candle runs with reported activity; structurally valid no-trade flats remain liquidity observations.
 - Identity: homogeneous expected symbol and source.
 - Ingestion time: ingestion after represented market close and not implausibly later than validator time.
 - Partition bounds: all opens belong to the declared half-open partition range.
@@ -86,25 +86,24 @@ The typed policy is stored in `configs/data_quality/default.toml`.
 - Missing percentage: `0` allowed.
 - Consecutive missing intervals: `0` allowed.
 - Exact duplicate count: `0` allowed.
-- Zero-volume presence: warning. Percentage failure requires at least 100
-  manifest/file candles and then occurs only above `5%`.
+- Zero-volume presence: warning. Structurally consistent no-trade prevalence never hard-fails source integrity.
 - Outlier window: 21 returns; minimum history 7; MAD threshold 12.
 - Repeated flat candles: warning at 3, fail at 12.
 - Ingestion future tolerance: 300 seconds.
 - Silver promotion: `PASS` and `WARN` allowed; any `FAIL` rejected.
 
-The 100-observation denominator gives the percentage statistic at most
-one-percentage-point resolution before it can reject a dataset. It prevents a
-single 1d candle from becoming a 100% failure while still making six or more
-zero-volume candles in 100 a failure. Below 100, zero volume remains visible as
-a warning; impossible volume/activity relationships fail immediately regardless
-of sample size.
+The retained `zero_volume_failure_percentage` and
+`zero_volume_percentage_min_observations` fields are deprecated for integrity
+severity in validator 1.2. They remain parse-compatible and are emitted as
+historical liquidity-policy metadata, but cannot reject structurally consistent
+no-trade observations. Impossible volume/activity relationships still fail
+immediately regardless of sample size.
 
 `default.toml` is the shared policy for future repository validations, not a
-Phase-7-only file. Validator 1.1.0 and its versioned Silver paths ensure the new
-semantics create new lineage instead of changing or overwriting validator 1.0.0
-reports, historical Silver, or frozen Phase 1-6 artifacts. The new field has a
-typed default of 100, so older policy files remain parse-compatible.
+Phase-7-only file. Validator 1.2.0 and its versioned Silver paths ensure the corrected semantics
+create new lineage instead of changing or overwriting validator 1.0.0 or 1.1.0
+reports, historical Silver, or frozen Phase 1-6 artifacts. Older policy files
+remain parse-compatible.
 
 Changing policy changes the deterministic report ID and therefore the Silver dataset version.
 
@@ -119,21 +118,20 @@ Changing policy changes the deterministic report ID and therefore the Silver dat
 | Impossible OHLC | Yes | No | Reject; never rearrange values. |
 | Negative/inconsistent volume | Yes | No | Reject. |
 | Statistical outlier | Yes | No | Preserve row and warn. |
-| Zero volume | Yes | No | Preserve and warn per partition; evaluate percentage severity over the complete dataset. |
-| Stale flat run | Yes | No | Preserve and warn/fail according to policy. |
+| Zero volume | Yes | No | Preserve; warn and aggregate liquidity metrics over the complete dataset. |
+| Stale flat run | Yes | No | Warn/fail repeated flat candles with reported activity; valid no-trade flats remain liquidity warnings. |
 
 Silver retains the canonical Candle schema and exact Decimal/UTC values. The only implemented transformations are chronological sorting and policy-authorized field-identical deduplication. No indicators, features, labels, interpolation, or market-value repairs are permitted.
 
-Each Silver file embeds source file/checksum, source manifest and dataset version, quality report ID, validator version, Silver dataset version, and exact-duplicate removal count. Validator 1.1.0 writes under a deterministic `versions/silver_dataset_version=.../` namespace, so earlier immutable Silver can coexist with new quality semantics. The Silver manifest records the same lineage for the complete promoted dataset.
+Each Silver file embeds source file/checksum, source manifest and dataset version, quality report ID, validator version, Silver dataset version, and exact-duplicate removal count. Validator 1.2.0 writes under a deterministic `versions/silver_dataset_version=.../` namespace, so earlier immutable Silver can coexist with new quality semantics. The Silver manifest records the same lineage for the complete promoted dataset.
 
 ## Known follow-up: stale flat runs
 
-`stale_flat_run` remains partition-scoped. A repeated flat-price run spanning
-multiple daily files can therefore be fragmented, especially for 12h and 1d
-data. Reusing the zero-volume merger is not safe because stale runs must also
-carry and compare the exact flat price across each contiguous boundary. This is
-tracked as a separate hardening item; the current task does not silently relax
-or reinterpret the existing per-partition stale-flat rule.
+`stale_flat_run` remains partition-scoped and applies only to repeated flat
+candles that report actual activity. Structurally consistent no-trade flats are
+tracked by zero-volume liquidity metrics and cannot become corruption failures.
+An active flat-price run spanning daily files can still be fragmented; a later
+price-aware manifest aggregator must carry exact prices across boundaries.
 
 ## Quarantine
 

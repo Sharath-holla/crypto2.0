@@ -144,23 +144,10 @@ def _zero_volume_prevalence_check(
     percentage = zero_count / total_observations * 100.0 if total_observations else 0.0
     sufficient_observations = total_observations >= policy.zero_volume_percentage_min_observations
     exceeds_warning = zero_count > 0 and percentage > policy.zero_volume_warning_percentage
-    failure = (
-        exceeds_warning
-        and sufficient_observations
-        and percentage > policy.zero_volume_failure_percentage
-    )
-    if failure:
-        status = ValidationStatus.FAIL
-        severity = ValidationSeverity.ERROR
-        message = "Dataset zero-volume share exceeds the configured failure threshold"
-    elif exceeds_warning:
+    if exceeds_warning:
         status = ValidationStatus.WARN
         severity = ValidationSeverity.WARNING
-        message = (
-            "Dataset contains zero-volume candles below failure severity"
-            if sufficient_observations
-            else "Dataset contains zero-volume candles with an insufficient failure denominator"
-        )
+        message = "Dataset contains structurally valid zero-volume liquidity observations"
     else:
         status = ValidationStatus.PASS
         severity = ValidationSeverity.INFO
@@ -179,11 +166,13 @@ def _zero_volume_prevalence_check(
             "zero_volume_percentage": percentage,
             "consecutive_runs": runs,
             "sufficient_observations_for_failure": sufficient_observations,
+            "hard_failure_enabled": False,
         },
         expected={
             "warning_above_percentage": policy.zero_volume_warning_percentage,
             "failure_above_percentage": policy.zero_volume_failure_percentage,
             "minimum_observations_for_failure": (policy.zero_volume_percentage_min_observations),
+            "failure_threshold_effect": "deprecated_liquidity_metadata_only",
         },
         affected=zero_count,
         samples=samples,

@@ -9,7 +9,7 @@ from enum import StrEnum
 from pathlib import Path
 from typing import Any
 
-QUALITY_VALIDATOR_VERSION = "1.1.0"
+QUALITY_VALIDATOR_VERSION = "1.2.0"
 QUALITY_REPORT_SCHEMA_VERSION = "1.0.0"
 
 

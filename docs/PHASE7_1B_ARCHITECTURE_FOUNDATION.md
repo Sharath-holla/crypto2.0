@@ -15,8 +15,10 @@ authorized pre-cloud onboard-boundary correction is frozen by the successor
 archive-boundary correction is frozen separately by
 `configs/contracts/phase7_scientific_baseline_v1_2.json`. Manifest-level
 zero-volume quality semantics are frozen by
-`configs/contracts/phase7_scientific_baseline_v1_3.json`; contract tests fail on
-any further byte drift in the authoritative successor.
+`configs/contracts/phase7_scientific_baseline_v1_3.json`. The approved
+integrity-liquidity separation is frozen by
+`configs/contracts/phase7_scientific_baseline_v1_4.json`; contract tests fail
+on any further byte drift in the authoritative successor.
 
 The only concrete execution adapter is `DisabledExecutionAdapter`. It performs
 no I/O and returns `EXECUTION_DISABLED_PHASE7_1B` for submit and cancel
@@ -30,8 +32,8 @@ The authoritative baseline is:
 
 | Property | Frozen value |
 |---|---|
-| Baseline identity | `phase7_scientific_baseline_v1_3` |
-| Phase 7 version | `1.3.0` |
+| Baseline identity | `phase7_scientific_baseline_v1_4` |
+| Phase 7 version | `1.4.0` |
 | Configuration hash | `cc550337f1f4ee4654124bf6` |
 | Feature contract | `multiasset_features_v2` |
 | Market context contract | `market_context_v2` |
@@ -235,9 +237,9 @@ Any later scientific change must create a new baseline manifest rather than
 edit an existing baseline. `phase7_scientific_baseline_v1_1` retains v1 and
 records the authorized interval-aware onboard-boundary correction;
 `phase7_scientific_baseline_v1_2` retains both predecessors and records the
-exact per-interval archive-boundary correction. V1_3 retains all three prior
-contracts and records the versioned manifest-level zero-volume quality
-correction. Before accepting another manifest, review must compare feature values, target values, folds, universes, row membership,
+exact per-interval archive-boundary correction. V1_3 retains all three prior contracts and records versioned manifest-level
+zero-volume aggregation. V1_4 retains every predecessor and records the approved
+separation of valid no-trade liquidity from source corruption. Before accepting another manifest, review must compare feature values, target values, folds, universes, row membership,
 predictions and economics on identical fixtures/artifacts.
 
 If the Phase 7 source/config hashes change during Phase 7.1B, or any safe CLI

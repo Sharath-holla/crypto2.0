@@ -320,6 +320,36 @@ def test_stale_repeated_flat_candles_warn() -> None:
     assert "stale_flat_run" in _codes(result, ValidationStatus.WARN)
 
 
+def test_valid_no_trade_flat_run_is_liquidity_warning_not_staleness_failure() -> None:
+    price = Decimal("65000")
+    candles = [
+        _no_trade(replace(make_candle(index), open=price, high=price, low=price, close=price))
+        for index in range(12)
+    ]
+
+    result = _validate(candles)
+
+    assert result.status is ValidationStatus.WARN
+    assert "zero_volume" in _codes(result, ValidationStatus.WARN)
+    assert "stale_flat_run" not in _codes(result)
+    assert result.metrics["longest_stale_flat_run"] == 0
+    assert result.metrics["longest_valid_no_trade_flat_run"] == 12
+
+
+def test_flat_run_with_positive_activity_retains_staleness_failure() -> None:
+    price = Decimal("65000")
+    candles = [
+        replace(make_candle(index), open=price, high=price, low=price, close=price)
+        for index in range(12)
+    ]
+
+    result = _validate(candles)
+
+    assert "stale_flat_run" in _codes(result, ValidationStatus.FAIL)
+    assert result.metrics["longest_stale_flat_run"] == 12
+    assert result.metrics["longest_valid_no_trade_flat_run"] == 0
+
+
 def test_source_symbol_ingestion_and_partition_consistency_failures() -> None:
     base = make_candle()
     mixed = [base, make_candle(1, symbol="ETHUSDT")]

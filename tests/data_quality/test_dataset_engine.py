@@ -240,10 +240,16 @@ def test_machine_readable_report_is_deterministic_and_versioned(tmp_path: Path) 
     assert first.report_id == second.report_id
     assert first_path == second_path
     assert payload["report_schema_version"] == "1.0.0"
-    assert payload["validator_version"] == "1.1.0"
+    assert payload["validator_version"] == "1.2.0"
     assert payload["overall_status"] == "PASS"
     assert payload["source_files"]
     assert payload["checks"]
+
+    legacy = replace(first, validator_version="1.1.0", report_id="")
+    legacy_path = engine.write_report(legacy, tmp_path / "quality")
+    assert legacy.report_id != first.report_id
+    assert legacy_path != first_path
+    assert legacy_path.exists() and first_path.exists()
 
 
 def test_overall_warn_and_fail_statuses_are_deterministic(tmp_path: Path) -> None:
@@ -344,7 +350,52 @@ def test_manifest_share_uses_complete_daily_history_denominator(tmp_path: Path) 
     assert report.summary["consecutive_zero_volume_runs"] == [1]
 
 
-def test_manifest_zero_share_failure_is_independent_of_physical_boundaries(
+def test_complete_valid_no_trade_manifest_is_liquidity_warning(tmp_path: Path) -> None:
+    start = datetime(2025, 1, 1, tzinfo=UTC)
+    candles = [_no_trade(make_candle(index, start=start)) for index in range(100)]
+    manifest_path, _ = write_bronze_dataset(
+        tmp_path,
+        [(start, start + timedelta(minutes=500), candles)],
+    )
+
+    report = QualityEngine().validate_manifest(manifest_path)
+
+    prevalence = next(
+        check for check in report.checks if check.check_name == "zero_volume_prevalence"
+    )
+    assert report.overall_status is ValidationStatus.WARN
+    assert prevalence.status is ValidationStatus.WARN
+    assert prevalence.observed_value["hard_failure_enabled"] is False
+    assert prevalence.expected_value["failure_threshold_effect"] == (
+        "deprecated_liquidity_metadata_only"
+    )
+    assert report.summary["zero_volume_count"] == 100
+    assert report.summary["zero_volume_percentage"] == 100.0
+    assert report.summary["consecutive_zero_volume_runs"] == [100]
+
+
+def test_1000why_shape_is_valid_liquidity_warning(tmp_path: Path) -> None:
+    start = datetime(2024, 11, 25, tzinfo=UTC)
+    candles = [make_candle(index, start=start, interval_minutes=24 * 60) for index in range(583)]
+    candles[-105:] = [_no_trade(candle) for candle in candles[-105:]]
+    manifest_path, _ = write_bronze_dataset(
+        tmp_path,
+        [(start, start + timedelta(days=583), candles)],
+        interval="1d",
+    )
+
+    report = QualityEngine().validate_manifest(manifest_path)
+
+    assert report.overall_status is ValidationStatus.WARN
+    assert "zero_volume_prevalence" in _codes(report, ValidationStatus.WARN)
+    assert "zero_volume_prevalence" not in _codes(report, ValidationStatus.FAIL)
+    assert report.summary["observed_candles"] == 583
+    assert report.summary["zero_volume_count"] == 105
+    assert report.summary["zero_volume_percentage"] == pytest.approx(105 / 583 * 100)
+    assert report.summary["consecutive_zero_volume_runs"] == [105]
+
+
+def test_manifest_zero_share_warning_is_independent_of_physical_boundaries(
     tmp_path: Path,
 ) -> None:
     start = datetime(2025, 1, 1, tzinfo=UTC)
@@ -369,9 +420,9 @@ def test_manifest_zero_share_failure_is_independent_of_physical_boundaries(
     whole = QualityEngine().validate_manifest(whole_manifest)
     split = QualityEngine().validate_manifest(split_manifest)
 
-    assert whole.overall_status is split.overall_status is ValidationStatus.FAIL
-    assert "zero_volume_prevalence" in _codes(whole, ValidationStatus.FAIL)
-    assert "zero_volume_prevalence" in _codes(split, ValidationStatus.FAIL)
+    assert whole.overall_status is split.overall_status is ValidationStatus.WARN
+    assert "zero_volume_prevalence" in _codes(whole, ValidationStatus.WARN)
+    assert "zero_volume_prevalence" in _codes(split, ValidationStatus.WARN)
     assert whole.summary["zero_volume_percentage"] == 6.0
     assert split.summary["zero_volume_percentage"] == 6.0
     assert whole.summary["consecutive_zero_volume_runs"] == [6]

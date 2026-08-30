@@ -569,8 +569,8 @@ def validate_partition(
                 ValidationStatus.WARN,
                 ValidationSeverity.WARNING,
                 (
-                    f"Found {len(zero_indexes)} zero-volume candles; percentage severity "
-                    "is evaluated over the complete dataset"
+                    f"Found {len(zero_indexes)} structurally valid zero-volume candles; "
+                    "prevalence is a liquidity observation"
                 ),
                 observed_value={
                     "count": len(zero_indexes),
@@ -581,7 +581,7 @@ def validate_partition(
                 expected_value={
                     "warning_above_percentage": policy.zero_volume_warning_percentage,
                     "failure_above_percentage": policy.zero_volume_failure_percentage,
-                    "failure_scope": "manifest_or_standalone_file",
+                    "failure_scope": "deprecated_liquidity_metadata_only",
                     "minimum_observations": policy.zero_volume_percentage_min_observations,
                 },
                 affected_rows=len(zero_indexes),
@@ -589,15 +589,34 @@ def validate_partition(
             )
         )
 
+    # Repeated flat prices are suspicious only when the source reports actual
+    # trading activity. A structurally valid no-trade candle is source truth
+    # about liquidity and is already exposed by the zero-volume checks above.
     flat_run_lengths: list[int] = []
+    no_trade_flat_run_lengths: list[int] = []
     current_flat_run = 0
+    current_no_trade_flat_run = 0
     previous_flat_price: Decimal | None = None
+    previous_no_trade_flat_price: Decimal | None = None
     for row in rows:
         is_flat = row["open"] == row["high"] == row["low"] == row["close"]
-        if is_flat and (previous_flat_price is None or previous_flat_price == row["close"]):
+        is_no_trade = row["base_volume"] == 0 and all(
+            row[name] == 0
+            for name in (
+                "quote_volume",
+                "trade_count",
+                "taker_buy_base_volume",
+                "taker_buy_quote_volume",
+            )
+        )
+        if (
+            is_flat
+            and not is_no_trade
+            and (previous_flat_price is None or previous_flat_price == row["close"])
+        ):
             current_flat_run += 1
             previous_flat_price = row["close"]
-        elif is_flat:
+        elif is_flat and not is_no_trade:
             if current_flat_run:
                 flat_run_lengths.append(current_flat_run)
             current_flat_run = 1
@@ -607,10 +626,32 @@ def validate_partition(
                 flat_run_lengths.append(current_flat_run)
             current_flat_run = 0
             previous_flat_price = None
+        if (
+            is_flat
+            and is_no_trade
+            and (
+                previous_no_trade_flat_price is None or previous_no_trade_flat_price == row["close"]
+            )
+        ):
+            current_no_trade_flat_run += 1
+            previous_no_trade_flat_price = row["close"]
+        elif is_flat and is_no_trade:
+            if current_no_trade_flat_run:
+                no_trade_flat_run_lengths.append(current_no_trade_flat_run)
+            current_no_trade_flat_run = 1
+            previous_no_trade_flat_price = row["close"]
+        else:
+            if current_no_trade_flat_run:
+                no_trade_flat_run_lengths.append(current_no_trade_flat_run)
+            current_no_trade_flat_run = 0
+            previous_no_trade_flat_price = None
     if current_flat_run:
         flat_run_lengths.append(current_flat_run)
+    if current_no_trade_flat_run:
+        no_trade_flat_run_lengths.append(current_no_trade_flat_run)
     longest_flat_run = max(flat_run_lengths, default=0)
     metrics["longest_stale_flat_run"] = longest_flat_run
+    metrics["longest_valid_no_trade_flat_run"] = max(no_trade_flat_run_lengths, default=0)
     if longest_flat_run >= policy.stale_flat_run_warning:
         failure = longest_flat_run >= policy.stale_flat_run_failure
         checks.append(

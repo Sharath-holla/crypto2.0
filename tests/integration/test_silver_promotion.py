@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from dataclasses import replace
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
@@ -63,6 +64,7 @@ def test_passing_bronze_promotes_with_lineage_and_preserves_bronze(tmp_path: Pat
     }
     assert metadata["source_dataset_version"] == report.dataset_version
     assert metadata["validation_report_id"] == report.report_id
+    assert metadata["validation_version"] == "1.2.0"
     assert metadata["silver_dataset_version"] == result.silver_dataset_version
     assert [file_sha256(path) for path in bronze_files] == bronze_hashes
 
@@ -181,7 +183,58 @@ def test_isolated_daily_no_trade_warning_promotes_without_mutation(tmp_path: Pat
     assert file_sha256(bronze_files[0]) == before_hash
 
 
-def test_manifest_zero_volume_failure_cannot_promote(tmp_path: Path) -> None:
+def test_structurally_inconsistent_zero_volume_does_not_promote(tmp_path: Path) -> None:
+    inconsistent = replace(_no_trade(make_candle()), quote_volume=Decimal("1"))
+    manifest_path, bronze_files = _one_partition(tmp_path, [inconsistent])
+    bronze_hash = file_sha256(bronze_files[0])
+    report = QualityEngine().validate_manifest(manifest_path)
+
+    result = SilverPromoter().promote(
+        manifest_path,
+        report,
+        silver_root=tmp_path / "silver",
+        quarantine_root=tmp_path / "quarantine",
+    )
+
+    assert report.overall_status is ValidationStatus.FAIL
+    assert not result.promoted
+    assert result.quarantine_record is not None
+    assert not list((tmp_path / "silver").rglob("*.parquet"))
+    assert file_sha256(bronze_files[0]) == bronze_hash
+
+
+def test_1000why_shape_promotes_with_validator_1_2_lineage(tmp_path: Path) -> None:
+    start = datetime(2024, 11, 25, tzinfo=UTC)
+    candles = [make_candle(index, start=start, interval_minutes=24 * 60) for index in range(583)]
+    candles[-105:] = [_no_trade(candle) for candle in candles[-105:]]
+    manifest_path, bronze_files = write_bronze_dataset(
+        tmp_path,
+        [(start, start + timedelta(days=583), candles)],
+        interval="1d",
+    )
+    bronze_hash = file_sha256(bronze_files[0])
+    report = QualityEngine().validate_manifest(manifest_path)
+
+    result = SilverPromoter().promote(
+        manifest_path,
+        report,
+        silver_root=tmp_path / "silver",
+        quarantine_root=tmp_path / "quarantine",
+    )
+
+    assert report.validator_version == "1.2.0"
+    assert report.overall_status is ValidationStatus.WARN
+    assert report.summary["zero_volume_count"] == 105
+    assert result.promoted
+    assert result.quarantine_record is None
+    assert result.promotion_manifest is not None
+    manifest = json.loads(result.promotion_manifest.read_text(encoding="utf-8"))
+    assert manifest["validation_version"] == "1.2.0"
+    assert manifest["validation_report_id"] == report.report_id
+    assert file_sha256(bronze_files[0]) == bronze_hash
+
+
+def test_manifest_high_valid_zero_volume_warning_promotes(tmp_path: Path) -> None:
     start = datetime(2025, 1, 1, tzinfo=UTC)
     candles = [make_candle(index, start=start) for index in range(100)]
     candles[:6] = [_no_trade(candle) for candle in candles[:6]]
@@ -199,8 +252,8 @@ def test_manifest_zero_volume_failure_cannot_promote(tmp_path: Path) -> None:
         quarantine_root=tmp_path / "quarantine",
     )
 
-    assert report.overall_status is ValidationStatus.FAIL
-    assert not result.promoted
-    assert result.quarantine_record is not None
-    assert not list((tmp_path / "silver").rglob("*.parquet"))
+    assert report.overall_status is ValidationStatus.WARN
+    assert result.promoted
+    assert result.quarantine_record is None
+    assert len(result.output_files) == 1
     assert [file_sha256(path) for path in bronze_files] == bronze_hashes

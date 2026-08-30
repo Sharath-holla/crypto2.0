@@ -74,8 +74,8 @@
   preserved as `phase7_scientific_baseline_v1`; the authorized pre-cloud
   onboard-boundary correction is frozen separately by v1_1, and the authorized
   exact per-interval archive-boundary correction is frozen by
-  v1_2. The manifest-level zero-volume quality correction is frozen by
-  `phase7_scientific_baseline_v1_3`. Phase 7.2 adds only disabled research
+  v1_2. The manifest-level zero-volume aggregation is frozen by v1_3, and the
+  integrity-liquidity separation is frozen by `phase7_scientific_baseline_v1_4`. Phase 7.2 adds only disabled research
   capabilities in a separate namespace. The manual cloud run remains pending.
 
 ## PHASE 7 PRE-PUSH STATUS
@@ -219,10 +219,10 @@ NOT STARTED
   2026-08-25. The earlier undocumented `11a00ed1...` combined digest is retained
   only as historical metadata and is not directly comparable with canonical
   v1.
-- `phase7_scientific_baseline_v1_3` is the authoritative pre-cloud scientific
-  source/config freeze after the acquisition-boundary and manifest-level
-  zero-volume quality correctness amendments. Its v1, v1_1 and v1_2
-  predecessors remain immutable historical evidence. Future architecture
+- `phase7_scientific_baseline_v1_4` is the authoritative pre-cloud scientific
+  source/config freeze after separating structurally valid no-trade liquidity
+  from corruption. Its v1 through v1_3 predecessors remain immutable historical
+  evidence. Future architecture
   services may depend on the additive `crypto_ai.contracts` package, but Phase 7 scientific modules must not import
   it. Any unreviewed hash or safe-output drift remains a correctness blocker.
 - Phase 7.2 remains an additive namespace. The first cloud baseline stays 5m,
