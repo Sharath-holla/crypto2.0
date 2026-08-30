@@ -15,6 +15,7 @@ class QualityPolicy(BaseModel):
     maximum_consecutive_missing_intervals: int = Field(default=0, ge=0)
     zero_volume_warning_percentage: float = Field(default=0.0, ge=0.0, le=100.0)
     zero_volume_failure_percentage: float = Field(default=5.0, ge=0.0, le=100.0)
+    zero_volume_percentage_min_observations: int = Field(default=100, ge=1)
     outlier_window: int = Field(default=21, ge=5, le=10_000)
     outlier_min_observations: int = Field(default=7, ge=3)
     outlier_mad_threshold: float = Field(default=12.0, gt=0.0)

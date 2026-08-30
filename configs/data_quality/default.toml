@@ -4,9 +4,11 @@ allowed_missing_percentage = 0.0
 allowed_duplicate_count = 0
 maximum_consecutive_missing_intervals = 0
 
-# Zero-volume BTC candles are warnings until they exceed this dataset share.
+# Zero-volume candles are preserved and warned. Dataset-level percentage
+# escalation requires this minimum denominator; more than 5% then fails.
 zero_volume_warning_percentage = 0.0
 zero_volume_failure_percentage = 5.0
+zero_volume_percentage_min_observations = 100
 
 # Conservative rolling median/MAD candidate detector. It never deletes rows.
 outlier_window = 21

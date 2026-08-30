@@ -7,6 +7,7 @@ maximum_consecutive_missing_intervals = 0
 
 zero_volume_warning_percentage = 0.0
 zero_volume_failure_percentage = 5.0
+zero_volume_percentage_min_observations = 100
 
 outlier_window = 21
 outlier_min_observations = 7

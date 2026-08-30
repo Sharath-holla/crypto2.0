@@ -45,6 +45,17 @@ class _Boundary:
     last_row: dict[str, Any]
 
 
+@dataclass(slots=True)
+class _ZeroVolumePartition:
+    declared_start: datetime | None
+    minimum: datetime
+    maximum: datetime
+    runs: tuple[int, ...]
+    leading_run: int
+    trailing_run: int
+    samples: tuple[datetime, ...]
+
+
 def _parse_datetime(value: object) -> datetime | None:
     if not isinstance(value, str):
         return None
@@ -87,6 +98,95 @@ def _check(
         expected_value=expected,
         affected_rows=affected,
         sample_rows=tuple(samples),
+    )
+
+
+def _aggregate_zero_volume_runs(
+    partitions: list[_ZeroVolumePartition],
+    *,
+    interval: str,
+    sample_limit: int,
+) -> tuple[list[int], list[datetime]]:
+    interval_delta = timedelta(milliseconds=interval_milliseconds(interval))
+    ordered = sorted(partitions, key=lambda item: item.declared_start or item.minimum)
+    runs: list[int] = []
+    samples: list[datetime] = []
+    previous: _ZeroVolumePartition | None = None
+    for partition in ordered:
+        partition_runs = list(partition.runs)
+        joins_previous = (
+            previous is not None
+            and previous.maximum + interval_delta == partition.minimum
+            and previous.trailing_run > 0
+            and partition.leading_run > 0
+        )
+        if joins_previous and runs and partition_runs:
+            runs[-1] += partition_runs[0]
+            runs.extend(partition_runs[1:])
+        else:
+            runs.extend(partition_runs)
+        samples.extend(partition.samples)
+        previous = partition
+    return runs, sorted(set(samples))[:sample_limit]
+
+
+def _zero_volume_prevalence_check(
+    *,
+    total_observations: int,
+    zero_count: int,
+    runs: list[int],
+    samples: list[datetime],
+    symbol: str,
+    interval: str,
+    scope: str,
+    policy: QualityPolicy,
+) -> ValidationResult:
+    percentage = zero_count / total_observations * 100.0 if total_observations else 0.0
+    sufficient_observations = total_observations >= policy.zero_volume_percentage_min_observations
+    exceeds_warning = zero_count > 0 and percentage > policy.zero_volume_warning_percentage
+    failure = (
+        exceeds_warning
+        and sufficient_observations
+        and percentage > policy.zero_volume_failure_percentage
+    )
+    if failure:
+        status = ValidationStatus.FAIL
+        severity = ValidationSeverity.ERROR
+        message = "Dataset zero-volume share exceeds the configured failure threshold"
+    elif exceeds_warning:
+        status = ValidationStatus.WARN
+        severity = ValidationSeverity.WARNING
+        message = (
+            "Dataset contains zero-volume candles below failure severity"
+            if sufficient_observations
+            else "Dataset contains zero-volume candles with an insufficient failure denominator"
+        )
+    else:
+        status = ValidationStatus.PASS
+        severity = ValidationSeverity.INFO
+        message = "Dataset zero-volume prevalence is within policy"
+    return _check(
+        "zero_volume_prevalence",
+        status,
+        severity,
+        message,
+        symbol=symbol,
+        interval=interval,
+        observed={
+            "scope": scope,
+            "total_observations": total_observations,
+            "zero_volume_count": zero_count,
+            "zero_volume_percentage": percentage,
+            "consecutive_runs": runs,
+            "sufficient_observations_for_failure": sufficient_observations,
+        },
+        expected={
+            "warning_above_percentage": policy.zero_volume_warning_percentage,
+            "failure_above_percentage": policy.zero_volume_failure_percentage,
+            "minimum_observations_for_failure": (policy.zero_volume_percentage_min_observations),
+        },
+        affected=zero_count,
+        samples=samples,
     )
 
 
@@ -135,6 +235,7 @@ class QualityEngine:
         checks: list[ValidationResult] = []
         source_files: list[dict[str, Any]] = []
         boundaries: list[_Boundary] = []
+        zero_volume_partitions: list[_ZeroVolumePartition] = []
         metric_totals: dict[str, int] = {
             "observed_candles": 0,
             "exact_duplicates": 0,
@@ -399,6 +500,28 @@ class QualityEngine:
                         last_row=last_row,
                     )
                 )
+                zero_volume_partitions.append(
+                    _ZeroVolumePartition(
+                        declared_start=declared_start,
+                        minimum=first_row["open_time"],
+                        maximum=last_row["open_time"],
+                        runs=tuple(
+                            int(value)
+                            for value in partition_validation.metrics.get(
+                                "consecutive_zero_volume_runs", []
+                            )
+                        ),
+                        leading_run=int(
+                            partition_validation.metrics.get("leading_zero_volume_run", 0)
+                        ),
+                        trailing_run=int(
+                            partition_validation.metrics.get("trailing_zero_volume_run", 0)
+                        ),
+                        samples=tuple(
+                            partition_validation.metrics.get("zero_volume_sample_timestamps", [])
+                        ),
+                    )
+                )
 
         manifest_row_count = manifest.get("row_count")
         if manifest_row_count != metric_totals["observed_candles"]:
@@ -426,6 +549,29 @@ class QualityEngine:
             )
         )
 
+        zero_volume_runs, zero_volume_samples = _aggregate_zero_volume_runs(
+            zero_volume_partitions,
+            interval=interval,
+            sample_limit=self.policy.sample_limit,
+        )
+        zero_volume_count = metric_totals["zero_volume_count"]
+        observed_candles = metric_totals["observed_candles"]
+        zero_volume_percentage = (
+            zero_volume_count / observed_candles * 100.0 if observed_candles else 0.0
+        )
+        checks.append(
+            _zero_volume_prevalence_check(
+                total_observations=observed_candles,
+                zero_count=zero_volume_count,
+                runs=zero_volume_runs,
+                samples=zero_volume_samples,
+                symbol=symbol,
+                interval=interval,
+                scope="manifest",
+                policy=self.policy,
+            )
+        )
+
         expected_candles = 0
         if range_start is not None and range_end is not None:
             interval_delta = timedelta(milliseconds=interval_milliseconds(interval))
@@ -437,6 +583,10 @@ class QualityEngine:
         )
         summary = {
             **metric_totals,
+            "zero_volume_percentage": zero_volume_percentage,
+            "consecutive_zero_volume_runs": zero_volume_runs,
+            "longest_zero_volume_run": max(zero_volume_runs, default=0),
+            "zero_volume_sample_timestamps": zero_volume_samples,
             "expected_candles": expected_candles,
             "missing_candles": missing_candles,
             "file_count": len(source_files),
@@ -572,6 +722,21 @@ class QualityEngine:
                 )
                 checks.extend(partition.checks)
                 metrics = {"observed_candles": table.num_rows, **partition.metrics}
+                checks.append(
+                    _zero_volume_prevalence_check(
+                        total_observations=table.num_rows,
+                        zero_count=int(partition.metrics.get("zero_volume_count", 0)),
+                        runs=[
+                            int(value)
+                            for value in partition.metrics.get("consecutive_zero_volume_runs", [])
+                        ],
+                        samples=list(partition.metrics.get("zero_volume_sample_timestamps", [])),
+                        symbol=symbol,
+                        interval=interval,
+                        scope="standalone_file",
+                        policy=self.policy,
+                    )
+                )
                 source_files[0]["row_count"] = table.num_rows
         expected = int(metrics.get("number_of_expected_candles", metrics["observed_candles"]))
         summary = {

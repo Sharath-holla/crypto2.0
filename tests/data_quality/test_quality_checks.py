@@ -18,6 +18,17 @@ from crypto_ai.data.schema import candles_to_table
 from tests.factories import make_candle
 
 
+def _no_trade(candle):
+    return replace(
+        candle,
+        base_volume=Decimal("0"),
+        quote_volume=Decimal("0"),
+        trade_count=0,
+        taker_buy_base_volume=Decimal("0"),
+        taker_buy_quote_volume=Decimal("0"),
+    )
+
+
 def _validate(candles, interval: str = "5m", **context_overrides):
     context = ValidationContext(
         symbol=context_overrides.pop("symbol", "BTCUSDT"),
@@ -185,16 +196,7 @@ def test_taker_volume_and_trade_count_relationships_fail() -> None:
 
 
 def test_zero_volume_reports_percentage_runs_and_configurable_warning() -> None:
-    candle = make_candle()
-    candles = [
-        replace(candle, base_volume=Decimal("0"), taker_buy_base_volume=Decimal("0")),
-        replace(
-            make_candle(1),
-            base_volume=Decimal("0"),
-            taker_buy_base_volume=Decimal("0"),
-        ),
-        make_candle(2),
-    ]
+    candles = [_no_trade(make_candle()), _no_trade(make_candle(1)), make_candle(2)]
     policy = QualityPolicy(zero_volume_failure_percentage=100.0)
 
     result = validate_partition(
@@ -205,7 +207,57 @@ def test_zero_volume_reports_percentage_runs_and_configurable_warning() -> None:
 
     assert result.status is ValidationStatus.WARN
     assert result.metrics["zero_volume_count"] == 2
+    assert result.metrics["zero_volume_percentage"] == pytest.approx(200 / 3)
     assert result.metrics["consecutive_zero_volume_runs"] == [2]
+    assert result.metrics["zero_volume_sample_timestamps"] == [
+        candles[0].open_time,
+        candles[1].open_time,
+    ]
+
+
+@pytest.mark.parametrize(
+    ("interval", "interval_minutes"),
+    [("5m", 5), ("12h", 12 * 60), ("1d", 24 * 60)],
+)
+def test_single_legitimate_no_trade_candle_is_preserved_and_warned(
+    interval: str,
+    interval_minutes: int,
+) -> None:
+    candle = _no_trade(make_candle(interval_minutes=interval_minutes))
+    table = candles_to_table([candle])
+    before = table.to_pylist()
+
+    result = validate_partition(
+        table,
+        ValidationContext(
+            symbol="BTCUSDT",
+            interval=interval,
+            source="binance_usdm_futures_rest",
+        ),
+    )
+
+    assert result.status is ValidationStatus.WARN
+    assert "zero_volume" in _codes(result, ValidationStatus.WARN)
+    assert "zero_base_volume_with_activity" not in _codes(result, ValidationStatus.FAIL)
+    assert result.metrics["zero_volume_count"] == 1
+    assert table.to_pylist() == before
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [
+        ("quote_volume", Decimal("1")),
+        ("trade_count", 1),
+        ("taker_buy_base_volume", Decimal("1")),
+        ("taker_buy_quote_volume", Decimal("1")),
+    ],
+)
+def test_zero_base_volume_with_any_reported_activity_fails(field: str, value: object) -> None:
+    inconsistent = replace(_no_trade(make_candle()), **{field: value})
+
+    result = _validate([inconsistent])
+
+    assert "zero_base_volume_with_activity" in _codes(result, ValidationStatus.FAIL)
 
 
 def test_statistical_spike_is_warning_and_row_is_not_deleted() -> None:

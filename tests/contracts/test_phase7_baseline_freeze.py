@@ -44,9 +44,15 @@ def test_phase7_scientific_source_and_config_are_byte_frozen() -> None:
     }
     expected_paths.update(
         {
+            "configs/data_quality/default.toml",
             "configs/phase7/research_v1.toml",
             "src/crypto_ai/data/binance/__init__.py",
             "src/crypto_ai/data/binance/archive.py",
+            "src/crypto_ai/data/quality/checks.py",
+            "src/crypto_ai/data/quality/engine.py",
+            "src/crypto_ai/data/quality/models.py",
+            "src/crypto_ai/data/quality/policy.py",
+            "src/crypto_ai/data/quality/promotion.py",
         }
     )
     assert set(source_freeze) == expected_paths

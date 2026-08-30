@@ -13,7 +13,6 @@ import pyarrow.parquet as pq
 
 from crypto_ai.data.ingestion.manifest import read_manifest, write_manifest
 from crypto_ai.data.quality.models import (
-    QUALITY_VALIDATOR_VERSION,
     DatasetQualityReport,
     ValidationStatus,
 )
@@ -21,6 +20,7 @@ from crypto_ai.data.quality.policy import QualityPolicy
 from crypto_ai.data.storage import file_sha256, read_candle_parquet, write_immutable
 
 logger = logging.getLogger(__name__)
+SILVER_TRANSFORMATION_VERSION = "sort-and-exact-deduplicate-v2-versioned-paths"
 
 
 @dataclass(frozen=True, slots=True)
@@ -39,8 +39,8 @@ def _silver_version(report: DatasetQualityReport) -> str:
     identity = {
         "dataset_version": report.dataset_version,
         "validation_report_id": report.report_id,
-        "validator_version": QUALITY_VALIDATOR_VERSION,
-        "transformation": "sort-and-exact-deduplicate-v1",
+        "validator_version": report.validator_version,
+        "transformation": SILVER_TRANSFORMATION_VERSION,
     }
     digest = hashlib.sha256(
         json.dumps(identity, sort_keys=True, separators=(",", ":")).encode("utf-8")
@@ -116,6 +116,7 @@ class SilverPromoter:
         bronze_root = manifest_path.parent.parent
         silver_root = silver_root.resolve()
         silver_version = _silver_version(report)
+        version_root = silver_root / "versions" / f"silver_dataset_version={silver_version}"
         output_files: list[Path] = []
         output_records: list[dict[str, Any]] = []
         duplicates_removed = 0
@@ -135,7 +136,7 @@ class SilverPromoter:
             table = read_candle_parquet(source_path)
             silver_table, removed = _deduplicate_exact(table)
             duplicates_removed += removed
-            destination = silver_root / relative
+            destination = version_root / relative
             metadata = {
                 "layer": "silver",
                 "source_layer": "bronze",
@@ -209,7 +210,7 @@ class SilverPromoter:
                     "validation_report_id": report.report_id,
                     "validation_version": report.validator_version,
                     "quality_status": report.overall_status.value,
-                    "transformation": "sort-and-exact-deduplicate-v1",
+                    "transformation": SILVER_TRANSFORMATION_VERSION,
                     "exact_duplicates_removed": duplicates_removed,
                     "source_files": [str(path) for path in source_hashes_before],
                     "output_files": output_records,

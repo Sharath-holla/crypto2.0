@@ -90,7 +90,7 @@ uv run crypto-ai promote-silver `
   --quarantine-root data/quarantine
 ```
 
-PASS promotes. WARN promotes only when `allow_warnings_for_silver = true`. FAIL writes a small quarantine JSON reference and creates no Silver Parquet. Repeating unchanged promotion verifies and reuses the deterministic Silver files and manifest.
+PASS promotes. WARN promotes only when `allow_warnings_for_silver = true`. FAIL writes a small quarantine JSON reference and creates no Silver Parquet. Repeating unchanged promotion verifies and reuses the deterministic version-namespaced Silver files and manifest.
 
 Inspect promoted output with the existing command:
 

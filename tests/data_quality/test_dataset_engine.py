@@ -6,12 +6,25 @@ from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 from pathlib import Path
 
+import pytest
+
 from crypto_ai.data.ingestion.manifest import read_manifest, write_manifest
 from crypto_ai.data.quality.engine import QualityEngine
 from crypto_ai.data.quality.models import ValidationStatus
 from crypto_ai.data.quality.policy import QualityPolicy, load_quality_policy
 from tests.factories import make_candle
 from tests.quality_helpers import write_bronze_dataset
+
+
+def _no_trade(candle):
+    return replace(
+        candle,
+        base_volume=Decimal("0"),
+        quote_volume=Decimal("0"),
+        trade_count=0,
+        taker_buy_base_volume=Decimal("0"),
+        taker_buy_quote_volume=Decimal("0"),
+    )
 
 
 def _continuous_dataset(tmp_path: Path):
@@ -227,7 +240,7 @@ def test_machine_readable_report_is_deterministic_and_versioned(tmp_path: Path) 
     assert first.report_id == second.report_id
     assert first_path == second_path
     assert payload["report_schema_version"] == "1.0.0"
-    assert payload["validator_version"] == "1.0.0"
+    assert payload["validator_version"] == "1.1.0"
     assert payload["overall_status"] == "PASS"
     assert payload["source_files"]
     assert payload["checks"]
@@ -275,7 +288,8 @@ def test_quality_policy_file_is_typed_and_validated(tmp_path: Path) -> None:
     path.write_text(
         "[quality]\nallowed_missing_percentage = 1.5\n"
         "zero_volume_warning_percentage = 1.0\n"
-        "zero_volume_failure_percentage = 10.0\n",
+        "zero_volume_failure_percentage = 10.0\n"
+        "zero_volume_percentage_min_observations = 25\n",
         encoding="utf-8",
     )
 
@@ -283,3 +297,82 @@ def test_quality_policy_file_is_typed_and_validated(tmp_path: Path) -> None:
 
     assert isinstance(policy, QualityPolicy)
     assert policy.allowed_missing_percentage == 1.5
+    assert policy.zero_volume_percentage_min_observations == 25
+
+
+def test_one_row_daily_no_trade_manifest_warns_instead_of_failing(tmp_path: Path) -> None:
+    start = datetime(2025, 1, 1, tzinfo=UTC)
+    candle = _no_trade(make_candle(start=start, interval_minutes=24 * 60))
+    manifest_path, files = write_bronze_dataset(
+        tmp_path,
+        [(start, start + timedelta(days=1), [candle])],
+        interval="1d",
+    )
+    before = files[0].read_bytes()
+
+    report = QualityEngine().validate_manifest(manifest_path)
+
+    assert report.overall_status is ValidationStatus.WARN
+    assert "zero_volume_prevalence" in _codes(report, ValidationStatus.WARN)
+    assert "zero_base_volume_with_activity" not in _codes(report, ValidationStatus.FAIL)
+    assert report.summary["observed_candles"] == 1
+    assert report.summary["zero_volume_count"] == 1
+    assert report.summary["zero_volume_percentage"] == 100.0
+    assert files[0].read_bytes() == before
+
+
+def test_manifest_share_uses_complete_daily_history_denominator(tmp_path: Path) -> None:
+    start = datetime(2025, 1, 1, tzinfo=UTC)
+    partitions = []
+    for index in range(120):
+        opened = start + timedelta(days=index)
+        candle = make_candle(index, start=start, interval_minutes=24 * 60)
+        if index == 60:
+            candle = _no_trade(candle)
+        partitions.append((opened, opened + timedelta(days=1), [candle]))
+    manifest_path, _ = write_bronze_dataset(tmp_path, partitions, interval="1d")
+
+    report = QualityEngine().validate_manifest(manifest_path)
+
+    prevalence = next(
+        check for check in report.checks if check.check_name == "zero_volume_prevalence"
+    )
+    assert report.overall_status is ValidationStatus.WARN
+    assert prevalence.status is ValidationStatus.WARN
+    assert prevalence.observed_value["total_observations"] == 120
+    assert prevalence.observed_value["zero_volume_percentage"] == pytest.approx(100 / 120)
+    assert report.summary["consecutive_zero_volume_runs"] == [1]
+
+
+def test_manifest_zero_share_failure_is_independent_of_physical_boundaries(
+    tmp_path: Path,
+) -> None:
+    start = datetime(2025, 1, 1, tzinfo=UTC)
+    candles = [make_candle(index, start=start) for index in range(100)]
+    candles[47:53] = [_no_trade(candle) for candle in candles[47:53]]
+    first_boundary = start + timedelta(minutes=49 * 5)
+    second_boundary = start + timedelta(minutes=51 * 5)
+    end = start + timedelta(minutes=100 * 5)
+    whole_manifest, _ = write_bronze_dataset(
+        tmp_path / "whole",
+        [(start, end, candles)],
+    )
+    split_manifest, _ = write_bronze_dataset(
+        tmp_path / "split",
+        [
+            (start, first_boundary, candles[:49]),
+            (first_boundary, second_boundary, candles[49:51]),
+            (second_boundary, end, candles[51:]),
+        ],
+    )
+
+    whole = QualityEngine().validate_manifest(whole_manifest)
+    split = QualityEngine().validate_manifest(split_manifest)
+
+    assert whole.overall_status is split.overall_status is ValidationStatus.FAIL
+    assert "zero_volume_prevalence" in _codes(whole, ValidationStatus.FAIL)
+    assert "zero_volume_prevalence" in _codes(split, ValidationStatus.FAIL)
+    assert whole.summary["zero_volume_percentage"] == 6.0
+    assert split.summary["zero_volume_percentage"] == 6.0
+    assert whole.summary["consecutive_zero_volume_runs"] == [6]
+    assert split.summary["consecutive_zero_volume_runs"] == [6]

@@ -509,6 +509,18 @@ def validate_partition(
         "positive_volume_without_trades": lambda row: (
             row["trade_count"] == 0 and (row["base_volume"] > 0 or row["quote_volume"] > 0)
         ),
+        "zero_base_volume_with_activity": lambda row: (
+            row["base_volume"] == 0
+            and any(
+                row[name] != 0
+                for name in (
+                    "quote_volume",
+                    "trade_count",
+                    "taker_buy_base_volume",
+                    "taker_buy_quote_volume",
+                )
+            )
+        ),
     }
     volume_error_rows: set[int] = set()
     for name, predicate in volume_rules.items():
@@ -538,26 +550,42 @@ def validate_partition(
     metrics["zero_volume_count"] = len(zero_indexes)
     metrics["zero_volume_percentage"] = zero_percentage
     metrics["consecutive_zero_volume_runs"] = [end - start + 1 for start, end in zero_runs]
+    metrics["leading_zero_volume_run"] = (
+        zero_runs[0][1] - zero_runs[0][0] + 1 if zero_runs and zero_runs[0][0] == 0 else 0
+    )
+    metrics["trailing_zero_volume_run"] = (
+        zero_runs[-1][1] - zero_runs[-1][0] + 1
+        if zero_runs and zero_runs[-1][1] == len(rows) - 1
+        else 0
+    )
+    metrics["zero_volume_sample_timestamps"] = [
+        open_times[index] for index in zero_indexes[: policy.sample_limit]
+    ]
     if zero_indexes and zero_percentage > policy.zero_volume_warning_percentage:
-        failure = zero_percentage > policy.zero_volume_failure_percentage
         checks.append(
             _result(
                 context,
                 "zero_volume",
-                ValidationStatus.FAIL if failure else ValidationStatus.WARN,
-                ValidationSeverity.ERROR if failure else ValidationSeverity.WARNING,
-                f"Found {len(zero_indexes)} zero-volume candles",
+                ValidationStatus.WARN,
+                ValidationSeverity.WARNING,
+                (
+                    f"Found {len(zero_indexes)} zero-volume candles; percentage severity "
+                    "is evaluated over the complete dataset"
+                ),
                 observed_value={
                     "count": len(zero_indexes),
                     "percentage": zero_percentage,
                     "runs": metrics["consecutive_zero_volume_runs"],
+                    "scope": "partition_observation",
                 },
                 expected_value={
                     "warning_above_percentage": policy.zero_volume_warning_percentage,
                     "failure_above_percentage": policy.zero_volume_failure_percentage,
+                    "failure_scope": "manifest_or_standalone_file",
+                    "minimum_observations": policy.zero_volume_percentage_min_observations,
                 },
                 affected_rows=len(zero_indexes),
-                sample_rows=[open_times[index] for index in zero_indexes[: policy.sample_limit]],
+                sample_rows=metrics["zero_volume_sample_timestamps"],
             )
         )
 

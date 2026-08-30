@@ -56,7 +56,14 @@ def test_invalid_ohlc_and_negative_volume_fail() -> None:
 
 
 def test_zero_volume_is_a_warning() -> None:
-    candle = replace(make_candle(), base_volume=Decimal("0"))
+    candle = replace(
+        make_candle(),
+        base_volume=Decimal("0"),
+        quote_volume=Decimal("0"),
+        trade_count=0,
+        taker_buy_base_volume=Decimal("0"),
+        taker_buy_quote_volume=Decimal("0"),
+    )
 
     report = validate_candles(candles_to_table([candle]), "5m")
 

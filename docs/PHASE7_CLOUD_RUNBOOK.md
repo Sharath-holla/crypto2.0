@@ -147,6 +147,12 @@ view/fold/experiment has a checksum-validated checkpoint. Membership, core,
 expansion-policy, Gold, and configuration identities invalidate stale work.
 After interruption, run the identical `--resume` command.
 
+Quality validator 1.1 evaluates zero-volume prevalence over the complete
+manifest, while each physical partition retains auditable warning metrics.
+New Silver output uses a deterministic version namespace, so prior Silver,
+failed quarantine reports and downloaded Bronze/archive data remain untouched;
+no deletion is required before resume.
+
 Archive acquisition resolves interval-specific exact outer bounds from the
 first and last non-empty checksum-verified monthly ZIPs. A corrected request has
 a new deterministic identity, so an earlier failed broad-range manifest remains
