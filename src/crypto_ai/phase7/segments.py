@@ -72,8 +72,11 @@ class CausalDataGap(_Frozen):
             raise ValueError("causal gap must be a non-empty half-open interval")
         if not self.failed_checks:
             raise ValueError("causal gap requires explicit failed checks")
-        if self.reconciliation_status is not ReconciliationStatus.IDENTICAL_INVALID:
-            raise ValueError("only identical invalid official rows define a causal gap")
+        if self.reconciliation_status not in {
+            ReconciliationStatus.IDENTICAL_INVALID,
+            ReconciliationStatus.NOT_PROVEN,
+        }:
+            raise ValueError("causal gaps require inconclusive official-source reconciliation")
         return self
 
     def intersects(self, start: datetime, end: datetime) -> bool:

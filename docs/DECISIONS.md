@@ -455,3 +455,32 @@
   source freeze advances to `phase7_scientific_baseline_v1_7` solely because
   existing contract tests byte-freeze every Phase 7 module; Phase 7 remains
   version 1.6.0 and every scientific contract value is unchanged.
+
+## ADR-025 - Bounded official REST recovery for proven archive omissions
+
+- Date: 2026-08-31
+- Status: Accepted for the Phase 7 cloud research run.
+- Decision: Binance historical archive remains primary. When the unchanged
+  validator proves exact empty interior archive partitions, and registry
+  lifecycle plus requested-range evidence proves those timestamps should
+  exist, official unauthenticated Binance REST may supply only those exact
+  interval-derived timestamps. Consecutive omissions may share one bounded
+  request; separate ranges remain separate. No arbitrary gap-length limit is
+  introduced.
+- Preconditions: Existing ADR-021 structural-row reconciliation runs first.
+  Gap recovery requires exact symbol, interval, partition, and half-open
+  boundary identity; complete expected timestamps; no extras or duplicates;
+  and PASS/WARN under the unchanged structural validator. Listing, delisting,
+  request-edge, or otherwise ambiguous absence is ineligible.
+- Evidence: Archive bytes, archive manifest, original FAIL report, quarantine,
+  missing timestamp list, immutable REST rows and retrieval metadata,
+  comparison report, composition-only manifest, per-partition row source, final
+  report, and Silver lineage remain auditable. Existing archive rows are never
+  replaced by this policy. Failure remains an unusable causal gap and cannot be
+  bridged by features, targets, or folds.
+- Versioning: These historical acquisition semantics advance Phase 7 to
+  version 1.7.0 and are frozen by `phase7_scientific_baseline_v1_8` contract
+  1.0.9. Configuration hash `cc550337f1f4ee4654124bf6`, 54 features,
+  `multiasset_targets_v2`, 16 folds, model families, latency, costs, cutoff,
+  July exclusion, and the locked August holdout are unchanged. Every
+  predecessor baseline remains immutable.

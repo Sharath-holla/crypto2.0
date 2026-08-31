@@ -31,7 +31,10 @@ from crypto_ai.phase4.market_data import (
 )
 from crypto_ai.phase4_1.archive_market import ingest_archive_market_data
 from crypto_ai.phase4_1.equivalence import compare_candle_transports
-from crypto_ai.phase4_1.reconcile import reconcile_archive_with_rest
+from crypto_ai.phase4_1.reconcile import (
+    reconcile_archive_missing_with_rest,
+    reconcile_archive_with_rest,
+)
 from crypto_ai.phase7.config import Phase7Config, stable_hash
 from crypto_ai.phase7.registry import SymbolRecord, SymbolRegistry
 from crypto_ai.phase7.segments import (
@@ -66,6 +69,7 @@ _RECONCILABLE_MARKET_VALUE_CHECKS = frozenset(
         "zero_base_volume_with_activity",
     }
 )
+_RECONCILABLE_MISSING_CHECKS = frozenset({"empty_partition", "cross_partition_gap"})
 
 
 @dataclass(frozen=True, slots=True)
@@ -109,6 +113,10 @@ class ReconciliationAttempt:
 
     @property
     def identical_invalid(self) -> bool:
+        return self.segment_source_manifest is not None and bool(self.gaps)
+
+    @property
+    def causal_gap(self) -> bool:
         return self.segment_source_manifest is not None and bool(self.gaps)
 
 
@@ -198,18 +206,400 @@ def _failed_market_value_partitions(report: DatasetQualityReport) -> tuple[str, 
     return tuple(sorted({str(check.partition) for check in failures}))
 
 
+def _epoch_milliseconds(value: datetime) -> int:
+    normalized = value.astimezone(UTC)
+    epoch = datetime(1970, 1, 1, tzinfo=UTC)
+    delta = normalized - epoch
+    return delta.days * 86_400_000 + delta.seconds * 1_000 + delta.microseconds // 1_000
+
+
+def _expected_open_times(start: datetime, end: datetime, interval: str) -> tuple[datetime, ...]:
+    interval_ms = interval_milliseconds(interval)
+    start_ms = _epoch_milliseconds(start)
+    end_ms = _epoch_milliseconds(end)
+    if start_ms % interval_ms or end_ms % interval_ms or end_ms <= start_ms:
+        raise ValueError("Missing archive partition has invalid interval boundaries")
+    return tuple(
+        datetime.fromtimestamp(value / 1_000, tz=UTC)
+        for value in range(start_ms, end_ms, interval_ms)
+    )
+
+
+def _missing_archive_records(
+    manifest: dict[str, Any],
+    report: DatasetQualityReport,
+    registry: SymbolRegistry,
+) -> tuple[dict[str, Any], ...]:
+    """Return only validator-proven, lifecycle-valid empty archive partitions."""
+
+    failures = [check for check in report.checks if check.status is ValidationStatus.FAIL]
+    if not failures or any(
+        check.check_name not in _RECONCILABLE_MISSING_CHECKS for check in failures
+    ):
+        return ()
+    empty_keys = tuple(
+        sorted(
+            str(check.partition)
+            for check in failures
+            if check.check_name == "empty_partition" and check.partition is not None
+        )
+    )
+    if not empty_keys or len(empty_keys) != len(set(empty_keys)):
+        return ()
+    cross_gap_count = sum(
+        int(check.affected_rows) for check in failures if check.check_name == "cross_partition_gap"
+    )
+    records_by_key = {
+        str(record.get("partition_key")): record
+        for record in manifest.get("partitions", [])
+        if isinstance(record, dict)
+    }
+    selected = tuple(records_by_key.get(key) for key in empty_keys)
+    if any(
+        record is None
+        or record.get("status") != "empty"
+        or int(record.get("row_count", 0)) != 0
+        or record.get("file") is not None
+        or record.get("sha256") is not None
+        for record in selected
+    ):
+        return ()
+
+    symbol = str(manifest.get("symbol", "")).upper()
+    interval = str(manifest.get("interval", ""))
+    lifecycle = registry.by_symbol().get(symbol)
+    if lifecycle is None or interval not in lifecycle.available_intervals:
+        return ()
+    manifest_start = _partition_time(manifest, "start")
+    manifest_end = _partition_time(manifest, "end")
+    lifecycle_start = lifecycle.candle_available_from(interval)
+    lifecycle_end = min(
+        value
+        for value in (lifecycle.available_until, registry.research_cutoff, manifest_end)
+        if value is not None
+    )
+    expected_count = 0
+    normalized: list[dict[str, Any]] = []
+    for raw_record in selected:
+        assert raw_record is not None
+        record = deepcopy(raw_record)
+        start = _partition_time(record, "start")
+        end = _partition_time(record, "end")
+        expected_key = f"{_epoch_milliseconds(start)}-{_epoch_milliseconds(end)}"
+        if (
+            str(record.get("partition_key")) != expected_key
+            or start < manifest_start
+            or end > manifest_end
+            or start < lifecycle_start
+            or end > lifecycle_end
+        ):
+            return ()
+        expected_count += len(_expected_open_times(start, end, interval))
+        normalized.append(record)
+    # Interior omissions must be visible in the unchanged cross-partition check.
+    # This rejects request-edge and lifecycle-edge absence as ambiguous.
+    if cross_gap_count != expected_count:
+        return ()
+    return tuple(sorted(normalized, key=lambda item: _partition_time(item, "start")))
+
+
+def _missing_record_groups(
+    records: tuple[dict[str, Any], ...],
+) -> tuple[tuple[dict[str, Any], ...], ...]:
+    groups: list[list[dict[str, Any]]] = []
+    for record in records:
+        if not groups or _partition_time(groups[-1][-1], "end") != _partition_time(record, "start"):
+            groups.append([record])
+        else:
+            groups[-1].append(record)
+    return tuple(tuple(group) for group in groups)
+
+
+def _rest_manifest_open_times(
+    paths: AcquisitionPaths,
+    manifest_path: Path,
+    *,
+    symbol: str,
+    interval: str,
+    expected_start: datetime,
+    expected_end: datetime,
+) -> tuple[datetime, ...]:
+    manifest = read_manifest(manifest_path)
+    if manifest is None:
+        raise FileNotFoundError(manifest_path)
+    if (
+        manifest.get("source") != "binance"
+        or manifest.get("source_transport") != "rest"
+        or manifest.get("row_source") != "binance_usdm_futures_rest"
+        or str(manifest.get("symbol", "")).upper() != symbol
+        or manifest.get("interval") != interval
+        or _partition_time(manifest, "start") != expected_start
+        or _partition_time(manifest, "end") != expected_end
+    ):
+        raise ValueError("REST recovery manifest identity or boundaries do not match the gap")
+
+    # The normal configured engine is run by the caller; collect exact row
+    # identities here so extras and duplicates cannot be hidden by composition.
+    open_times: list[datetime] = []
+    for record in manifest.get("partitions", []):
+        if (
+            not isinstance(record, dict)
+            or record.get("status") != "complete"
+            or not record.get("file")
+        ):
+            raise ValueError("REST recovery contains an incomplete partition")
+        table = read_candle_parquet(paths.bronze / str(record["file"]))
+        open_times.extend(value.astimezone(UTC) for value in table["open_time"].to_pylist())
+    if len(open_times) != len(set(open_times)):
+        raise ValueError("REST recovery contains duplicate candle timestamps")
+    return tuple(sorted(open_times))
+
+
+def _write_missing_comparison(
+    paths: AcquisitionPaths,
+    rejection: QualityGateRejected,
+    *,
+    manifest: dict[str, Any],
+    records: tuple[dict[str, Any], ...],
+    rest_manifests: tuple[Path, ...],
+    expected_times: tuple[datetime, ...],
+    observed_times: tuple[datetime, ...],
+    errors: tuple[str, ...],
+) -> Path:
+    quality_report = paths.quality / f"{rejection.report.report_id}.json"
+    quarantine = paths.quarantine / f"{rejection.report.report_id}.json"
+    if not quality_report.is_file() or not quarantine.is_file():
+        raise FileNotFoundError("Missing-row reconciliation lacks quality/quarantine lineage")
+    rest_identity: list[dict[str, Any]] = []
+    for path in rest_manifests:
+        rest_manifest = read_manifest(path)
+        if rest_manifest is None:
+            raise FileNotFoundError(path)
+        rest_identity.append(
+            {
+                "path": str(path.resolve()),
+                "run_id": rest_manifest.get("run_id"),
+                "downloaded_at": rest_manifest.get("downloaded_at"),
+                "partitions": [
+                    {
+                        "partition_key": record.get("partition_key"),
+                        "sha256": record.get("sha256"),
+                    }
+                    for record in rest_manifest.get("partitions", [])
+                    if isinstance(record, dict)
+                ],
+            }
+        )
+    identity = {
+        "archive_manifest": str(rejection.manifest),
+        "archive_manifest_sha256": file_sha256(rejection.manifest),
+        "quality_report_sha256": file_sha256(quality_report),
+        "quarantine_sha256": file_sha256(quarantine),
+        "missing_partition_keys": [str(record["partition_key"]) for record in records],
+        "expected_open_times": [value.isoformat() for value in expected_times],
+        "rest_manifests": rest_identity,
+        "policy": "archive_missing_official_rest_exact_rows_v1",
+    }
+    report_identity = stable_hash(identity)
+    path = paths.reconciliation / f"archive-rest-missing-{report_identity}.json"
+    payload = {
+        "report_id": f"archive-rest-missing-{report_identity}",
+        "report_sha256_identity": report_identity,
+        "status": (
+            "PROVEN_EXACT_MISSING_ROWS"
+            if not errors and observed_times == expected_times
+            else "REJECTED"
+        ),
+        "symbol": manifest["symbol"],
+        "interval": manifest["interval"],
+        "archive_manifest": str(rejection.manifest),
+        "archive_manifest_sha256": identity["archive_manifest_sha256"],
+        "quality_report": str(quality_report.resolve()),
+        "quality_report_sha256": identity["quality_report_sha256"],
+        "quarantine": str(quarantine.resolve()),
+        "quarantine_sha256": identity["quarantine_sha256"],
+        "missing_partition_keys": identity["missing_partition_keys"],
+        "missing_open_times": identity["expected_open_times"],
+        "rest_open_times": [value.isoformat() for value in observed_times],
+        "rest_manifests": [
+            {
+                "path": str(rest_path.resolve()),
+                "sha256": file_sha256(rest_path),
+                "downloaded_at": (read_manifest(rest_path) or {}).get("downloaded_at"),
+            }
+            for rest_path in rest_manifests
+        ],
+        "errors": list(errors),
+        "raw_sources_mutated": False,
+        "identity": identity,
+    }
+    existing = read_manifest(path)
+    if existing is not None:
+        if existing.get("identity") != identity or existing.get("status") != payload["status"]:
+            raise ValueError(f"Existing missing-row comparison differs: {path}")
+        return path
+    write_manifest(path, payload)
+    return path
+
+
+def _missing_gap_evidence(
+    paths: AcquisitionPaths,
+    rejection: QualityGateRejected,
+    manifest: dict[str, Any],
+    records: tuple[dict[str, Any], ...],
+    rest_manifests: tuple[Path, ...],
+    comparison_path: Path,
+) -> tuple[CausalDataGap, ...]:
+    quality_report = paths.quality / f"{rejection.report.report_id}.json"
+    quarantine = paths.quarantine / f"{rejection.report.report_id}.json"
+    failed_checks = tuple(
+        sorted(
+            {
+                check.check_name
+                for check in rejection.report.checks
+                if check.status is ValidationStatus.FAIL
+            }
+        )
+    )
+    groups = _missing_record_groups(records)
+    return tuple(
+        CausalDataGap(
+            symbol=str(manifest["symbol"]),
+            interval=str(manifest["interval"]),
+            start=_partition_time(record, "start"),
+            end=_partition_time(record, "end"),
+            partition=str(record["partition_key"]),
+            failed_checks=failed_checks,
+            source_manifest=str(rejection.manifest),
+            source_manifest_sha256=file_sha256(rejection.manifest),
+            quality_report=str(quality_report.resolve()),
+            quality_report_sha256=file_sha256(quality_report),
+            quarantine=str(quarantine.resolve()),
+            quarantine_sha256=file_sha256(quarantine),
+            rest_manifest=str(rest_manifests[index].resolve()),
+            rest_manifest_sha256=file_sha256(rest_manifests[index]),
+            comparison_report=str(comparison_path.resolve()),
+            comparison_report_sha256=file_sha256(comparison_path),
+            reconciliation_status=ReconciliationStatus.NOT_PROVEN,
+        )
+        for index, group in enumerate(groups)
+        for record in group
+    )
+
+
+def _attempt_missing_archive_reconciliation(
+    config: Phase7Config,
+    paths: AcquisitionPaths,
+    registry: SymbolRegistry,
+    rejection: QualityGateRejected,
+    manifest: dict[str, Any],
+) -> ReconciliationAttempt:
+    records = _missing_archive_records(manifest, rejection.report, registry)
+    if not records:
+        return ReconciliationAttempt()
+    symbol = str(manifest["symbol"])
+    interval = str(manifest["interval"])
+    settings = _candle_settings(config, paths, symbol=symbol, interval=interval)
+    metadata = _RegistryMetadata(registry)
+    rest_manifests: list[Path] = []
+    expected_times: list[datetime] = []
+    observed_times: list[datetime] = []
+    errors: list[str] = []
+    with BinanceRestClient(settings) as rest:
+        client = _RestReconciliationClient(rest, metadata)
+        for group in _missing_record_groups(records):
+            start = _partition_time(group[0], "start")
+            end = _partition_time(group[-1], "end")
+            expected = tuple(
+                timestamp
+                for record in group
+                for timestamp in _expected_open_times(
+                    _partition_time(record, "start"),
+                    _partition_time(record, "end"),
+                    interval,
+                )
+            )
+            rest_manifest = HistoricalDownloader(settings, client).download(
+                DownloadRequest(start=start, end=end)
+            )
+            rest_manifests.append(rest_manifest)
+            expected_times.extend(expected)
+            try:
+                engine = QualityEngine(load_quality_policy(config.quality_config))
+                rest_report = engine.validate_manifest(rest_manifest)
+                engine.write_report(rest_report, paths.quality)
+                if rest_report.overall_status is ValidationStatus.FAIL:
+                    raise ValueError("REST recovery failed the unchanged structural validator")
+                observed = _rest_manifest_open_times(
+                    paths,
+                    rest_manifest,
+                    symbol=symbol,
+                    interval=interval,
+                    expected_start=start,
+                    expected_end=end,
+                )
+                if observed != expected:
+                    raise ValueError("REST recovery timestamps differ from the exact archive gap")
+                observed_times.extend(observed)
+            except (FileNotFoundError, KeyError, TypeError, ValueError) as exc:
+                errors.append(f"{type(exc).__name__}: {exc}")
+
+    expected_tuple = tuple(expected_times)
+    observed_tuple = tuple(sorted(observed_times))
+    comparison_path = _write_missing_comparison(
+        paths,
+        rejection,
+        manifest=manifest,
+        records=records,
+        rest_manifests=tuple(rest_manifests),
+        expected_times=expected_tuple,
+        observed_times=observed_tuple,
+        errors=tuple(errors),
+    )
+    comparison = read_manifest(comparison_path)
+    if comparison is None or comparison.get("status") != "PROVEN_EXACT_MISSING_ROWS":
+        return ReconciliationAttempt(
+            segment_source_manifest=rejection.manifest,
+            gaps=_missing_gap_evidence(
+                paths,
+                rejection,
+                manifest,
+                records,
+                tuple(rest_manifests),
+                comparison_path,
+            ),
+        )
+    corrected = reconcile_archive_missing_with_rest(
+        rejection.manifest,
+        tuple(rest_manifests),
+        comparison_report=comparison_path,
+    )
+    logger.warning(
+        "Retrying Phase 7 quality gate with exact official REST missing rows",
+        extra={
+            "event": "phase7_archive_rest_missing_reconciliation_created",
+            "symbol": symbol,
+            "interval": interval,
+            "archive_manifest": str(rejection.manifest),
+            "reconciled_manifest": str(corrected),
+            "partition_count": len(records),
+            "row_count": len(expected_tuple),
+        },
+    )
+    return ReconciliationAttempt(corrected_manifest=corrected)
+
+
 def _attempt_archive_reconciliation(
     config: Phase7Config,
     paths: AcquisitionPaths,
     registry: SymbolRegistry,
     rejection: QualityGateRejected,
 ) -> ReconciliationAttempt:
-    """Compose proven REST corrections for archive-only market-value failures.
+    """Compose bounded REST corrections for proven official archive failures.
 
-    This is deliberately one-shot and narrow. The original archive manifest,
-    quality report, quarantine reference, raw archive, and REST overlay all
-    remain immutable. Any non-market-value failure, timestamp disagreement, or
-    persistent REST inconsistency remains a hard stop.
+    Structural contradictions use the original ADR-021 exact-row path first.
+    Validator-proven empty historical partitions use the distinct exact-gap
+    path. All other failures remain unreconciled.
     """
 
     manifest = read_manifest(rejection.manifest)
@@ -217,7 +607,13 @@ def _attempt_archive_reconciliation(
         return ReconciliationAttempt()
     partition_keys = _failed_market_value_partitions(rejection.report)
     if not partition_keys:
-        return ReconciliationAttempt()
+        return _attempt_missing_archive_reconciliation(
+            config,
+            paths,
+            registry,
+            rejection,
+            manifest,
+        )
     records = {
         str(record.get("partition_key")): record
         for record in manifest.get("partitions", [])
@@ -476,7 +872,7 @@ def _promote_causal_segments(
     attempt: ReconciliationAttempt,
 ) -> Path:
     if attempt.segment_source_manifest is None or not attempt.gaps:
-        raise ValueError("Causal segment promotion requires identical-invalid gap evidence")
+        raise ValueError("Causal segment promotion requires official-source gap evidence")
     source_manifest = attempt.segment_source_manifest.resolve()
     source = read_manifest(source_manifest)
     if source is None:
@@ -690,7 +1086,7 @@ def acquire_candle_family(
                     paths,
                     attempt.corrected_manifest,
                 )
-            elif attempt.identical_invalid:
+            elif attempt.causal_gap:
                 if symbol in strict_symbols:
                     logger.error(
                         "Required core/context symbol contains an unrecoverable causal gap",
@@ -709,7 +1105,10 @@ def acquire_candle_family(
                         interval=interval,
                         status=AcquisitionStatus.QUALITY_REJECTED_SEGMENT,
                         silver_manifest=str(silver_manifest.resolve()),
-                        reason="identical structurally invalid archive and REST row",
+                        reason=(
+                            "official-source reconciliation could not prove a usable "
+                            "historical interval"
+                        ),
                         gaps=attempt.gaps,
                     )
                 )

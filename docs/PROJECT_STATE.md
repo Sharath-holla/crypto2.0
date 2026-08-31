@@ -79,7 +79,9 @@
   official archive-versus-REST reconciliation is frozen by
   `phase7_scientific_baseline_v1_6`. Side-effect-only operational progress
   reporting is frozen by `phase7_scientific_baseline_v1_7`, without changing
-  the 1.6.0 scientific version or contract values. Phase 7.2 adds only disabled
+  the 1.6.0 scientific version or contract values. Exact bounded REST recovery
+  of validator-proven archive omissions is frozen by
+  `phase7_scientific_baseline_v1_8` and Phase 7 version 1.7.0. Phase 7.2 adds only disabled
   research capabilities in a separate namespace.
 
 ## PHASE 7 PRE-PUSH STATUS
@@ -223,10 +225,12 @@ NOT STARTED
   2026-08-25. The earlier undocumented `11a00ed1...` combined digest is retained
   only as historical metadata and is not directly comparable with canonical
   v1.
-- `phase7_scientific_baseline_v1_7` is the authoritative cloud source/config
-  freeze. It adds operational progress reporting only; v1_6 records causal
+- `phase7_scientific_baseline_v1_8` is the authoritative cloud source/config
+  freeze. It adds bounded official REST recovery only for exact
+  validator-proven archive omissions; v1_7 adds operational progress reporting
+  only, and v1_6 records causal
   segment quarantine for an identical-invalid official archive/REST row. Its
-  v1 through v1_6
+  v1 through v1_7
   predecessors remain immutable historical evidence. `dual_universe_v3` and
   `expansion_universe_v2` make affected expansion eligibility fold-local while
   preserving strict core/context behavior. Future architecture
