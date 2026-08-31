@@ -123,7 +123,7 @@ These commands make no network request and perform no heavy training. Confirm:
 
 ## 6. Run through the cost-aware supervisor
 
-The operational contract is `phase7_vm_supervisor_v1`. The supervisor is
+The current operational contract is `phase7_vm_supervisor_v1_1`. The supervisor is
 started manually in its own tmux session and owns the only research worker,
 whose authoritative session remains `phase7-auto`. It is not installed as a
 boot service: starting the VM for diagnosis cannot silently start research.
@@ -150,6 +150,13 @@ Launch the supervisor once:
 
 ```bash
 export PHASE7_CLOUD_STORAGE_ROOT=gs://crypto-ai-data-83921/artifacts/phase7
+export PHASE7_BUDGET_BASELINE_INR="<conservative-current-spend>"
+export PHASE7_BUDGET_BASELINE_AT_UTC="<ISO-8601 timestamp with UTC offset>"
+export PHASE7_BUDGET_HOURLY_INR="<conservative VM-plus-overhead rate>"
+export PHASE7_BUDGET_SOFT_INR="<soft-warning threshold>"
+export PHASE7_BUDGET_PROJECTED_INR="<no-new-expensive-stage threshold>"
+export PHASE7_BUDGET_HARD_INR="<automatic-stop threshold>"
+# Set PHASE7_ACTUAL_BILLING_INR only when a reliable current total exists.
 tmux new-session -d -s phase7-supervisor -c "$HOME/crypto2.0" \
   "uv run python scripts/phase7_vm_supervisor.py supervise \
   --repository $HOME/crypto2.0 >> local_artifacts/phase7-supervisor.log 2>&1"
@@ -168,7 +175,10 @@ On proven completion it persists `COMPLETED`, syncs final artifacts to the
 existing GCS root, flushes state, and stops the VM. On a genuine failure it
 persists diagnostics and `BLOCKED`, flushes state, and stops the VM without a
 restart loop. A blocked or completed invocation never starts a worker. Quiet
-model fits have no idle timeout.
+model fits have no idle timeout. `BUDGET_STOPPED` is separate from scientific
+failure: it is persisted before the worker is interrupted and the VM is
+stopped, and it never auto-resumes. Unknown or delayed billing uses the
+required conservative estimate rather than disabling the guard.
 
 ### Manual fallback (supervisor recovery only)
 

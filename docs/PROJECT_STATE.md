@@ -87,6 +87,9 @@
   `phase7_vm_supervisor_v1`; it preserves the v1_8 scientific freeze and
   atomically stops the existing VM only after durable `BLOCKED` diagnostics or
   proven `COMPLETED` artifact backup.
+  Operational successor `phase7_vm_supervisor_v1_1` adds a conservative,
+  non-scientific `BUDGET_STOPPED` state that preserves checkpoints/evidence and
+  prevents automatic restart after the approved cloud-cost ceiling is reached.
 
 ## PHASE 7 PRE-PUSH STATUS
 

@@ -5,6 +5,7 @@ import json
 import subprocess
 from collections.abc import Callable, Sequence
 from datetime import UTC, datetime
+from decimal import Decimal
 from pathlib import Path
 
 import pytest
@@ -13,6 +14,8 @@ from scripts import phase7_vm_supervisor as supervisor_module
 from scripts.phase7_vm_supervisor import (
     EXPECTED_CLOUD_ROOT,
     EXPECTED_CONFIG_HASH,
+    BudgetLevel,
+    BudgetPolicy,
     Phase7VmSupervisor,
     SupervisorStatus,
     _atomic_json,
@@ -78,13 +81,36 @@ class FakeRunner:
         return result
 
 
-def _supervisor(tmp_path: Path, runner: FakeRunner) -> Phase7VmSupervisor:
+def _supervisor(
+    tmp_path: Path,
+    runner: FakeRunner,
+    *,
+    budget_policy: BudgetPolicy | None = None,
+) -> Phase7VmSupervisor:
     return Phase7VmSupervisor(
         tmp_path,
         poll_seconds=0,
         run_command=runner,
         sleeper=lambda _seconds: None,
         now=lambda: datetime(2026, 8, 31, 12, tzinfo=UTC),
+        budget_policy=budget_policy,
+    )
+
+
+def _budget_policy(
+    *,
+    baseline: str = "1600",
+    baseline_hour: int = 12,
+    actual: str | None = None,
+) -> BudgetPolicy:
+    return BudgetPolicy(
+        baseline_inr=Decimal(baseline),
+        baseline_at=datetime(2026, 8, 31, baseline_hour, tzinfo=UTC),
+        hourly_inr=Decimal("70"),
+        soft_inr=Decimal("2000"),
+        projected_inr=Decimal("2200"),
+        hard_inr=Decimal("2300"),
+        actual_inr=Decimal(actual) if actual is not None else None,
     )
 
 
@@ -372,3 +398,144 @@ def test_operational_contract_preserves_scientific_and_holdout_identity() -> Non
         "prospective_holdout_status": "LOCKED_UNUSED",
         "prospective_holdout_used": False,
     }
+
+
+def test_budget_below_threshold_allows_normal_execution() -> None:
+    snapshot = _budget_policy(baseline="1900").snapshot(datetime(2026, 8, 31, 12, tzinfo=UTC))
+    assert snapshot["level"] == BudgetLevel.NORMAL
+    assert snapshot["effective_spend_inr"] == 1900.0
+
+
+def test_budget_soft_warning_does_not_force_shutdown(tmp_path: Path) -> None:
+    runner = FakeRunner(
+        tmux=(True, True, False),
+        pids=(("11",), ("11",)),
+    )
+    supervisor = _supervisor(
+        tmp_path,
+        runner,
+        budget_policy=_budget_policy(baseline="2050"),
+    )
+    supervisor.paths.worker_exit.parent.mkdir(parents=True)
+    supervisor.paths.worker_exit.write_text("143\n", encoding="ascii")
+
+    assert supervisor.supervise(EXPECTED_CLOUD_ROOT) == 130
+    assert not any(call[:2] == ("tmux", "send-keys") for call in runner.calls)
+    assert not any(call[:3] == ("sudo", "-n", "shutdown") for call in runner.calls)
+
+
+def test_projected_preflight_persists_budget_stopped_before_shutdown(
+    tmp_path: Path,
+) -> None:
+    state_path = tmp_path / "local_artifacts/phase7/supervisor/state.json"
+
+    def assert_budget_stopped() -> None:
+        state = json.loads(state_path.read_text(encoding="utf-8"))
+        assert state["status"] == "BUDGET_STOPPED"
+        assert state["reason"] == "preflight_projected_budget_limit_reached"
+
+    runner = FakeRunner(tmux=(False, False), pids=((),), on_shutdown=assert_budget_stopped)
+    supervisor = _supervisor(
+        tmp_path,
+        runner,
+        budget_policy=_budget_policy(baseline="2250"),
+    )
+
+    assert supervisor.supervise(EXPECTED_CLOUD_ROOT) == 5
+    assert not any(call[:2] == ("tmux", "new-session") for call in runner.calls)
+    assert not supervisor.paths.blocked.exists()
+
+
+def test_hard_budget_stop_interrupts_owned_worker_before_mocked_shutdown(
+    tmp_path: Path,
+) -> None:
+    state_path = tmp_path / "local_artifacts/phase7/supervisor/state.json"
+
+    def assert_budget_stopped() -> None:
+        assert json.loads(state_path.read_text(encoding="utf-8"))["status"] == ("BUDGET_STOPPED")
+
+    runner = FakeRunner(
+        tmux=(True, True, False),
+        pids=(("11",),),
+        on_shutdown=assert_budget_stopped,
+    )
+    supervisor = _supervisor(
+        tmp_path,
+        runner,
+        budget_policy=_budget_policy(baseline="2250", actual="2310"),
+    )
+    supervisor.paths.worker_exit.parent.mkdir(parents=True)
+    supervisor.paths.worker_exit.write_text("130\n", encoding="ascii")
+
+    assert supervisor.supervise(EXPECTED_CLOUD_ROOT) == 5
+    assert ("tmux", "send-keys", "-t", "phase7-auto", "C-c") in runner.calls
+    assert not supervisor.paths.blocked.exists()
+    state = json.loads(state_path.read_text(encoding="utf-8"))
+    assert state["worker_exit_code"] == 130
+    assert state["worker_stop_forced"] is False
+
+
+def test_budget_stopped_startup_does_not_resume_or_shutdown(tmp_path: Path) -> None:
+    runner = FakeRunner(tmux=(False,), pids=((),))
+    supervisor = _supervisor(tmp_path, runner, budget_policy=_budget_policy())
+    _atomic_json(supervisor.paths.state, {"status": "BUDGET_STOPPED"})
+
+    assert supervisor.supervise(EXPECTED_CLOUD_ROOT) == 5
+    assert not any(call[:2] == ("tmux", "new-session") for call in runner.calls)
+    assert not any(call[:3] == ("sudo", "-n", "shutdown") for call in runner.calls)
+
+
+def test_unknown_actual_billing_uses_conservative_estimate_without_crashing() -> None:
+    snapshot = _budget_policy(baseline="1600", baseline_hour=6).snapshot(
+        datetime(2026, 8, 31, 12, tzinfo=UTC)
+    )
+    assert snapshot["source"] == "CONSERVATIVE_ESTIMATE"
+    assert snapshot["actual_billing_inr"] is None
+    assert snapshot["estimated_spend_inr"] == 2020.0
+    assert snapshot["level"] == BudgetLevel.SOFT_WARNING
+
+
+def test_missing_optional_actual_billing_environment_is_safe(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    values = {
+        "PHASE7_BUDGET_BASELINE_INR": "1600",
+        "PHASE7_BUDGET_BASELINE_AT_UTC": "2026-08-31T12:00:00+00:00",
+        "PHASE7_BUDGET_HOURLY_INR": "70",
+        "PHASE7_BUDGET_SOFT_INR": "2000",
+        "PHASE7_BUDGET_PROJECTED_INR": "2200",
+        "PHASE7_BUDGET_HARD_INR": "2300",
+    }
+    for name, value in values.items():
+        monkeypatch.setenv(name, value)
+    monkeypatch.delenv("PHASE7_ACTUAL_BILLING_INR", raising=False)
+
+    policy = BudgetPolicy.from_environment()
+    assert policy.actual_inr is None
+    assert policy.snapshot(datetime(2026, 8, 31, 12, tzinfo=UTC))["level"] == (BudgetLevel.NORMAL)
+
+
+def test_actual_billing_is_combined_conservatively_with_estimate() -> None:
+    snapshot = _budget_policy(actual="2310").snapshot(datetime(2026, 8, 31, 12, tzinfo=UTC))
+    assert snapshot["source"] == "MAX_OF_ACTUAL_AND_CONSERVATIVE_ESTIMATE"
+    assert snapshot["effective_spend_inr"] == 2310.0
+    assert snapshot["level"] == BudgetLevel.HARD_STOP
+
+
+def test_budget_stopped_is_distinct_from_scientific_terminal_states() -> None:
+    assert SupervisorStatus.BUDGET_STOPPED not in {
+        SupervisorStatus.BLOCKED,
+        SupervisorStatus.COMPLETED,
+    }
+
+
+def test_budget_successor_contract_is_operational_only() -> None:
+    contract = json.loads(
+        (ROOT / "configs/contracts/phase7_vm_supervisor_v1_1.json").read_text(encoding="utf-8")
+    )
+    assert contract["predecessor_contract_id"] == "phase7_vm_supervisor_v1"
+    assert contract["operational_only"] is True
+    assert contract["scientific_baseline"] == "phase7_scientific_baseline_v1_8"
+    assert contract["canonical_configuration_hash"] == EXPECTED_CONFIG_HASH
+    assert contract["states"][-1] == "BUDGET_STOPPED"
+    assert contract["holdout"]["prospective_holdout_evaluation_authorized"] is False

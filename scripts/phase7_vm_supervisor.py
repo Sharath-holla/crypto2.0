@@ -18,12 +18,13 @@ import uuid
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from datetime import UTC, datetime
+from decimal import Decimal, InvalidOperation
 from enum import StrEnum
 from pathlib import Path
 from typing import Any
 
 SESSION = "phase7-auto"
-SUPERVISOR_VERSION = "phase7_vm_supervisor_v1"
+SUPERVISOR_VERSION = "phase7_vm_supervisor_v1_1"
 EXPECTED_CLOUD_ROOT = "gs://crypto-ai-data-83921/artifacts/phase7"
 EXPECTED_CONFIG_HASH = "cc550337f1f4ee4654124bf6"
 INTERRUPTION_EXIT_CODES = frozenset({129, 130, 143})
@@ -34,6 +35,104 @@ class SupervisorStatus(StrEnum):
     RUNNING = "RUNNING"
     BLOCKED = "BLOCKED"
     COMPLETED = "COMPLETED"
+    BUDGET_STOPPED = "BUDGET_STOPPED"
+
+
+class BudgetLevel(StrEnum):
+    NORMAL = "NORMAL"
+    SOFT_WARNING = "SOFT_WARNING"
+    PROJECTED_LIMIT = "PROJECTED_LIMIT"
+    HARD_STOP = "HARD_STOP"
+
+
+@dataclass(frozen=True, slots=True)
+class BudgetPolicy:
+    baseline_inr: Decimal
+    baseline_at: datetime
+    hourly_inr: Decimal
+    soft_inr: Decimal
+    projected_inr: Decimal
+    hard_inr: Decimal
+    actual_inr: Decimal | None = None
+
+    @classmethod
+    def from_environment(cls) -> BudgetPolicy:
+        names = {
+            "baseline_inr": "PHASE7_BUDGET_BASELINE_INR",
+            "baseline_at": "PHASE7_BUDGET_BASELINE_AT_UTC",
+            "hourly_inr": "PHASE7_BUDGET_HOURLY_INR",
+            "soft_inr": "PHASE7_BUDGET_SOFT_INR",
+            "projected_inr": "PHASE7_BUDGET_PROJECTED_INR",
+            "hard_inr": "PHASE7_BUDGET_HARD_INR",
+        }
+        missing = [environment for environment in names.values() if not os.getenv(environment)]
+        if missing:
+            raise ValueError(f"Missing required Phase 7 budget settings: {', '.join(missing)}")
+        try:
+            baseline_at = datetime.fromisoformat(os.environ[names["baseline_at"]])
+            if baseline_at.tzinfo is None:
+                raise ValueError("budget baseline timestamp must include a UTC offset")
+            values = {
+                name: Decimal(os.environ[environment])
+                for name, environment in names.items()
+                if name != "baseline_at"
+            }
+            supplied_actual = os.getenv("PHASE7_ACTUAL_BILLING_INR", "").strip()
+            actual = Decimal(supplied_actual) if supplied_actual else None
+        except (InvalidOperation, ValueError) as exc:
+            raise ValueError(f"Invalid Phase 7 budget setting: {exc}") from exc
+        policy = cls(
+            baseline_at=baseline_at.astimezone(UTC),
+            actual_inr=actual,
+            **values,
+        )
+        if not (
+            Decimal("0")
+            <= policy.baseline_inr
+            < policy.soft_inr
+            < policy.projected_inr
+            < policy.hard_inr
+        ):
+            raise ValueError("Phase 7 budget thresholds must be strictly increasing")
+        if policy.hourly_inr <= 0 or (actual is not None and actual < 0):
+            raise ValueError("Phase 7 budget rates and actual billing must be non-negative")
+        return policy
+
+    def snapshot(self, now: datetime) -> dict[str, Any]:
+        elapsed_seconds = max(
+            Decimal("0"),
+            Decimal(str((now.astimezone(UTC) - self.baseline_at).total_seconds())),
+        )
+        elapsed_hours = elapsed_seconds / Decimal("3600")
+        estimate = self.baseline_inr + elapsed_hours * self.hourly_inr
+        effective = max(estimate, self.actual_inr or Decimal("0"))
+        if effective >= self.hard_inr:
+            level = BudgetLevel.HARD_STOP
+        elif effective >= self.projected_inr:
+            level = BudgetLevel.PROJECTED_LIMIT
+        elif effective >= self.soft_inr:
+            level = BudgetLevel.SOFT_WARNING
+        else:
+            level = BudgetLevel.NORMAL
+        source = (
+            "CONSERVATIVE_ESTIMATE"
+            if self.actual_inr is None
+            else "MAX_OF_ACTUAL_AND_CONSERVATIVE_ESTIMATE"
+        )
+        return {
+            "source": source,
+            "level": level.value,
+            "baseline_spend_inr": float(self.baseline_inr),
+            "baseline_at_utc": self.baseline_at.isoformat(),
+            "conservative_hourly_inr": float(self.hourly_inr),
+            "elapsed_hours": round(float(elapsed_hours), 4),
+            "estimated_spend_inr": round(float(estimate), 2),
+            "actual_billing_inr": (float(self.actual_inr) if self.actual_inr is not None else None),
+            "effective_spend_inr": round(float(effective), 2),
+            "soft_warning_inr": float(self.soft_inr),
+            "projected_limit_inr": float(self.projected_inr),
+            "hard_stop_inr": float(self.hard_inr),
+        }
 
 
 def _atomic_json(path: Path, payload: dict[str, Any]) -> None:
@@ -109,12 +208,14 @@ class Phase7VmSupervisor:
         run_command: RunCommand = subprocess.run,
         sleeper: Callable[[float], None] = time.sleep,
         now: Callable[[], datetime] | None = None,
+        budget_policy: BudgetPolicy | None = None,
     ) -> None:
         self.paths = SupervisorPaths(repository.resolve())
         self.poll_seconds = poll_seconds
         self._run = run_command
         self._sleep = sleeper
         self._now = now or (lambda: datetime.now(UTC))
+        self.budget_policy = budget_policy
 
     def _timestamp(self) -> str:
         return self._now().astimezone(UTC).isoformat()
@@ -255,7 +356,13 @@ class Phase7VmSupervisor:
             "prospective_holdout_used": (progress or {}).get("prospective_holdout_used"),
             "prospective_holdout_evaluation_authorized": False,
             "july_2026_used": (progress or {}).get("july_2026_used"),
+            "budget": self._budget_snapshot(),
         }
+
+    def _budget_snapshot(self) -> dict[str, Any] | None:
+        if self.budget_policy is None:
+            return None
+        return self.budget_policy.snapshot(self._now())
 
     def _recent_evidence(self, relative: str, limit: int = 20) -> list[str]:
         root = self.paths.repository / relative
@@ -352,6 +459,40 @@ class Phase7VmSupervisor:
             current["shutdown_requested_at"] = self._timestamp()
             _atomic_json(self.paths.state, current)
             raise RuntimeError("VM shutdown command failed")
+
+    def _budget_stop(
+        self,
+        reason: str,
+        budget: dict[str, Any],
+        worker_pids: Sequence[str],
+    ) -> int:
+        fields = {
+            "budget_stopped_at": self._timestamp(),
+            "reason": reason,
+            "worker_stop_requested": bool(worker_pids),
+            **self._runtime_metadata(worker_pids),
+            "budget": budget,
+        }
+        self._state(SupervisorStatus.BUDGET_STOPPED, **fields)
+        forced = False
+        if self._tmux_exists():
+            self._command(("tmux", "send-keys", "-t", SESSION, "C-c"))
+            for _ in range(12):
+                if not self._tmux_exists():
+                    break
+                self._sleep(5.0)
+            if self._tmux_exists():
+                self._command(("tmux", "kill-session", "-t", SESSION))
+                forced = True
+        exit_code = self._read_exit_code() if worker_pids else None
+        self._state(
+            SupervisorStatus.BUDGET_STOPPED,
+            worker_stop_forced=forced,
+            worker_exit_code=exit_code,
+            **fields,
+        )
+        self._shutdown()
+        return 5
 
     def _backup(self, cloud_root: str) -> tuple[dict[str, str], ...]:
         sources = (
@@ -484,6 +625,17 @@ class Phase7VmSupervisor:
             return 3
         if existing_state.get("status") == SupervisorStatus.COMPLETED.value:
             return 4
+        if existing_state.get("status") == SupervisorStatus.BUDGET_STOPPED.value:
+            existing = self._tmux_exists()
+            pids = self._worker_pids()
+            if existing or pids:
+                budget = existing_state.get("budget") or self._budget_snapshot() or {}
+                return self._budget_stop(
+                    "existing_budget_stop_enforced",
+                    budget,
+                    pids,
+                )
+            return 5
 
         existing = self._tmux_exists()
         pids = self._worker_pids()
@@ -499,7 +651,18 @@ class Phase7VmSupervisor:
             self._mark_blocked("orphan Phase 7 worker exists outside phase7-auto", None)
             self._shutdown()
             return 2
-        else:
+        budget = self._budget_snapshot()
+        if budget and (
+            budget["level"] == BudgetLevel.HARD_STOP.value
+            or (not existing and budget["level"] == BudgetLevel.PROJECTED_LIMIT.value)
+        ):
+            reason = (
+                "hard_budget_threshold_reached"
+                if budget["level"] == BudgetLevel.HARD_STOP.value
+                else "preflight_projected_budget_limit_reached"
+            )
+            return self._budget_stop(reason, budget, pids)
+        if not existing:
             self._start_worker(cloud_root)
 
         self._state(
@@ -509,6 +672,7 @@ class Phase7VmSupervisor:
             cloud_storage_root=cloud_root,
             **self._runtime_metadata(pids if existing else ()),
         )
+        previous_stage = (self._progress() or {}).get("stage")
         while self._tmux_exists():
             pids = self._worker_pids()
             if len(pids) > 1 or (len(pids) == 1 and not self._session_contains_workers(pids)):
@@ -521,12 +685,32 @@ class Phase7VmSupervisor:
                 self._mark_blocked(reason, None)
                 self._shutdown()
                 return 2
+            progress = self._progress() or {}
+            current_stage = progress.get("stage")
+            budget = self._budget_snapshot()
+            new_expensive_stage = current_stage != previous_stage and current_stage in {
+                "data",
+                "gold",
+                "train",
+                "training",
+            }
+            if budget and (
+                budget["level"] == BudgetLevel.HARD_STOP.value
+                or (budget["level"] == BudgetLevel.PROJECTED_LIMIT.value and new_expensive_stage)
+            ):
+                reason = (
+                    "hard_budget_threshold_reached"
+                    if budget["level"] == BudgetLevel.HARD_STOP.value
+                    else f"projected_budget_limit_before_{current_stage}"
+                )
+                return self._budget_stop(reason, budget, pids)
             self._state(
                 SupervisorStatus.RUNNING,
                 worker_started=True,
                 cloud_storage_root=cloud_root,
                 **self._runtime_metadata(pids),
             )
+            previous_stage = current_stage
             self._sleep(self.poll_seconds)
         return self._finish(self._read_exit_code(), cloud_root)
 
@@ -561,6 +745,7 @@ class Phase7VmSupervisor:
             "tmux_session_exists": self._tmux_exists(),
             "worker_pids": list(self._worker_pids()),
             "progress": self._progress(),
+            "budget": self._budget_snapshot(),
         }
 
 
@@ -582,9 +767,11 @@ def _parser() -> argparse.ArgumentParser:
 
 def main() -> int:
     args = _parser().parse_args()
+    budget_policy = BudgetPolicy.from_environment() if args.command == "supervise" else None
     supervisor = Phase7VmSupervisor(
         args.repository,
         poll_seconds=args.poll_seconds,
+        budget_policy=budget_policy,
     )
     if args.command == "status":
         print(json.dumps(supervisor.status(), indent=2, sort_keys=True, default=str))

@@ -511,3 +511,24 @@
   scientific baseline remains `phase7_scientific_baseline_v1_8`, Phase 7
   remains 1.7.0, and the canonical hash remains
   `cc550337f1f4ee4654124bf6`.
+
+## ADR-027 - Stop Phase 7 before a conservative cloud-budget overrun
+
+- Date: 2026-09-01
+- Status: Accepted for the Phase 7 cloud research run.
+- Decision: Extend the operational supervisor with a distinct persistent
+  `BUDGET_STOPPED` state. A required user-supplied budget baseline, timestamp,
+  conservative hourly estimate, and soft/projected/hard thresholds protect an
+  unattended run when current Cloud Billing totals are unavailable or delayed.
+  A supplied actual total is combined conservatively with the estimate.
+- Behavior: Soft warning does not interrupt useful work. A projected-limit
+  preflight does not launch the worker, and a new expensive stage is not begun
+  after the projected limit. At the hard threshold the supervisor atomically
+  persists `BUDGET_STOPPED`, interrupts the one owned worker, preserves
+  progress/checkpoints/evidence, flushes the filesystem, and stops the VM.
+  Budget-stopped state never auto-resumes and is not a scientific failure.
+- Versioning: This behavior is frozen separately by operational contract
+  `phase7_vm_supervisor_v1_1`; predecessor `phase7_vm_supervisor_v1` remains
+  unchanged. Scientific baseline `phase7_scientific_baseline_v1_8`, Phase 7
+  version 1.7.0, configuration hash `cc550337f1f4ee4654124bf6`, and every
+  scientific and holdout invariant remain unchanged.
