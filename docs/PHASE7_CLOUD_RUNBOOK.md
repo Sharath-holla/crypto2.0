@@ -121,7 +121,60 @@ These commands make no network request and perform no heavy training. Confirm:
 - `prospective_holdout_evaluation_authorized=false`; and
 - paths, disk, RAM, threads, architectures, and horizons are correct.
 
-## 6. Enable the VM-only guard and run in tmux
+## 6. Run through the cost-aware supervisor
+
+The operational contract is `phase7_vm_supervisor_v1`. The supervisor is
+started manually in its own tmux session and owns the only research worker,
+whose authoritative session remains `phase7-auto`. It is not installed as a
+boot service: starting the VM for diagnosis cannot silently start research.
+
+Before launch, verify there is no existing worker and inspect persistent state:
+
+```bash
+cd ~/crypto2.0
+uv run python scripts/phase7_vm_supervisor.py status
+tmux list-sessions
+pgrep -af '[c]rypto-ai phase7-research'
+```
+
+If `BLOCKED.json` or a `BLOCKED` state exists, do not launch. Diagnose and
+validate first. Only after a general fix has passed all gates, archive the
+marker with an explicit audit reason:
+
+```bash
+uv run python scripts/phase7_vm_supervisor.py clear-blocked \
+  --reason "validated general fix at <commit>"
+```
+
+Launch the supervisor once:
+
+```bash
+export PHASE7_CLOUD_STORAGE_ROOT=gs://crypto-ai-data-83921/artifacts/phase7
+tmux new-session -d -s phase7-supervisor -c "$HOME/crypto2.0" \
+  "uv run python scripts/phase7_vm_supervisor.py supervise \
+  --repository $HOME/crypto2.0 >> local_artifacts/phase7-supervisor.log 2>&1"
+```
+
+The supervisor launches the worker with both cloud guards, the canonical
+configuration, `--resume`, and append-only logging. It maintains:
+
+- `local_artifacts/phase7/supervisor/state.json`;
+- `local_artifacts/phase7/supervisor/BLOCKED.json` when intervention is needed;
+- durable diagnostic/interruption/cleared histories; and
+- the existing `local_artifacts/phase7/progress.json` and
+  `local_artifacts/phase7-cloud-run.log`.
+
+On proven completion it persists `COMPLETED`, syncs final artifacts to the
+existing GCS root, flushes state, and stops the VM. On a genuine failure it
+persists diagnostics and `BLOCKED`, flushes state, and stops the VM without a
+restart loop. A blocked or completed invocation never starts a worker. Quiet
+model fits have no idle timeout.
+
+### Manual fallback (supervisor recovery only)
+
+The direct command below documents the worker contract but must not be run
+while the supervisor or `phase7-auto` exists. Use it only to recover the
+supervisor itself, never to create a second worker.
 
 ```bash
 export PHASE7_ALLOW_CLOUD_RESEARCH=1

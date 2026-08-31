@@ -484,3 +484,30 @@
   `multiasset_targets_v2`, 16 folds, model families, latency, costs, cutoff,
   July exclusion, and the locked August holdout are unchanged. Every
   predecessor baseline remains immutable.
+
+## ADR-026 - Supervise the Phase 7 VM as a finite cost-aware batch
+
+- Date: 2026-08-31
+- Status: Accepted for the Phase 7 cloud research run.
+- Decision: A manually invoked, VM-local supervisor owns exactly one research
+  worker in tmux session `phase7-auto`. It atomically records `READY`,
+  `RUNNING`, `BLOCKED`, or `COMPLETED`, consumes the existing operational
+  `progress.json`, preserves checkpoints and evidence, and never treats quiet
+  training as idle. It is deliberately not a boot service.
+- Failure: A genuine worker failure writes a durable diagnostic bundle and a
+  `BLOCKED` marker before requesting VM shutdown. A later invocation refuses
+  to resume while either the marker or state remains blocked. Clearing the
+  marker requires an explicit audited reason after diagnosis and validation.
+- Completion: Exit zero is insufficient on its own. Completion additionally
+  requires the canonical configuration hash, final Phase 7 progress event,
+  matching code commit, unused July buffer, and locked unused August holdout.
+  Final artifacts are synced to the existing Phase 7 GCS root before shutdown.
+- Interruption: SIGINT/SIGHUP/SIGTERM exit codes are recorded as resumable
+  operational interruptions rather than scientific failures. Checkpoint and
+  `--resume` semantics are unchanged.
+- Non-interference: `phase7_vm_supervisor_v1` is an operational contract. It
+  changes no source, validation, universe, feature, target, fold, model,
+  calibration, cost, qualification, cutoff, or holdout behavior. The frozen
+  scientific baseline remains `phase7_scientific_baseline_v1_8`, Phase 7
+  remains 1.7.0, and the canonical hash remains
+  `cc550337f1f4ee4654124bf6`.

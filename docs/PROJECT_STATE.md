@@ -83,6 +83,10 @@
   of validator-proven archive omissions is frozen by
   `phase7_scientific_baseline_v1_8` and Phase 7 version 1.7.0. Phase 7.2 adds only disabled
   research capabilities in a separate namespace.
+  Cost-aware batch supervision is separately versioned as the operational-only
+  `phase7_vm_supervisor_v1`; it preserves the v1_8 scientific freeze and
+  atomically stops the existing VM only after durable `BLOCKED` diagnostics or
+  proven `COMPLETED` artifact backup.
 
 ## PHASE 7 PRE-PUSH STATUS
 
