@@ -532,3 +532,7 @@
   unchanged. Scientific baseline `phase7_scientific_baseline_v1_8`, Phase 7
   version 1.7.0, configuration hash `cc550337f1f4ee4654124bf6`, and every
   scientific and holdout invariant remain unchanged.
+- Recovery amendment: Operational patch `phase7_vm_supervisor_v1_1_1` adds an
+  audited `clear-budget-stop` transition that archives the stopped state before
+  returning to `READY`. It cannot run while a worker exists and does not change
+  budget evaluation or any scientific behavior.

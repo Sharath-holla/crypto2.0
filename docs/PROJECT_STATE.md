@@ -90,6 +90,9 @@
   Operational successor `phase7_vm_supervisor_v1_1` adds a conservative,
   non-scientific `BUDGET_STOPPED` state that preserves checkpoints/evidence and
   prevents automatic restart after the approved cloud-cost ceiling is reached.
+  Patch `phase7_vm_supervisor_v1_1_1` adds only the audited recovery transition
+  needed to archive an explicitly cleared budget stop before returning to
+  `READY`.
 
 ## PHASE 7 PRE-PUSH STATUS
 

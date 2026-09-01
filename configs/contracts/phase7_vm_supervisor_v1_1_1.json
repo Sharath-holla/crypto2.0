@@ -1,0 +1,33 @@
+{
+  "automatic_shutdown_states": [
+    "BLOCKED",
+    "COMPLETED",
+    "BUDGET_STOPPED"
+  ],
+  "blocked_auto_resume": false,
+  "budget_stopped_auto_resume": false,
+  "budget_stopped_clear_command": "clear-budget-stop",
+  "budget_stopped_clear_requires_audit_reason": true,
+  "canonical_configuration_hash": "cc550337f1f4ee4654124bf6",
+  "completed_auto_resume": false,
+  "contract_id": "phase7_vm_supervisor_v1_1_1",
+  "contract_version": "1.1.1",
+  "holdout": {
+    "july_2026_used": false,
+    "prospective_holdout_evaluation_authorized": false,
+    "prospective_holdout_status": "LOCKED_UNUSED",
+    "prospective_holdout_used": false
+  },
+  "operational_only": true,
+  "predecessor_contract_id": "phase7_vm_supervisor_v1_1",
+  "scientific_baseline": "phase7_scientific_baseline_v1_8",
+  "states": [
+    "READY",
+    "RUNNING",
+    "BLOCKED",
+    "COMPLETED",
+    "BUDGET_STOPPED"
+  ],
+  "supervisor_session": "phase7-supervisor",
+  "worker_session": "phase7-auto"
+}

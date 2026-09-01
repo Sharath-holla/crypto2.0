@@ -24,7 +24,7 @@ from pathlib import Path
 from typing import Any
 
 SESSION = "phase7-auto"
-SUPERVISOR_VERSION = "phase7_vm_supervisor_v1_1"
+SUPERVISOR_VERSION = "phase7_vm_supervisor_v1_1_1"
 EXPECTED_CLOUD_ROOT = "gs://crypto-ai-data-83921/artifacts/phase7"
 EXPECTED_CONFIG_HASH = "cc550337f1f4ee4654124bf6"
 INTERRUPTION_EXIT_CODES = frozenset({129, 130, 143})
@@ -738,6 +738,25 @@ class Phase7VmSupervisor:
             worker_started=False,
         )
 
+    def clear_budget_stopped(self, reason: str) -> dict[str, Any]:
+        if self._tmux_exists() or self._worker_pids():
+            raise RuntimeError("Cannot clear BUDGET_STOPPED while a Phase 7 worker exists")
+        if not reason.strip():
+            raise ValueError("Clearing BUDGET_STOPPED requires an audit reason")
+        state = _read_json(self.paths.state) or {}
+        if state.get("status") != SupervisorStatus.BUDGET_STOPPED.value:
+            raise RuntimeError("Current supervisor state is not BUDGET_STOPPED")
+        cleared = self.paths.supervisor_root / "cleared"
+        stamp = self._timestamp().replace(":", "").replace("+00:00", "Z")
+        archived = cleared / f"BUDGET_STOPPED-{stamp}.json"
+        _atomic_json(archived, state)
+        return self._state(
+            SupervisorStatus.READY,
+            clear_reason=reason,
+            cleared_budget_state=str(archived.resolve()),
+            worker_started=False,
+        )
+
     def status(self) -> dict[str, Any]:
         return {
             "state": _read_json(self.paths.state),
@@ -753,7 +772,7 @@ def _parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "command",
-        choices=("supervise", "status", "clear-blocked"),
+        choices=("supervise", "status", "clear-blocked", "clear-budget-stop"),
     )
     parser.add_argument(
         "--repository",
@@ -780,6 +799,16 @@ def main() -> int:
         print(
             json.dumps(
                 supervisor.clear_blocked(args.reason),
+                indent=2,
+                sort_keys=True,
+                default=str,
+            )
+        )
+        return 0
+    if args.command == "clear-budget-stop":
+        print(
+            json.dumps(
+                supervisor.clear_budget_stopped(args.reason),
                 indent=2,
                 sort_keys=True,
                 default=str,

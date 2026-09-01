@@ -485,6 +485,33 @@ def test_budget_stopped_startup_does_not_resume_or_shutdown(tmp_path: Path) -> N
     assert not any(call[:3] == ("sudo", "-n", "shutdown") for call in runner.calls)
 
 
+def test_clear_budget_stopped_archives_state_before_ready(tmp_path: Path) -> None:
+    runner = FakeRunner(tmux=(False,), pids=((),))
+    supervisor = _supervisor(tmp_path, runner, budget_policy=_budget_policy())
+    stopped = {
+        "status": "BUDGET_STOPPED",
+        "reason": "billing_account_disabled_delinquent",
+        "budget": {"estimated_spend_inr": 1992.45},
+    }
+    _atomic_json(supervisor.paths.state, stopped)
+
+    ready = supervisor.clear_budget_stopped("billing restored; GCS access verified")
+    archived = Path(ready["cleared_budget_state"])
+    assert ready["status"] == "READY"
+    assert json.loads(archived.read_text(encoding="utf-8")) == stopped
+    assert json.loads(supervisor.paths.state.read_text(encoding="utf-8"))["status"] == ("READY")
+    assert not any(call[:2] == ("tmux", "new-session") for call in runner.calls)
+
+
+def test_clear_budget_stopped_requires_audited_stopped_state(tmp_path: Path) -> None:
+    runner = FakeRunner(tmux=(False,), pids=((),))
+    supervisor = _supervisor(tmp_path, runner, budget_policy=_budget_policy())
+    _atomic_json(supervisor.paths.state, {"status": "READY"})
+
+    with pytest.raises(RuntimeError, match="not BUDGET_STOPPED"):
+        supervisor.clear_budget_stopped("billing restored")
+
+
 def test_unknown_actual_billing_uses_conservative_estimate_without_crashing() -> None:
     snapshot = _budget_policy(baseline="1600", baseline_hour=6).snapshot(
         datetime(2026, 8, 31, 12, tzinfo=UTC)
@@ -539,3 +566,15 @@ def test_budget_successor_contract_is_operational_only() -> None:
     assert contract["canonical_configuration_hash"] == EXPECTED_CONFIG_HASH
     assert contract["states"][-1] == "BUDGET_STOPPED"
     assert contract["holdout"]["prospective_holdout_evaluation_authorized"] is False
+
+
+def test_budget_recovery_patch_is_operational_only() -> None:
+    contract = json.loads(
+        (ROOT / "configs/contracts/phase7_vm_supervisor_v1_1_1.json").read_text(encoding="utf-8")
+    )
+    assert contract["predecessor_contract_id"] == "phase7_vm_supervisor_v1_1"
+    assert contract["operational_only"] is True
+    assert contract["scientific_baseline"] == "phase7_scientific_baseline_v1_8"
+    assert contract["canonical_configuration_hash"] == EXPECTED_CONFIG_HASH
+    assert contract["budget_stopped_clear_command"] == "clear-budget-stop"
+    assert contract["budget_stopped_clear_requires_audit_reason"] is True

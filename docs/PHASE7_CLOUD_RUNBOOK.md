@@ -123,7 +123,7 @@ These commands make no network request and perform no heavy training. Confirm:
 
 ## 6. Run through the cost-aware supervisor
 
-The current operational contract is `phase7_vm_supervisor_v1_1`. The supervisor is
+The current operational contract is `phase7_vm_supervisor_v1_1_1`. The supervisor is
 started manually in its own tmux session and owns the only research worker,
 whose authoritative session remains `phase7-auto`. It is not installed as a
 boot service: starting the VM for diagnosis cannot silently start research.
@@ -144,6 +144,14 @@ marker with an explicit audit reason:
 ```bash
 uv run python scripts/phase7_vm_supervisor.py clear-blocked \
   --reason "validated general fix at <commit>"
+```
+
+`BUDGET_STOPPED` also never auto-resumes. After billing and the approved budget
+are explicitly revalidated, archive that state through the audited transition:
+
+```bash
+uv run python scripts/phase7_vm_supervisor.py clear-budget-stop \
+  --reason "billing restored and required cloud access verified"
 ```
 
 Launch the supervisor once:
