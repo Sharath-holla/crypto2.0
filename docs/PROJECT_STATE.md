@@ -93,6 +93,11 @@
   Patch `phase7_vm_supervisor_v1_1_1` adds only the audited recovery transition
   needed to archive an explicitly cleared budget stop before returning to
   `READY`.
+  Patch `phase7_vm_supervisor_v1_1_2` corrects logical worker ownership so the
+  normal `uv` launcher and Python child count as one worker while independent
+  process roots still block and stop safely. It is operational-only and leaves
+  `phase7_scientific_baseline_v1_8` and the canonical configuration hash
+  unchanged.
 
 ## PHASE 7 PRE-PUSH STATUS
 

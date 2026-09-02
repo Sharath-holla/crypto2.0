@@ -11,6 +11,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import shlex
 import shutil
 import subprocess
 import time
@@ -24,7 +25,7 @@ from pathlib import Path
 from typing import Any
 
 SESSION = "phase7-auto"
-SUPERVISOR_VERSION = "phase7_vm_supervisor_v1_1_1"
+SUPERVISOR_VERSION = "phase7_vm_supervisor_v1_1_2"
 EXPECTED_CLOUD_ROOT = "gs://crypto-ai-data-83921/artifacts/phase7"
 EXPECTED_CONFIG_HASH = "cc550337f1f4ee4654124bf6"
 INTERRUPTION_EXIT_CODES = frozenset({129, 130, 143})
@@ -199,6 +200,26 @@ class SupervisorPaths:
 RunCommand = Callable[..., subprocess.CompletedProcess[str]]
 
 
+@dataclass(frozen=True, slots=True)
+class ProcessRecord:
+    pid: str
+    parent_pid: str
+    session_id: str
+    state: str
+    command: str
+
+
+@dataclass(frozen=True, slots=True)
+class WorkerSnapshot:
+    pids: tuple[str, ...]
+    logical_roots: tuple[str, ...]
+    session_ids: tuple[str, ...]
+
+    @property
+    def logical_count(self) -> int:
+        return len(self.logical_roots)
+
+
 class Phase7VmSupervisor:
     def __init__(
         self,
@@ -249,11 +270,78 @@ class Phase7VmSupervisor:
     def _tmux_exists(self) -> bool:
         return self._command(("tmux", "has-session", "-t", SESSION)).returncode == 0
 
+    @staticmethod
+    def _is_worker_command(command: str) -> bool:
+        try:
+            arguments = shlex.split(command)
+        except ValueError:
+            return False
+        if not arguments:
+            return False
+        executable = Path(arguments[0]).name
+        if executable == "uv":
+            return any(
+                arguments[index : index + 3] == ["run", "crypto-ai", "phase7-research"]
+                for index in range(1, len(arguments) - 2)
+            )
+        if executable == "crypto-ai":
+            return len(arguments) >= 2 and arguments[1] == "phase7-research"
+        return bool(
+            executable.startswith("python")
+            and len(arguments) >= 3
+            and Path(arguments[1]).name == "crypto-ai"
+            and arguments[2] == "phase7-research"
+        )
+
+    def _process_table(self) -> dict[str, ProcessRecord]:
+        result = self._command(("ps", "-eo", "pid=,ppid=,sid=,stat=,args="))
+        if result.returncode != 0:
+            raise RuntimeError(f"process table query failed: {result.stderr.strip()}")
+        records: dict[str, ProcessRecord] = {}
+        for line in result.stdout.splitlines():
+            fields = line.strip().split(None, 4)
+            if len(fields) < 4:
+                continue
+            pid, parent_pid, session_id, state = fields[:4]
+            if not (pid.isdecimal() and parent_pid.isdecimal() and session_id.isdecimal()):
+                continue
+            records[pid] = ProcessRecord(
+                pid=pid,
+                parent_pid=parent_pid,
+                session_id=session_id,
+                state=state,
+                command=fields[4] if len(fields) == 5 else "",
+            )
+        return records
+
+    def _worker_snapshot(self) -> WorkerSnapshot:
+        processes = self._process_table()
+        workers = {
+            pid: process
+            for pid, process in processes.items()
+            if not process.state.startswith("Z") and self._is_worker_command(process.command)
+        }
+
+        def matching_ancestor(process: ProcessRecord) -> str | None:
+            parent_pid = process.parent_pid
+            visited = {process.pid}
+            while parent_pid in processes and parent_pid not in visited:
+                if parent_pid in workers:
+                    return parent_pid
+                visited.add(parent_pid)
+                parent_pid = processes[parent_pid].parent_pid
+            return None
+
+        ordered = tuple(sorted(workers.values(), key=lambda process: int(process.pid)))
+        roots = tuple(process.pid for process in ordered if matching_ancestor(process) is None)
+        return WorkerSnapshot(
+            pids=tuple(process.pid for process in ordered),
+            logical_roots=roots,
+            session_ids=tuple(process.session_id for process in ordered),
+        )
+
     def _worker_pids(self) -> tuple[str, ...]:
-        result = self._command(("pgrep", "-f", "[c]rypto-ai phase7-research"))
-        if result.returncode not in {0, 1}:
-            raise RuntimeError(f"pgrep failed: {result.stderr.strip()}")
-        return tuple(line.strip() for line in result.stdout.splitlines() if line.strip())
+        return self._worker_snapshot().pids
 
     def _process_session_id(self, pid: str) -> str | None:
         result = self._command(("ps", "-o", "sid=", "-p", pid))
@@ -262,7 +350,7 @@ class Phase7VmSupervisor:
         value = result.stdout.strip()
         return value or None
 
-    def _session_contains_workers(self, worker_pids: Sequence[str]) -> bool:
+    def _session_contains_workers(self, workers: WorkerSnapshot) -> bool:
         panes = self._command(("tmux", "list-panes", "-t", SESSION, "-F", "#{pane_pid}"))
         if panes.returncode != 0:
             return False
@@ -272,8 +360,10 @@ class Phase7VmSupervisor:
             for pane_pid in pane_pids
             if (session_id := self._process_session_id(pane_pid)) is not None
         }
-        return bool(pane_sessions) and all(
-            self._process_session_id(pid) in pane_sessions for pid in worker_pids
+        return (
+            bool(pane_sessions)
+            and bool(workers.pids)
+            and all(session_id in pane_sessions for session_id in workers.session_ids)
         )
 
     def _git_head(self) -> str | None:
@@ -289,7 +379,7 @@ class Phase7VmSupervisor:
         os.replace(self.paths.worker_exit, history / f"worker-exit-{stamp}.txt")
 
     def _start_worker(self, cloud_root: str) -> None:
-        if self._tmux_exists() or self._worker_pids():
+        if self._tmux_exists() or self._worker_snapshot().logical_count:
             raise RuntimeError("Refusing to start a duplicate Phase 7 worker")
         self._archive_stale_exit()
         self.paths.supervisor_root.mkdir(parents=True, exist_ok=True)
@@ -338,12 +428,14 @@ class Phase7VmSupervisor:
             }
         return None
 
-    def _runtime_metadata(self, worker_pids: Sequence[str] | None = None) -> dict[str, Any]:
+    def _runtime_metadata(self, workers: WorkerSnapshot | None = None) -> dict[str, Any]:
         progress = self._progress()
-        pids = tuple(worker_pids) if worker_pids is not None else self._worker_pids()
+        snapshot = workers if workers is not None else self._worker_snapshot()
         return {
             "git_head": self._git_head(),
-            "worker_pids": list(pids),
+            "worker_pids": list(snapshot.pids),
+            "logical_worker_count": snapshot.logical_count,
+            "logical_worker_roots": list(snapshot.logical_roots),
             "stage": (progress or {}).get("stage"),
             "current_symbol": (progress or {}).get("current_symbol"),
             "current_fold": (progress or {}).get("current_fold"),
@@ -464,13 +556,13 @@ class Phase7VmSupervisor:
         self,
         reason: str,
         budget: dict[str, Any],
-        worker_pids: Sequence[str],
+        workers: WorkerSnapshot,
     ) -> int:
         fields = {
             "budget_stopped_at": self._timestamp(),
             "reason": reason,
-            "worker_stop_requested": bool(worker_pids),
-            **self._runtime_metadata(worker_pids),
+            "worker_stop_requested": bool(workers.pids),
+            **self._runtime_metadata(workers),
             "budget": budget,
         }
         self._state(SupervisorStatus.BUDGET_STOPPED, **fields)
@@ -484,7 +576,7 @@ class Phase7VmSupervisor:
             if self._tmux_exists():
                 self._command(("tmux", "kill-session", "-t", SESSION))
                 forced = True
-        exit_code = self._read_exit_code() if worker_pids else None
+        exit_code = self._read_exit_code() if workers.pids else None
         self._state(
             SupervisorStatus.BUDGET_STOPPED,
             worker_stop_forced=forced,
@@ -627,27 +719,27 @@ class Phase7VmSupervisor:
             return 4
         if existing_state.get("status") == SupervisorStatus.BUDGET_STOPPED.value:
             existing = self._tmux_exists()
-            pids = self._worker_pids()
-            if existing or pids:
+            workers = self._worker_snapshot()
+            if existing or workers.logical_count:
                 budget = existing_state.get("budget") or self._budget_snapshot() or {}
                 return self._budget_stop(
                     "existing_budget_stop_enforced",
                     budget,
-                    pids,
+                    workers,
                 )
             return 5
 
         existing = self._tmux_exists()
-        pids = self._worker_pids()
+        workers = self._worker_snapshot()
         if existing:
-            if len(pids) != 1 or not self._session_contains_workers(pids):
+            if workers.logical_count != 1 or not self._session_contains_workers(workers):
                 self._command(("tmux", "kill-session", "-t", SESSION))
                 self._mark_blocked(
                     "existing session does not contain exactly one owned worker", None
                 )
                 self._shutdown()
                 return 2
-        elif pids:
+        elif workers.logical_count:
             self._mark_blocked("orphan Phase 7 worker exists outside phase7-auto", None)
             self._shutdown()
             return 2
@@ -661,7 +753,7 @@ class Phase7VmSupervisor:
                 if budget["level"] == BudgetLevel.HARD_STOP.value
                 else "preflight_projected_budget_limit_reached"
             )
-            return self._budget_stop(reason, budget, pids)
+            return self._budget_stop(reason, budget, workers)
         if not existing:
             self._start_worker(cloud_root)
 
@@ -670,16 +762,20 @@ class Phase7VmSupervisor:
             worker_started=True,
             existing_worker=existing,
             cloud_storage_root=cloud_root,
-            **self._runtime_metadata(pids if existing else ()),
+            **self._runtime_metadata(
+                workers if existing else WorkerSnapshot(pids=(), logical_roots=(), session_ids=())
+            ),
         )
         previous_stage = (self._progress() or {}).get("stage")
         while self._tmux_exists():
-            pids = self._worker_pids()
-            if len(pids) > 1 or (len(pids) == 1 and not self._session_contains_workers(pids)):
+            workers = self._worker_snapshot()
+            if workers.logical_count > 1 or (
+                workers.logical_count == 1 and not self._session_contains_workers(workers)
+            ):
                 self._command(("tmux", "kill-session", "-t", SESSION))
                 reason = (
                     "duplicate Phase 7 workers detected"
-                    if len(pids) > 1
+                    if workers.logical_count > 1
                     else "Phase 7 worker is not owned by phase7-auto"
                 )
                 self._mark_blocked(reason, None)
@@ -703,19 +799,19 @@ class Phase7VmSupervisor:
                     if budget["level"] == BudgetLevel.HARD_STOP.value
                     else f"projected_budget_limit_before_{current_stage}"
                 )
-                return self._budget_stop(reason, budget, pids)
+                return self._budget_stop(reason, budget, workers)
             self._state(
                 SupervisorStatus.RUNNING,
                 worker_started=True,
                 cloud_storage_root=cloud_root,
-                **self._runtime_metadata(pids),
+                **self._runtime_metadata(workers),
             )
             previous_stage = current_stage
             self._sleep(self.poll_seconds)
         return self._finish(self._read_exit_code(), cloud_root)
 
     def clear_blocked(self, reason: str) -> dict[str, Any]:
-        if self._tmux_exists() or self._worker_pids():
+        if self._tmux_exists() or self._worker_snapshot().logical_count:
             raise RuntimeError("Cannot clear BLOCKED while a Phase 7 worker exists")
         if not reason.strip():
             raise ValueError("Clearing BLOCKED requires an audit reason")
@@ -739,7 +835,7 @@ class Phase7VmSupervisor:
         )
 
     def clear_budget_stopped(self, reason: str) -> dict[str, Any]:
-        if self._tmux_exists() or self._worker_pids():
+        if self._tmux_exists() or self._worker_snapshot().logical_count:
             raise RuntimeError("Cannot clear BUDGET_STOPPED while a Phase 7 worker exists")
         if not reason.strip():
             raise ValueError("Clearing BUDGET_STOPPED requires an audit reason")
@@ -758,11 +854,14 @@ class Phase7VmSupervisor:
         )
 
     def status(self) -> dict[str, Any]:
+        workers = self._worker_snapshot()
         return {
             "state": _read_json(self.paths.state),
             "blocked": _read_json(self.paths.blocked),
             "tmux_session_exists": self._tmux_exists(),
-            "worker_pids": list(self._worker_pids()),
+            "worker_pids": list(workers.pids),
+            "logical_worker_count": workers.logical_count,
+            "logical_worker_roots": list(workers.logical_roots),
             "progress": self._progress(),
             "budget": self._budget_snapshot(),
         }

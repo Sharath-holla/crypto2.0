@@ -536,3 +536,10 @@
   audited `clear-budget-stop` transition that archives the stopped state before
   returning to `READY`. It cannot run while a worker exists and does not change
   budget evaluation or any scientific behavior.
+- Worker-ownership amendment: Operational patch
+  `phase7_vm_supervisor_v1_1_2` counts independent Phase 7 process-tree roots,
+  not every matching launcher/child PID. The owned `uv` launcher and Python
+  child in `phase7-auto` are one logical worker; an independent root or worker
+  outside the authoritative tmux session remains fail-safe `BLOCKED`. Scientific
+  configuration, data, features, targets, folds, models, and holdout policy are
+  unchanged.

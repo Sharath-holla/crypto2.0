@@ -22,6 +22,7 @@ from scripts.phase7_vm_supervisor import (
 )
 
 ROOT = Path(__file__).resolve().parents[2]
+ProcessSpec = tuple[str, str, str, str, str]
 
 
 class FakeRunner:
@@ -30,12 +31,14 @@ class FakeRunner:
         *,
         tmux: Sequence[bool] = (),
         pids: Sequence[tuple[str, ...]] = (),
+        processes: Sequence[tuple[ProcessSpec, ...]] = (),
         shutdown_code: int = 0,
         on_shutdown: Callable[[], None] | None = None,
         worker_in_session: bool = True,
     ) -> None:
         self.tmux = list(tmux)
         self.pids = list(pids)
+        self.processes = list(processes)
         self.shutdown_code = shutdown_code
         self.on_shutdown = on_shutdown
         self.worker_in_session = worker_in_session
@@ -57,10 +60,24 @@ class FakeRunner:
         returncode, stdout, stderr = 0, "", ""
         if command[:2] == ("tmux", "has-session"):
             returncode = 0 if (self.tmux.pop(0) if self.tmux else False) else 1
-        elif command[:2] == ("pgrep", "-f"):
-            values = self.pids.pop(0) if self.pids else ()
-            returncode = 0 if values else 1
-            stdout = "\n".join(values) + ("\n" if values else "")
+        elif command == ("ps", "-eo", "pid=,ppid=,sid=,stat=,args="):
+            if self.processes:
+                records = self.processes.pop(0)
+            else:
+                values = self.pids.pop(0) if self.pids else ()
+                session_id = "777" if self.worker_in_session else "888"
+                records = tuple(
+                    (
+                        pid,
+                        "1",
+                        session_id,
+                        "S",
+                        "/opt/venv/bin/crypto-ai phase7-research --resume",
+                    )
+                    for pid in values
+                )
+            stdout = "\n".join(" ".join(record) for record in records)
+            stdout += "\n" if records else ""
         elif command[:2] == ("tmux", "list-panes"):
             stdout = "900\n"
         elif command[:3] == ("ps", "-o", "sid="):
@@ -111,6 +128,26 @@ def _budget_policy(
         projected_inr=Decimal("2200"),
         hard_inr=Decimal("2300"),
         actual_inr=Decimal(actual) if actual is not None else None,
+    )
+
+
+def _uv_python_tree(*, session_id: str = "777") -> tuple[ProcessSpec, ...]:
+    return (
+        (
+            "11",
+            "900",
+            session_id,
+            "S",
+            "/home/user/.local/bin/uv run crypto-ai phase7-research --config cfg --resume",
+        ),
+        (
+            "12",
+            "11",
+            session_id,
+            "S",
+            "/repo/.venv/bin/python /repo/.venv/bin/crypto-ai phase7-research "
+            "--config cfg --resume",
+        ),
     )
 
 
@@ -226,6 +263,110 @@ def test_ready_starts_exactly_one_guarded_resume_worker(tmp_path: Path) -> None:
     assert "phase7-research" in worker_script
     assert "--resume" in worker_script
     assert "tee -a" in worker_script
+
+
+def test_uv_launcher_and_python_child_are_one_logical_worker(tmp_path: Path) -> None:
+    runner = FakeRunner(processes=(_uv_python_tree(),))
+    supervisor = _supervisor(tmp_path, runner)
+
+    workers = supervisor._worker_snapshot()
+
+    assert workers.pids == ("11", "12")
+    assert workers.logical_roots == ("11",)
+    assert workers.logical_count == 1
+    assert supervisor._session_contains_workers(workers) is True
+
+
+def test_shell_and_env_wrappers_do_not_split_one_logical_worker(tmp_path: Path) -> None:
+    processes: tuple[ProcessSpec, ...] = (
+        ("9", "900", "777", "S", "/bin/bash /repo/scripts/run_phase7_worker.sh"),
+        ("10", "9", "777", "S", "/usr/bin/env PHASE7_ALLOW_CLOUD_RESEARCH=1"),
+        *_uv_python_tree(),
+    )
+    runner = FakeRunner(processes=(processes,))
+    supervisor = _supervisor(tmp_path, runner)
+
+    workers = supervisor._worker_snapshot()
+
+    assert workers.pids == ("11", "12")
+    assert workers.logical_roots == ("11",)
+    assert workers.logical_count == 1
+
+
+def test_independent_second_phase7_process_is_a_duplicate(tmp_path: Path) -> None:
+    processes = _uv_python_tree() + (
+        (
+            "21",
+            "1",
+            "777",
+            "S",
+            "/repo/.venv/bin/crypto-ai phase7-research --config cfg --resume",
+        ),
+    )
+    runner = FakeRunner(processes=(processes,))
+    supervisor = _supervisor(tmp_path, runner)
+
+    workers = supervisor._worker_snapshot()
+
+    assert workers.logical_roots == ("11", "21")
+    assert workers.logical_count == 2
+
+
+def test_independent_worker_ownership_outside_authoritative_session_is_detected(
+    tmp_path: Path,
+) -> None:
+    second_tree = tuple(
+        (pid.replace("1", "2", 1), parent.replace("1", "2", 1), "888", state, command)
+        for pid, parent, _session, state, command in _uv_python_tree(session_id="888")
+    )
+    runner = FakeRunner(
+        tmux=(True,),
+        processes=(_uv_python_tree() + second_tree,),
+    )
+    supervisor = _supervisor(tmp_path, runner)
+
+    assert supervisor.supervise(EXPECTED_CLOUD_ROOT) == 2
+    blocked = json.loads(supervisor.paths.blocked.read_text(encoding="utf-8"))
+    assert blocked["reason"] == "existing session does not contain exactly one owned worker"
+    assert ("tmux", "kill-session", "-t", "phase7-auto") in runner.calls
+
+
+def test_zombie_worker_child_is_ignored_safely(tmp_path: Path) -> None:
+    uv, python = _uv_python_tree()
+    zombie = (python[0], python[1], python[2], "Z", python[4])
+    runner = FakeRunner(processes=((uv, zombie),))
+    supervisor = _supervisor(tmp_path, runner)
+
+    workers = supervisor._worker_snapshot()
+
+    assert workers.pids == ("11",)
+    assert workers.logical_roots == ("11",)
+
+
+def test_unrelated_similar_command_text_is_ignored(tmp_path: Path) -> None:
+    processes: tuple[ProcessSpec, ...] = (
+        ("31", "1", "777", "S", "/bin/bash -c 'echo crypto-ai phase7-research'"),
+        ("32", "1", "777", "S", "/usr/bin/grep crypto-ai phase7-research log"),
+        ("33", "1", "777", "S", "/usr/bin/vim phase7-research-notes.txt"),
+    )
+    runner = FakeRunner(processes=(processes,))
+    supervisor = _supervisor(tmp_path, runner)
+
+    assert supervisor._worker_snapshot().logical_count == 0
+
+
+def test_valid_single_worker_tree_never_produces_blocked(tmp_path: Path) -> None:
+    runner = FakeRunner(
+        tmux=(True, True, False),
+        processes=(_uv_python_tree(), _uv_python_tree()),
+    )
+    supervisor = _supervisor(tmp_path, runner)
+    supervisor.paths.worker_exit.parent.mkdir(parents=True)
+    supervisor.paths.worker_exit.write_text("143\n", encoding="ascii")
+
+    assert supervisor.supervise(EXPECTED_CLOUD_ROOT) == 130
+    assert not supervisor.paths.blocked.exists()
+    assert not any(call[:2] == ("tmux", "kill-session") for call in runner.calls)
 
 
 def test_running_duplicate_workers_are_stopped_blocked_and_shutdown(tmp_path: Path) -> None:
@@ -578,3 +719,15 @@ def test_budget_recovery_patch_is_operational_only() -> None:
     assert contract["canonical_configuration_hash"] == EXPECTED_CONFIG_HASH
     assert contract["budget_stopped_clear_command"] == "clear-budget-stop"
     assert contract["budget_stopped_clear_requires_audit_reason"] is True
+
+
+def test_logical_worker_ownership_patch_is_operational_only() -> None:
+    contract = json.loads(
+        (ROOT / "configs/contracts/phase7_vm_supervisor_v1_1_2.json").read_text(encoding="utf-8")
+    )
+    assert contract["predecessor_contract_id"] == "phase7_vm_supervisor_v1_1_1"
+    assert contract["operational_only"] is True
+    assert contract["scientific_baseline"] == "phase7_scientific_baseline_v1_8"
+    assert contract["canonical_configuration_hash"] == EXPECTED_CONFIG_HASH
+    assert contract["logical_worker_identity"]["authority"] == "phase7-auto tmux session"
+    assert contract["logical_worker_identity"]["group_by"] == "process ancestry root"

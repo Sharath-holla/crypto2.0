@@ -123,7 +123,7 @@ These commands make no network request and perform no heavy training. Confirm:
 
 ## 6. Run through the cost-aware supervisor
 
-The current operational contract is `phase7_vm_supervisor_v1_1_1`. The supervisor is
+The current operational contract is `phase7_vm_supervisor_v1_1_2`. The supervisor is
 started manually in its own tmux session and owns the only research worker,
 whose authoritative session remains `phase7-auto`. It is not installed as a
 boot service: starting the VM for diagnosis cannot silently start research.
@@ -136,6 +136,11 @@ uv run python scripts/phase7_vm_supervisor.py status
 tmux list-sessions
 pgrep -af '[c]rypto-ai phase7-research'
 ```
+
+The supervisor status must report `logical_worker_count=1` for the normal
+`uv run` launcher and its Python child. Multiple matching PIDs are expected
+inside that one owned process tree; an independent matching process root or a
+worker outside the authoritative tmux session remains a blocking duplicate.
 
 If `BLOCKED.json` or a `BLOCKED` state exists, do not launch. Diagnose and
 validate first. Only after a general fix has passed all gates, archive the
