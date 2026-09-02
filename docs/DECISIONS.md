@@ -543,3 +543,34 @@
   outside the authoritative tmux session remains fail-safe `BLOCKED`. Scientific
   configuration, data, features, targets, folds, models, and holdout policy are
   unchanged.
+
+## ADR-029 - Checkpoint discovery and exclude irrecoverable source defects
+
+- Date: 2026-09-02
+- Status: Accepted for the Phase 7 cloud research run.
+- Decision: Persist atomic, run/config/registry/artifact-bound completion
+  checkpoints for discovery symbols. Resume verifies immutable manifest,
+  quality-report, Bronze, and Silver lineage without Binance payload or
+  CHECKSUM requests, validation, report regeneration, or Silver promotion.
+  Existing completions may be backfilled only by deep offline fingerprint
+  verification; progress counters alone are never completion evidence.
+- Source-quality policy: Normal archive validation and every applicable bounded
+  official-source reconciliation remain first. A discovery symbol that still
+  has an unrecoverable source-quality defect is recorded as
+  `SYMBOL_EXCLUDED_DATA_QUALITY` with immutable source, REST, comparison,
+  quality, quarantine, failed-check, timestamp, run, config, and policy
+  evidence. It produces no Silver manifest and therefore cannot enter the
+  universe, training, folds, or OOS evaluation. Processing continues with the
+  next symbol. No symbol or date is special-cased and no row is synthesized.
+- Mixed failures: Proven missing archive partitions may be filled first from
+  exact official REST rows even when an independent structural row failure is
+  present. The composition is revalidated, then the remaining failure is
+  handled by the existing exact-row reconciliation. Each attempt is bounded
+  and every intermediate source remains immutable.
+- Versioning: Phase 7 advances to 1.8.0 and scientific baseline
+  `phase7_scientific_baseline_v1_9` contract 1.0.10. The canonical config hash
+  remains `cc550337f1f4ee4654124bf6`; 54 features,
+  `multiasset_targets_v2`, 16 folds, model/economic science, cutoff, unused
+  July buffer, and `LOCKED_UNUSED` August holdout are unchanged. Reuse of old
+  valid discovery artifacts is legitimate because their source, validation,
+  and Silver contracts are unchanged and are re-proven by fingerprints.

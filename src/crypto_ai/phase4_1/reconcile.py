@@ -32,8 +32,11 @@ def reconcile_archive_with_rest(
     archive = read_manifest(archive_manifest_path)
     if archive is None:
         raise FileNotFoundError(archive_manifest_path)
-    if archive.get("source") != "binance_public_archive":
-        raise ValueError("Reconciliation requires a Binance public-archive base manifest")
+    if archive.get("source") not in {
+        "binance_public_archive",
+        "binance_official_public_reconciled",
+    }:
+        raise ValueError("Reconciliation requires an official archive-derived base manifest")
     if not rest_overlay_manifests:
         raise ValueError("At least one REST overlay manifest is required")
     if len(rest_overlay_manifests) != len(equivalence_reports):
@@ -77,7 +80,7 @@ def reconcile_archive_with_rest(
             }
             used.add(key)
         else:
-            record["row_source"] = "binance_usdm_futures_archive"
+            record.setdefault("row_source", "binance_usdm_futures_archive")
         partitions.append(record)
     unused = sorted(set(overlays) - used)
     if unused:
@@ -85,6 +88,7 @@ def reconcile_archive_with_rest(
 
     identity = {
         "archive_run_id": archive["run_id"],
+        "archive_base_source": archive["source"],
         "overlays": overlay_lineage,
         "reconciler_version": "1.0.0",
     }

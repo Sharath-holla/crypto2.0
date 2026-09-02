@@ -205,6 +205,7 @@ class ProgressReporter:
         self._monotonic = monotonic or time.monotonic
         self._emit_human = emit_human
         self._stage_started: dict[str, float] = {}
+        self._acquisition_counts: dict[str, dict[str, int]] = {}
         self._state = self._load_state()
         self._state.update(
             {
@@ -322,7 +323,14 @@ class ProgressReporter:
         current: str,
         interval: str | None = None,
         status: str | None = None,
+        checkpoint_hit: bool = False,
     ) -> dict[str, Any] | None:
+        counts = self._acquisition_counts.setdefault(
+            stage,
+            {"checkpoint_hits": 0, "processed_fresh": 0},
+        )
+        key = "checkpoint_hits" if checkpoint_hit else "processed_fresh"
+        counts[key] += 1
         stride = max(1, total // 100)
         if completed not in {1, total} and completed % stride:
             return None
@@ -342,6 +350,12 @@ class ProgressReporter:
             "acquisition_status": status,
             "elapsed_seconds": elapsed,
             "eta_seconds_approximate": eta,
+            "discovery_checkpoint_hit": checkpoint_hit,
+            "completed_via_checkpoint": counts["checkpoint_hits"],
+            "processed_fresh_this_invocation": counts["processed_fresh"],
+            "checkpoint_hit_rate": (
+                counts["checkpoint_hits"] / (counts["checkpoint_hits"] + counts["processed_fresh"])
+            ),
         }
         return self.emit(
             "phase7_progress",

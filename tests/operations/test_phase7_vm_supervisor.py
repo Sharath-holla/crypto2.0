@@ -727,7 +727,7 @@ def test_logical_worker_ownership_patch_is_operational_only() -> None:
     )
     assert contract["predecessor_contract_id"] == "phase7_vm_supervisor_v1_1_1"
     assert contract["operational_only"] is True
-    assert contract["scientific_baseline"] == "phase7_scientific_baseline_v1_8"
+    assert contract["scientific_baseline"] == "phase7_scientific_baseline_v1_9"
     assert contract["canonical_configuration_hash"] == EXPECTED_CONFIG_HASH
     assert contract["logical_worker_identity"]["authority"] == "phase7-auto tmux session"
     assert contract["logical_worker_identity"]["group_by"] == "process ancestry root"

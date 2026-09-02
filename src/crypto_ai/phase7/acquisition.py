@@ -35,7 +35,14 @@ from crypto_ai.phase4_1.reconcile import (
     reconcile_archive_missing_with_rest,
     reconcile_archive_with_rest,
 )
-from crypto_ai.phase7.config import Phase7Config, stable_hash
+from crypto_ai.phase7.artifacts import atomic_json
+from crypto_ai.phase7.config import SCIENTIFIC_BASELINE_ID, Phase7Config, stable_hash
+from crypto_ai.phase7.discovery_checkpoint import (
+    ARCHIVE_MISSING_RECONCILIATION_POLICY_VERSION,
+    CAUSAL_SEGMENT_POLICY_VERSION,
+    DATA_QUALITY_EXCLUSION_POLICY_VERSION,
+    DiscoverySymbolCheckpointStore,
+)
 from crypto_ai.phase7.registry import SymbolRecord, SymbolRegistry
 from crypto_ai.phase7.segments import (
     AcquisitionOutcome,
@@ -47,7 +54,7 @@ from crypto_ai.phase7.segments import (
 
 _DATE_PARTITION = re.compile(r"(?:^|/)date=(\d{4}-\d{2}-\d{2})(?:/|$)")
 logger = logging.getLogger(__name__)
-AcquisitionProgress = Callable[[int, int, str, str, str], None]
+AcquisitionProgress = Callable[[int, int, str, str, str, bool], None]
 
 _RECONCILABLE_MARKET_VALUE_CHECKS = frozenset(
     {
@@ -80,6 +87,7 @@ class AcquisitionPaths:
     silver: Path
     quarantine: Path
     reconciliation: Path
+    exclusions: Path
     market: Path
 
     @classmethod
@@ -92,6 +100,7 @@ class AcquisitionPaths:
             silver=root / "silver" / "binance",
             quarantine=root / "quarantine",
             reconciliation=root / "reconciliation",
+            exclusions=root / "exclusions",
             market=root / "market",
         )
 
@@ -234,7 +243,8 @@ def _missing_archive_records(
 
     failures = [check for check in report.checks if check.status is ValidationStatus.FAIL]
     if not failures or any(
-        check.check_name not in _RECONCILABLE_MISSING_CHECKS for check in failures
+        check.check_name not in (_RECONCILABLE_MISSING_CHECKS | _RECONCILABLE_MARKET_VALUE_CHECKS)
+        for check in failures
     ):
         return ()
     empty_keys = tuple(
@@ -398,7 +408,7 @@ def _write_missing_comparison(
         "missing_partition_keys": [str(record["partition_key"]) for record in records],
         "expected_open_times": [value.isoformat() for value in expected_times],
         "rest_manifests": rest_identity,
-        "policy": "archive_missing_official_rest_exact_rows_v1",
+        "policy": ARCHIVE_MISSING_RECONCILIATION_POLICY_VERSION,
     }
     report_identity = stable_hash(identity)
     path = paths.reconciliation / f"archive-rest-missing-{report_identity}.json"
@@ -603,7 +613,10 @@ def _attempt_archive_reconciliation(
     """
 
     manifest = read_manifest(rejection.manifest)
-    if manifest is None or manifest.get("source") != "binance_public_archive":
+    if manifest is None or manifest.get("source") not in {
+        "binance_public_archive",
+        "binance_official_public_reconciled",
+    }:
         return ReconciliationAttempt()
     partition_keys = _failed_market_value_partitions(rejection.report)
     if not partition_keys:
@@ -758,6 +771,159 @@ def _attempt_archive_reconciliation(
     return ReconciliationAttempt(corrected_manifest=base_manifest if rest_manifests else None)
 
 
+def _partition_timestamps(value: str | None) -> list[str]:
+    if value is None:
+        return []
+    try:
+        start, end = (int(item) for item in value.split("-", maxsplit=1))
+    except (TypeError, ValueError):
+        return []
+    return [
+        datetime.fromtimestamp(start / 1_000, tz=UTC).isoformat(),
+        datetime.fromtimestamp(end / 1_000, tz=UTC).isoformat(),
+    ]
+
+
+def _manifest_lineage_files(manifest_path: Path) -> tuple[dict[str, str], ...]:
+    """Collect explicit immutable files referenced by reconciliation lineage."""
+
+    pending = [manifest_path.resolve()]
+    seen: set[Path] = set()
+    records: list[dict[str, str]] = []
+    while pending:
+        current = pending.pop()
+        if current in seen or not current.is_file():
+            continue
+        seen.add(current)
+        records.append(
+            {
+                "role": "source_manifest" if current == manifest_path.resolve() else "lineage",
+                "path": str(current),
+                "sha256": file_sha256(current),
+            }
+        )
+        payload = read_manifest(current) or {}
+        reconciliation = payload.get("reconciliation", {})
+        if not isinstance(reconciliation, dict):
+            continue
+        for key in (
+            "archive_manifest",
+            "comparison_report",
+            "original_quality_report",
+            "original_quarantine",
+        ):
+            value = reconciliation.get(key)
+            if isinstance(value, str) and value:
+                pending.append(Path(value).resolve())
+        for item in reconciliation.get("rest_overlays", []):
+            if not isinstance(item, dict):
+                continue
+            for key in ("manifest", "equivalence_report"):
+                if isinstance(item.get(key), str):
+                    pending.append(Path(item[key]).resolve())
+    return tuple(sorted(records, key=lambda item: item["path"]))
+
+
+def _write_data_quality_exclusion(
+    config: Phase7Config,
+    paths: AcquisitionPaths,
+    store: DiscoverySymbolCheckpointStore,
+    rejection: QualityGateRejected,
+    *,
+    symbol: str,
+    interval: str,
+    request: DownloadRequest,
+    mechanisms: tuple[str, ...],
+    gaps: tuple[CausalDataGap, ...] = (),
+) -> Path:
+    quality_path = (paths.quality / f"{rejection.report.report_id}.json").resolve()
+    quarantine_path = (paths.quarantine / f"{rejection.report.report_id}.json").resolve()
+    evidence = list(_manifest_lineage_files(rejection.manifest))
+    for role, path in (("quality_report", quality_path), ("quarantine", quarantine_path)):
+        if not path.is_file():
+            raise FileNotFoundError(f"Exclusion requires preserved {role}: {path}")
+        evidence.append({"role": role, "path": str(path), "sha256": file_sha256(path)})
+    for gap in gaps:
+        for role, value, expected in (
+            ("rest_manifest", gap.rest_manifest, gap.rest_manifest_sha256),
+            ("comparison_report", gap.comparison_report, gap.comparison_report_sha256),
+            ("failed_quality_report", gap.quality_report, gap.quality_report_sha256),
+            ("failed_quarantine", gap.quarantine, gap.quarantine_sha256),
+        ):
+            path = Path(value).resolve()
+            if file_sha256(path) != expected:
+                raise ValueError(f"Exclusion lineage fingerprint mismatch: {path}")
+            evidence.append({"role": role, "path": str(path), "sha256": expected})
+    evidence_by_path = {item["path"]: item for item in evidence}
+    failures = [
+        check.to_dict()
+        for check in rejection.report.checks
+        if check.status is ValidationStatus.FAIL
+    ]
+    partitions = sorted(
+        {str(item["partition"]) for item in failures if item.get("partition") is not None}
+    )
+    affected_timestamps = sorted(
+        {timestamp for partition in partitions for timestamp in _partition_timestamps(partition)}
+    )
+    identity = {
+        "schema_version": DATA_QUALITY_EXCLUSION_POLICY_VERSION,
+        "status": AcquisitionStatus.SYMBOL_EXCLUDED_DATA_QUALITY.value,
+        "symbol": symbol,
+        "market": "usdm",
+        "interval": interval,
+        "requested_range": {
+            "start": request.start_utc.isoformat(),
+            "end_exclusive": request.end_utc.isoformat(),
+        },
+        "configuration_hash": config.configuration_hash,
+        "run_identity": store.run_identity,
+        "scientific_baseline": SCIENTIFIC_BASELINE_ID,
+        "failed_checks": failures,
+        "affected_partitions": partitions,
+        "affected_timestamps": affected_timestamps,
+        "source_archive_evidence": {
+            "manifest": str(rejection.manifest),
+            "sha256": file_sha256(rejection.manifest),
+        },
+        "rest_evidence": [
+            item for item in evidence_by_path.values() if item["role"] == "rest_manifest"
+        ],
+        "reconciliation_mechanisms_attempted": list(dict.fromkeys(mechanisms)),
+        "validation_result": ValidationStatus.FAIL.value,
+        "final_exclusion_reason": (
+            "approved bounded official-source reconciliation was exhausted while "
+            "structurally invalid or incomplete source data remained"
+        ),
+        "evidence_files": sorted(
+            evidence_by_path.values(), key=lambda item: (item["path"], item["role"])
+        ),
+        "raw_sources_mutated": False,
+        "fabricated_rows": False,
+    }
+    exclusion_id = stable_hash(identity)
+    path = paths.exclusions / store.run_identity / symbol / f"{interval}-{exclusion_id}.json"
+    existing = read_manifest(path)
+    if existing is not None:
+        comparable = dict(existing)
+        comparable.pop("created_at", None)
+        if comparable != identity:
+            raise ValueError(f"Existing exclusion evidence identity mismatch: {path}")
+        return path.resolve()
+    atomic_json(path, {**identity, "created_at": datetime.now(UTC).isoformat()})
+    logger.error(
+        "Discovery symbol excluded after bounded source recovery was exhausted",
+        extra={
+            "event": "phase7_discovery_symbol_data_quality_excluded",
+            "symbol": symbol,
+            "interval": interval,
+            "failed_checks": sorted({item["check_name"] for item in failures}),
+            "exclusion_evidence": str(path.resolve()),
+        },
+    )
+    return path.resolve()
+
+
 def _reconcile_failed_archive_partitions(
     config: Phase7Config,
     paths: AcquisitionPaths,
@@ -827,7 +993,7 @@ def _segment_manifest(
         "end": end.isoformat(),
         "partitions": [str(record["partition_key"]) for record in records],
         "gaps": [gap.model_dump(mode="json") for gap in gaps],
-        "segmenter_version": "causal_segment_quarantine_v1",
+        "segmenter_version": CAUSAL_SEGMENT_POLICY_VERSION,
     }
     market = str(source.get("market", "usdm")).lower()
     symbol = str(source["symbol"]).lower()
@@ -914,7 +1080,7 @@ def _promote_causal_segments(
         "source_manifest_sha256": file_sha256(source_manifest),
         "segments": segments,
         "unusable_segments": [gap.model_dump(mode="json") for gap in attempt.gaps],
-        "segmenter_version": "causal_segment_quarantine_v1",
+        "segmenter_version": CAUSAL_SEGMENT_POLICY_VERSION,
     }
     group_id = f"segment-group-{stable_hash(identity)}"
     group_path = paths.silver / "manifests" / f"{group_id}.json"
@@ -986,6 +1152,10 @@ def acquire_candle_family(
     end: datetime,
     strict_symbols: frozenset[str] = frozenset(),
     progress: AcquisitionProgress | None = None,
+    completion_store: DiscoverySymbolCheckpointStore | None = None,
+    resume: bool = False,
+    backfill_completion: bool = False,
+    exclude_unrecoverable: bool = False,
 ) -> CandleFamilyAcquisition:
     """Acquire checksum-verified official archives and promote through the quality gate."""
 
@@ -1018,8 +1188,44 @@ def acquire_candle_family(
                     symbol,
                     interval,
                     AcquisitionStatus.LIFECYCLE_ABSENCE.value,
+                    False,
                 )
             continue
+        if resume and completion_store is not None:
+            completed = completion_store.load(
+                record,
+                interval=interval,
+                request_start=coarse_request.start_utc,
+                request_end=coarse_request.end_utc,
+            )
+            if completed is None and backfill_completion:
+                completed = completion_store.backfill(
+                    record,
+                    interval=interval,
+                    request_start=coarse_request.start_utc,
+                    request_end=coarse_request.end_utc,
+                )
+            if completed is not None:
+                outcomes.append(completed)
+                if progress is not None:
+                    progress(
+                        position,
+                        len(symbols),
+                        symbol,
+                        interval,
+                        completed.status.value,
+                        True,
+                    )
+                continue
+        logger.info(
+            "Discovery symbol requires normal processing",
+            extra={
+                "event": "new_symbol_processing",
+                "symbol": symbol,
+                "interval": interval,
+                "resume": resume,
+            },
+        )
         settings = _candle_settings(
             config,
             paths,
@@ -1068,39 +1274,53 @@ def acquire_candle_family(
                         symbol,
                         interval,
                         AcquisitionStatus.LIFECYCLE_ABSENCE.value,
+                        False,
                     )
                 continue
             bronze_manifest = HistoricalDownloader(settings, client).download(request)
-        try:
-            silver_manifest = _promote_candles(config, paths, bronze_manifest)
-        except QualityGateRejected as rejection:
-            attempt = _attempt_archive_reconciliation(
-                config,
-                paths,
-                registry,
-                rejection,
-            )
-            if attempt.corrected_manifest is not None:
-                silver_manifest = _promote_candles(
+        current_manifest = bronze_manifest
+        mechanisms: list[str] = ["official_archive_validation"]
+        terminal_outcome: AcquisitionOutcome | None = None
+        for _ in range(3):
+            try:
+                silver_manifest = _promote_candles(config, paths, current_manifest)
+                break
+            except QualityGateRejected as rejection:
+                attempt = _attempt_archive_reconciliation(
                     config,
                     paths,
-                    attempt.corrected_manifest,
+                    registry,
+                    rejection,
                 )
-            elif attempt.causal_gap:
-                if symbol in strict_symbols:
-                    logger.error(
-                        "Required core/context symbol contains an unrecoverable causal gap",
-                        extra={
-                            "event": "phase7_core_segment_hard_stop",
-                            "symbol": symbol,
-                            "interval": interval,
-                            "partitions": [gap.partition for gap in attempt.gaps],
-                        },
+                if attempt.corrected_manifest is not None:
+                    source = read_manifest(attempt.corrected_manifest) or {}
+                    transport = str(source.get("source_transport", ""))
+                    mechanism = (
+                        "exact_missing_row_official_rest_reconciliation"
+                        if "missing_rows" in transport
+                        else "exact_row_official_rest_reconciliation"
                     )
-                    raise
-                silver_manifest = _promote_causal_segments(config, paths, attempt)
-                outcomes.append(
-                    AcquisitionOutcome(
+                    if mechanism in mechanisms or attempt.corrected_manifest == current_manifest:
+                        raise RuntimeError(
+                            "Reconciliation made no bounded deterministic progress"
+                        ) from rejection
+                    mechanisms.append(mechanism)
+                    current_manifest = attempt.corrected_manifest
+                    continue
+                if attempt.causal_gap and not exclude_unrecoverable:
+                    if symbol in strict_symbols:
+                        logger.error(
+                            "Required core/context symbol contains an unrecoverable causal gap",
+                            extra={
+                                "event": "phase7_core_segment_hard_stop",
+                                "symbol": symbol,
+                                "interval": interval,
+                                "partitions": [gap.partition for gap in attempt.gaps],
+                            },
+                        )
+                        raise
+                    silver_manifest = _promote_causal_segments(config, paths, attempt)
+                    terminal_outcome = AcquisitionOutcome(
                         symbol=symbol,
                         interval=interval,
                         status=AcquisitionStatus.QUALITY_REJECTED_SEGMENT,
@@ -1111,26 +1331,72 @@ def acquire_candle_family(
                         ),
                         gaps=attempt.gaps,
                     )
+                    break
+                if not exclude_unrecoverable or completion_store is None:
+                    raise
+                if attempt.causal_gap:
+                    mechanisms.append("exact_row_official_rest_reconciliation")
+                mechanisms.append("bounded_official_source_reconciliation_exhausted")
+                evidence_path = _write_data_quality_exclusion(
+                    config,
+                    paths,
+                    completion_store,
+                    rejection,
+                    symbol=symbol,
+                    interval=interval,
+                    request=coarse_request,
+                    mechanisms=tuple(mechanisms),
+                    gaps=attempt.gaps,
                 )
-                if progress is not None:
-                    progress(
-                        position,
-                        len(symbols),
-                        symbol,
-                        interval,
-                        AcquisitionStatus.QUALITY_REJECTED_SEGMENT.value,
-                    )
-                continue
-            else:
-                raise
-        outcomes.append(
-            AcquisitionOutcome(
-                symbol=symbol,
-                interval=interval,
-                status=AcquisitionStatus.VALID,
-                silver_manifest=str(silver_manifest.resolve()),
-            )
+                terminal_outcome = AcquisitionOutcome(
+                    symbol=symbol,
+                    interval=interval,
+                    status=AcquisitionStatus.SYMBOL_EXCLUDED_DATA_QUALITY,
+                    reason=(
+                        "bounded approved official-source recovery exhausted; "
+                        "symbol excluded from the research universe"
+                    ),
+                    gaps=attempt.gaps,
+                    exclusion_evidence=str(evidence_path),
+                )
+                break
+        else:
+            raise RuntimeError("Bounded reconciliation attempt limit exceeded")
+        if terminal_outcome is not None:
+            if completion_store is not None:
+                completion_store.complete(
+                    record,
+                    terminal_outcome,
+                    interval=interval,
+                    request_start=coarse_request.start_utc,
+                    request_end=coarse_request.end_utc,
+                )
+            outcomes.append(terminal_outcome)
+            if progress is not None:
+                progress(
+                    position,
+                    len(symbols),
+                    symbol,
+                    interval,
+                    terminal_outcome.status.value,
+                    False,
+                )
+            continue
+        outcome = AcquisitionOutcome(
+            symbol=symbol,
+            interval=interval,
+            status=AcquisitionStatus.VALID,
+            silver_manifest=str(silver_manifest.resolve()),
         )
+        if completion_store is not None:
+            completion_store.complete(
+                record,
+                outcome,
+                interval=interval,
+                request_start=coarse_request.start_utc,
+                request_end=coarse_request.end_utc,
+            )
+        outcomes.append(outcome)
         if progress is not None:
             progress(
                 position,
@@ -1138,6 +1404,7 @@ def acquire_candle_family(
                 symbol,
                 interval,
                 AcquisitionStatus.VALID.value,
+                False,
             )
     return CandleFamilyAcquisition(tuple(outcomes))
 
@@ -1147,6 +1414,8 @@ def acquire_discovery_daily(
     registry: SymbolRegistry,
     *,
     progress: AcquisitionProgress | None = None,
+    completion_store: DiscoverySymbolCheckpointStore | None = None,
+    resume: bool = False,
 ) -> CandleFamilyAcquisition:
     """Acquire bounded 1d evidence for core selection and causal fold admissions.
 
@@ -1175,6 +1444,10 @@ def acquire_discovery_daily(
         start=start,
         end=end,
         progress=progress,
+        completion_store=completion_store,
+        resume=resume,
+        backfill_completion=resume,
+        exclude_unrecoverable=True,
     )
 
 
@@ -1323,7 +1596,14 @@ def acquire_derivative_family(
             "index": str(index_manifest.resolve()),
         }
         if progress is not None:
-            progress(position, len(symbols), symbol, "derivatives", AcquisitionStatus.VALID.value)
+            progress(
+                position,
+                len(symbols),
+                symbol,
+                "derivatives",
+                AcquisitionStatus.VALID.value,
+                False,
+            )
     return result
 
 

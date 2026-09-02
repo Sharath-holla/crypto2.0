@@ -81,8 +81,11 @@
   reporting is frozen by `phase7_scientific_baseline_v1_7`, without changing
   the 1.6.0 scientific version or contract values. Exact bounded REST recovery
   of validator-proven archive omissions is frozen by
-  `phase7_scientific_baseline_v1_8` and Phase 7 version 1.7.0. Phase 7.2 adds only disabled
-  research capabilities in a separate namespace.
+  `phase7_scientific_baseline_v1_8` and Phase 7 version 1.7.0. Atomic discovery
+  completion checkpoints and the audited general exclusion of source-quality
+  defects after bounded recovery are frozen by
+  `phase7_scientific_baseline_v1_9` and Phase 7 version 1.8.0. Phase 7.2 adds
+  only disabled research capabilities in a separate namespace.
   Cost-aware batch supervision is separately versioned as the operational-only
   `phase7_vm_supervisor_v1`; it preserves the v1_8 scientific freeze and
   atomically stops the existing VM only after durable `BLOCKED` diagnostics or
@@ -96,7 +99,7 @@
   Patch `phase7_vm_supervisor_v1_1_2` corrects logical worker ownership so the
   normal `uv` launcher and Python child count as one worker while independent
   process roots still block and stop safely. It is operational-only and leaves
-  `phase7_scientific_baseline_v1_8` and the canonical configuration hash
+  `phase7_scientific_baseline_v1_9` and the canonical configuration hash
   unchanged.
 
 ## PHASE 7 PRE-PUSH STATUS
@@ -240,12 +243,13 @@ NOT STARTED
   2026-08-25. The earlier undocumented `11a00ed1...` combined digest is retained
   only as historical metadata and is not directly comparable with canonical
   v1.
-- `phase7_scientific_baseline_v1_8` is the authoritative cloud source/config
-  freeze. It adds bounded official REST recovery only for exact
-  validator-proven archive omissions; v1_7 adds operational progress reporting
-  only, and v1_6 records causal
+- `phase7_scientific_baseline_v1_9` is the authoritative cloud source/config
+  freeze. It adds artifact-bound discovery completion checkpoints and audited
+  exclusion after bounded recovery; v1_8 adds official REST recovery only for
+  exact validator-proven archive omissions, v1_7 adds operational progress
+  reporting only, and v1_6 records causal
   segment quarantine for an identical-invalid official archive/REST row. Its
-  v1 through v1_7
+  v1 through v1_8
   predecessors remain immutable historical evidence. `dual_universe_v3` and
   `expansion_universe_v2` make affected expansion eligibility fold-local while
   preserving strict core/context behavior. Future architecture

@@ -20,6 +20,7 @@ from crypto_ai.phase7.acquisition import (
 )
 from crypto_ai.phase7.artifacts import CheckpointStore, atomic_json, resource_snapshot
 from crypto_ai.phase7.config import TARGET_VERSION, UNIVERSE_VERSION, Phase7Config
+from crypto_ai.phase7.discovery_checkpoint import DiscoverySymbolCheckpointStore
 from crypto_ai.phase7.features import (
     MultiAssetFeatureResult,
     build_higher_timeframe_context,
@@ -138,6 +139,8 @@ def _universe_stage(
     config: Phase7Config,
     run_root: Path,
     registry: SymbolRegistry,
+    run_identity: str,
+    resume: bool,
     reporter: ProgressReporter | None = None,
 ) -> tuple[
     FrozenUniverse,
@@ -146,11 +149,16 @@ def _universe_stage(
     tuple[str, ...],
     list[Path],
 ]:
+    completion_store = DiscoverySymbolCheckpointStore(
+        config,
+        registry,
+        run_identity=run_identity,
+    )
     discovery_result = acquire_discovery_daily(
         config,
         registry,
         progress=(
-            lambda completed, total, symbol, interval, status: (
+            lambda completed, total, symbol, interval, status, checkpoint_hit: (
                 reporter.progress(
                     stage="discovery",
                     completed=completed,
@@ -158,14 +166,18 @@ def _universe_stage(
                     current=symbol,
                     interval=interval,
                     status=status,
+                    checkpoint_hit=checkpoint_hit,
                 )
                 if reporter is not None
                 else None
             )
         ),
+        completion_store=completion_store,
+        resume=resume,
     )
     discovery = discovery_result.manifests
     discovery_gaps = discovery_result.gaps
+    discovery_exclusions = discovery_result.exclusions
     start = config.universe.core_selection_cutoff - timedelta(
         days=config.universe.selection_lookback_days
     )
@@ -287,6 +299,9 @@ def _universe_stage(
             "expansion_policy_hash": expansion_policy.policy_hash,
             "fold_count": len(memberships),
             "acquisition_symbols": list(acquisition_symbols),
+            "data_quality_exclusions": [
+                outcome.model_dump(mode="json") for outcome in discovery_exclusions
+            ],
             "folds": [item.model_dump(mode="json") for item in memberships],
             **config.holdout_status_payload(),
             "july_2026_used": False,
@@ -294,6 +309,11 @@ def _universe_stage(
     )
     files = [discovery_path, descriptor_path, core_path, policy_path, memberships_path]
     files.extend(Path(value) for value in discovery.values())
+    files.extend(
+        Path(outcome.exclusion_evidence)
+        for outcome in discovery_exclusions
+        if outcome.exclusion_evidence is not None
+    )
     for gap in discovery_gaps:
         files.extend(
             Path(value)
@@ -329,7 +349,7 @@ def _data_stage(
             end=config.research_cutoff,
             strict_symbols=frozenset(universe.symbols),
             progress=(
-                lambda completed, total, symbol, current_interval, status: (
+                lambda completed, total, symbol, current_interval, status, checkpoint_hit: (
                     reporter.progress(
                         stage=(
                             "required_5m_acquisition"
@@ -341,6 +361,7 @@ def _data_stage(
                         current=symbol,
                         interval=current_interval,
                         status=status,
+                        checkpoint_hit=checkpoint_hit,
                     )
                     if reporter is not None
                     else None
@@ -357,7 +378,7 @@ def _data_stage(
         start=config.data_start,
         end=config.research_cutoff,
         progress=(
-            lambda completed, total, symbol, current_interval, status: (
+            lambda completed, total, symbol, current_interval, status, checkpoint_hit: (
                 reporter.progress(
                     stage="derivative_acquisition",
                     completed=completed,
@@ -365,6 +386,7 @@ def _data_stage(
                     current=symbol,
                     interval=current_interval,
                     status=status,
+                    checkpoint_hit=checkpoint_hit,
                 )
                 if reporter is not None
                 else None
@@ -674,6 +696,10 @@ def _report_stage(config: Phase7Config, run_root: Path) -> tuple[dict[str, Any],
                 ),
             }
         )
+    discovery = json.loads(
+        (run_root / "universe" / "discovery_data.json").read_text(encoding="utf-8")
+    )
+    exclusions = discovery.get("data_quality_exclusions", [])
     payload = {
         "status": "PHASE7_CLOUD_RESEARCH_COMPLETE",
         "classification": "RETROSPECTIVE_RESEARCH_ONLY",
@@ -685,6 +711,8 @@ def _report_stage(config: Phase7Config, run_root: Path) -> tuple[dict[str, Any],
             "Architecture evidence generated; no production or live-trading authorization implied."
         ),
         "qualified_model": "NONE",
+        "data_quality_exclusion_count": len(exclusions),
+        "data_quality_exclusions": exclusions,
         "model_qualification_performed": False,
         **config.holdout_status_payload(),
         "july_2026_used": False,
@@ -763,7 +791,12 @@ def run_phase7_cloud(
         elif current == "universe":
             registry = read_registry(run_root / "registry" / "symbol_registry.json")
             universe, expansion_policy, _, acquisition_symbols, files = _universe_stage(
-                config, run_root, registry, reporter
+                config,
+                run_root,
+                registry,
+                run_identity,
+                resume,
+                reporter,
             )
             metadata = {
                 "core_universe_hash": universe.universe_hash,

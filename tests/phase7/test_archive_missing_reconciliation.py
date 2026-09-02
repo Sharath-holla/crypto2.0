@@ -403,3 +403,32 @@ def test_lifecycle_absence_and_existing_archive_rows_are_not_gap_reconciled(
     )
     assert _missing_archive_records(payload, synthetic_report, _registry()) == ()
     assert rows
+
+
+def test_missing_rows_remain_recoverable_when_an_independent_market_failure_exists(
+    tmp_path: Path,
+) -> None:
+    config = _config(tmp_path)
+    manifest, _, _ = _archive(tmp_path, missing=(2, 3, 4))
+    rejection = _rejection(config, manifest)
+    rejection.report.checks.append(
+        ValidationResult(
+            check_name="taker_buy_base_exceeds_volume",
+            status=ValidationStatus.FAIL,
+            severity=ValidationSeverity.ERROR,
+            message="independent official-row contradiction",
+            symbol=SYMBOL,
+            interval="1d",
+            partition=_key(START + 6 * DAY, START + 7 * DAY),
+            affected_rows=1,
+        )
+    )
+
+    records = _missing_archive_records(
+        read_manifest(manifest) or {},
+        rejection.report,
+        _registry(),
+    )
+    assert [record["partition_key"] for record in records] == [
+        _key(START + index * DAY, START + (index + 1) * DAY) for index in (2, 3, 4)
+    ]
