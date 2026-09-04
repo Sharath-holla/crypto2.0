@@ -126,3 +126,39 @@ def test_window_minimum_and_large_window() -> None:
     y = 0.8 * x + rng.normal(0.0, 0.0005, 30_000)
     _assert_equivalent(x, y, 12)
     _assert_equivalent(x, y, 2_016)
+
+
+def test_huge_magnitude_series_stay_finite() -> None:
+    """float64 squares of large-but-finite values overflow; the extended-
+    precision products must keep the vectorized path finite and correct."""
+    rng = np.random.default_rng(43)
+    scale = 1e160
+    x = scale * (1.0 + 1e-6 * np.cumsum(rng.normal(0.0, 0.001, 2_000)))
+    # Noise std (1e148) far below the signal std (0.8 * ~3e151): the true
+    # beta cov(x,y)/var(y) -> 0.8/0.64 = 1.25 within ~1e-7.
+    y = 0.8 * x + scale * 1e-12 * rng.normal(0.0, 1.0, 2_000)
+    corr, beta = _pair_stats(x, y, 100)
+    assert np.isfinite(corr[100:]).all()
+    assert np.isfinite(beta[100:]).all()
+    # The true per-window beta (longdouble np.cov ground truth) is close to
+    # 0.8*var(x)/(0.64*var(x)+var(noise)) but fluctuates slightly per window;
+    # assert against ground truth, not a fixed constant.
+    x_ext = x.astype(np.longdouble)
+    y_ext = y.astype(np.longdouble)
+    for index in (150, 393, 700, 1_200, 1_800):
+        xv, yv = x_ext[index - 99 : index + 1], y_ext[index - 99 : index + 1]
+        truth = np.cov(xv, yv, ddof=1)[0, 1] / np.var(yv, ddof=1)
+        np.testing.assert_allclose(beta[index], float(truth), rtol=1e-9)
+    # And it must agree with the reference implementation.
+    _assert_equivalent(x, y, 100)
+
+
+def test_shape_mismatch_raises_defect() -> None:
+    rng = np.random.default_rng(47)
+    x = np.cumsum(rng.normal(0.0, 0.001, 1_000))
+    y = np.cumsum(rng.normal(0.0, 0.001, 999))
+    with pytest.raises(ValueError, match="aligned 1-D"):
+        _pair_stats(x, y, 100)
+    two_d = x.reshape(500, 2)
+    with pytest.raises(ValueError, match="aligned 1-D"):
+        _pair_stats(two_d, x, 100)  # type: ignore[arg-type]

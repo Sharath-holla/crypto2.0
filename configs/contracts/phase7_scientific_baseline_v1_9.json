@@ -96,7 +96,7 @@
     "src/crypto_ai/phase7/config.py": "7eb94d4b9162053675b3e1d22cafa40e5d11b06fe01a2d367a107eedae3b10c0",
     "src/crypto_ai/phase7/discovery_checkpoint.py": "fc6d91cdae6bab1cff2d00fa395d43ed8137e0695800e8b19322d4fa6c02dc12",
     "src/crypto_ai/phase7/economics.py": "5345589c367cea00633f1498e58915f94f5ebb13e5347acd30a09290c7b12b25",
-    "src/crypto_ai/phase7/features.py": "76bafea7bafb2e828ef769fcc5e33a0465660d03abb201cb96e3db13298fd369",
+    "src/crypto_ai/phase7/features.py": "f6db831af8c2922df57fbbd47ebe4a14fca6c42564cb8d18939803569e556e8d",
     "src/crypto_ai/phase7/fixtures.py": "c878ebc0da1df698d5f98a78edb1090e7a5ea45827e1c4796604ff67a6a4f4e7",
     "src/crypto_ai/phase7/folds.py": "2616071894bee6b1b8e89fb40562e7c7e0d87fb9fe97f28674c07df4c139fe9a",
     "src/crypto_ai/phase7/gold.py": "78b7e0496bfc7168277e65b371143ba80b8141ebbc21d67cbbb79ed61820daf5",

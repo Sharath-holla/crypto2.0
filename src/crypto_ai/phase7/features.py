@@ -189,6 +189,11 @@ def _atr_pct(
 
 
 _PAIR_STATS_VAR_TOL = 1e-8
+# Maximum (mean^2 + var) / var window ratio on the vectorized path. Above
+# this, cumulative-sum cancellation could exceed 1e-9 even with extended
+# precision, so the window is recomputed exactly. Real return data has
+# window means near zero (ratio ~ 1); 1e5 leaves enormous headroom.
+_PAIR_STATS_CONDITION_LIMIT = 1e5
 
 
 def _pair_stats(
@@ -211,6 +216,8 @@ def _pair_stats(
     beta = np.full(count, np.nan)
     if count < window or window <= 1:
         return correlation, beta
+    if values.ndim != 1 or anchor.ndim != 1 or len(values) != len(anchor):
+        raise ValueError("_pair_stats requires aligned 1-D values and anchor arrays")
     finite_x = np.isfinite(values)
     finite_y = np.isfinite(anchor)
     cumulative_x = np.concatenate(([0], np.cumsum(finite_x)))
@@ -233,12 +240,17 @@ def _pair_stats(
     # works correctly, just with float64 precision.
     extended = np.longdouble
     zero = extended(0)
+    # Cast BEFORE multiplication: float64 products could otherwise overflow
+    # to inf for large-but-finite inputs (extended exponent range keeps the
+    # products and their cumulative sums finite).
+    clean_x_ext = clean_x.astype(extended, copy=False)
+    clean_y_ext = clean_y.astype(extended, copy=False)
     sums = {
-        "x": np.concatenate(([zero], np.cumsum(clean_x, dtype=extended))),
-        "y": np.concatenate(([zero], np.cumsum(clean_y, dtype=extended))),
-        "xx": np.concatenate(([zero], np.cumsum(clean_x * clean_x, dtype=extended))),
-        "yy": np.concatenate(([zero], np.cumsum(clean_y * clean_y, dtype=extended))),
-        "xy": np.concatenate(([zero], np.cumsum(clean_x * clean_y, dtype=extended))),
+        "x": np.concatenate(([zero], np.cumsum(clean_x_ext))),
+        "y": np.concatenate(([zero], np.cumsum(clean_y_ext))),
+        "xx": np.concatenate(([zero], np.cumsum(clean_x_ext * clean_x_ext))),
+        "yy": np.concatenate(([zero], np.cumsum(clean_y_ext * clean_y_ext))),
+        "xy": np.concatenate(([zero], np.cumsum(clean_x_ext * clean_y_ext))),
     }
     # Window sums for every ending index i >= window-1, vectorized over i.
     sx = sums["x"][window:] - sums["x"][: count - window + 1]
@@ -249,16 +261,33 @@ def _pair_stats(
     variance_x = (sxx - sx * sx / window) / (window - 1)
     variance_y = (syy - sy * sy / window) / (window - 1)
     covariance = (sxy - sx * sy / window) / (window - 1)
-    eligible = valid[window - 1 :] & (variance_x > 0) & (variance_y > 0)
-    if not eligible.any():
-        return correlation, beta
-    # Near-zero variance windows are ill-conditioned for the vectorized sums
-    # and can disagree with the reference at the float-epsilon level. Recompute
-    # those exactly with the reference algorithm so the two implementations
-    # agree bit-for-bit there.
-    suspicious = eligible & (
-        (variance_x <= _PAIR_STATS_VAR_TOL) | (variance_y <= _PAIR_STATS_VAR_TOL)
+    fully_finite = valid[window - 1 :]
+    # Vectorized path only for well-conditioned windows: strictly positive,
+    # finite variance above the tolerance, AND variance large relative to the
+    # window's second-moment scale (a huge window mean would otherwise drown
+    # the variance in cumulative-sum cancellation). EVERY other fully-finite
+    # window is recomputed with the exact reference algorithm, so NaN
+    # placement and values match the reference bit-for-bit there and a
+    # cancellation artifact can never turn a finite reference output into NaN
+    # (or vice versa). Real return data (window means near zero) keeps every
+    # window on the vectorized path; the exact path only catches pathological
+    # or adversarial scales.
+    with np.errstate(divide="ignore", invalid="ignore"):
+        moment_scale_x = sxx / (variance_x * window)  # ~ (mean^2 + var) / var
+        moment_scale_y = syy / (variance_y * window)
+        cross_scale = np.abs(sxy) / (window * np.sqrt(variance_x * variance_y) + 1e-300)
+    # Non-finite moment scales (zero/negative variance) compare False below
+    # and therefore route the window to the exact recompute path.
+    well_conditioned = fully_finite & (
+        (variance_x > _PAIR_STATS_VAR_TOL)
+        & (variance_y > _PAIR_STATS_VAR_TOL)
+        & np.isfinite(variance_x)
+        & np.isfinite(variance_y)
+        & (moment_scale_x < _PAIR_STATS_CONDITION_LIMIT)
+        & (moment_scale_y < _PAIR_STATS_CONDITION_LIMIT)
+        & (cross_scale < _PAIR_STATS_CONDITION_LIMIT)
     )
+    suspicious = fully_finite & ~well_conditioned
     if suspicious.any():
         for relative in np.flatnonzero(suspicious):
             index = window - 1 + int(relative)
@@ -266,16 +295,16 @@ def _pair_stats(
             y = anchor[index - window + 1 : index + 1]
             variance = float(np.var(y, ddof=1))
             if variance <= 0 or np.ptp(x) == 0 or np.ptp(y) == 0:
-                eligible[int(relative)] = False
                 continue
             covariance_exact = float(np.cov(x, y, ddof=1)[0, 1])
             beta[index] = covariance_exact / variance
             correlation[index] = float(np.corrcoef(x, y)[0, 1])
-    plain = eligible & ~suspicious
-    if plain.any():
-        beta[window - 1 :][plain] = covariance[plain] / variance_y[plain]
-        correlation[window - 1 :][plain] = covariance[plain] / np.sqrt(
-            variance_x[plain] * variance_y[plain]
+    if well_conditioned.any():
+        beta[window - 1 :][well_conditioned] = (
+            covariance[well_conditioned] / variance_y[well_conditioned]
+        )
+        correlation[window - 1 :][well_conditioned] = covariance[well_conditioned] / np.sqrt(
+            variance_x[well_conditioned] * variance_y[well_conditioned]
         )
     return correlation, beta
 
