@@ -27,6 +27,14 @@ from crypto_ai.phase7.universe import (
 )
 
 
+class IneligibleFoldError(ValueError):
+    """A fold/experiment cannot run under the configured eligibility minimums.
+
+    Only this exception type may be recorded as an ``INELIGIBLE`` experiment
+    report. Any other failure is a defect and must propagate (fail closed).
+    """
+
+
 @dataclass(frozen=True, slots=True)
 class MultiAssetFoldData:
     plan: FoldPlan
@@ -197,7 +205,7 @@ def slice_multiasset_fold(
     )
     eligible_symbols = set(membership.active_symbols)
     if not eligible_symbols:
-        raise ValueError(f"{plan.fold_id} has no point-in-time eligible symbols")
+        raise IneligibleFoldError(f"{plan.fold_id} has no point-in-time eligible symbols")
     eligible_table = bind_fold_cross_sectional_context(_filter_symbols(table, eligible_symbols))
     sliced: HardenedFoldData = slice_hardened_fold(
         eligible_table,

@@ -31,7 +31,11 @@ from crypto_ai.phase7.economics import (
     fixed_policy_cost_stress,
     select_cal_b_thresholds,
 )
-from crypto_ai.phase7.folds import MultiAssetFoldData, slice_multiasset_fold
+from crypto_ai.phase7.folds import (
+    IneligibleFoldError,
+    MultiAssetFoldData,
+    slice_multiasset_fold,
+)
 from crypto_ai.phase7.metrics import (
     asset_concentration,
     evaluate_predictions,
@@ -616,24 +620,70 @@ def run_phase7_training(
         horizons = sorted({spec.horizon_minutes for spec in specs})
         fold_tables = {horizon: _load_fold_rows(manifest, plan, horizon) for horizon in horizons}
         for research_view in RESEARCH_VIEWS:
-            sliced = {
-                horizon: slice_multiasset_fold(
-                    table,
-                    plan,
-                    registry=registry,
-                    universe=universe,
-                    expansion_policy=expansion_policy,
-                    research_view=research_view,  # type: ignore[arg-type]
-                    descriptors=descriptors,
-                    universe_config=config.universe,
-                    schedule=config.schedule,
-                    holdout_start=config.prospective_holdout_start,
-                    cluster_count=config.models.cluster_count,
-                    seed=config.models.seed,
-                    unusable_segments=unusable_segments,
-                )
-                for horizon, table in fold_tables.items()
-            }
+            try:
+                sliced = {
+                    horizon: slice_multiasset_fold(
+                        table,
+                        plan,
+                        registry=registry,
+                        universe=universe,
+                        expansion_policy=expansion_policy,
+                        research_view=research_view,  # type: ignore[arg-type]
+                        descriptors=descriptors,
+                        universe_config=config.universe,
+                        schedule=config.schedule,
+                        holdout_start=config.prospective_holdout_start,
+                        cluster_count=config.models.cluster_count,
+                        seed=config.models.seed,
+                        unusable_segments=unusable_segments,
+                    )
+                    for horizon, table in fold_tables.items()
+                }
+            except IneligibleFoldError as exc:
+                # A genuine point-in-time eligibility failure: record every
+                # experiment for this fold/view as INELIGIBLE and move on.
+                # Anything else is a defect and must propagate (fail closed).
+                for spec in specs:
+                    stage = f"models/{research_view.lower()}/{plan.fold_id}/{spec.name}"
+                    output = run_root / stage
+                    report_path = output / "report.json"
+                    checkpoint_identity = {
+                        "experiment_id": spec.name,
+                        "configuration_hash": config.configuration_hash,
+                        "universe_definition_version": UNIVERSE_VERSION,
+                        "research_view": research_view,
+                        "core_universe_version": universe.version,
+                        "core_universe_hash": universe.universe_hash,
+                        "expansion_policy_version": expansion_policy.version,
+                        "expansion_policy_hash": expansion_policy.policy_hash,
+                        "fold_membership_hash": "UNAVAILABLE_SLICING_FAILED",
+                        "registry_version": registry.version,
+                        "registry_hash": registry.registry_hash,
+                        "feature_version": FEATURE_VERSION,
+                        "target_version": TARGET_VERSION,
+                        "target_horizon_minutes": spec.horizon_minutes,
+                        "target_type": spec.target_type,
+                        "architecture": spec.architecture,
+                        "fold_id": plan.fold_id,
+                        "gold_dataset_id": manifest["dataset_id"],
+                        "gold_manifest_sha256": gold_manifest_checksum,
+                        "code_version": PHASE7_VERSION,
+                    }
+                    report = {
+                        "status": "INELIGIBLE",
+                        "spec": asdict(spec),
+                        "fold_id": plan.fold_id,
+                        "research_view": research_view,
+                        "fold_membership_hash": "UNAVAILABLE_SLICING_FAILED",
+                        "reason": str(exc),
+                        "test_used_for_selection": False,
+                        "checkpoint_identity": checkpoint_identity,
+                        **config.holdout_status_payload(),
+                    }
+                    files = [atomic_json(report_path, report)]
+                    checkpoint_store.complete(stage, files, checkpoint_identity)
+                    reports.append(report)
+                continue
             reference_fold = sliced[horizons[0]]
             if reporter is not None:
                 reporter.fold_started(
@@ -720,7 +770,7 @@ def run_phase7_training(
                         fold_position=fold_position,
                         folds_total=len(folds),
                     )
-                except ValueError as exc:
+                except IneligibleFoldError as exc:
                     report = {
                         "status": "INELIGIBLE",
                         "spec": asdict(spec),

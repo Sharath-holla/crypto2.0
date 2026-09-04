@@ -11,6 +11,7 @@ import numpy as np
 import pyarrow as pa
 
 from crypto_ai.phase7.config import ModelConfig, stable_hash
+from crypto_ai.phase7.folds import IneligibleFoldError
 
 Architecture = Literal["G0", "C0", "P0", "H0"]
 
@@ -36,7 +37,7 @@ def _matrix(table: pa.Table, columns: tuple[str, ...]) -> np.ndarray:
 def symbol_balanced_weights(symbols: np.ndarray) -> np.ndarray:
     values = np.asarray(symbols, dtype=object)
     if values.ndim != 1 or not len(values):
-        raise ValueError("symbol-balanced weighting needs non-empty symbols")
+        raise IneligibleFoldError("symbol-balanced weighting needs non-empty symbols")
     unique, counts = np.unique(values, return_counts=True)
     count_by_symbol = dict(zip(unique.tolist(), counts.tolist(), strict=True))
     weight = np.asarray([1.0 / count_by_symbol[item] for item in values], dtype=np.float64)
@@ -93,7 +94,7 @@ def _fit(
     import lightgbm as lgb
 
     if not len(train_y) or not len(validation_y):
-        raise ValueError("LightGBM requires non-empty train and validation rows")
+        raise IneligibleFoldError("LightGBM requires non-empty train and validation rows")
     estimator = _estimator(config, model_threads=model_threads)
     estimator.fit(
         train_x,
@@ -297,7 +298,7 @@ def fit_architecture(
                 "calibration_a_rows": calibration_a_count,
             }
     if not estimators:
-        raise ValueError(f"{architecture} produced no eligible estimators")
+        raise IneligibleFoldError(f"{architecture} produced no eligible estimators")
     symbol_corrections: dict[str, float] = {}
     cluster_corrections: dict[int, float] = {}
     hybrid_symbol_eligibility: dict[str, dict[str, Any]] = {}
