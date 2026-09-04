@@ -209,6 +209,10 @@ def test_eligibility_failure_records_ineligible_and_resume_skips(
     assert first["completed_reports"] == 0
     assert first["ineligible_reports"] == 2  # CORE + EXPANDING views
     assert len(fit_calls) == 2
+    assert all(
+        report["checkpoint_identity"]["training_source_identity"]["manifest_sha256"]
+        for report in first["reports"]
+    )
 
     second = run_phase7_training(
         config,
@@ -226,6 +230,50 @@ def test_eligibility_failure_records_ineligible_and_resume_skips(
     assert second["completed_reports"] == 0
     assert second["ineligible_reports"] == 2
     assert len(fit_calls) == 2
+
+
+def test_training_source_change_rejects_orphan_report_on_resume(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    checkpoint_root, run_root, _fit_calls = _patch_harness(
+        monkeypatch,
+        tmp_path,
+        fit_error=IneligibleFoldError("G0 produced no eligible estimators"),
+    )
+    config = Phase7Config()
+    registry = _synthetic_registry()
+    run_phase7_training(
+        config,
+        gold_manifest_path=_manifest(tmp_path),
+        registry=registry.registry,
+        universe=registry.universe,
+        expansion_policy=registry.policy,
+        descriptors=registry.descriptors,
+        checkpoint_store=registry.store(checkpoint_root),
+        run_root=run_root,
+        resume=False,
+    )
+
+    monkeypatch.setattr(
+        "crypto_ai.phase7.training.training_source_identity",
+        lambda: {
+            "algorithm": "phase7_training_source_manifest_v1",
+            "files": [],
+            "manifest_sha256": "changed",
+        },
+    )
+    with pytest.raises(ValueError, match="Orphan report identity mismatch"):
+        run_phase7_training(
+            config,
+            gold_manifest_path=_manifest(tmp_path),
+            registry=registry.registry,
+            universe=registry.universe,
+            expansion_policy=registry.policy,
+            descriptors=registry.descriptors,
+            checkpoint_store=registry.store(checkpoint_root),
+            run_root=run_root,
+            resume=True,
+        )
 
 
 def test_symbol_balanced_weights_empty_raises_ineligible() -> None:
@@ -263,9 +311,7 @@ def test_slice_empty_fold_table_raises_defect(
             expansion_eligible_symbols=[],
         )
 
-    monkeypatch.setattr(
-        "crypto_ai.phase7.folds.select_fold_active_universe", fake_membership
-    )
+    monkeypatch.setattr("crypto_ai.phase7.folds.select_fold_active_universe", fake_membership)
     plan = FoldPlan(
         fold_id="fold-000-empty",
         index=0,

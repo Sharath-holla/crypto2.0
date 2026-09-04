@@ -211,13 +211,19 @@ def _pair_stats(
     - beta = cov(x, y, ddof=1) / var(y, ddof=1);
     - correlation = cov(x, y, ddof=1) / sqrt(var(x, ddof=1) * var(y, ddof=1)).
     """
+    if values.ndim != 1 or anchor.ndim != 1 or len(values) != len(anchor):
+        raise ValueError("_pair_stats requires aligned 1-D values and anchor arrays")
     count = len(values)
     correlation = np.full(count, np.nan)
     beta = np.full(count, np.nan)
     if count < window or window <= 1:
         return correlation, beta
-    if values.ndim != 1 or anchor.ndim != 1 or len(values) != len(anchor):
-        raise ValueError("_pair_stats requires aligned 1-D values and anchor arrays")
+    if np.finfo(np.longdouble).nmant <= np.finfo(np.float64).nmant:
+        # Windows aliases longdouble to float64. Its cumulative sums cannot
+        # meet the strict reference-equivalence tolerance on long histories,
+        # so retain exact semantics there; the canonical Linux VM keeps the
+        # vectorized extended-precision path below.
+        return _pair_stats_reference(values, anchor, window)
     finite_x = np.isfinite(values)
     finite_y = np.isfinite(anchor)
     cumulative_x = np.concatenate(([0], np.cumsum(finite_x)))
@@ -275,7 +281,7 @@ def _pair_stats(
     with np.errstate(divide="ignore", invalid="ignore"):
         moment_scale_x = sxx / (variance_x * window)  # ~ (mean^2 + var) / var
         moment_scale_y = syy / (variance_y * window)
-        cross_scale = np.abs(sxy) / (window * np.sqrt(variance_x * variance_y) + 1e-300)
+        cross_scale = np.abs(sxy) / (window * np.sqrt(variance_x) * np.sqrt(variance_y) + 1e-300)
     # Non-finite moment scales (zero/negative variance) compare False below
     # and therefore route the window to the exact recompute path.
     well_conditioned = fully_finite & (
@@ -303,8 +309,8 @@ def _pair_stats(
         beta[window - 1 :][well_conditioned] = (
             covariance[well_conditioned] / variance_y[well_conditioned]
         )
-        correlation[window - 1 :][well_conditioned] = covariance[well_conditioned] / np.sqrt(
-            variance_x[well_conditioned] * variance_y[well_conditioned]
+        correlation[window - 1 :][well_conditioned] = covariance[well_conditioned] / (
+            np.sqrt(variance_x[well_conditioned]) * np.sqrt(variance_y[well_conditioned])
         )
     return correlation, beta
 

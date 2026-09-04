@@ -24,6 +24,7 @@ htmlcov/
 *.pem
 *.key
 secrets/
+ask_gpt.py
 
 # Generated market data
 data/market/bronze/

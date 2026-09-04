@@ -75,6 +75,8 @@ def test_research_cutoff_excludes_july_and_august_from_gold(tmp_path: Path) -> N
     candles = pa.concat_tables([june, august]).sort_by(
         [("symbol", "ascending"), ("open_time", "ascending")]
     )
+    holdout_sentinel_us = int((HOLDOUT_START + timedelta(minutes=5)).timestamp() * 1_000_000)
+    assert holdout_sentinel_us in _times(candles, "open_time")
     features = generate_multiasset_features(
         candles,
         registry=synthetic_registry(),
@@ -86,6 +88,7 @@ def test_research_cutoff_excludes_july_and_august_from_gold(tmp_path: Path) -> N
         config=Phase7Config().targets,
         research_cutoff=RESEARCH_CUTOFF,
     )
+    assert holdout_sentinel_us not in _times(targets.table, "feature_time")
     registry = synthetic_registry()
     result = build_multiasset_gold(
         features,
@@ -108,6 +111,11 @@ def test_research_cutoff_excludes_july_and_august_from_gold(tmp_path: Path) -> N
     assert manifest["prospective_holdout_status"] == "LOCKED_UNUSED"
     assert manifest["prospective_holdout_used"] is False
     assert manifest["prospective_holdout_evaluation_authorized"] is False
+    # Gold is the sole input to fold slicing, calibration, thresholding, OOS
+    # prediction, model selection, and reports. Rejection here occurs before
+    # any model/checkpoint output can exist.
+    assert not (tmp_path / "models").exists()
+    assert not (tmp_path / "training_summary.json").exists()
 
 
 def test_universe_cutoff_is_first_train_end_and_fold_count_is_derived() -> None:

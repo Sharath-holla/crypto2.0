@@ -86,9 +86,25 @@ def test_rotation_failure_restores_live_log(tmp_path: Path) -> None:
     (fake_bin / "gzip").chmod(0o755)
     env = dict(os.environ)
     env["PHASE7_LOG_ROTATE_MB"] = "1"
-    env["PATH"] = f"{fake_bin}{os.pathsep}{env['PATH']}"
+    command = ["bash", str(ROTATE_SCRIPT), str(log)]
+    if os.name == "nt":
+        # MSYS rewrites PATH when launched from a Windows process and can drop
+        # a newly prepended Windows directory. Prepend its POSIX form inside
+        # bash so this failure-injection test exercises the intended gzip.
+        command = [
+            "bash",
+            "-c",
+            'PATH="$(cygpath -u "$1"):$PATH"; shift; exec "$@"',
+            "phase7-log-rotation-test",
+            str(fake_bin),
+            "bash",
+            str(ROTATE_SCRIPT),
+            str(log),
+        ]
+    else:
+        env["PATH"] = f"{fake_bin}{os.pathsep}{env['PATH']}"
     result = subprocess.run(
-        ["bash", str(ROTATE_SCRIPT), str(log)],
+        command,
         capture_output=True,
         text=True,
         env=env,

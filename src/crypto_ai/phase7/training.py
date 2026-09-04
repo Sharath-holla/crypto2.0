@@ -26,6 +26,7 @@ from crypto_ai.phase7.config import (
     stable_hash,
 )
 from crypto_ai.phase7.economics import (
+    ThresholdSet,
     adaptive_policy_cost_stress,
     build_oos_trades,
     fixed_policy_cost_stress,
@@ -48,6 +49,53 @@ from crypto_ai.phase7.segments import CausalDataGap
 from crypto_ai.phase7.universe import ExpansionUniversePolicy, FrozenUniverse, SymbolDescriptor
 
 RESEARCH_VIEWS = ("CORE", "EXPANDING")
+TRAINING_SOURCE_IDENTITY_ALGORITHM = "phase7_training_source_manifest_v1"
+TRAINING_CRITICAL_SOURCE_FILES = (
+    "src/crypto_ai/data/ingestion/manifest.py",
+    "src/crypto_ai/data/storage/__init__.py",
+    "src/crypto_ai/data/storage/parquet.py",
+    "src/crypto_ai/domain/__init__.py",
+    "src/crypto_ai/domain/candle.py",
+    "src/crypto_ai/phase5/calibration.py",
+    "src/crypto_ai/phase5/config.py",
+    "src/crypto_ai/phase5/folds.py",
+    "src/crypto_ai/phase6/config.py",
+    "src/crypto_ai/phase6/features.py",
+    "src/crypto_ai/phase6/labels.py",
+    "src/crypto_ai/phase7/artifacts.py",
+    "src/crypto_ai/phase7/config.py",
+    "src/crypto_ai/phase7/economics.py",
+    "src/crypto_ai/phase7/features.py",
+    "src/crypto_ai/phase7/folds.py",
+    "src/crypto_ai/phase7/gold.py",
+    "src/crypto_ai/phase7/metrics.py",
+    "src/crypto_ai/phase7/models.py",
+    "src/crypto_ai/phase7/pipeline.py",
+    "src/crypto_ai/phase7/registry.py",
+    "src/crypto_ai/phase7/segments.py",
+    "src/crypto_ai/phase7/targets.py",
+    "src/crypto_ai/phase7/training.py",
+    "src/crypto_ai/phase7/universe.py",
+)
+
+
+def training_source_identity(repository_root: Path | None = None) -> dict[str, Any]:
+    """Return a content-derived identity for training/checkpoint-critical code.
+
+    The file list is deliberately independent of Git state and excludes logs,
+    reports, tests, and other runtime artifacts. Missing files fail closed so an
+    incomplete installation cannot silently reuse an existing training checkpoint.
+    """
+
+    root = repository_root.resolve() if repository_root is not None else Path(__file__).parents[3]
+    records: list[dict[str, str]] = []
+    for relative_path in TRAINING_CRITICAL_SOURCE_FILES:
+        path = root / relative_path
+        if not path.is_file():
+            raise RuntimeError(f"training-critical source file is missing: {relative_path}")
+        records.append({"path": relative_path, "sha256": file_sha256(path)})
+    identity = {"algorithm": TRAINING_SOURCE_IDENTITY_ALGORITHM, "files": records}
+    return {**identity, "manifest_sha256": stable_hash(identity, length=64)}
 
 
 @dataclass(frozen=True, slots=True)
@@ -216,6 +264,53 @@ def _covered_observation_keys(
 
 def _threshold_granularity(architecture: str) -> str:
     return {"C0": "cluster", "P0": "per_coin"}.get(architecture, "global")
+
+
+def _frozen_test_identity_components(
+    *, model_identity: str, calibrator_identity: str, thresholds: dict[str, Any]
+) -> dict[str, Any]:
+    return {
+        "model": model_identity,
+        "calibrator": calibrator_identity,
+        "thresholds": thresholds,
+    }
+
+
+def _validate_complete_orphan_report(report: dict[str, Any], model: Any) -> None:
+    """Fail closed unless a COMPLETE orphan is internally self-consistent."""
+
+    try:
+        model_identity = str(model.metadata["model_identity"])
+        reported_model_identity = str(report["model"]["model_identity"])
+        calibration = report["calibration"]["selected"]
+        threshold_payload = report["thresholds"]
+        calibrator_identity = report["calibrator_identity"]
+        threshold_identity = report["threshold_identity"]
+        frozen_identity = report["frozen_identity_before_test"]
+        frozen_components = report["frozen_identity_components"]
+    except (KeyError, TypeError) as exc:
+        raise ValueError("COMPLETE orphan is missing frozen training artifacts") from exc
+    if not isinstance(calibration, dict) or not isinstance(threshold_payload, dict):
+        raise ValueError("COMPLETE orphan has malformed calibrator or threshold artifacts")
+    try:
+        canonical_thresholds = asdict(ThresholdSet(**threshold_payload))
+    except (TypeError, ValueError) as exc:
+        raise ValueError("COMPLETE orphan has malformed threshold artifacts") from exc
+    expected_calibrator_identity = stable_hash(calibration)
+    expected_threshold_identity = stable_hash(canonical_thresholds)
+    expected_components = _frozen_test_identity_components(
+        model_identity=model_identity,
+        calibrator_identity=expected_calibrator_identity,
+        thresholds=canonical_thresholds,
+    )
+    if (
+        reported_model_identity != model_identity
+        or calibrator_identity != expected_calibrator_identity
+        or threshold_identity != expected_threshold_identity
+        or frozen_components != expected_components
+        or frozen_identity != stable_hash(expected_components)
+    ):
+        raise ValueError("COMPLETE orphan frozen training identity mismatch")
 
 
 def _conditional_metrics(
@@ -487,13 +582,13 @@ def _run_one(
         granularity=_threshold_granularity(spec.architecture),  # type: ignore[arg-type]
         config=config.costs,
     )
-    frozen_identity = stable_hash(
-        {
-            "model": model.metadata["model_identity"],
-            "calibrator": calibrator.identity_hash,
-            "thresholds": thresholds,
-        }
+    threshold_payload = asdict(thresholds)
+    frozen_components = _frozen_test_identity_components(
+        model_identity=model.metadata["model_identity"],
+        calibrator_identity=calibrator.identity_hash,
+        thresholds=threshold_payload,
     )
+    frozen_identity = stable_hash(frozen_components)
     test = _finite(fold.release_test(frozen_identity=frozen_identity), feature_columns, target)
     test_model, test_covered = model.predict(test)
     calibrated = np.full(test.num_rows, np.nan)
@@ -548,7 +643,9 @@ def _run_one(
         "model": model.metadata,
         "calibration": calibration_report,
         "threshold_selection": threshold_report,
-        "thresholds": asdict(thresholds),
+        "thresholds": threshold_payload,
+        "calibrator_identity": calibrator.identity_hash,
+        "threshold_identity": stable_hash(threshold_payload),
         "test_metrics": metrics,
         "test_coverage_keys_by_symbol": coverage_keys,
         "conditional_test_metrics": _conditional_metrics(test, predicted_raw, test_covered),
@@ -571,6 +668,7 @@ def _run_one(
             "excursions_by_liquidity_tier": _excursion_summary(test, fold.liquidity_tiers),
         },
         "frozen_identity_before_test": frozen_identity,
+        "frozen_identity_components": frozen_components,
         "checkpoint_identity": checkpoint_identity,
         "test_used_for_selection": False,
         **config.holdout_status_payload(),
@@ -604,6 +702,7 @@ def run_phase7_training(
     reporter: ProgressReporter | None = None,
 ) -> dict[str, Any]:
     config.assert_cloud_execution_allowed()
+    source_identity = training_source_identity()
     manifest = _load_gold_manifest(gold_manifest_path)
     groups = {name: tuple(values) for name, values in manifest["feature_groups"].items()}
     folds = plan_folds(
@@ -668,6 +767,7 @@ def run_phase7_training(
                         "gold_dataset_id": manifest["dataset_id"],
                         "gold_manifest_sha256": gold_manifest_checksum,
                         "code_version": PHASE7_VERSION,
+                        "training_source_identity": source_identity,
                     }
                     report = {
                         "status": "INELIGIBLE",
@@ -722,6 +822,7 @@ def run_phase7_training(
                     "gold_dataset_id": manifest["dataset_id"],
                     "gold_manifest_sha256": gold_manifest_checksum,
                     "code_version": PHASE7_VERSION,
+                    "training_source_identity": source_identity,
                 }
                 if resume and checkpoint_store.is_complete(
                     stage, expected_metadata=checkpoint_identity
@@ -734,11 +835,8 @@ def run_phase7_training(
                     model_path = output / "model.joblib"
                     if orphan_report.get("status") == "COMPLETE" and model_path.exists():
                         orphan_model = load_model(model_path)
-                        if (
-                            orphan_model.metadata.get("model_identity")
-                            != orphan_report.get("model", {}).get("model_identity")
-                            or orphan_report.get("checkpoint_identity") != checkpoint_identity
-                        ):
+                        _validate_complete_orphan_report(orphan_report, orphan_model)
+                        if orphan_report.get("checkpoint_identity") != checkpoint_identity:
                             raise ValueError(
                                 "Orphan model/report identity mismatch for "
                                 f"{research_view} {plan.fold_id} {spec.name}"

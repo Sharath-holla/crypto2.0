@@ -83,6 +83,22 @@ def test_zero_variance_anchor_block() -> None:
     _assert_equivalent(x, y, 100)
 
 
+def test_near_constant_series_matches_reference() -> None:
+    rng = np.random.default_rng(21)
+    x = 1.0 + rng.normal(0.0, 1e-12, 3_000)
+    y = -2.0 + rng.normal(0.0, 1e-12, 3_000)
+    _assert_equivalent(x, y, 100)
+
+
+def test_perfect_and_anti_correlation() -> None:
+    rng = np.random.default_rng(22)
+    anchor = rng.normal(0.0, 0.01, 3_000)
+    for values, expected in ((2.5 * anchor, 1.0), (-2.5 * anchor, -1.0)):
+        _assert_equivalent(values, anchor, 100)
+        correlation, _ = _pair_stats(values, anchor, 100)
+        np.testing.assert_allclose(correlation[99:], expected, rtol=1e-12, atol=1e-12)
+
+
 def test_sprinkled_nans() -> None:
     rng = np.random.default_rng(23)
     x = np.cumsum(rng.normal(0.0, 0.001, 5_000))
@@ -162,3 +178,11 @@ def test_shape_mismatch_raises_defect() -> None:
     two_d = x.reshape(500, 2)
     with pytest.raises(ValueError, match="aligned 1-D"):
         _pair_stats(two_d, x, 100)  # type: ignore[arg-type]
+
+
+def test_malformed_short_inputs_fail_before_warmup_return() -> None:
+    short = np.asarray([1.0, 2.0])
+    with pytest.raises(ValueError, match="aligned 1-D"):
+        _pair_stats(short, short[:1], 100)
+    with pytest.raises(ValueError, match="aligned 1-D"):
+        _pair_stats(short.reshape(1, 2), short, 100)  # type: ignore[arg-type]
