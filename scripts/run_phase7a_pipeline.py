@@ -201,6 +201,189 @@ def _reuse_discovery(
     return CandleFamilyAcquisition(tuple(outcomes))
 
 
+def _core_universe_stage(
+    config: Phase7Config,
+    source: Phase7Config,
+    root: Path,
+    registry: SymbolRegistry,
+    reporter: ProgressReporter,
+) -> tuple[object, object, tuple[str, ...], list[Path]]:
+    """Materialize only Core20 descriptors and memberships from reused discovery."""
+
+    discovery_result = _reuse_discovery(
+        source,
+        registry,
+        lambda completed, total, symbol, interval, status, checkpoint_hit: reporter.progress(
+            stage="discovery",
+            completed=completed,
+            total=total,
+            current=symbol,
+            interval=interval,
+            status=status,
+            checkpoint_hit=checkpoint_hit,
+        ),
+    )
+    discovery = discovery_result.manifests
+    gaps = discovery_result.gaps
+    exclusions = discovery_result.exclusions
+    registry_map = registry.by_symbol()
+    cutoff = config.universe.core_selection_cutoff
+    lookback = timedelta(days=config.universe.selection_lookback_days)
+
+    def manifests_for(symbols: set[str], start: datetime, end: datetime) -> dict[str, str]:
+        return {
+            symbol: manifest
+            for symbol, manifest in discovery.items()
+            if symbol in symbols
+            and registry_map[symbol].causal_available_from < end
+            and (
+                registry_map[symbol].available_until is None
+                or registry_map[symbol].available_until > start
+            )
+        }
+
+    all_symbols = set(discovery)
+    daily = pipeline.load_candle_family(
+        manifests_for(all_symbols, cutoff - lookback, cutoff),
+        interval="1d",
+        start=cutoff - lookback,
+        end=cutoff,
+    )
+    core_descriptors = pipeline.build_point_in_time_descriptors(
+        daily,
+        registry,
+        as_of=cutoff,
+        lookback_days=config.universe.selection_lookback_days,
+        unusable_segments=gaps,
+    )
+    universe = pipeline.select_core_universe(
+        registry,
+        core_descriptors,
+        selection_cutoff=cutoff,
+        config=config.universe,
+    )
+    if len(universe.symbols) != 20 or len(set(universe.symbols)) != 20:
+        raise RuntimeError("Deterministic core selection did not produce 20 unique symbols")
+    if "XPINUSDT" in universe.symbols:
+        raise RuntimeError("Ineligible XPINUSDT unexpectedly entered Core20")
+    policy = pipeline.build_expansion_policy(universe, config.universe)
+    plans = plan_folds(
+        config.data_start,
+        config.research_cutoff,
+        config.prospective_holdout_start,
+        config.schedule,
+    )
+    core_gap = next(
+        (
+            gap
+            for gap in gaps
+            if gap.symbol in universe.symbols
+            and any(gap.intersects(plan.train_start, plan.test_end) for plan in plans)
+        ),
+        None,
+    )
+    if core_gap is not None:
+        raise ValueError(
+            "Required core symbol has an unrecoverable causal segment: "
+            f"{core_gap.symbol} {core_gap.interval} {core_gap.partition}"
+        )
+    descriptor_by_key = {(item.symbol, item.as_of): item for item in core_descriptors}
+    memberships = []
+    core_symbols = set(universe.symbols)
+    for plan in plans:
+        descriptor_start = plan.train_end - lookback
+        fold_daily = pipeline.load_candle_family(
+            manifests_for(core_symbols, descriptor_start, plan.train_end),
+            interval="1d",
+            start=descriptor_start,
+            end=plan.train_end,
+        )
+        fold_descriptors = pipeline.build_point_in_time_descriptors(
+            fold_daily,
+            registry,
+            as_of=plan.train_end,
+            lookback_days=config.universe.selection_lookback_days,
+            unusable_segments=gaps,
+        )
+        for descriptor in fold_descriptors:
+            descriptor_by_key[(descriptor.symbol, descriptor.as_of)] = descriptor
+        memberships.append(
+            pipeline.select_fold_active_universe(
+                registry,
+                list(descriptor_by_key.values()),
+                fold_id=plan.fold_id,
+                train_end=plan.train_end,
+                core_universe=universe,
+                expansion_policy=policy,
+                config=config.universe,
+                research_view="CORE",
+                unusable_segments=gaps,
+                required_start=plan.train_start,
+                required_end=plan.test_end,
+            )
+        )
+    descriptors = sorted(descriptor_by_key.values(), key=lambda item: (item.as_of, item.symbol))
+    symbols = tuple(sorted({symbol for item in memberships for symbol in item.active_symbols}))
+    if symbols != tuple(sorted(universe.symbols)):
+        raise RuntimeError("CORE fold membership differs from the frozen Core20")
+    output = root / "universe"
+    discovery_path = atomic_json(
+        output / "discovery_data.json",
+        {
+            "daily_silver_manifests": discovery,
+            "discovery_lineage": {
+                "method": "network_free_immutable_per_symbol_checkpoint_reuse",
+                "source_run_identity": SOURCE_RUN_IDENTITY,
+                "source_configuration_hash": source.configuration_hash,
+                "candidate_count": 507,
+                "network_used": False,
+            },
+            **discovery_result.model_dump(),
+        },
+    )
+    descriptors_path = atomic_json(
+        output / "selection_descriptors.json",
+        {
+            "descriptor_rule": "source_time_strictly_before_fold_train_end",
+            "scope": "CORE_ONLY",
+            "descriptors": [item.model_dump(mode="json") for item in descriptors],
+        },
+    )
+    core_path = pipeline.write_universe(output / "core_universe.json", universe)
+    policy_path = pipeline.write_expansion_policy(output / "expansion_policy.json", policy)
+    memberships_path = atomic_json(
+        output / "fold_memberships.json",
+        {
+            "definition_version": pipeline.UNIVERSE_VERSION,
+            "core_universe_hash": universe.universe_hash,
+            "expansion_policy_hash": policy.policy_hash,
+            "fold_count": len(memberships),
+            "research_views": ["CORE"],
+            "acquisition_symbols": list(symbols),
+            "data_quality_exclusions": [item.model_dump(mode="json") for item in exclusions],
+            "folds": [item.model_dump(mode="json") for item in memberships],
+            **config.holdout_status_payload(),
+            "july_2026_used": False,
+        },
+    )
+    files = [discovery_path, descriptors_path, core_path, policy_path, memberships_path]
+    files.extend(Path(value) for value in discovery.values())
+    files.extend(
+        Path(item.exclusion_evidence) for item in exclusions if item.exclusion_evidence is not None
+    )
+    for gap in gaps:
+        files.extend(
+            Path(value)
+            for value in (
+                gap.quality_report,
+                gap.quarantine,
+                gap.rest_manifest,
+                gap.comparison_report,
+            )
+        )
+    return universe, policy, symbols, files
+
+
 def _training_patches(config: Phase7Config) -> ExitStack:
     original_specs = training.phase7_experiment_specs
     specs = tuple(spec for spec in original_specs(config) if spec.feature_group == "A6")
@@ -256,36 +439,13 @@ def run_stage(config: Phase7Config, stage: str, *, resume: bool, canary: bool) -
         metadata: dict[str, object] = {"network": "none_immutable_lineage_reuse"}
     elif stage == "universe":
         registry = read_registry(root / "registry" / "symbol_registry.json")
-        original_selection = pipeline.select_fold_active_universe
-
-        def core_selection(*args: object, **kwargs: object) -> object:
-            kwargs["research_view"] = "CORE"
-            return original_selection(*args, **kwargs)
-
-        with (
-            patch.object(
-                pipeline,
-                "acquire_discovery_daily",
-                lambda _config, registry, progress=None, **_kwargs: _reuse_discovery(
-                    source, registry, progress
-                ),
-            ),
-            patch.object(pipeline, "select_fold_active_universe", core_selection),
-        ):
-            universe, policy, _, symbols, files = pipeline._universe_stage(
-                config, root, registry, identity, resume, reporter
-            )
-        discovery_lineage = atomic_json(
-            root / "universe" / "discovery_reuse_lineage.json",
-            {
-                "method": "network_free_immutable_per_symbol_checkpoint_reuse",
-                "source_run_identity": SOURCE_RUN_IDENTITY,
-                "source_configuration_hash": source.configuration_hash,
-                "candidate_count": 507,
-                "network_used": False,
-            },
+        universe, policy, symbols, files = _core_universe_stage(
+            config,
+            source,
+            root,
+            registry,
+            reporter,
         )
-        files.append(discovery_lineage)
         if len(symbols) != 20 or len(set(symbols)) != 20:
             raise RuntimeError("Phase 7A acquisition membership is not exactly Core20")
         metadata = {
