@@ -14,7 +14,7 @@ import pyarrow as pa
 import pytest
 
 from crypto_ai.phase5.folds import FoldPlan
-from crypto_ai.phase7.config import Phase7Config
+from crypto_ai.phase7.config import Phase7Config, ScheduleConfig
 from crypto_ai.phase7.folds import IneligibleFoldError, MultiAssetFoldData
 from crypto_ai.phase7.models import _fit, symbol_balanced_weights
 from crypto_ai.phase7.training import ExperimentSpec, run_phase7_training
@@ -231,6 +231,68 @@ def test_eligibility_failure_records_ineligible_and_resume_skips(
 def test_symbol_balanced_weights_empty_raises_ineligible() -> None:
     with pytest.raises(IneligibleFoldError):
         symbol_balanced_weights([])  # type: ignore[arg-type]
+
+
+def test_symbol_balanced_weights_2d_raises_defect() -> None:
+    """A malformed symbols array is a programming defect, not an eligibility
+    outcome: it must raise plain ValueError so the run fails loudly."""
+    import numpy as np
+
+    with pytest.raises(ValueError, match="1-D symbols array"):
+        symbol_balanced_weights(np.asarray([["BTCUSDT"], ["ETHUSDT"]]))  # type: ignore[arg-type]
+
+
+def test_slice_empty_fold_table_raises_defect(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Eligible symbols with zero rows in the fold table is a Gold coverage
+    defect, not an INELIGIBLE outcome: slice_multiasset_fold must raise plain
+    ValueError (never record INELIGIBLE) for it."""
+    from types import SimpleNamespace
+
+    import pyarrow as pa
+
+    from crypto_ai.phase7.fixtures import fixture_universe_config
+    from crypto_ai.phase7.folds import slice_multiasset_fold
+
+    def fake_membership(*_args: object, **_kwargs: object) -> object:
+        return SimpleNamespace(
+            active_symbols={"BTCUSDT"},
+            members=[],
+            core_eligible_symbols=["BTCUSDT"],
+            expansion_eligible_symbols=[],
+        )
+
+    monkeypatch.setattr(
+        "crypto_ai.phase7.folds.select_fold_active_universe", fake_membership
+    )
+    plan = FoldPlan(
+        fold_id="fold-000-empty",
+        index=0,
+        train_start=datetime(2020, 1, 1, tzinfo=UTC),
+        train_end=datetime(2022, 1, 1, tzinfo=UTC),
+        validation_start=datetime(2022, 1, 1, tzinfo=UTC),
+        validation_end=datetime(2022, 4, 1, tzinfo=UTC),
+        calibration_start=datetime(2022, 4, 1, tzinfo=UTC),
+        calibration_end=datetime(2022, 7, 1, tzinfo=UTC),
+        test_start=datetime(2022, 7, 1, tzinfo=UTC),
+        test_end=datetime(2022, 10, 1, tzinfo=UTC),
+    )
+    empty = pa.table({"symbol": pa.array([], type=pa.string())})
+    with pytest.raises(ValueError, match="Gold coverage defect"):
+        slice_multiasset_fold(
+            empty,
+            plan,
+            registry=None,  # type: ignore[arg-type]
+            universe=None,  # type: ignore[arg-type]
+            expansion_policy=SimpleNamespace(version="v", policy_hash="h"),
+            descriptors=[],
+            universe_config=fixture_universe_config(),
+            schedule=ScheduleConfig(),
+            holdout_start=datetime(2026, 8, 1, tzinfo=UTC),
+            cluster_count=4,
+            seed=7,
+        )
 
 
 def test_empty_lgbm_rows_raise_ineligible() -> None:

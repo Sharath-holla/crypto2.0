@@ -36,7 +36,9 @@ def _matrix(table: pa.Table, columns: tuple[str, ...]) -> np.ndarray:
 
 def symbol_balanced_weights(symbols: np.ndarray) -> np.ndarray:
     values = np.asarray(symbols, dtype=object)
-    if values.ndim != 1 or not len(values):
+    if values.ndim != 1:
+        raise ValueError("symbol-balanced weighting requires a 1-D symbols array")
+    if not len(values):
         raise IneligibleFoldError("symbol-balanced weighting needs non-empty symbols")
     unique, counts = np.unique(values, return_counts=True)
     count_by_symbol = dict(zip(unique.tolist(), counts.tolist(), strict=True))

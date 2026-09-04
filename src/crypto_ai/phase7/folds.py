@@ -58,7 +58,8 @@ class MultiAssetFoldData:
 
 def _filter_symbols(table: pa.Table, symbols: set[str]) -> pa.Table:
     values = np.asarray(table.column("symbol").combine_chunks().to_pylist(), dtype=object)
-    return table.filter(pa.array(np.asarray([str(value) in symbols for value in values])))
+    mask = pa.array([str(value) in symbols for value in values], type=pa.bool_())
+    return table.filter(mask)
 
 
 def _descriptor_matrix(symbols: list[str], descriptors: dict[str, SymbolDescriptor]) -> np.ndarray:
@@ -206,7 +207,15 @@ def slice_multiasset_fold(
     eligible_symbols = set(membership.active_symbols)
     if not eligible_symbols:
         raise IneligibleFoldError(f"{plan.fold_id} has no point-in-time eligible symbols")
-    eligible_table = bind_fold_cross_sectional_context(_filter_symbols(table, eligible_symbols))
+    eligible_table = _filter_symbols(table, eligible_symbols)
+    if eligible_table.num_rows == 0:
+        # Eligible symbols exist, yet this fold table carries no rows for them:
+        # a Gold/data coverage defect, not an eligibility outcome. Crash loudly.
+        raise ValueError(
+            f"{plan.fold_id} has point-in-time eligible symbols but zero rows "
+            "in the fold table; Gold coverage defect, not an INELIGIBLE outcome"
+        )
+    eligible_table = bind_fold_cross_sectional_context(eligible_table)
     sliced: HardenedFoldData = slice_hardened_fold(
         eligible_table,
         plan,
