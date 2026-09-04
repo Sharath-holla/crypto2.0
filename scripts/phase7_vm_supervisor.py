@@ -230,6 +230,9 @@ class Phase7VmSupervisor:
         sleeper: Callable[[float], None] = time.sleep,
         now: Callable[[], datetime] | None = None,
         budget_policy: BudgetPolicy | None = None,
+        session: str = SESSION,
+        expected_config_hash: str = EXPECTED_CONFIG_HASH,
+        supervisor_version: str = SUPERVISOR_VERSION,
     ) -> None:
         self.paths = SupervisorPaths(repository.resolve())
         self.poll_seconds = poll_seconds
@@ -237,6 +240,9 @@ class Phase7VmSupervisor:
         self._sleep = sleeper
         self._now = now or (lambda: datetime.now(UTC))
         self.budget_policy = budget_policy
+        self.session = session
+        self.expected_config_hash = expected_config_hash
+        self.supervisor_version = supervisor_version
 
     def _timestamp(self) -> str:
         return self._now().astimezone(UTC).isoformat()
@@ -257,18 +263,18 @@ class Phase7VmSupervisor:
 
     def _state(self, status: SupervisorStatus, **fields: Any) -> dict[str, Any]:
         payload = {
-            "supervisor_version": SUPERVISOR_VERSION,
+            "supervisor_version": self.supervisor_version,
             "status": status.value,
             "updated_at": self._timestamp(),
-            "session": SESSION,
-            "configuration_hash": EXPECTED_CONFIG_HASH,
+            "session": self.session,
+            "configuration_hash": self.expected_config_hash,
             **fields,
         }
         _atomic_json(self.paths.state, payload)
         return payload
 
     def _tmux_exists(self) -> bool:
-        return self._command(("tmux", "has-session", "-t", SESSION)).returncode == 0
+        return self._command(("tmux", "has-session", "-t", self.session)).returncode == 0
 
     @staticmethod
     def _is_worker_command(command: str) -> bool:
@@ -351,7 +357,7 @@ class Phase7VmSupervisor:
         return value or None
 
     def _session_contains_workers(self, workers: WorkerSnapshot) -> bool:
-        panes = self._command(("tmux", "list-panes", "-t", SESSION, "-F", "#{pane_pid}"))
+        panes = self._command(("tmux", "list-panes", "-t", self.session, "-F", "#{pane_pid}"))
         if panes.returncode != 0:
             return False
         pane_pids = tuple(line.strip() for line in panes.stdout.splitlines() if line.strip())
@@ -394,7 +400,7 @@ class Phase7VmSupervisor:
                 "new-session",
                 "-d",
                 "-s",
-                SESSION,
+                self.session,
                 "-c",
                 str(self.paths.repository),
                 command,
@@ -481,7 +487,7 @@ class Phase7VmSupervisor:
             if "Traceback" in line or "ERROR" in line or "Error" in line
         ][-50:]
         return {
-            "supervisor_version": SUPERVISOR_VERSION,
+            "supervisor_version": self.supervisor_version,
             "status": SupervisorStatus.BLOCKED.value,
             "blocked_at": self._timestamp(),
             "reason": reason,
@@ -568,13 +574,13 @@ class Phase7VmSupervisor:
         self._state(SupervisorStatus.BUDGET_STOPPED, **fields)
         forced = False
         if self._tmux_exists():
-            self._command(("tmux", "send-keys", "-t", SESSION, "C-c"))
+            self._command(("tmux", "send-keys", "-t", self.session, "C-c"))
             for _ in range(12):
                 if not self._tmux_exists():
                     break
                 self._sleep(5.0)
             if self._tmux_exists():
-                self._command(("tmux", "kill-session", "-t", SESSION))
+                self._command(("tmux", "kill-session", "-t", self.session))
                 forced = True
         exit_code = self._read_exit_code() if workers.pids else None
         self._state(
@@ -648,7 +654,7 @@ class Phase7VmSupervisor:
             and progress.get("worker_status") == "COMPLETE"
             and progress.get("stage") == "complete"
             and progress.get("last_event") == "phase7_final_summary"
-            and progress.get("configuration_hash") == EXPECTED_CONFIG_HASH
+            and progress.get("configuration_hash") == self.expected_config_hash
             and progress.get("code_commit") == self._git_head()
             and progress.get("prospective_holdout_status") == "LOCKED_UNUSED"
             and progress.get("prospective_holdout_used") is False
@@ -733,7 +739,7 @@ class Phase7VmSupervisor:
         workers = self._worker_snapshot()
         if existing:
             if workers.logical_count != 1 or not self._session_contains_workers(workers):
-                self._command(("tmux", "kill-session", "-t", SESSION))
+                self._command(("tmux", "kill-session", "-t", self.session))
                 self._mark_blocked(
                     "existing session does not contain exactly one owned worker", None
                 )
@@ -772,7 +778,7 @@ class Phase7VmSupervisor:
             if workers.logical_count > 1 or (
                 workers.logical_count == 1 and not self._session_contains_workers(workers)
             ):
-                self._command(("tmux", "kill-session", "-t", SESSION))
+                self._command(("tmux", "kill-session", "-t", self.session))
                 reason = (
                     "duplicate Phase 7 workers detected"
                     if workers.logical_count > 1
