@@ -188,9 +188,106 @@ def _atr_pct(
     return _safe_divide(atr, close)
 
 
+_PAIR_STATS_VAR_TOL = 1e-8
+
+
 def _pair_stats(
     values: np.ndarray, anchor: np.ndarray, window: int
 ) -> tuple[np.ndarray, np.ndarray]:
+    """Rolling beta/correlation of ``values`` against ``anchor``.
+
+    Vectorized equivalent of :func:`_pair_stats_reference` (kept for
+    equivalence tests). Exact semantics:
+
+    - output is NaN until ``window`` full rows are available;
+    - every row in the window must be finite, otherwise NaN;
+    - skipped when the anchor has zero (ddof=1) variance or either series
+      is constant inside the window;
+    - beta = cov(x, y, ddof=1) / var(y, ddof=1);
+    - correlation = cov(x, y, ddof=1) / sqrt(var(x, ddof=1) * var(y, ddof=1)).
+    """
+    count = len(values)
+    correlation = np.full(count, np.nan)
+    beta = np.full(count, np.nan)
+    if count < window or window <= 1:
+        return correlation, beta
+    finite_x = np.isfinite(values)
+    finite_y = np.isfinite(anchor)
+    cumulative_x = np.concatenate(([0], np.cumsum(finite_x)))
+    cumulative_y = np.concatenate(([0], np.cumsum(finite_y)))
+    # A window ending at index i is fully finite when the finite-count
+    # delta over [i-window+1, i] equals the window length.
+    valid = np.zeros(count, dtype=bool)
+    valid[window - 1 :] = (cumulative_x[window:] - cumulative_x[: count - window + 1] == window) & (
+        cumulative_y[window:] - cumulative_y[: count - window + 1] == window
+    )
+    if not valid.any():
+        return correlation, beta
+    clean_x = np.where(finite_x, values, 0.0)
+    clean_y = np.where(finite_y, anchor, 0.0)
+    # Extended-precision cumulative sums: window sums are differences of
+    # partial sums, so a large constant block in either series would otherwise
+    # erode float64 precision for every later window (~eps * partial-magnitude
+    # per window). longdouble (80-bit on Linux x86-64) keeps the error ~1000x
+    # below float64. On platforms where longdouble == float64 the code still
+    # works correctly, just with float64 precision.
+    extended = np.longdouble
+    zero = extended(0)
+    sums = {
+        "x": np.concatenate(([zero], np.cumsum(clean_x, dtype=extended))),
+        "y": np.concatenate(([zero], np.cumsum(clean_y, dtype=extended))),
+        "xx": np.concatenate(([zero], np.cumsum(clean_x * clean_x, dtype=extended))),
+        "yy": np.concatenate(([zero], np.cumsum(clean_y * clean_y, dtype=extended))),
+        "xy": np.concatenate(([zero], np.cumsum(clean_x * clean_y, dtype=extended))),
+    }
+    # Window sums for every ending index i >= window-1, vectorized over i.
+    sx = sums["x"][window:] - sums["x"][: count - window + 1]
+    sy = sums["y"][window:] - sums["y"][: count - window + 1]
+    sxx = sums["xx"][window:] - sums["xx"][: count - window + 1]
+    syy = sums["yy"][window:] - sums["yy"][: count - window + 1]
+    sxy = sums["xy"][window:] - sums["xy"][: count - window + 1]
+    variance_x = (sxx - sx * sx / window) / (window - 1)
+    variance_y = (syy - sy * sy / window) / (window - 1)
+    covariance = (sxy - sx * sy / window) / (window - 1)
+    eligible = valid[window - 1 :] & (variance_x > 0) & (variance_y > 0)
+    if not eligible.any():
+        return correlation, beta
+    # Near-zero variance windows are ill-conditioned for the vectorized sums
+    # and can disagree with the reference at the float-epsilon level. Recompute
+    # those exactly with the reference algorithm so the two implementations
+    # agree bit-for-bit there.
+    suspicious = eligible & (
+        (variance_x <= _PAIR_STATS_VAR_TOL) | (variance_y <= _PAIR_STATS_VAR_TOL)
+    )
+    if suspicious.any():
+        for relative in np.flatnonzero(suspicious):
+            index = window - 1 + int(relative)
+            x = values[index - window + 1 : index + 1]
+            y = anchor[index - window + 1 : index + 1]
+            variance = float(np.var(y, ddof=1))
+            if variance <= 0 or np.ptp(x) == 0 or np.ptp(y) == 0:
+                eligible[int(relative)] = False
+                continue
+            covariance_exact = float(np.cov(x, y, ddof=1)[0, 1])
+            beta[index] = covariance_exact / variance
+            correlation[index] = float(np.corrcoef(x, y)[0, 1])
+    plain = eligible & ~suspicious
+    if plain.any():
+        beta[window - 1 :][plain] = covariance[plain] / variance_y[plain]
+        correlation[window - 1 :][plain] = covariance[plain] / np.sqrt(
+            variance_x[plain] * variance_y[plain]
+        )
+    return correlation, beta
+
+
+def _pair_stats_reference(
+    values: np.ndarray, anchor: np.ndarray, window: int
+) -> tuple[np.ndarray, np.ndarray]:
+    """Original per-index loop implementation of :func:`_pair_stats`.
+
+    Retained exclusively as the equivalence-test reference for the
+    vectorized production implementation.
+    """
     correlation = np.full(len(values), np.nan)
     beta = np.full(len(values), np.nan)
     for index in range(window - 1, len(values)):
