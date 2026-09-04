@@ -10,6 +10,7 @@ from typing import Any
 
 import numpy as np
 import pyarrow as pa
+import pyarrow.compute as pc
 import pyarrow.dataset as ds
 
 from crypto_ai.data.ingestion.manifest import read_manifest
@@ -42,7 +43,13 @@ from crypto_ai.phase7.metrics import (
     evaluate_predictions,
     time_concentration,
 )
-from crypto_ai.phase7.models import fit_architecture, load_model, save_model
+from crypto_ai.phase7.models import (
+    PreparedArchitectureInputs,
+    fit_architecture,
+    load_model,
+    prepare_architecture_inputs,
+    save_model,
+)
 from crypto_ai.phase7.progress import ProgressReporter, oos_trade_summary
 from crypto_ai.phase7.registry import SymbolRegistry
 from crypto_ai.phase7.segments import CausalDataGap
@@ -107,6 +114,19 @@ class ExperimentSpec:
     target_type: str
     explicit_symbol_id: bool = False
     symbol_balanced: bool = False
+
+
+@dataclass(frozen=True, slots=True)
+class PreparedTrainingSegments:
+    fold_id: str
+    research_view: str
+    feature_columns: tuple[str, ...]
+    target_column: str
+    train: pa.Table
+    validation: pa.Table
+    calibration_a: pa.Table
+    calibration_b: pa.Table
+    model_inputs: PreparedArchitectureInputs
 
 
 def phase7_experiment_specs(config: Phase7Config) -> tuple[ExperimentSpec, ...]:
@@ -197,9 +217,12 @@ def _load_fold_rows(
     manifest: dict[str, Any],
     plan: FoldPlan,
     horizon_minutes: int,
+    *,
+    dataset: ds.Dataset | None = None,
 ) -> pa.Table:
-    paths = [record["path"] for record in manifest["partition_files"]]
-    dataset = ds.dataset(paths, format="parquet")
+    if dataset is None:
+        paths = [record["path"] for record in manifest["partition_files"]]
+        dataset = ds.dataset(paths, format="parquet")
     condition = (
         (ds.field("feature_time") >= pa.scalar(plan.train_start))
         & (ds.field("feature_time") < pa.scalar(plan.test_end))
@@ -211,11 +234,50 @@ def _load_fold_rows(
 
 
 def _finite(table: pa.Table, columns: tuple[str, ...], target: str) -> pa.Table:
-    mask = np.ones(table.num_rows, dtype=bool)
-    for name in columns + (target,):
-        values = np.asarray(table.column(name).combine_chunks().to_pylist(), dtype=np.float64)
-        mask &= np.isfinite(values)
-    return table.filter(pa.array(mask))
+    names = columns + (target,)
+    mask: pa.Array | pa.ChunkedArray = pc.is_finite(table.column(names[0]))
+    for name in names[1:]:
+        mask = pc.and_(mask, pc.is_finite(table.column(name)))
+    return table.filter(pc.fill_null(mask, False))
+
+
+def _prepare_training_segments(
+    fold: MultiAssetFoldData,
+    feature_columns: tuple[str, ...],
+    target: str,
+) -> PreparedTrainingSegments:
+    for segment_name, segment in (
+        ("TRAIN", fold.train),
+        ("VALIDATION", fold.validation),
+        ("CAL_A", fold.calibration_a),
+        ("CAL_B", fold.calibration_b),
+    ):
+        if "cross_sectional_context_scope" not in segment.column_names:
+            raise ValueError(f"{segment_name} is missing fold-bound cross-sectional context")
+        scopes = set(segment.column("cross_sectional_context_scope").to_pylist())
+        if scopes != {"FOLD_ACTIVE_SYMBOLS"}:
+            raise ValueError(f"{segment_name} contains non-fold cross-sectional context: {scopes}")
+    train = _finite(fold.train, feature_columns, target)
+    validation = _finite(fold.validation, feature_columns, target)
+    calibration_a = _finite(fold.calibration_a, feature_columns, target)
+    calibration_b = _finite(fold.calibration_b, feature_columns, target)
+    return PreparedTrainingSegments(
+        fold_id=fold.plan.fold_id,
+        research_view=fold.research_view,
+        feature_columns=feature_columns,
+        target_column=target,
+        train=train,
+        validation=validation,
+        calibration_a=calibration_a,
+        calibration_b=calibration_b,
+        model_inputs=prepare_architecture_inputs(
+            train,
+            validation,
+            feature_columns=feature_columns,
+            target_column=target,
+            eligibility_calibration_a=calibration_a,
+        ),
+    )
 
 
 def _prediction_target(spec: ExperimentSpec) -> str:
@@ -500,24 +562,23 @@ def _run_one(
     reporter: ProgressReporter | None = None,
     fold_position: int = 1,
     folds_total: int = 1,
+    prepared_segments: PreparedTrainingSegments | None = None,
+    reusable_models: dict[tuple[Any, ...], Any] | None = None,
 ) -> tuple[dict[str, Any], list[Path]]:
     experiment_started = time.monotonic()
-    for segment_name, segment in (
-        ("TRAIN", fold.train),
-        ("VALIDATION", fold.validation),
-        ("CAL_A", fold.calibration_a),
-        ("CAL_B", fold.calibration_b),
-    ):
-        if "cross_sectional_context_scope" not in segment.column_names:
-            raise ValueError(f"{segment_name} is missing fold-bound cross-sectional context")
-        scopes = set(segment.column("cross_sectional_context_scope").to_pylist())
-        if scopes != {"FOLD_ACTIVE_SYMBOLS"}:
-            raise ValueError(f"{segment_name} contains non-fold cross-sectional context: {scopes}")
     target = _prediction_target(spec)
-    train = _finite(fold.train, feature_columns, target)
-    validation = _finite(fold.validation, feature_columns, target)
-    calibration_a = _finite(fold.calibration_a, feature_columns, target)
-    calibration_b = _finite(fold.calibration_b, feature_columns, target)
+    prepared = prepared_segments or _prepare_training_segments(fold, feature_columns, target)
+    if (
+        prepared.fold_id != fold.plan.fold_id
+        or prepared.research_view != fold.research_view
+        or prepared.feature_columns != feature_columns
+        or prepared.target_column != target
+    ):
+        raise ValueError("Prepared Phase 7 training segments do not match the experiment")
+    train = prepared.train
+    validation = prepared.validation
+    calibration_a = prepared.calibration_a
+    calibration_b = prepared.calibration_b
     if reporter is not None:
         reporter.training_started(
             fold_position=fold_position,
@@ -544,6 +605,18 @@ def _run_one(
         if reporter is not None
         else nullcontext()
     )
+    reuse_key = (
+        fold.plan.fold_id,
+        fold.research_view,
+        spec.horizon_minutes,
+        target,
+        feature_columns,
+    )
+    reusable_global = (
+        reusable_models.get(reuse_key)
+        if reusable_models is not None and spec.architecture == "H0"
+        else None
+    )
     with fit_context:
         model = fit_architecture(
             spec.architecture,  # type: ignore[arg-type]
@@ -553,12 +626,23 @@ def _run_one(
             target_column=target,
             config=config.models,
             model_threads=config.resources.model_threads,
+            estimator_workers=config.resources.max_workers,
             cluster_mapping=fold.cluster_mapping,
             explicit_symbol_id=spec.explicit_symbol_id,
             symbol_balanced=spec.symbol_balanced,
             hybrid_calibration=validation if spec.architecture == "H0" else None,
             eligibility_calibration_a=calibration_a,
+            prepared_inputs=prepared.model_inputs,
+            reusable_global=reusable_global,
         )
+    if (
+        reusable_models is not None
+        and spec.architecture == "G0"
+        and not spec.explicit_symbol_id
+        and spec.symbol_balanced
+        and spec.feature_group == "A6"
+    ):
+        reusable_models[reuse_key] = model
     cal_a_raw, cal_a_covered = model.predict(calibration_a)
     cal_a_table, cal_a_predictions = _subset_covered(calibration_a, cal_a_raw, cal_a_covered)
     calibrator, calibration_report = fit_calibrator(
@@ -704,6 +788,8 @@ def run_phase7_training(
     config.assert_cloud_execution_allowed()
     source_identity = training_source_identity()
     manifest = _load_gold_manifest(gold_manifest_path)
+    gold_paths = [record["path"] for record in manifest["partition_files"]]
+    gold_dataset = ds.dataset(gold_paths, format="parquet") if gold_paths else None
     groups = {name: tuple(values) for name, values in manifest["feature_groups"].items()}
     folds = plan_folds(
         config.data_start,
@@ -717,7 +803,15 @@ def run_phase7_training(
     gold_manifest_checksum = file_sha256(gold_manifest_path.resolve())
     for fold_position, plan in enumerate(folds, start=1):
         horizons = sorted({spec.horizon_minutes for spec in specs})
-        fold_tables = {horizon: _load_fold_rows(manifest, plan, horizon) for horizon in horizons}
+        fold_tables = {
+            horizon: _load_fold_rows(
+                manifest,
+                plan,
+                horizon,
+                **({"dataset": gold_dataset} if gold_dataset is not None else {}),
+            )
+            for horizon in horizons
+        }
         for research_view in RESEARCH_VIEWS:
             try:
                 sliced = {
@@ -796,6 +890,9 @@ def run_phase7_training(
             for symbol in reference_fold.eligibility_manifest["eligible_symbols"]:
                 key = f"{research_view}:{symbol}"
                 eligible_fold_ids_by_symbol.setdefault(key, set()).add(plan.fold_id)
+            prepared_cache_key: tuple[Any, ...] | None = None
+            prepared_cache: PreparedTrainingSegments | None = None
+            reusable_models: dict[tuple[Any, ...], Any] = {}
             for spec_position, spec in enumerate(specs, start=1):
                 stage = f"models/{research_view.lower()}/{plan.fold_id}/{spec.name}"
                 output = run_root / stage
@@ -856,17 +953,37 @@ def run_phase7_training(
                     f"experiment {spec_position}/{len(specs)} {spec.name}",
                     flush=True,
                 )
+                target = _prediction_target(spec)
+                feature_columns = groups[spec.feature_group]
+                next_prepared_key = (
+                    plan.fold_id,
+                    research_view,
+                    spec.horizon_minutes,
+                    target,
+                    feature_columns,
+                )
+                if prepared_cache_key != next_prepared_key:
+                    prepared_cache = _prepare_training_segments(
+                        fold_data,
+                        feature_columns,
+                        target,
+                    )
+                    prepared_cache_key = next_prepared_key
+                if prepared_cache is None:
+                    raise AssertionError("Phase 7 prepared-segment cache was not initialized")
                 try:
                     report, files = _run_one(
                         spec,
                         fold_data,
-                        groups[spec.feature_group],
+                        feature_columns,
                         config,
                         output,
                         checkpoint_identity,
                         reporter=reporter,
                         fold_position=fold_position,
                         folds_total=len(folds),
+                        prepared_segments=prepared_cache,
+                        reusable_models=reusable_models,
                     )
                 except IneligibleFoldError as exc:
                     report = {

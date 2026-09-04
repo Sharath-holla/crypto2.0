@@ -101,7 +101,7 @@
     "src/crypto_ai/phase7/folds.py": "2616071894bee6b1b8e89fb40562e7c7e0d87fb9fe97f28674c07df4c139fe9a",
     "src/crypto_ai/phase7/gold.py": "78b7e0496bfc7168277e65b371143ba80b8141ebbc21d67cbbb79ed61820daf5",
     "src/crypto_ai/phase7/metrics.py": "30ae63598ef80ab509f37efb3da65ce033953b0c4e87118e48221bad8e3cf47e",
-    "src/crypto_ai/phase7/models.py": "154a5341de1eabc369b38c6265b4a2d6fd9c4be8e148a91ca1158f464d912b8d",
+    "src/crypto_ai/phase7/models.py": "51444b70f14703384f990c13f6b4fc7f7e7faee284473eb625e4289a725789a6",
     "src/crypto_ai/phase7/pipeline.py": "e4873727a836b8250ddec07325d77f2318acd87f506d55cee44bc2964f382e61",
     "src/crypto_ai/phase7/progress.py": "02a9c4594cf75cad1662cf69a12e0af2320ea61a5997c7610953a9814c75614d",
     "src/crypto_ai/phase7/quality.py": "7d00f78983144ed40d0bbbeb073b5002ba52039eea3bb3621cf276132ddb5518",
@@ -110,7 +110,7 @@
     "src/crypto_ai/phase7/segments.py": "e2ea9d57398650e5366165098c86d19f356f70f15e132af47d7ea6207c90b5c9",
     "src/crypto_ai/phase7/sources.py": "9ad4eb11f6eff62ced0492dcd324ad5c95cc7018bae5b5a0ba8cf3294cbe52bd",
     "src/crypto_ai/phase7/targets.py": "93c5688f9906c379009102a56fb282e5bf99a622af70e38e1e50169d19095b78",
-    "src/crypto_ai/phase7/training.py": "d80a2d4094a7ba14657fa175468e9f80d9e25c5e1978b3c50b9c83900f98350a",
+    "src/crypto_ai/phase7/training.py": "0120914fc4c5cfba28ae2b6b808063d2796b8e4fd94fa404897d27f0af2ee774",
     "src/crypto_ai/phase7/universe.py": "e35b0dbcc802bcdb837dc34ae02a265c7fc3a5c16c609365e86e5b93b4df24db"
   }
 }

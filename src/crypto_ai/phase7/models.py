@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 import uuid
+from concurrent.futures import Future, ThreadPoolExecutor
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Literal
@@ -17,11 +18,17 @@ Architecture = Literal["G0", "C0", "P0", "H0"]
 
 
 def _symbols(table: pa.Table) -> np.ndarray:
-    return np.asarray(table.column("symbol").combine_chunks().to_pylist(), dtype=object)
+    return np.asarray(
+        table.column("symbol").combine_chunks().to_numpy(zero_copy_only=False),
+        dtype=object,
+    )
 
 
 def _floats(table: pa.Table, name: str) -> np.ndarray:
-    return np.asarray(table.column(name).combine_chunks().to_pylist(), dtype=np.float64)
+    return np.asarray(
+        table.column(name).combine_chunks().to_numpy(zero_copy_only=False),
+        dtype=np.float64,
+    )
 
 
 def _matrix(table: pa.Table, columns: tuple[str, ...]) -> np.ndarray:
@@ -32,6 +39,49 @@ def _matrix(table: pa.Table, columns: tuple[str, ...]) -> np.ndarray:
     if matrix.ndim != 2 or not np.all(np.isfinite(matrix)):
         raise ValueError("Phase 7 model features must be a finite matrix")
     return matrix
+
+
+@dataclass(frozen=True, slots=True)
+class PreparedArchitectureInputs:
+    """Reusable, target-specific NumPy views for one fold/spec input shape."""
+
+    feature_columns: tuple[str, ...]
+    target_column: str
+    train_x: np.ndarray
+    validation_x: np.ndarray
+    train_y: np.ndarray
+    validation_y: np.ndarray
+    train_symbols: np.ndarray
+    validation_symbols: np.ndarray
+    calibration_symbols: np.ndarray
+
+
+def prepare_architecture_inputs(
+    train: pa.Table,
+    validation: pa.Table,
+    *,
+    feature_columns: tuple[str, ...],
+    target_column: str,
+    eligibility_calibration_a: pa.Table | None = None,
+) -> PreparedArchitectureInputs:
+    prepared = PreparedArchitectureInputs(
+        feature_columns=feature_columns,
+        target_column=target_column,
+        train_x=_matrix(train, feature_columns),
+        validation_x=_matrix(validation, feature_columns),
+        train_y=_floats(train, target_column),
+        validation_y=_floats(validation, target_column),
+        train_symbols=_symbols(train),
+        validation_symbols=_symbols(validation),
+        calibration_symbols=(
+            _symbols(eligibility_calibration_a)
+            if eligibility_calibration_a is not None
+            else np.asarray([], dtype=object)
+        ),
+    )
+    if not np.all(np.isfinite(prepared.train_y)) or not np.all(np.isfinite(prepared.validation_y)):
+        raise ValueError("Phase 7 model targets must be finite")
+    return prepared
 
 
 def symbol_balanced_weights(symbols: np.ndarray) -> np.ndarray:
@@ -112,6 +162,58 @@ def _fit(
     return estimator
 
 
+def _fit_partitioned_estimators(
+    jobs: list[tuple[str, np.ndarray, np.ndarray, np.ndarray | None]],
+    *,
+    train_x: np.ndarray,
+    train_y: np.ndarray,
+    validation_x: np.ndarray,
+    validation_y: np.ndarray,
+    config: ModelConfig,
+    model_threads: int,
+    estimator_workers: int,
+) -> dict[str, Any]:
+    """Fit independent cluster/per-coin estimators under one CPU budget."""
+
+    def run(
+        train_mask: np.ndarray,
+        validation_mask: np.ndarray,
+        sample_weight: np.ndarray | None,
+    ) -> Any:
+        return _fit(
+            train_x[train_mask],
+            train_y[train_mask],
+            validation_x[validation_mask],
+            validation_y[validation_mask],
+            config=config,
+            model_threads=model_threads,
+            sample_weight=sample_weight,
+        )
+
+    if estimator_workers == 1 or len(jobs) <= 1:
+        return {
+            key: run(train_mask, validation_mask, sample_weight)
+            for key, train_mask, validation_mask, sample_weight in jobs
+        }
+    results: dict[str, Any] = {}
+    with ThreadPoolExecutor(
+        max_workers=min(estimator_workers, len(jobs)),
+        thread_name_prefix="phase7-estimator",
+    ) as executor:
+        futures: list[tuple[str, Future[Any]]] = [
+            (
+                key,
+                executor.submit(run, train_mask, validation_mask, sample_weight),
+            )
+            for key, train_mask, validation_mask, sample_weight in jobs
+        ]
+        # Resolve in canonical job order so model serialization and metadata do
+        # not inherit completion-order nondeterminism.
+        for key, future in futures:
+            results[key] = future.result()
+    return results
+
+
 @dataclass(slots=True)
 class Phase7ModelBundle:
     architecture: Architecture
@@ -168,10 +270,6 @@ class Phase7ModelBundle:
         return predicted, covered
 
 
-def _subset(table: pa.Table, mask: np.ndarray) -> pa.Table:
-    return table.filter(pa.array(mask))
-
-
 def fit_architecture(
     architecture: Architecture,
     train: pa.Table,
@@ -181,51 +279,94 @@ def fit_architecture(
     target_column: str,
     config: ModelConfig,
     model_threads: int,
+    estimator_workers: int = 1,
     cluster_mapping: dict[str, int] | None = None,
     explicit_symbol_id: bool = False,
     symbol_balanced: bool = False,
     hybrid_calibration: pa.Table | None = None,
     eligibility_calibration_a: pa.Table | None = None,
+    prepared_inputs: PreparedArchitectureInputs | None = None,
+    reusable_global: Phase7ModelBundle | None = None,
 ) -> Phase7ModelBundle:
     if architecture not in {"G0", "C0", "P0", "H0"}:
         raise ValueError(f"unknown Phase 7 architecture: {architecture}")
-    cluster_mapping = dict(cluster_mapping or {})
-    train_symbols = _symbols(train)
-    validation_symbols = _symbols(validation)
-    calibration_symbols = (
-        _symbols(eligibility_calibration_a)
-        if eligibility_calibration_a is not None
-        else np.asarray([], dtype=object)
+    if model_threads < 1 or estimator_workers < 1:
+        raise ValueError("Phase 7 model thread and worker counts must be positive")
+    logical_cpus = os.cpu_count() or model_threads
+    pooled_model_threads = min(logical_cpus, model_threads * estimator_workers)
+    partition_workers = max(
+        1,
+        min(estimator_workers, max(1, logical_cpus // model_threads)),
     )
-    train_x = _matrix(train, feature_columns)
-    validation_x = _matrix(validation, feature_columns)
-    train_y = _floats(train, target_column)
-    validation_y = _floats(validation, target_column)
-    if not np.all(np.isfinite(train_y)) or not np.all(np.isfinite(validation_y)):
-        raise ValueError("Phase 7 model targets must be finite")
+    cluster_mapping = dict(cluster_mapping or {})
+    prepared = prepared_inputs or prepare_architecture_inputs(
+        train,
+        validation,
+        feature_columns=feature_columns,
+        target_column=target_column,
+        eligibility_calibration_a=eligibility_calibration_a,
+    )
+    if (
+        prepared.feature_columns != feature_columns
+        or prepared.target_column != target_column
+        or prepared.train_x.shape != (train.num_rows, len(feature_columns))
+        or prepared.validation_x.shape != (validation.num_rows, len(feature_columns))
+        or len(prepared.train_y) != train.num_rows
+        or len(prepared.validation_y) != validation.num_rows
+        or len(prepared.train_symbols) != train.num_rows
+        or len(prepared.validation_symbols) != validation.num_rows
+        or len(prepared.calibration_symbols)
+        != (eligibility_calibration_a.num_rows if eligibility_calibration_a is not None else 0)
+    ):
+        raise ValueError("Prepared Phase 7 model inputs do not match the requested tables")
+    train_symbols = prepared.train_symbols
+    validation_symbols = prepared.validation_symbols
+    calibration_symbols = prepared.calibration_symbols
+    train_x = prepared.train_x
+    validation_x = prepared.validation_x
+    train_y = prepared.train_y
+    validation_y = prepared.validation_y
     weights = symbol_balanced_weights(train_symbols) if symbol_balanced else None
     estimators: dict[str, Any] = {}
     per_symbol_eligibility: dict[str, dict[str, Any]] = {}
     symbol_levels: tuple[str, ...] = ()
+    reused_global_identity: str | None = None
     if architecture in {"G0", "H0"}:
         symbol_levels = tuple(sorted(str(value) for value in np.unique(train_symbols)))
         if explicit_symbol_id:
             train_x = _append_symbol_identity(train_x, train_symbols, symbol_levels)
             validation_x = _append_symbol_identity(validation_x, validation_symbols, symbol_levels)
-        estimators["global"] = _fit(
-            train_x,
-            train_y,
-            validation_x,
-            validation_y,
-            config=config,
-            model_threads=model_threads,
-            sample_weight=weights,
-        )
+        if reusable_global is not None:
+            if (
+                architecture != "H0"
+                or reusable_global.architecture != "G0"
+                or reusable_global.feature_columns != feature_columns
+                or reusable_global.target_column != target_column
+                or reusable_global.explicit_symbol_id != explicit_symbol_id
+                or reusable_global.symbol_balanced != symbol_balanced
+                or reusable_global.cluster_mapping != cluster_mapping
+                or reusable_global.symbol_levels != symbol_levels
+                or set(reusable_global.estimators) != {"global"}
+            ):
+                raise ValueError("Reusable global estimator is incompatible with H0")
+            estimators["global"] = reusable_global.estimators["global"]
+            reused_global_identity = str(reusable_global.metadata["model_identity"])
+        else:
+            estimators["global"] = _fit(
+                train_x,
+                train_y,
+                validation_x,
+                validation_y,
+                config=config,
+                model_threads=pooled_model_threads,
+                sample_weight=weights,
+            )
         for symbol in sorted(str(value) for value in np.unique(train_symbols)):
             per_symbol_eligibility[symbol] = {"status": "GLOBAL_COVERED"}
     elif architecture == "C0":
         if not cluster_mapping:
             raise ValueError("C0 requires a frozen TRAIN-only cluster mapping")
+        cluster_jobs: list[tuple[str, np.ndarray, np.ndarray, np.ndarray | None]] = []
         for cluster in sorted(set(cluster_mapping.values())):
             train_mask = np.asarray(
                 [cluster_mapping.get(str(symbol)) == cluster for symbol in train_symbols]
@@ -248,19 +389,25 @@ def fit_architecture(
             cluster_weights = (
                 symbol_balanced_weights(train_symbols[train_mask]) if symbol_balanced else None
             )
-            estimators[f"cluster:{cluster}"] = _fit(
-                _matrix(_subset(train, train_mask), feature_columns),
-                train_y[train_mask],
-                _matrix(_subset(validation, validation_mask), feature_columns),
-                validation_y[validation_mask],
-                config=config,
-                model_threads=model_threads,
-                sample_weight=cluster_weights,
-            )
+            key = f"cluster:{cluster}"
+            cluster_jobs.append((key, train_mask, validation_mask, cluster_weights))
             for symbol, assigned_cluster in cluster_mapping.items():
                 if assigned_cluster == cluster:
                     per_symbol_eligibility[symbol] = {"status": "CLUSTER_COVERED"}
+        estimators.update(
+            _fit_partitioned_estimators(
+                cluster_jobs,
+                train_x=train_x,
+                train_y=train_y,
+                validation_x=validation_x,
+                validation_y=validation_y,
+                config=config,
+                model_threads=model_threads,
+                estimator_workers=partition_workers,
+            )
+        )
     else:
+        symbol_jobs: list[tuple[str, np.ndarray, np.ndarray, np.ndarray | None]] = []
         for symbol in sorted(str(value) for value in np.unique(train_symbols)):
             train_mask = train_symbols == symbol
             validation_mask = validation_symbols == symbol
@@ -284,29 +431,37 @@ def fit_architecture(
                     "calibration_a_rows": calibration_a_count,
                 }
                 continue
-            estimators[f"symbol:{symbol}"] = _fit(
-                _matrix(_subset(train, train_mask), feature_columns),
-                train_y[train_mask],
-                _matrix(_subset(validation, validation_mask), feature_columns),
-                validation_y[validation_mask],
-                config=config,
-                model_threads=model_threads,
-                sample_weight=None,
-            )
+            symbol_jobs.append((f"symbol:{symbol}", train_mask, validation_mask, None))
             per_symbol_eligibility[symbol] = {
                 "status": "PER_COIN_ELIGIBLE",
                 "train_rows": train_count,
                 "validation_rows": validation_count,
                 "calibration_a_rows": calibration_a_count,
             }
+        estimators.update(
+            _fit_partitioned_estimators(
+                symbol_jobs,
+                train_x=train_x,
+                train_y=train_y,
+                validation_x=validation_x,
+                validation_y=validation_y,
+                config=config,
+                model_threads=model_threads,
+                estimator_workers=partition_workers,
+            )
+        )
     if not estimators:
         raise IneligibleFoldError(f"{architecture} produced no eligible estimators")
     symbol_corrections: dict[str, float] = {}
     cluster_corrections: dict[int, float] = {}
     hybrid_symbol_eligibility: dict[str, dict[str, Any]] = {}
     if architecture == "H0" and hybrid_calibration is not None:
-        calibration_x = _matrix(hybrid_calibration, feature_columns)
-        calibration_symbols = _symbols(hybrid_calibration)
+        if hybrid_calibration is validation:
+            calibration_x = prepared.validation_x
+            calibration_symbols = prepared.validation_symbols
+        else:
+            calibration_x = _matrix(hybrid_calibration, feature_columns)
+            calibration_symbols = _symbols(hybrid_calibration)
         if explicit_symbol_id:
             calibration_x = _append_symbol_identity(
                 calibration_x, calibration_symbols, symbol_levels
@@ -368,6 +523,13 @@ def fit_architecture(
         "seed": config.seed,
     }
     metadata["model_identity"] = stable_hash(metadata)
+    metadata["fit_execution"] = {
+        "model_threads_per_estimator": model_threads,
+        "requested_estimator_workers": estimator_workers,
+        "effective_partition_workers": partition_workers,
+        "pooled_model_threads": pooled_model_threads,
+        "global_estimator_reused_from_model_identity": reused_global_identity,
+    }
     return Phase7ModelBundle(
         architecture=architecture,
         feature_columns=feature_columns,

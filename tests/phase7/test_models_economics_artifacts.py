@@ -19,7 +19,11 @@ from crypto_ai.phase7.features import generate_multiasset_features
 from crypto_ai.phase7.fixtures import synthetic_candles, synthetic_descriptors, synthetic_registry
 from crypto_ai.phase7.folds import fit_train_only_clusters
 from crypto_ai.phase7.gold import build_multiasset_gold_chunks
-from crypto_ai.phase7.models import fit_architecture, symbol_balanced_weights
+from crypto_ai.phase7.models import (
+    fit_architecture,
+    prepare_architecture_inputs,
+    symbol_balanced_weights,
+)
 from crypto_ai.phase7.targets import generate_multiasset_targets
 
 
@@ -73,6 +77,134 @@ def test_all_four_model_architectures_fit_and_predict() -> None:
         predicted, covered = model.predict(validation)
         assert np.all(covered)
         assert np.all(np.isfinite(predicted))
+
+
+def test_parallel_partition_fits_and_hybrid_reuse_match_serial_results() -> None:
+    train, validation, mapping = _model_tables()
+    config = ModelConfig(
+        minimum_train_rows_per_coin=100,
+        minimum_validation_rows_per_coin=20,
+        minimum_calibration_rows_per_coin=20,
+        n_estimators=20,
+        early_stopping_rounds=5,
+        min_child_samples=5,
+    )
+    prepared = prepare_architecture_inputs(
+        train,
+        validation,
+        feature_columns=("f1", "f2"),
+        target_column="target",
+        eligibility_calibration_a=validation,
+    )
+    for architecture in ("C0", "P0"):
+        serial = fit_architecture(
+            architecture,
+            train,
+            validation,
+            feature_columns=("f1", "f2"),
+            target_column="target",
+            config=config,
+            model_threads=1,
+            estimator_workers=1,
+            cluster_mapping=mapping,
+            symbol_balanced=True,
+            eligibility_calibration_a=validation,
+            prepared_inputs=prepared,
+        )
+        parallel = fit_architecture(
+            architecture,
+            train,
+            validation,
+            feature_columns=("f1", "f2"),
+            target_column="target",
+            config=config,
+            model_threads=1,
+            estimator_workers=2,
+            cluster_mapping=mapping,
+            symbol_balanced=True,
+            eligibility_calibration_a=validation,
+            prepared_inputs=prepared,
+        )
+        serial_prediction, serial_covered = serial.predict(validation)
+        parallel_prediction, parallel_covered = parallel.predict(validation)
+        np.testing.assert_array_equal(parallel_covered, serial_covered)
+        np.testing.assert_array_equal(parallel_prediction, serial_prediction)
+        assert parallel.metadata["model_identity"] == serial.metadata["model_identity"]
+
+    global_serial = fit_architecture(
+        "G0",
+        train,
+        validation,
+        feature_columns=("f1", "f2"),
+        target_column="target",
+        config=config,
+        model_threads=1,
+        estimator_workers=1,
+        cluster_mapping=mapping,
+        symbol_balanced=True,
+        eligibility_calibration_a=validation,
+        prepared_inputs=prepared,
+    )
+    global_model = fit_architecture(
+        "G0",
+        train,
+        validation,
+        feature_columns=("f1", "f2"),
+        target_column="target",
+        config=config,
+        model_threads=1,
+        estimator_workers=2,
+        cluster_mapping=mapping,
+        symbol_balanced=True,
+        eligibility_calibration_a=validation,
+        prepared_inputs=prepared,
+    )
+    global_serial_prediction, global_serial_covered = global_serial.predict(validation)
+    global_parallel_prediction, global_parallel_covered = global_model.predict(validation)
+    np.testing.assert_array_equal(global_parallel_covered, global_serial_covered)
+    np.testing.assert_array_equal(global_parallel_prediction, global_serial_prediction)
+    assert global_model.metadata["model_identity"] == global_serial.metadata["model_identity"]
+    fresh_hybrid = fit_architecture(
+        "H0",
+        train,
+        validation,
+        feature_columns=("f1", "f2"),
+        target_column="target",
+        config=config,
+        model_threads=1,
+        estimator_workers=2,
+        cluster_mapping=mapping,
+        symbol_balanced=True,
+        hybrid_calibration=validation,
+        eligibility_calibration_a=validation,
+        prepared_inputs=prepared,
+    )
+    reused_hybrid = fit_architecture(
+        "H0",
+        train,
+        validation,
+        feature_columns=("f1", "f2"),
+        target_column="target",
+        config=config,
+        model_threads=1,
+        estimator_workers=2,
+        cluster_mapping=mapping,
+        symbol_balanced=True,
+        hybrid_calibration=validation,
+        eligibility_calibration_a=validation,
+        prepared_inputs=prepared,
+        reusable_global=global_model,
+    )
+    fresh_prediction, fresh_covered = fresh_hybrid.predict(validation)
+    reused_prediction, reused_covered = reused_hybrid.predict(validation)
+    np.testing.assert_array_equal(reused_covered, fresh_covered)
+    np.testing.assert_array_equal(reused_prediction, fresh_prediction)
+    assert reused_hybrid.metadata["model_identity"] == fresh_hybrid.metadata["model_identity"]
+    assert reused_hybrid.estimators["global"] is global_model.estimators["global"]
+    assert (
+        reused_hybrid.metadata["fit_execution"]["global_estimator_reused_from_model_identity"]
+        == global_model.metadata["model_identity"]
+    )
 
 
 def test_train_only_clusters_ignore_future_descriptors() -> None:
