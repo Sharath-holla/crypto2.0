@@ -9,6 +9,10 @@ exit_file="${state_root}/worker-exit-code"
 mkdir -p "${state_root}" "$(dirname "${run_log}")"
 cd "${repository}"
 
+# Bound log growth: rotate a large historical log before the worker starts
+# (single writer; never blocks worker startup).
+bash "${repository}/scripts/rotate_phase7_run_log.sh" "${run_log}" || true
+
 set +e
 /home/nssharath123/.local/bin/uv run crypto-ai phase7-research \
   --config configs/phase7/research_v1.toml \

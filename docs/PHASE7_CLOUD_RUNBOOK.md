@@ -210,6 +210,14 @@ uv run crypto-ai phase7-research \
   --resume 2>&1 | tee -a local_artifacts/phase7-cloud-run.log
 ```
 
+> Log growth is bounded: `scripts/run_phase7_worker.sh` invokes
+> `scripts/rotate_phase7_run_log.sh` before each worker start, gzip-rotating
+> a log above 512 MB (`PHASE7_LOG_ROTATE_MB`) into `.1.gz`..`.N.gz`
+> (`PHASE7_LOG_ROTATE_KEEP`, default 2). Rotation is safe by construction
+> (single writer, atomic move, restore on failure) and the historical log is
+> preserved in `gs://crypto-ai-data-83921/artifacts/phase7/backup-*`.
+
+
 Detach with `Ctrl+B`, then `D`. Reattach with:
 
 ```bash
