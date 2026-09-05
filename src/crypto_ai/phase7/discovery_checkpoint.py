@@ -36,6 +36,7 @@ logger = logging.getLogger(__name__)
 
 DISCOVERY_CHECKPOINT_SCHEMA_VERSION = "phase7_discovery_symbol_checkpoint_v1"
 DISCOVERY_ACQUISITION_CONTRACT_VERSION = "phase7_discovery_acquisition_v1"
+FULL_RANGE_ACQUISITION_CONTRACT_VERSION = "phase7_full_range_acquisition_v1"
 ARCHIVE_REST_RECONCILIATION_POLICY_VERSION = "archive_rest_reconciliation_v1"
 ARCHIVE_MISSING_RECONCILIATION_POLICY_VERSION = "archive_missing_official_rest_exact_rows_v1"
 CAUSAL_SEGMENT_POLICY_VERSION = "causal_segment_quarantine_v1"
@@ -93,10 +94,17 @@ class DiscoverySymbolCheckpointStore:
         registry: SymbolRegistry,
         *,
         run_identity: str,
+        require_full_request_coverage: bool = False,
     ) -> None:
         self.config = config
         self.registry = registry
         self.run_identity = run_identity
+        self.require_full_request_coverage = require_full_request_coverage
+        acquisition_contract_version = (
+            FULL_RANGE_ACQUISITION_CONTRACT_VERSION
+            if require_full_request_coverage
+            else DISCOVERY_ACQUISITION_CONTRACT_VERSION
+        )
         data_root = config.paths.data_root.resolve() / "phase7"
         self.bronze_root = data_root / "bronze" / "binance"
         self.quality_root = data_root / "quality"
@@ -105,7 +113,7 @@ class DiscoverySymbolCheckpointStore:
             config.paths.checkpoint_root.resolve()
             / run_identity
             / "discovery"
-            / DISCOVERY_ACQUISITION_CONTRACT_VERSION
+            / acquisition_contract_version
             / PHASE7_VERSION
         )
         self._candidate_index: dict[tuple[str, str], list[Path]] | None = None
@@ -114,7 +122,8 @@ class DiscoverySymbolCheckpointStore:
             "scientific_baseline": SCIENTIFIC_BASELINE_ID,
             "configuration_hash": config.configuration_hash,
             "run_identity": run_identity,
-            "acquisition_contract_version": DISCOVERY_ACQUISITION_CONTRACT_VERSION,
+            "acquisition_contract_version": acquisition_contract_version,
+            "full_request_coverage_required": require_full_request_coverage,
             "ingestion_version": __version__,
             "candle_schema_version": CANDLE_SCHEMA_VERSION,
             "validator_version": QUALITY_VALIDATOR_VERSION,
@@ -198,6 +207,7 @@ class DiscoverySymbolCheckpointStore:
                 request_end=request_end,
                 deep=False,
             )
+            self._validate_checkpoint_coverage(payload, evidence)
             if stable_hash(evidence.identity) != payload.get("artifact_identity"):
                 raise ValueError("completion artifact identity mismatch")
         except (
@@ -340,6 +350,10 @@ class DiscoverySymbolCheckpointStore:
                     request_end=request_end,
                     deep=True,
                 )
+                if self.require_full_request_coverage and not self._covers_full_request(
+                    evidence, request_start=request_start, request_end=request_end
+                ):
+                    raise ValueError("candidate evidence does not cover the full causal request")
                 proven.append((outcome, evidence))
             except (FileNotFoundError, OSError, ValueError, KeyError, TypeError):
                 continue
@@ -383,6 +397,51 @@ class DiscoverySymbolCheckpointStore:
             request_start=request_start,
             request_end=request_end,
         )
+
+    @staticmethod
+    def _covers_full_request(
+        evidence: _Evidence,
+        *,
+        request_start: datetime,
+        request_end: datetime,
+    ) -> bool:
+        accepted_start = datetime.fromisoformat(evidence.accepted_start.replace("Z", "+00:00"))
+        accepted_end = datetime.fromisoformat(evidence.accepted_end.replace("Z", "+00:00"))
+        return accepted_start.astimezone(UTC) == request_start.astimezone(
+            UTC
+        ) and accepted_end.astimezone(UTC) == request_end.astimezone(UTC)
+
+    def _validate_checkpoint_coverage(
+        self,
+        payload: dict[str, Any],
+        evidence: _Evidence,
+    ) -> None:
+        """Reject partial offline evidence under the full-range resume contract.
+
+        A normally acquired checkpoint may have narrower bounds because the
+        official archive boundary inspection proved the exact lifecycle range.
+        Offline backfill has no such observation, so it is reusable for a full
+        data request only when its accepted bounds equal that request.
+        """
+
+        if not self.require_full_request_coverage:
+            return
+        if not payload.get("backfilled_from_existing_evidence"):
+            return
+        requested = payload.get("identity", {}).get("requested_range", {})
+        try:
+            requested_start = datetime.fromisoformat(str(requested["start"]).replace("Z", "+00:00"))
+            requested_end = datetime.fromisoformat(
+                str(requested["end_exclusive"]).replace("Z", "+00:00")
+            )
+        except (KeyError, TypeError, ValueError) as exc:
+            raise ValueError("checkpoint requested range is invalid") from exc
+        if not self._covers_full_request(
+            evidence,
+            request_start=requested_start,
+            request_end=requested_end,
+        ):
+            raise ValueError("backfilled evidence does not cover the full causal request")
 
     def _candidates(self) -> dict[tuple[str, str], list[Path]]:
         if self._candidate_index is not None:

@@ -10,7 +10,7 @@ from crypto_ai.phase7.acquisition import AcquisitionPaths, _promote_candles
 from crypto_ai.phase7.config import PathConfig, Phase7Config
 from crypto_ai.phase7.discovery_checkpoint import DiscoverySymbolCheckpointStore
 from crypto_ai.phase7.segments import AcquisitionOutcome, AcquisitionStatus
-from tests.phase7.test_archive_missing_reconciliation import _archive, _registry
+from tests.phase7.test_archive_missing_reconciliation import START, _archive, _registry
 
 
 def _config(tmp_path: Path) -> Phase7Config:
@@ -66,6 +66,54 @@ def test_offline_backfill_creates_auditable_run_bound_completion(tmp_path: Path)
         )
         is None
     )
+
+
+def test_full_range_backfill_refuses_partial_selection_window(tmp_path: Path) -> None:
+    config = _config(tmp_path)
+    registry = _registry(available_from=datetime(2022, 2, 1, tzinfo=UTC))
+    manifest, _, _ = _archive(tmp_path, missing=())
+    _promote_candles(config, AcquisitionPaths.from_config(config), manifest)
+    record = registry.records[0]
+    store = DiscoverySymbolCheckpointStore(
+        config,
+        registry,
+        run_identity="phase7-full-range-test",
+        require_full_request_coverage=True,
+    )
+
+    outcome = store.backfill(
+        record,
+        interval="1d",
+        request_start=datetime(2022, 2, 1, tzinfo=UTC),
+        request_end=datetime(2022, 3, 4, tzinfo=UTC),
+    )
+
+    assert outcome is None
+    assert not store.checkpoint_path(record.symbol, "1d").exists()
+
+
+def test_full_range_backfill_accepts_exact_request_bounds(tmp_path: Path) -> None:
+    config = _config(tmp_path)
+    registry = _registry()
+    manifest, _, _ = _archive(tmp_path, missing=())
+    silver = _promote_candles(config, AcquisitionPaths.from_config(config), manifest)
+    record = registry.records[0]
+    store = DiscoverySymbolCheckpointStore(
+        config,
+        registry,
+        run_identity="phase7-full-range-test",
+        require_full_request_coverage=True,
+    )
+
+    outcome = store.backfill(
+        record,
+        interval="1d",
+        request_start=START,
+        request_end=START + 8 * timedelta(days=1),
+    )
+
+    assert outcome is not None
+    assert outcome.silver_manifest == str(silver.resolve())
 
 
 def test_corrupt_or_incomplete_checkpoint_never_claims_completion(tmp_path: Path) -> None:

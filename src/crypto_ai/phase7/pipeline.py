@@ -17,6 +17,7 @@ from crypto_ai.phase7.acquisition import (
     acquire_discovery_daily,
     align_derivatives,
     load_candle_family,
+    validated_candle_manifest_range,
 )
 from crypto_ai.phase7.artifacts import CheckpointStore, atomic_json, resource_snapshot
 from crypto_ai.phase7.config import TARGET_VERSION, UNIVERSE_VERSION, Phase7Config
@@ -57,6 +58,12 @@ from crypto_ai.phase7.universe import (
 )
 
 STAGES = ("registry", "universe", "data", "gold", "train", "report")
+DATA_CANDLE_COVERAGE_CONTRACT_VERSION = "phase7_full_causal_candle_coverage_v1"
+
+
+def _validated_range_payload(manifest: str) -> dict[str, str]:
+    start, end = validated_candle_manifest_range(manifest)
+    return {"start": start.isoformat(), "end_exclusive": end.isoformat()}
 
 
 def _run_context(config: Phase7Config) -> tuple[str, Path, datetime]:
@@ -411,6 +418,14 @@ def _data_stage(
             "end_exclusive": config.research_cutoff.isoformat(),
         },
         "candle_silver_manifests": candle_manifests,
+        "candle_coverage_contract": DATA_CANDLE_COVERAGE_CONTRACT_VERSION,
+        "candle_validated_ranges": {
+            interval: {
+                symbol: _validated_range_payload(manifest)
+                for symbol, manifest in sorted(family.items())
+            }
+            for interval, family in sorted(candle_manifests.items())
+        },
         "candle_acquisition_outcomes": candle_outcomes,
         "unusable_segments": unusable_segments,
         "derivative_silver_manifests": derivatives,
@@ -442,6 +457,8 @@ def _gold_chunk(
     chunk_position: int = 1,
     chunks_total: int = 1,
 ) -> tuple[str, MultiAssetFeatureResult, MultiAssetTargetResult]:
+    if data.get("candle_coverage_contract") != DATA_CANDLE_COVERAGE_CONTRACT_VERSION:
+        raise ValueError("Data manifest lacks the full causal candle-coverage contract")
     lookback = timedelta(
         minutes=5
         * max(
@@ -459,6 +476,8 @@ def _gold_chunk(
         start=feature_start,
         end=candle_end,
     )
+    if candles_5m is None:
+        raise AssertionError("Required 5m candle family cannot be causally absent")
     candles_5m = align_derivatives(candles_5m, data["derivative_silver_manifests"])
     higher_start = max(config.data_start, start - timedelta(days=220))
     candles_12h = load_candle_family(
@@ -466,12 +485,14 @@ def _gold_chunk(
         interval="12h",
         start=higher_start,
         end=end,
+        allow_preavailability_absence=True,
     )
     candles_1d = load_candle_family(
         data["candle_silver_manifests"]["1d"],
         interval="1d",
         start=higher_start,
         end=end,
+        allow_preavailability_absence=True,
     )
     context = build_higher_timeframe_context(candles_12h, candles_1d)
     if reporter is not None:

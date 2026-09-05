@@ -431,6 +431,7 @@ def _phase7a_data_stage(
         config,
         registry,
         run_identity=run_identity(config),
+        require_full_request_coverage=True,
     )
     canonical_acquire = pipeline.acquire_candle_family
 

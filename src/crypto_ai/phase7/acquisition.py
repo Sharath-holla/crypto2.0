@@ -1474,14 +1474,49 @@ def _silver_segment_manifests(manifest_path: Path, payload: dict[str, Any]) -> t
     return tuple(paths)
 
 
+def validated_candle_manifest_range(manifest: str | Path) -> tuple[datetime, datetime]:
+    """Return the immutable Bronze range accepted by a Silver candle manifest."""
+
+    manifest_path = Path(manifest).resolve()
+    payload = read_manifest(manifest_path)
+    if payload is None or payload.get("quality_status") not in {
+        "PASS",
+        "WARN",
+        "SEGMENTED_VALID",
+    }:
+        raise ValueError(f"Ineligible Silver manifest: {manifest_path}")
+    source_path = Path(str(payload.get("source_manifest", ""))).resolve()
+    source = read_manifest(source_path)
+    if source is None:
+        raise ValueError(f"Silver source manifest is unavailable: {source_path}")
+    try:
+        start = datetime.fromisoformat(str(source["start"]).replace("Z", "+00:00"))
+        end = datetime.fromisoformat(str(source["end"]).replace("Z", "+00:00"))
+    except (KeyError, TypeError, ValueError) as exc:
+        raise ValueError(f"Silver source range is invalid: {source_path}") from exc
+    if start.tzinfo is None or end.tzinfo is None or start >= end:
+        raise ValueError(f"Silver source range is invalid: {source_path}")
+    return start.astimezone(UTC), end.astimezone(UTC)
+
+
 def load_candle_family(
     manifests: dict[str, str],
     *,
     interval: str,
     start: datetime,
     end: datetime,
-) -> pa.Table:
+    allow_preavailability_absence: bool = False,
+) -> pa.Table | None:
+    """Load a validated candle family within a half-open UTC range.
+
+    Higher-timeframe callers may explicitly allow a symbol to be absent only
+    when the entire requested window precedes that manifest's validated causal
+    coverage. Empty overlap, post-availability absence, corrupt evidence, and
+    missing rows inside validated coverage continue to fail closed.
+    """
+
     tables: list[pa.Table] = []
+    preavailability_absent = 0
     for symbol, manifest in sorted(manifests.items()):
         manifest_path = Path(manifest).resolve()
         payload = read_manifest(manifest_path)
@@ -1515,12 +1550,18 @@ def load_candle_family(
                 if np.any(mask):
                     selected.append(table.filter(pa.array(mask)))
         if not selected:
+            accepted_start, _ = validated_candle_manifest_range(manifest_path)
+            if allow_preavailability_absence and end.astimezone(UTC) <= accepted_start:
+                preavailability_absent += 1
+                continue
             raise ValueError(f"No {symbol} {interval} rows exist in requested window")
         symbol_table = pa.concat_tables(selected).sort_by([("open_time", "ascending")])
         if set(symbol_table.column("symbol").to_pylist()) != {symbol}:
             raise ValueError(f"Silver family symbol mismatch for {symbol}")
         tables.append(symbol_table)
     if not tables:
+        if manifests and preavailability_absent == len(manifests):
+            return None
         raise ValueError(f"No {interval} candle tables were available")
     return pa.concat_tables(tables).sort_by([("symbol", "ascending"), ("open_time", "ascending")])
 

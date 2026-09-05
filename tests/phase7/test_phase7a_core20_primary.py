@@ -58,6 +58,7 @@ def test_phase7a_data_stage_enables_run_scoped_symbol_resume(monkeypatch: object
 
     def fake_store(*args: object, **kwargs: object) -> object:
         assert kwargs["run_identity"] == run_identity(phase7a)
+        assert kwargs["require_full_request_coverage"] is True
         return completion_store
 
     def fake_acquire(*args: object, **kwargs: object) -> CandleFamilyAcquisition:
