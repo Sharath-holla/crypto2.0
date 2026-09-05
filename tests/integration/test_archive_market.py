@@ -11,8 +11,14 @@ from pathlib import Path
 import httpx
 import pytest
 
-from crypto_ai.data.binance import ArchiveDataset, BinanceArchiveClient
+from crypto_ai.data.binance import (
+    ArchiveDataset,
+    ArchiveFrequency,
+    ArchiveObject,
+    BinanceArchiveClient,
+)
 from crypto_ai.phase4.market_data import MarketDataKind, read_market_dataset
+from crypto_ai.phase4_1 import archive_market
 from crypto_ai.phase4_1.archive_market import ingest_archive_market_data
 
 
@@ -34,10 +40,14 @@ def _zip(row_count: int) -> bytes:
     return buffer.getvalue()
 
 
-def _client(tmp_path: Path, content: bytes) -> BinanceArchiveClient:
+def _client(
+    tmp_path: Path, content: bytes, *, missing_token: str | None = None
+) -> BinanceArchiveClient:
     digest = hashlib.sha256(content).hexdigest()
 
     def handler(request: httpx.Request) -> httpx.Response:
+        if missing_token is not None and missing_token in request.url.path:
+            return httpx.Response(404)
         if request.url.path.endswith(".CHECKSUM"):
             return httpx.Response(200, text=f"{digest}  BTCUSDT-5m-2026-07.zip\n")
         return httpx.Response(200, content=content)
@@ -119,3 +129,60 @@ def test_archive_market_fills_only_missing_ranges_from_public_rest(tmp_path: Pat
     assert manifest["coverage"]["status"] == "PASS"
     assert bronze["archive_coverage"]["missing_rows"] == 1
     assert bronze["rest_gap_fill"]["row_count"] == 1
+
+
+def test_archive_market_records_missing_object_and_warns_when_rest_still_missing(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    client = _client(tmp_path, _zip(11), missing_token="2026-08")
+    start = datetime(2026, 7, 1, tzinfo=UTC)
+    objects = [
+        ArchiveObject(
+            dataset=ArchiveDataset.MARK_PRICE_KLINES,
+            frequency=ArchiveFrequency.MONTHLY,
+            symbol="BTCUSDT",
+            interval="5m",
+            period=(start + timedelta(days=31 * offset)).date().replace(day=1),
+        )
+        for offset in range(2)
+    ]
+    monkeypatch.setattr(archive_market, "monthly_objects", lambda *args, **kwargs: objects)
+    calls: list[tuple[str, dict[str, object] | None]] = []
+
+    def request(path: str, params: dict[str, object] | None) -> object:
+        calls.append((path, params))
+        return []
+
+    manifest_path = ingest_archive_market_data(
+        client,
+        kind=MarketDataKind.MARK_KLINE,
+        symbol="BTCUSDT",
+        interval="5m",
+        start=start,
+        end=start + timedelta(hours=1),
+        output_root=tmp_path / "market",
+        gap_fill_request_json=request,
+    )
+    _, manifest = read_market_dataset(manifest_path, MarketDataKind.MARK_KLINE)
+    bronze = json.loads(Path(manifest["source_manifest"]).read_text(encoding="utf-8"))
+    client.close()
+
+    assert calls[0][0] == "/fapi/v1/markPriceKlines"
+    assert manifest["coverage"]["status"] == "WARN"
+    assert manifest["coverage"]["missing_behavior"] == (
+        "reported and left missing after archive plus official REST; never synthesized"
+    )
+    assert bronze["missing_archive_count"] == 1
+    assert bronze["missing_archive_objects"] == [
+        {
+            "archive_url": ("/monthly/markPriceKlines/BTCUSDT/5m/BTCUSDT-5m-2026-08.zip"),
+            "checksum_url": ("/monthly/markPriceKlines/BTCUSDT/5m/BTCUSDT-5m-2026-08.zip.CHECKSUM"),
+            "dataset": "markPriceKlines",
+            "frequency": "monthly",
+            "interval": "5m",
+            "period": "2026-08",
+            "status": "OFFICIAL_OBJECT_NOT_FOUND",
+            "symbol": "BTCUSDT",
+        }
+    ]
+    assert bronze["rest_gap_fill"]["row_count"] == 0

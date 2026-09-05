@@ -19,6 +19,7 @@ import pyarrow.parquet as pq
 
 from crypto_ai.data.binance import (
     ArchiveDataset,
+    ArchiveNotFoundError,
     ArchiveObject,
     BinanceArchiveClient,
     monthly_objects,
@@ -188,6 +189,7 @@ def ingest_archive_market_data(
     captured = datetime.now(UTC)
     tables: list[pa.Table] = []
     provenance: list[dict[str, Any]] = []
+    missing_archive_objects: list[dict[str, Any]] = []
     objects = monthly_objects(
         _ARCHIVE_DATASETS[kind],
         symbol=symbol,
@@ -196,7 +198,22 @@ def ingest_archive_market_data(
         end=end,
     )
     for archive_object in objects:
-        content, metadata = client.fetch_object_bytes(archive_object)
+        try:
+            content, metadata = client.fetch_object_bytes(archive_object)
+        except ArchiveNotFoundError:
+            missing_archive_objects.append(
+                {
+                    "dataset": archive_object.dataset.value,
+                    "frequency": archive_object.frequency.value,
+                    "symbol": archive_object.symbol,
+                    "interval": archive_object.interval,
+                    "period": archive_object.period_token,
+                    "archive_url": archive_object.relative_url,
+                    "checksum_url": archive_object.checksum_url,
+                    "status": "OFFICIAL_OBJECT_NOT_FOUND",
+                }
+            )
+            continue
         tables.append(
             _parse_archive_table(
                 content,
@@ -272,6 +289,7 @@ def ingest_archive_market_data(
         "start": start.isoformat(),
         "end": end.isoformat(),
         "upstream_sha256": [item["upstream_sha256"] for item in provenance],
+        "missing_archive_objects": missing_archive_objects,
         "archive_coverage": archive_coverage,
         "rest_gap_ranges": [
             {"start": gap_start.isoformat(), "end": gap_end.isoformat()}
@@ -311,6 +329,8 @@ def ingest_archive_market_data(
                 "request_range": {"start": start.isoformat(), "end": end.isoformat()},
                 "archive_count": len(provenance),
                 "archives": provenance,
+                "missing_archive_count": len(missing_archive_objects),
+                "missing_archive_objects": missing_archive_objects,
                 "archive_coverage": archive_coverage,
                 "rest_gap_fill": gap_fill_record,
                 "row_count": table.num_rows,
