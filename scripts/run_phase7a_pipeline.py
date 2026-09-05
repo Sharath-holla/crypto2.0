@@ -416,6 +416,47 @@ def _report_stage(config: Phase7Config, root: Path) -> tuple[dict[str, object], 
         return pipeline._report_stage(config, root)
 
 
+def _phase7a_data_stage(
+    config: Phase7Config,
+    root: Path,
+    registry: SymbolRegistry,
+    universe: object,
+    policy: object,
+    symbols: tuple[str, ...],
+    reporter: ProgressReporter,
+) -> tuple[dict[str, object], list[Path]]:
+    """Run canonical acquisition with Phase 7A run-scoped symbol resume enabled."""
+
+    completion_store = DiscoverySymbolCheckpointStore(
+        config,
+        registry,
+        run_identity=run_identity(config),
+    )
+    canonical_acquire = pipeline.acquire_candle_family
+
+    def resumable_acquire(*args: object, **kwargs: object) -> CandleFamilyAcquisition:
+        if any(name in kwargs for name in ("completion_store", "resume", "backfill_completion")):
+            raise RuntimeError("Canonical data stage unexpectedly supplied resume controls")
+        return canonical_acquire(
+            *args,
+            **kwargs,
+            completion_store=completion_store,
+            resume=True,
+            backfill_completion=True,
+        )
+
+    with patch.object(pipeline, "acquire_candle_family", resumable_acquire):
+        return pipeline._data_stage(
+            config,
+            root,
+            registry,
+            universe,
+            policy,
+            symbols,
+            reporter,
+        )
+
+
 def run_stage(config: Phase7Config, stage: str, *, resume: bool, canary: bool) -> dict[str, object]:
     source = load_phase7_config(SOURCE_CONFIG_PATH)
     validate_phase7a_config(config, source)
@@ -465,7 +506,7 @@ def run_stage(config: Phase7Config, stage: str, *, resume: bool, canary: bool) -
         symbols = tuple(membership["acquisition_symbols"])
         if len(symbols) != 20:
             raise RuntimeError("Full-resolution acquisition escaped Core20")
-        data, files = pipeline._data_stage(
+        data, files = _phase7a_data_stage(
             config, root, registry, universe, policy, symbols, reporter
         )
         metadata = {"symbol_count": 20, "research_universe_hash": data["research_universe_hash"]}

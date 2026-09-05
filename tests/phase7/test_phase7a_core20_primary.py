@@ -6,9 +6,11 @@ from pathlib import Path
 from crypto_ai.phase7 import training
 from crypto_ai.phase7.config import load_phase7_config
 from crypto_ai.phase7.runner import phase7_plan
+from crypto_ai.phase7.segments import CandleFamilyAcquisition
 from scripts.phase7a_feasibility_gate import evaluate
 from scripts.phase7a_vm_supervisor import GRACEFUL_STOP_AFTER, WallClockPolicy
 from scripts.run_phase7a_pipeline import (
+    _phase7a_data_stage,
     _training_patches,
     primary_specs,
     run_identity,
@@ -47,6 +49,52 @@ def test_phase7a_training_surface_is_scoped_and_restores_canonical_globals() -> 
         assert "scripts/run_phase7a_pipeline.py" in training.TRAINING_CRITICAL_SOURCE_FILES
     assert training.RESEARCH_VIEWS == canonical_views == ("CORE", "EXPANDING")
     assert len(training.phase7_experiment_specs(phase7a)) == canonical_count == 58
+
+
+def test_phase7a_data_stage_enables_run_scoped_symbol_resume(monkeypatch: object) -> None:
+    phase7a = load_phase7_config(Path("configs/phase7/research_core20_primary_v1.toml"))
+    completion_store = object()
+    calls: list[dict[str, object]] = []
+
+    def fake_store(*args: object, **kwargs: object) -> object:
+        assert kwargs["run_identity"] == run_identity(phase7a)
+        return completion_store
+
+    def fake_acquire(*args: object, **kwargs: object) -> CandleFamilyAcquisition:
+        calls.append(kwargs)
+        return CandleFamilyAcquisition(())
+
+    def fake_data_stage(*args: object, **kwargs: object) -> tuple[dict[str, object], list[Path]]:
+        from crypto_ai.phase7 import pipeline
+
+        pipeline.acquire_candle_family(
+            phase7a,
+            object(),
+            symbols=("BTCUSDT",),
+            interval="5m",
+            start=phase7a.data_start,
+            end=phase7a.research_cutoff,
+        )
+        return {}, []
+
+    monkeypatch.setattr("scripts.run_phase7a_pipeline.DiscoverySymbolCheckpointStore", fake_store)
+    monkeypatch.setattr("scripts.run_phase7a_pipeline.pipeline.acquire_candle_family", fake_acquire)
+    monkeypatch.setattr("scripts.run_phase7a_pipeline.pipeline._data_stage", fake_data_stage)
+
+    _phase7a_data_stage(
+        phase7a,
+        Path("."),
+        object(),  # type: ignore[arg-type]
+        object(),
+        object(),
+        ("BTCUSDT",),
+        object(),  # type: ignore[arg-type]
+    )
+
+    assert len(calls) == 1
+    assert calls[0]["completion_store"] is completion_store
+    assert calls[0]["resume"] is True
+    assert calls[0]["backfill_completion"] is True
 
 
 def test_wall_clock_guard_starts_before_hard_cap() -> None:
