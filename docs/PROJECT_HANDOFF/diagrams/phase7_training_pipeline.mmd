@@ -1,0 +1,13 @@
+flowchart TD
+    A[Validated Gold 7 of 7] --> B[Fold plan and point-in-time membership]
+    B --> C[Fold-active cross-sectional rebinding]
+    C --> D[Purge actual label_end_time and embargo]
+    D --> E[TRAIN Validation Cal-A Cal-B]
+    E --> F[Finite selected feature target rows]
+    F --> G[Arrow to NumPy prepared inputs]
+    G --> H[G0 C0 P0 H0 fits]
+    H --> I[Cal-A calibrator]
+    I --> J[Cal-B cost threshold]
+    J --> K[Freeze identity and release TEST]
+    K --> L[OOS metrics trades cost stress report]
+    G -.missing durable checkpoint.-> X[Future atomic prepared matrix cache]

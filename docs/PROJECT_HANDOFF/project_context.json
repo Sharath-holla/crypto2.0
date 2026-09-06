@@ -1,0 +1,97 @@
+{
+  "schema_version": "crypto2_project_handoff_v1",
+  "project": "Crypto 2.0",
+  "owner": "Sharath N. S.",
+  "status": "PROJECT_HOLD",
+  "current_phase": "Phase 7A CORE20_PRIMARY",
+  "git_head_at_handoff_authoring_start": "b641e8b914a27f6b9a00ae4be7a2cbd75a02d9ed",
+  "last_validated_scientific_commit": "be3a164f3fe283885dff1e3a201dbac2dfc303af",
+  "source_fingerprint": "ad1aac9508b0b15e9230e06122f4d7fcdf56bf1baab75a9de1a49f1c2894e67d",
+  "technology_stack": {
+    "language": "Python >=3.11",
+    "package_manager": "uv/uv.lock",
+    "data": ["PyArrow", "Parquet", "NumPy"],
+    "ml": ["LightGBM", "scikit-learn", "joblib"],
+    "validation": ["Pydantic", "pytest", "Ruff"],
+    "cloud": ["Google Compute Engine", "GCE persistent disk", "Google Cloud Storage"]
+  },
+  "cloud_project": "crypto-ai-trading-506300",
+  "vm": {
+    "name": "crypto-phase7",
+    "status": "TERMINATED",
+    "machine_type": "e2-standard-16",
+    "os": "Ubuntu Minimal 24.04 LTS",
+    "repository": "/home/nssharath123/crypto2.0"
+  },
+  "zone": "asia-south1-a",
+  "disk": {
+    "name": "crypto-phase7",
+    "size_gb": 250,
+    "type": "pd-balanced",
+    "status": "READY",
+    "auto_delete_with_vm": true
+  },
+  "bucket": "gs://crypto-ai-data-83921",
+  "data_state": {
+    "discovery": "507/507_COMPLETE",
+    "registry_symbol_count": null,
+    "acquisition": "COMPLETE",
+    "data_checkpoint_valid": true,
+    "data_checkpoint_sha256": "d7bb7e99dda07ec62cd493a3c06951d6dae230f340c065b9bd42bd2423a99c0f",
+    "data_manifest_sha256": "e6532a8b6fe7246621530738b713c6529b538d219802ba77f3f3a4dad6959dd0",
+    "validated_candle_checkpoints": 60
+  },
+  "gold_state": {
+    "status": "7/7_COMPLETE",
+    "partitions": 138,
+    "rows": 50352548,
+    "dataset_id": "gold-phase7-0cbf2910e8d96c9d19826598",
+    "storage": "PERSISTENT_DISK_ONLY",
+    "checkpoint_sha256": null
+  },
+  "core20": [
+    "BTCUSDT", "ETHUSDT", "ZRXUSDT", "NEOUSDT", "FLMUSDT", "KNCUSDT",
+    "ONTUSDT", "BLZUSDT", "HNTUSDT", "UNIUSDT", "TRXUSDT", "KSMUSDT",
+    "COMPUSDT", "IOTAUSDT", "STORJUSDT", "OMGUSDT", "ZECUSDT", "FILUSDT",
+    "BCHUSDT", "DOGEUSDT"
+  ],
+  "features": {
+    "version": "multiasset_features_v2",
+    "native_count": 54,
+    "completed_12h_count": 22,
+    "completed_1d_count": 33,
+    "a6_model_column_count": 109
+  },
+  "targets": {
+    "version": "multiasset_targets_v2",
+    "horizons_minutes": [15, 30, 60, 120],
+    "types": ["raw", "volatility_normalized"],
+    "entry_timing": "open[i+2]"
+  },
+  "models": ["G0", "C0", "P0", "H0"],
+  "folds": {
+    "planned": 16,
+    "completed": 0,
+    "fold1": "STARTED_NOT_COMPLETE",
+    "fold1_completed_specs": 0,
+    "fold1_total_specs": 48,
+    "serialized_models": 0,
+    "fold2_started": false
+  },
+  "holdout": {
+    "research_cutoff_exclusive": "2026-07-01T00:00:00Z",
+    "july_used": false,
+    "start": "2026-08-01T00:00:00Z",
+    "status": "LOCKED_UNUSED",
+    "used": false,
+    "evaluation_authorized": false
+  },
+  "qualification": {
+    "status": "NOT_YET_EVALUABLE",
+    "qualified_model": null
+  },
+  "open_blockers": ["FOLD1_MATRIX_PREPARATION_AND_CHECKPOINTING"],
+  "completed_phases": ["1", "2", "3", "4", "4.1", "5", "5.1", "6", "Phase 7 local implementation", "7.1", "7.1B", "7.2 contracts", "7.2.1"],
+  "planned_phases": ["Phase 7A completion", "Phase 7.5", "Phase 8", "paper trading", "shadow mode", "risk/execution", "live trading"],
+  "resume_first_task": "Do not train. Validate frozen resources/checkpoints, then profile and implement an atomic scientifically identity-safe Fold-1 prepared-matrix checkpoint before one authorized Fold-1 run."
+}

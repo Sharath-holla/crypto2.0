@@ -1,0 +1,14 @@
+flowchart LR
+    A[Official ZIP plus CHECKSUM] --> B[Bronze immutable partitions]
+    R[Official public REST reconciliation] --> B
+    B --> C{Quality and continuity}
+    C -->|pass| D[Silver]
+    C -->|active-period defect| Q[Quarantine or causal gap]
+    C -->|outside lifecycle| L[Explicit lifecycle absence]
+    D --> E[5m features]
+    D --> F[completed 12h and 1d context]
+    D --> G[multiasset_targets_v2]
+    E --> H[Gold]
+    F --> H
+    G --> H
+    H --> I[Symbol and year partitions plus manifest]

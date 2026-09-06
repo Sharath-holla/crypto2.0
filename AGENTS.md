@@ -1,10 +1,29 @@
 # Repository Instructions
 
+## Long-term handoff — read first
+
+1. Read `PROJECT_CONTEXT.md`.
+2. Read `docs/PROJECT_HANDOFF/00_START_HERE.md` and the linked handoff package.
+3. The project is on hold. Never run expensive Phase 7/7A training or start/resize/create cloud
+   compute without explicit owner authorization and a fresh cost/deadline contract.
+4. Never access, evaluate, or unlock the August 2026 holdout. Preserve `LOCKED_UNUSED`,
+   `used=false`, and `evaluation_authorized=false`; keep July unused.
+5. Never fabricate, interpolate, synthesize, or forward-fill missing market data.
+6. Validate checkpoint identities/hashes before recomputing. Reuse valid discovery, acquisition,
+   60 candle checkpoints, and Gold 7/7.
+7. Before resuming Fold 1 or all 16 folds, profile and fix the missing prepared-matrix checkpoint
+   boundary, prove scientific equivalence, and rerun the full Linux verification gate.
+8. Keep the current Core20 point-in-time/survivorship-protected; do not remove HNT retroactively or
+   force XPIN without a separately approved versioned methodology.
+9. Do not treat 0/48 Fold-1 reports as bad model performance. Qualification is not yet evaluable.
+
 ## Current phase
 
 Phases 1 through 6, including Phase 5 Hardening, are complete and immutable.
-Phase 7 local implementation is authorized and complete; the real cloud
-research run is pending and must be started manually on the existing VM.
+Phase 7 local implementation is authorized and complete. Phase 7A discovery,
+acquisition, and Gold are complete; the real Fold 1 started but remains
+incomplete at 0/48 specifications. The project is on hold and the existing VM
+is terminated. See the handoff package before any future resume.
 
 - Preserve all verified Phase 1 through Phase 4.1 implementations and artifacts.
 - Preserve original Phase 5 `walkforward_v1` and hardened

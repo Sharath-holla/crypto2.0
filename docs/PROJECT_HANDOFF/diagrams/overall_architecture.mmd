@@ -1,0 +1,16 @@
+flowchart TD
+    A[Binance USD-M archives and public REST] --> B[Registry and discovery]
+    A --> C[Immutable Bronze]
+    C --> D[Quality, reconciliation, lifecycle]
+    D --> E[Validated Silver]
+    B --> F[Point-in-time universe]
+    E --> G[Gold features and targets]
+    F --> G
+    G --> H[Walk-forward folds]
+    H --> I[Prepared matrices]
+    I --> J[G0 C0 P0 H0]
+    J --> K[Cal-A calibration]
+    K --> L[Cal-B threshold]
+    L --> M[NO_TRADE or OOS trade]
+    M --> N[Research economics and qualification]
+    N -.future.-> O[Paper shadow risk execution]

@@ -1,0 +1,12 @@
+flowchart TD
+    A[Qualified retrospective model] --> B[Phase 7.5 robustness]
+    B --> C[Event-driven execution simulation]
+    C --> D[Paper adapter]
+    D --> E[Shadow mode]
+    E --> F[Risk engine]
+    F --> G{All health exposure loss liquidity gates pass}
+    G -->|no| N[NO_TRADE or EXIT]
+    G -->|yes and separately authorized| H[Tiny-capital Binance adapter]
+    H --> I[Order fill position reconciliation]
+    I --> J[Monitoring rollback kill switch]
+    J -.sustained evidence.-> K[Gradual production scale]

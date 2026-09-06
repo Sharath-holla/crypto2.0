@@ -1,9 +1,23 @@
 # Crypto Trading AI
 
+## Project Handoff / Resume
+
+This project is currently **ON HOLD**.
+
+Before modifying or running Phase 7A, read:
+
+- [docs/PROJECT_HANDOFF/00_START_HERE.md](docs/PROJECT_HANDOFF/00_START_HERE.md)
+- [docs/PROJECT_HANDOFF/29_ONE_YEAR_RESUME_RUNBOOK.md](docs/PROJECT_HANDOFF/29_ONE_YEAR_RESUME_RUNBOOK.md)
+
+The frozen state is Gold 7/7 complete and Fold 1 incomplete at 0/48 specifications. The existing
+GCP VM must remain terminated until new owner authorization. Do not immediately restart training;
+first address the prepared-matrix/checkpoint bottleneck.
+
 The repository has completed Phases 1 through 6, including the verified Phase
 5.1 hardening protocol and isolated Phase 6 higher-timeframe/target research.
-Phase 7's local multi-asset architecture is implemented; its real Google Cloud
-data acquisition and training run remains pending.
+Phase 7's local multi-asset architecture is implemented. Phase 7A completed
+discovery, acquisition, and Gold on Google Cloud, but Fold 1 remains incomplete
+at 0/48 specifications and the project is now on hold.
 Binance USD-M futures are primary; Spot remains an isolated secondary dataset.
 All completed work is public-data and offline research only:
 there is no account access, order execution, leverage, or live trading.

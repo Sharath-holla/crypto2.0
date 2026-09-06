@@ -1,0 +1,11 @@
+flowchart TD
+    A[Official first evidence] --> B[available_from]
+    C[Official last evidence or cutoff] --> D[available_until exclusive]
+    B --> E{available_from <= fold TRAIN end < available_until}
+    D --> E
+    E -->|no| X[Ineligible or absent]
+    E -->|yes| F[History coverage integrity liquidity gates]
+    F -->|pass at 2022 cutoff| G[Core20 frozen]
+    F -->|pass at later fold| H[Expansion candidate]
+    G --> I[Retained historically even if later delisted]
+    H --> J[Causal fold-active membership]
