@@ -475,6 +475,7 @@ def _gold_chunk(
         interval="5m",
         start=feature_start,
         end=candle_end,
+        allow_lifecycle_absence=True,
     )
     if candles_5m is None:
         raise AssertionError("Required 5m candle family cannot be causally absent")
@@ -485,14 +486,14 @@ def _gold_chunk(
         interval="12h",
         start=higher_start,
         end=end,
-        allow_preavailability_absence=True,
+        allow_lifecycle_absence=True,
     )
     candles_1d = load_candle_family(
         data["candle_silver_manifests"]["1d"],
         interval="1d",
         start=higher_start,
         end=end,
-        allow_preavailability_absence=True,
+        allow_lifecycle_absence=True,
     )
     context = build_higher_timeframe_context(candles_12h, candles_1d)
     if reporter is not None:

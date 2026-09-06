@@ -1505,18 +1505,28 @@ def load_candle_family(
     interval: str,
     start: datetime,
     end: datetime,
-    allow_preavailability_absence: bool = False,
+    allow_lifecycle_absence: bool = False,
 ) -> pa.Table | None:
     """Load a validated candle family within a half-open UTC range.
 
-    Higher-timeframe callers may explicitly allow a symbol to be absent only
-    when the entire requested window precedes that manifest's validated causal
-    coverage. Empty overlap, post-availability absence, corrupt evidence, and
-    missing rows inside validated coverage continue to fail closed.
+    Callers may explicitly accept a symbol's absence when the requested window
+    is wholly outside that manifest's validated causal coverage. Partial
+    lifecycle overlap is clipped to the validated half-open range. Missing rows
+    inside an active overlap, corrupt evidence, and checksum failures continue
+    to fail closed.
     """
 
+    if start.tzinfo is None or start.utcoffset() is None:
+        raise ValueError("candle-family start must be timezone-aware")
+    if end.tzinfo is None or end.utcoffset() is None:
+        raise ValueError("candle-family end must be timezone-aware")
+    requested_start = start.astimezone(UTC)
+    requested_end = end.astimezone(UTC)
+    if requested_start >= requested_end:
+        raise ValueError("candle-family range must be non-empty and half-open")
+
     tables: list[pa.Table] = []
-    preavailability_absent = 0
+    lifecycle_absent = 0
     for symbol, manifest in sorted(manifests.items()):
         manifest_path = Path(manifest).resolve()
         payload = read_manifest(manifest_path)
@@ -1526,6 +1536,16 @@ def load_candle_family(
             "SEGMENTED_VALID",
         }:
             raise ValueError(f"Ineligible Silver manifest: {manifest_path}")
+        accepted_start, accepted_end = validated_candle_manifest_range(manifest_path)
+        effective_start = max(requested_start, accepted_start)
+        effective_end = min(requested_end, accepted_end)
+        if effective_start >= effective_end:
+            if allow_lifecycle_absence:
+                lifecycle_absent += 1
+                continue
+            raise ValueError(f"No {symbol} {interval} lifecycle overlap in requested window")
+        start_us = int(effective_start.timestamp() * 1_000_000)
+        end_us = int(effective_end.timestamp() * 1_000_000)
         selected: list[pa.Table] = []
         for child_manifest in _silver_segment_manifests(manifest_path, payload):
             child_payload = read_manifest(child_manifest)
@@ -1537,30 +1557,27 @@ def load_candle_family(
                 match = _DATE_PARTITION.search(relative.replace("\\", "/"))
                 if match:
                     partition_date = datetime.fromisoformat(match.group(1)).date()
-                    if partition_date < start.date() or partition_date > end.date():
+                    if (
+                        partition_date < effective_start.date()
+                        or partition_date > effective_end.date()
+                    ):
                         continue
                 path = root / relative
                 if not path.exists() or file_sha256(path) != record.get("sha256"):
                     raise ValueError(f"Silver checksum mismatch: {path}")
                 table = read_candle_parquet(path)
                 times = table.column("open_time").combine_chunks().cast(pa.int64()).to_numpy()
-                start_us = int(start.astimezone(UTC).timestamp() * 1_000_000)
-                end_us = int(end.astimezone(UTC).timestamp() * 1_000_000)
                 mask = (times >= start_us) & (times < end_us)
                 if np.any(mask):
                     selected.append(table.filter(pa.array(mask)))
         if not selected:
-            accepted_start, _ = validated_candle_manifest_range(manifest_path)
-            if allow_preavailability_absence and end.astimezone(UTC) <= accepted_start:
-                preavailability_absent += 1
-                continue
             raise ValueError(f"No {symbol} {interval} rows exist in requested window")
         symbol_table = pa.concat_tables(selected).sort_by([("open_time", "ascending")])
         if set(symbol_table.column("symbol").to_pylist()) != {symbol}:
             raise ValueError(f"Silver family symbol mismatch for {symbol}")
         tables.append(symbol_table)
     if not tables:
-        if manifests and preavailability_absent == len(manifests):
+        if manifests and lifecycle_absent == len(manifests):
             return None
         raise ValueError(f"No {interval} candle tables were available")
     return pa.concat_tables(tables).sort_by([("symbol", "ascending"), ("open_time", "ascending")])
