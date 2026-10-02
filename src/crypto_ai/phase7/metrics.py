@@ -58,17 +58,28 @@ def cross_sectional_ic(
     assets = np.asarray(symbols, dtype=object)
     actual = np.asarray(actual, dtype=np.float64)
     predicted = np.asarray(predicted, dtype=np.float64)
+    finite = np.isfinite(actual) & np.isfinite(predicted)
+    order = np.argsort(times[finite], kind="stable")
+    sorted_times = times[finite][order]
+    sorted_assets = assets[finite][order]
+    sorted_actual = actual[finite][order]
+    sorted_predicted = predicted[finite][order]
+    boundaries = np.flatnonzero(np.diff(sorted_times)) + 1 if len(sorted_times) else np.array([])
+    groups = np.split(np.arange(len(sorted_times)), boundaries)
     values: list[float] = []
     timestamp_rows: list[dict[str, Any]] = []
-    for timestamp in np.unique(times):
-        rows = np.flatnonzero((times == timestamp) & np.isfinite(actual) & np.isfinite(predicted))
-        if len(set(assets[rows].tolist())) < minimum_assets:
+    for rows in groups:
+        if not len(rows) or len(set(sorted_assets[rows].tolist())) < minimum_assets:
             continue
-        value = _spearman(actual[rows], predicted[rows])
+        value = _spearman(sorted_actual[rows], sorted_predicted[rows])
         if value is not None:
             values.append(value)
             timestamp_rows.append(
-                {"feature_time_us": int(timestamp), "asset_count": len(rows), "spearman_ic": value}
+                {
+                    "feature_time_us": int(sorted_times[rows[0]]),
+                    "asset_count": len(rows),
+                    "spearman_ic": value,
+                }
             )
     return {
         "timestamp_count": len(values),

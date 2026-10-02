@@ -168,14 +168,23 @@ def _safe_divide(numerator: np.ndarray, denominator: np.ndarray) -> np.ndarray:
 
 
 def _ema(values: np.ndarray, window: int) -> np.ndarray:
-    result = np.full(len(values), np.nan)
-    if len(values) < window or not np.all(np.isfinite(values[:window])):
+    """Causal EMA seeded by the first complete finite contiguous window."""
+
+    values = np.asarray(values, dtype=np.float64)
+    result = np.full(len(values), np.nan, dtype=np.float64)
+    if len(values) < window:
         return result
-    result[window - 1] = float(np.mean(values[:window]))
     alpha = 2.0 / (window + 1)
-    for index in range(window, len(values)):
-        if np.isfinite(values[index]) and np.isfinite(result[index - 1]):
+    contiguous = 0
+    for index, value in enumerate(values):
+        if not np.isfinite(value):
+            contiguous = 0
+            continue
+        contiguous += 1
+        if index > 0 and np.isfinite(result[index - 1]):
             result[index] = alpha * values[index] + (1.0 - alpha) * result[index - 1]
+        elif contiguous >= window:
+            result[index] = float(np.mean(values[index - window + 1 : index + 1]))
     return result
 
 

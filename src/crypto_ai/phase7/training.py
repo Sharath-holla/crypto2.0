@@ -5,6 +5,7 @@ import json
 import time
 from contextlib import nullcontext
 from dataclasses import asdict, dataclass
+from datetime import timedelta
 from pathlib import Path
 from typing import Any
 
@@ -222,12 +223,24 @@ def _load_fold_rows(
 ) -> pa.Table:
     if dataset is None:
         paths = [record["path"] for record in manifest["partition_files"]]
-        dataset = ds.dataset(paths, format="parquet")
+        dataset = ds.dataset(paths, format="parquet", partitioning="hive")
     condition = (
         (ds.field("feature_time") >= pa.scalar(plan.train_start))
         & (ds.field("feature_time") < pa.scalar(plan.test_end))
         & (ds.field("horizon_minutes") == horizon_minutes)
     )
+    # Gold is physically partitioned as symbol=<symbol>/year=<year>. Apply the
+    # partition predicate as well as the exact timestamp predicate so PyArrow
+    # can prune irrelevant files without changing logical row selection.
+    # ``test_end`` is exclusive, hence a fold ending at midnight on January 1
+    # does not require the new year's partition.
+    if "year" in dataset.schema.names:
+        end_year = (plan.test_end - timedelta(microseconds=1)).year
+        condition = (
+            (ds.field("year") >= plan.train_start.year)
+            & (ds.field("year") <= end_year)
+            & condition
+        )
     return dataset.to_table(filter=condition).sort_by(
         [("feature_time", "ascending"), ("symbol", "ascending")]
     )
@@ -789,7 +802,9 @@ def run_phase7_training(
     source_identity = training_source_identity()
     manifest = _load_gold_manifest(gold_manifest_path)
     gold_paths = [record["path"] for record in manifest["partition_files"]]
-    gold_dataset = ds.dataset(gold_paths, format="parquet") if gold_paths else None
+    gold_dataset = (
+        ds.dataset(gold_paths, format="parquet", partitioning="hive") if gold_paths else None
+    )
     groups = {name: tuple(values) for name, values in manifest["feature_groups"].items()}
     folds = plan_folds(
         config.data_start,
