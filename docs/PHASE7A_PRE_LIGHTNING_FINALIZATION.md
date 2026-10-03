@@ -378,4 +378,3 @@ preserved, not staged. No baseline tags removed or history rewritten.
 NEXT SAFE ACTION: owner reviews this report and authorizes a bounded Linux verification/
 migration plan with a fresh cost/deadline contract. STOP here; do not migrate, fit, use July/August,
 or execute GPU/real-data benchmarks without that authorization.
-
