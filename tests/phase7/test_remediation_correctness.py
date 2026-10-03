@@ -89,14 +89,16 @@ def test_year_partition_pruning_is_logically_equivalent(
             )
     manifest = {"partition_files": [{"path": str(path)} for path in paths]}
     plan = _plan(start, end)
-    legacy = ds.dataset([str(path) for path in paths], format="parquet").to_table(
-        filter=(ds.field("feature_time") >= pa.scalar(start))
-        & (ds.field("feature_time") < pa.scalar(end))
-        & (ds.field("horizon_minutes") == 60)
-    ).sort_by([("feature_time", "ascending"), ("symbol", "ascending")])
-    partitioned = ds.dataset(
-        [str(path) for path in paths], format="parquet", partitioning="hive"
+    legacy = (
+        ds.dataset([str(path) for path in paths], format="parquet")
+        .to_table(
+            filter=(ds.field("feature_time") >= pa.scalar(start))
+            & (ds.field("feature_time") < pa.scalar(end))
+            & (ds.field("horizon_minutes") == 60)
+        )
+        .sort_by([("feature_time", "ascending"), ("symbol", "ascending")])
     )
+    partitioned = ds.dataset([str(path) for path in paths], format="parquet", partitioning="hive")
     actual = _load_fold_rows(manifest, plan, 60, dataset=partitioned)
     assert actual.select(legacy.column_names).equals(legacy)
 
@@ -126,4 +128,3 @@ def test_cross_sectional_ic_matches_reference_group_formula() -> None:
             expected.append(value)
     assert [row["feature_time_us"] for row in report["timestamps"]] == [1, 2, 3, 4]
     assert report["mean_spearman_ic"] == pytest.approx(float(np.mean(expected)))
-

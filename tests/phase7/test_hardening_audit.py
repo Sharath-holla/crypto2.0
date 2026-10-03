@@ -13,7 +13,11 @@ from pydantic import ValidationError
 from crypto_ai.phase5.config import ScheduleConfig
 from crypto_ai.phase5.folds import calibration_split_time, plan_folds, slice_hardened_fold
 from crypto_ai.phase7.acquisition import acquire_candle_family
-from crypto_ai.phase7.artifacts import CheckpointStore, atomic_json
+from crypto_ai.phase7.artifacts import (
+    CheckpointStore,
+    atomic_json,
+    checkpoint_metadata_compatible,
+)
 from crypto_ai.phase7.config import FeatureConfig, ModelConfig, Phase7Config, UniverseConfig
 from crypto_ai.phase7.features import generate_multiasset_features
 from crypto_ai.phase7.fixtures import (
@@ -653,6 +657,7 @@ def test_each_heavy_entry_point_is_guarded_before_work(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     monkeypatch.delenv("PHASE7_ALLOW_CLOUD_RESEARCH", raising=False)
+    monkeypatch.setenv("PHASE7_CACHE_MODE", "disabled")
     config = Phase7Config()
     registry = synthetic_registry()
     universe_config = fixture_universe_config()
@@ -711,6 +716,43 @@ def test_checkpoint_identity_and_partial_resume_safety(tmp_path: Path) -> None:
     identity_b = {"experiment_id": "b", "fold": "fold-000", "data_hash": "one"}
     store.complete("stage-b", [stage_b], identity_b)
     assert store.is_complete("stage-b", expected_metadata=identity_b)
+
+
+def test_checkpoint_compatibility_ignores_legacy_execution_context() -> None:
+    scientific = {
+        "configuration_hash": "config",
+        "training_source_identity": {"manifest_sha256": "source"},
+        "model_backend_semantics": "cuda",
+        "scientific_resume_identity_schema": "phase7_scientific_resume_identity_v2",
+    }
+    legacy = {
+        "configuration_hash": "config",
+        "training_source_identity": {"manifest_sha256": "source"},
+        "compute_backend": "cuda",
+        "git_commit": "docs-only-change",
+        "lightgbm_version": "4.7.0",
+        "prepared_cache_id": "path-independent-cache-id",
+    }
+    assert checkpoint_metadata_compatible(legacy, scientific)
+    assert not checkpoint_metadata_compatible({**legacy, "compute_backend": "cpu"}, scientific)
+
+
+def test_checkpoint_artifact_references_survive_tree_relocation(tmp_path: Path) -> None:
+    original = tmp_path / "original"
+    artifact = atomic_json(original / "artifacts" / "result.json", {"status": "complete"})
+    store = CheckpointStore(original / "checkpoints", "portable-run")
+    store.complete("train/fold-000", [artifact], {"configuration_hash": "config"})
+    checkpoint = store.checkpoint_path("train/fold-000")
+    payload = json.loads(checkpoint.read_text(encoding="utf-8"))
+    assert payload["files"][0]["path_type"] == "checkpoint_relative"
+    assert "path" not in payload["files"][0]
+
+    relocated = tmp_path / "relocated"
+    original.rename(relocated)
+    relocated_store = CheckpointStore(relocated / "checkpoints", "portable-run")
+    assert relocated_store.is_complete(
+        "train/fold-000", expected_metadata={"configuration_hash": "config"}
+    )
 
 
 def test_config_rejects_holdout_or_anchor_unlock_attempts() -> None:

@@ -73,5 +73,53 @@ def test_missing_training_critical_source_fails_closed(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     monkeypatch.setattr(training, "TRAINING_CRITICAL_SOURCE_FILES", ("missing.py",))
-    with pytest.raises(RuntimeError, match="training-critical source file is missing"):
+    with pytest.raises(RuntimeError, match="identity-critical source file is missing"):
         training.training_source_identity(tmp_path)
+
+
+@pytest.mark.parametrize(
+    "relative_path",
+    [
+        "src/crypto_ai/phase7/training.py",
+        "src/crypto_ai/phase7/models.py",
+        "src/crypto_ai/phase7/prepared_cache.py",
+        "src/crypto_ai/phase7/backend.py",
+        "src/crypto_ai/phase7/acquisition.py",
+        "src/crypto_ai/phase7/quality.py",
+        "src/crypto_ai/data/schema.py",
+    ],
+)
+def test_each_training_critical_module_changes_scientific_identity(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    relative_path: str,
+) -> None:
+    source = tmp_path / relative_path
+    source.parent.mkdir(parents=True)
+    source.write_text("VALUE = 1\n", encoding="utf-8")
+    monkeypatch.setattr(training, "TRAINING_CRITICAL_SOURCE_FILES", (relative_path,))
+    before = training.training_source_identity(tmp_path)
+    source.write_text("VALUE = 2\n", encoding="utf-8")
+    assert (
+        training.training_source_identity(tmp_path)["manifest_sha256"] != before["manifest_sha256"]
+    )
+
+
+def test_scientific_identity_is_order_and_location_independent(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    relative_paths = ("science/b.py", "science/a.py")
+    roots = (tmp_path / "one", tmp_path / "another-location")
+    for root in roots:
+        for relative_path in relative_paths:
+            source = root / relative_path
+            source.parent.mkdir(parents=True, exist_ok=True)
+            source.write_text(f"NAME = {relative_path!r}\n", encoding="utf-8")
+    monkeypatch.setattr(training, "TRAINING_CRITICAL_SOURCE_FILES", relative_paths)
+    first = training.training_source_identity(roots[0])
+    for relative_path in relative_paths:
+        source = roots[1] / relative_path
+        source.write_bytes(source.read_bytes().replace(b"\r\n", b"\n").replace(b"\n", b"\r\n"))
+    monkeypatch.setattr(training, "TRAINING_CRITICAL_SOURCE_FILES", tuple(reversed(relative_paths)))
+    second = training.training_source_identity(roots[1])
+    assert first == second

@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import time
 from contextlib import ExitStack, suppress
 from datetime import UTC, datetime, timedelta
@@ -18,8 +19,10 @@ from crypto_ai.phase7.acquisition import plan_candle_download_request
 from crypto_ai.phase7.artifacts import CheckpointStore, atomic_json, resource_snapshot
 from crypto_ai.phase7.config import Phase7Config, load_phase7_config
 from crypto_ai.phase7.discovery_checkpoint import DiscoverySymbolCheckpointStore
+from crypto_ai.phase7.gold_validation import locate_gold_manifest
 from crypto_ai.phase7.progress import ProgressReporter
 from crypto_ai.phase7.registry import SymbolRegistry, read_registry, write_registry
+from crypto_ai.phase7.runtime import RuntimePaths
 from crypto_ai.phase7.segments import (
     AcquisitionOutcome,
     AcquisitionStatus,
@@ -77,7 +80,7 @@ def run_identity(config: Phase7Config) -> str:
 
 def _run_context(config: Phase7Config) -> tuple[str, Path, datetime]:
     identity = run_identity(config)
-    root = config.paths.artifact_root.resolve() / identity
+    root = RuntimePaths.resolve(config.paths).artifact_root / identity
     path = root / "run.json"
     if path.exists():
         payload = json.loads(path.read_text(encoding="utf-8"))
@@ -107,14 +110,17 @@ def _run_context(config: Phase7Config) -> tuple[str, Path, datetime]:
 def _registry_stage(
     config: Phase7Config, source: Phase7Config, root: Path
 ) -> tuple[SymbolRegistry, list[Path]]:
-    source_store = CheckpointStore(source.paths.checkpoint_root, SOURCE_RUN_IDENTITY)
+    source_runtime = RuntimePaths.resolve(source.paths)
+    source_store = CheckpointStore(
+        source_runtime.checkpoint_root,
+        SOURCE_RUN_IDENTITY,
+        source_runtime.checkpoint_roots(),
+        source_runtime.legacy_checkpoint_roots(),
+    )
     if not source_store.is_complete("registry"):
         raise RuntimeError("Canonical registry checkpoint is absent or invalid")
     source_path = (
-        source.paths.artifact_root.resolve()
-        / SOURCE_RUN_IDENTITY
-        / "registry"
-        / "symbol_registry.json"
+        source_runtime.artifact_root / SOURCE_RUN_IDENTITY / "registry" / "symbol_registry.json"
     )
     registry = read_registry(source_path)
     destination = root / "registry"
@@ -140,7 +146,7 @@ def _reuse_discovery(
     progress: object = None,
 ) -> CandleFamilyAcquisition:
     source_registry = read_registry(
-        source.paths.artifact_root.resolve()
+        RuntimePaths.resolve(source.paths).artifact_root
         / SOURCE_RUN_IDENTITY
         / "registry"
         / "symbol_registry.json"
@@ -463,14 +469,31 @@ def run_stage(config: Phase7Config, stage: str, *, resume: bool, canary: bool) -
     validate_phase7a_config(config, source)
     primary_specs(config)
     identity, root, observed_at = _run_context(config)
+    runtime = RuntimePaths.resolve(config.paths)
     reporter = ProgressReporter(
         config,
         run_identity=identity,
         run_started_at=observed_at,
         repository_root=Path.cwd(),
+        progress_path=(runtime.log_root / identity / "progress.json")
+        if os.environ.get("PHASE7_LOG_ROOT")
+        else None,
     )
-    checkpoints = CheckpointStore(config.paths.checkpoint_root, identity)
+    checkpoints = CheckpointStore(
+        runtime.checkpoint_root,
+        identity,
+        runtime.checkpoint_roots(),
+        runtime.legacy_checkpoint_roots(),
+    )
     if resume and checkpoints.is_complete(stage):
+        if stage == "train":
+            checkpoint = json.loads(checkpoints.checkpoint_path(stage).read_text(encoding="utf-8"))
+            gold = json.loads((root / "gold" / "result.json").read_text(encoding="utf-8"))
+            training.validate_training_stage_resume(
+                checkpoint["metadata"],
+                config=config,
+                gold_manifest_path=locate_gold_manifest(runtime.gold_root, str(gold["dataset_id"])),
+            )
         return {"status": "REUSED", "stage": stage, "run_identity": identity}
     missing = [name for name in STAGES[: STAGES.index(stage)] if not checkpoints.is_complete(name)]
     if missing:
@@ -518,6 +541,9 @@ def run_stage(config: Phase7Config, stage: str, *, resume: bool, canary: bool) -
     elif stage == "train":
         registry, universe, policy, data = pipeline._load_stage_state(root)
         gold = json.loads((root / "gold" / "result.json").read_text(encoding="utf-8"))
+        # Resolve Gold by dataset identity after migration; retain historical
+        # result.json bytes and their old absolute location as audit evidence.
+        gold_manifest_path = locate_gold_manifest(runtime.gold_root, str(gold["dataset_id"]))
         descriptors = pipeline._fold_descriptors(config, registry, data)
         descriptor_path = atomic_json(
             root / "fold_descriptors.json",
@@ -554,7 +580,7 @@ def run_stage(config: Phase7Config, stage: str, *, resume: bool, canary: bool) -
                 ):
                     training.run_phase7_training(
                         config,
-                        gold_manifest_path=Path(gold["manifest"]),
+                        gold_manifest_path=gold_manifest_path,
                         registry=registry,
                         universe=universe,
                         expansion_policy=policy,
@@ -568,7 +594,11 @@ def run_stage(config: Phase7Config, stage: str, *, resume: bool, canary: bool) -
                         resume=resume,
                         reporter=reporter,
                     )
-                reports = list((root / "models" / "core").glob("*/*/report.json"))
+                reports = list(
+                    (
+                        training.experiment_output_root(root, kind="report", config=config) / "core"
+                    ).glob("*/*/report.json")
+                )
                 if len(reports) != 48:
                     raise RuntimeError(f"Fold 1 canary checkpoint count is {len(reports)}, not 48")
                 canary_path = atomic_json(
@@ -615,7 +645,7 @@ def run_stage(config: Phase7Config, stage: str, *, resume: bool, canary: bool) -
                 }
             summary = training.run_phase7_training(
                 config,
-                gold_manifest_path=Path(gold["manifest"]),
+                gold_manifest_path=gold_manifest_path,
                 registry=registry,
                 universe=universe,
                 expansion_policy=policy,
@@ -629,14 +659,21 @@ def run_stage(config: Phase7Config, stage: str, *, resume: bool, canary: bool) -
                 reporter=reporter,
             )
         files = [descriptor_path, root / "training_summary.json"]
-        files.extend(root.glob("models/**/*.joblib"))
-        files.extend(root.glob("models/**/report.json"))
+        files.extend(
+            training.experiment_output_root(root, kind="model", config=config).rglob("*.joblib")
+        )
+        files.extend(
+            training.experiment_output_root(root, kind="report", config=config).rglob("report.json")
+        )
         metadata = {
             "fold_count": summary["fold_count"],
             "completed_reports": summary["completed_reports"],
             "ineligible_reports": summary["ineligible_reports"],
             "primary_spec_count": 48,
             "research_views": ["CORE"],
+            "scientific_resume_identity": training.training_stage_resume_identity(
+                config=config, gold_manifest_path=gold_manifest_path
+            ),
         }
     else:
         report, files = _report_stage(config, root)

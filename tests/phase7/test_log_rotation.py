@@ -9,7 +9,15 @@ from __future__ import annotations
 import gzip
 import os
 import subprocess
+import sys
 from pathlib import Path
+
+import pytest
+
+pytestmark = pytest.mark.skipif(
+    sys.platform == "win32",
+    reason="Phase 7 log rotation is a Bash/Linux operational utility",
+)
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 ROTATE_SCRIPT = REPO_ROOT / "scripts" / "rotate_phase7_run_log.sh"

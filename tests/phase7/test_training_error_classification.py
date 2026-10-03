@@ -113,6 +113,8 @@ def _patch_harness(
 ) -> tuple[Path, Path, list[int]]:
     fit_calls: list[int] = []
     monkeypatch.setenv("PHASE7_ALLOW_CLOUD_RESEARCH", "1")
+    # These tests exercise checkpoint/error semantics, not cache publication.
+    monkeypatch.setenv("PHASE7_CACHE_MODE", "disabled")
     manifest = _manifest(tmp_path)
     checkpoint_root = tmp_path / "checkpoints"
     run_root = tmp_path / "run"
@@ -274,6 +276,73 @@ def test_training_source_change_rejects_orphan_report_on_resume(
             run_root=run_root,
             resume=True,
         )
+
+
+def test_ineligible_g0_makes_h0_explicitly_ineligible_without_replacement_fit(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    checkpoint_root, run_root, fit_calls = _patch_harness(
+        monkeypatch, tmp_path, fit_error=IneligibleFoldError("G0 is not eligible")
+    )
+    monkeypatch.setattr(
+        "crypto_ai.phase7.training.phase7_experiment_specs",
+        lambda _: tuple(
+            ExperimentSpec(
+                name=f"architecture-{architecture}-A6-60m-raw",
+                architecture=architecture,
+                feature_group="A6",
+                horizon_minutes=60,
+                target_type="raw",
+                symbol_balanced=True,
+            )
+            for architecture in ("G0", "H0")
+        ),
+    )
+    registry = _synthetic_registry()
+    for resume in (False, True):
+        summary = run_phase7_training(
+            Phase7Config(),
+            gold_manifest_path=_manifest(tmp_path),
+            registry=registry.registry,
+            universe=registry.universe,
+            expansion_policy=registry.policy,
+            descriptors=registry.descriptors,
+            checkpoint_store=registry.store(checkpoint_root),
+            run_root=run_root,
+            resume=resume,
+        )
+        assert summary["ineligible_reports"] == 4
+        assert len(fit_calls) == 2
+        h0 = [report for report in summary["reports"] if report["spec"]["architecture"] == "H0"]
+        assert all(report["reason"] == "required reusable G0 base is INELIGIBLE" for report in h0)
+
+
+def test_slicing_ineligible_reports_resume_without_model_or_checkpoint_rewrite(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    checkpoint_root, run_root, fit_calls = _patch_harness(
+        monkeypatch, tmp_path, fit_error=RuntimeError("fit must not be reached")
+    )
+
+    def ineligible(*_args: object, **_kwargs: object) -> None:
+        raise IneligibleFoldError("no eligible members")
+
+    monkeypatch.setattr("crypto_ai.phase7.training.slice_multiasset_fold", ineligible)
+    registry = _synthetic_registry()
+    for resume in (False, True):
+        summary = run_phase7_training(
+            Phase7Config(),
+            gold_manifest_path=_manifest(tmp_path),
+            registry=registry.registry,
+            universe=registry.universe,
+            expansion_policy=registry.policy,
+            descriptors=registry.descriptors,
+            checkpoint_store=registry.store(checkpoint_root),
+            run_root=run_root,
+            resume=resume,
+        )
+        assert summary["ineligible_reports"] == 2
+        assert not fit_calls
 
 
 def test_symbol_balanced_weights_empty_raises_ineligible() -> None:

@@ -20,6 +20,31 @@ import pyarrow.parquet as pq
 from crypto_ai.data.storage import file_sha256
 from crypto_ai.phase7.config import PHASE7_VERSION, stable_hash
 
+_LEGACY_EXECUTION_ONLY_METADATA = {
+    "git_commit",
+    "lightgbm_version",
+    "prepared_cache_id",
+    "execution_context",
+    "execution_metadata",
+}
+
+
+def checkpoint_metadata_compatible(actual: dict[str, Any], expected: dict[str, Any]) -> bool:
+    """Compare scientific resume identity while tolerating legacy execution fields."""
+
+    normalized = dict(actual)
+    for name in _LEGACY_EXECUTION_ONLY_METADATA:
+        normalized.pop(name, None)
+    legacy_backend = normalized.pop("compute_backend", None)
+    if "model_backend_semantics" in expected and "model_backend_semantics" not in normalized:
+        normalized["model_backend_semantics"] = legacy_backend or "cpu"
+    if (
+        "scientific_resume_identity_schema" in expected
+        and "scientific_resume_identity_schema" not in normalized
+    ):
+        normalized["scientific_resume_identity_schema"] = "phase7_scientific_resume_identity_v2"
+    return normalized == expected
+
 
 def atomic_json(path: Path, payload: dict[str, Any], *, immutable: bool = True) -> Path:
     path = path.resolve()
@@ -62,9 +87,61 @@ def atomic_parquet(path: Path, table: pa.Table) -> Path:
 class CheckpointStore:
     root: Path
     run_identity: str
+    logical_roots: tuple[tuple[str, Path], ...] = ()
+    legacy_roots: tuple[tuple[str, Path], ...] = ()
 
     def checkpoint_path(self, stage: str) -> Path:
         return self.root.resolve() / self.run_identity / f"{stage}.json"
+
+    def _resolve_file_record(self, stage: str, item: dict[str, Any]) -> Path:
+        logical_root = item.get("logical_root")
+        if logical_root is not None:
+            roots = {name: path.resolve() for name, path in self.logical_roots}
+            if logical_root not in roots:
+                raise ValueError(f"unknown checkpoint logical root: {logical_root}")
+            root = roots[str(logical_root)]
+            resolved = (root / str(item["relative_path"])).resolve()
+            if not resolved.is_relative_to(root):
+                raise ValueError("checkpoint logical reference escaped its root")
+            return resolved
+        if item.get("path_type") == "checkpoint_relative":
+            return (self.checkpoint_path(stage).parent / str(item["relative_path"])).resolve()
+        # Backward compatibility for historical checkpoints that stored an
+        # absolute path. New checkpoints never emit this representation.
+        legacy = str(item["path"]).replace("\\", "/")
+        for old_root, new_root in sorted(self.legacy_roots, key=lambda pair: -len(pair[0])):
+            prefix = old_root.replace("\\", "/").rstrip("/") + "/"
+            if legacy.startswith(prefix):
+                root = new_root.resolve()
+                resolved = (root / legacy[len(prefix) :]).resolve()
+                if not resolved.is_relative_to(root):
+                    raise ValueError("legacy checkpoint reference escaped its root")
+                return resolved
+        return Path(str(item["path"])).resolve()
+
+    def _portable_file_record(self, stage: str, path: Path) -> dict[str, str]:
+        resolved = path.resolve()
+        for name, root in sorted(self.logical_roots, key=lambda item: item[0]):
+            try:
+                relative = resolved.relative_to(root.resolve())
+            except ValueError:
+                continue
+            return {
+                "logical_root": name,
+                "relative_path": relative.as_posix(),
+                "sha256": file_sha256(resolved),
+            }
+        try:
+            relative = os.path.relpath(resolved, self.checkpoint_path(stage).parent)
+        except ValueError as exc:
+            raise ValueError(
+                "checkpoint artifact is on another filesystem; configure a logical root"
+            ) from exc
+        return {
+            "path_type": "checkpoint_relative",
+            "relative_path": Path(relative).as_posix(),
+            "sha256": file_sha256(resolved),
+        }
 
     def is_complete(
         self,
@@ -85,19 +162,26 @@ class CheckpointStore:
             or payload.get("stage") != stage
         ):
             return False
-        if expected_metadata is not None and payload.get("metadata") != expected_metadata:
-            return False
-        for item in payload.get("files", []):
-            target = Path(item["path"])
-            if not target.exists() or file_sha256(target) != item["sha256"]:
+        if expected_metadata is not None:
+            actual_metadata = payload.get("metadata")
+            if not isinstance(actual_metadata, dict) or not checkpoint_metadata_compatible(
+                actual_metadata, expected_metadata
+            ):
                 return False
+        try:
+            for item in payload.get("files", []):
+                target = self._resolve_file_record(stage, item)
+                if not target.exists() or file_sha256(target) != item["sha256"]:
+                    return False
+        except (KeyError, OSError, TypeError, ValueError):
+            return False
         identity_payload = dict(payload)
         claimed = identity_payload.pop("checkpoint_hash", None)
         return claimed == stable_hash(identity_payload)
 
     def complete(self, stage: str, files: list[Path], metadata: dict[str, Any]) -> Path:
         records = [
-            {"path": str(path.resolve()), "sha256": file_sha256(path.resolve())}
+            self._portable_file_record(stage, path)
             for path in sorted(files, key=lambda item: str(item))
         ]
         payload: dict[str, Any] = {

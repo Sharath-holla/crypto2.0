@@ -11,6 +11,12 @@ import joblib
 import numpy as np
 import pyarrow as pa
 
+from crypto_ai.phase7.backend import (
+    _backend_error,
+    backend_metadata,
+    lightgbm_estimator_parameters,
+    resolve_lightgbm_backend,
+)
 from crypto_ai.phase7.config import ModelConfig, stable_hash
 from crypto_ai.phase7.folds import IneligibleFoldError
 
@@ -35,7 +41,12 @@ def _matrix(table: pa.Table, columns: tuple[str, ...]) -> np.ndarray:
     missing = [name for name in columns if name not in table.column_names]
     if missing:
         raise ValueError(f"Phase 7 model input is missing features: {missing}")
-    matrix = np.column_stack([_floats(table, name) for name in columns])
+    # Preallocate the final float64 matrix so converting many Arrow columns does
+    # not retain a list of full-size temporary arrays alongside column_stack's
+    # additional output allocation.
+    matrix = np.empty((table.num_rows, len(columns)), dtype=np.float64)
+    for index, name in enumerate(columns):
+        matrix[:, index] = _floats(table, name)
     if matrix.ndim != 2 or not np.all(np.isfinite(matrix)):
         raise ValueError("Phase 7 model features must be a finite matrix")
     return matrix
@@ -101,36 +112,25 @@ def _append_symbol_identity(
     symbols: np.ndarray,
     symbol_levels: tuple[str, ...],
 ) -> np.ndarray:
-    encoded = np.zeros((len(symbols), len(symbol_levels)), dtype=np.float64)
+    if matrix.shape[0] != len(symbols):
+        raise ValueError("symbol identity rows do not match the feature matrix")
+    result = np.zeros(
+        (matrix.shape[0], matrix.shape[1] + len(symbol_levels)),
+        dtype=np.float64,
+    )
+    result[:, : matrix.shape[1]] = matrix
     index = {symbol: column for column, symbol in enumerate(symbol_levels)}
     for row, symbol in enumerate(symbols):
         column = index.get(str(symbol))
         if column is not None:
-            encoded[row, column] = 1.0
-    return np.column_stack((matrix, encoded))
+            result[row, matrix.shape[1] + column] = 1.0
+    return result
 
 
 def _estimator(config: ModelConfig, *, model_threads: int) -> Any:
     import lightgbm as lgb
 
-    return lgb.LGBMRegressor(
-        objective="regression",
-        learning_rate=config.learning_rate,
-        n_estimators=config.n_estimators,
-        num_leaves=config.num_leaves,
-        max_depth=config.max_depth,
-        min_child_samples=config.min_child_samples,
-        subsample=config.subsample,
-        subsample_freq=1,
-        colsample_bytree=config.colsample_bytree,
-        reg_alpha=config.reg_alpha,
-        reg_lambda=config.reg_lambda,
-        random_state=config.seed,
-        n_jobs=model_threads,
-        deterministic=True,
-        force_col_wise=True,
-        verbosity=-1,
-    )
+    return lgb.LGBMRegressor(**lightgbm_estimator_parameters(config, model_threads=model_threads))
 
 
 def _fit(
@@ -148,17 +148,25 @@ def _fit(
     if not len(train_y) or not len(validation_y):
         raise IneligibleFoldError("LightGBM requires non-empty train and validation rows")
     estimator = _estimator(config, model_threads=model_threads)
-    estimator.fit(
-        train_x,
-        train_y,
-        sample_weight=sample_weight,
-        eval_X=validation_x,
-        eval_y=validation_y,
-        callbacks=[
-            lgb.early_stopping(config.early_stopping_rounds, first_metric_only=True, verbose=False),
-            lgb.log_evaluation(period=0),
-        ],
-    )
+    backend = resolve_lightgbm_backend()
+    try:
+        estimator.fit(
+            train_x,
+            train_y,
+            sample_weight=sample_weight,
+            eval_X=validation_x,
+            eval_y=validation_y,
+            callbacks=[
+                lgb.early_stopping(
+                    config.early_stopping_rounds, first_metric_only=True, verbose=False
+                ),
+                lgb.log_evaluation(period=0),
+            ],
+        )
+    except Exception as exc:
+        if backend.gpu_requested:
+            raise _backend_error(backend, exc) from exc
+        raise
     return estimator
 
 
@@ -495,6 +503,7 @@ def fit_architecture(
             )
             if np.count_nonzero(mask) >= config.minimum_calibration_rows_per_coin:
                 cluster_corrections[cluster] = float(np.mean(residual[mask]))
+    backend = resolve_lightgbm_backend()
     metadata = {
         "architecture": architecture,
         "algorithm": "LightGBM",
@@ -521,8 +530,10 @@ def fit_architecture(
         "per_symbol_eligibility": per_symbol_eligibility,
         "test_used_for_fit": False,
         "seed": config.seed,
+        "compute_backend": backend.name,
     }
     metadata["model_identity"] = stable_hash(metadata)
+    metadata["execution_context"] = backend_metadata(backend)
     metadata["fit_execution"] = {
         "model_threads_per_estimator": model_threads,
         "requested_estimator_workers": estimator_workers,

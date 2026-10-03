@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
+import platform
 import time
 from contextlib import nullcontext
 from dataclasses import asdict, dataclass
@@ -18,7 +20,12 @@ from crypto_ai.data.ingestion.manifest import read_manifest
 from crypto_ai.data.storage import file_sha256
 from crypto_ai.phase5.calibration import fit_calibrator
 from crypto_ai.phase5.folds import FoldPlan, plan_folds
-from crypto_ai.phase7.artifacts import CheckpointStore, atomic_json
+from crypto_ai.phase7.artifacts import (
+    CheckpointStore,
+    atomic_json,
+    checkpoint_metadata_compatible,
+)
+from crypto_ai.phase7.backend import backend_metadata, resolve_lightgbm_backend
 from crypto_ai.phase7.config import (
     FEATURE_VERSION,
     PHASE7_VERSION,
@@ -45,25 +52,55 @@ from crypto_ai.phase7.metrics import (
     time_concentration,
 )
 from crypto_ai.phase7.models import (
-    PreparedArchitectureInputs,
     fit_architecture,
     load_model,
     prepare_architecture_inputs,
     save_model,
 )
+from crypto_ai.phase7.prepared_cache import (
+    PREPROCESSING_VERSION,
+    CachedPreparedData,
+    PreparedCacheMissError,
+    PreparedDataCache,
+    PreparedTrainingSegments,
+    prepared_cache_id,
+)
 from crypto_ai.phase7.progress import ProgressReporter, oos_trade_summary
 from crypto_ai.phase7.registry import SymbolRegistry
+from crypto_ai.phase7.runtime import (
+    ComputeBudget,
+    RuntimePaths,
+    cache_mode_from_environment,
+    emit_event,
+    git_commit,
+    memory_snapshot,
+)
 from crypto_ai.phase7.segments import CausalDataGap
-from crypto_ai.phase7.universe import ExpansionUniversePolicy, FrozenUniverse, SymbolDescriptor
+from crypto_ai.phase7.universe import (
+    ExpansionUniversePolicy,
+    FrozenUniverse,
+    SymbolDescriptor,
+    select_fold_active_universe,
+)
 
 RESEARCH_VIEWS = ("CORE", "EXPANDING")
-TRAINING_SOURCE_IDENTITY_ALGORITHM = "phase7_training_source_manifest_v1"
+SCIENTIFIC_SOURCE_IDENTITY_ALGORITHM = "phase7_scientific_source_manifest_v2"
+TRAINING_SOURCE_IDENTITY_ALGORITHM = SCIENTIFIC_SOURCE_IDENTITY_ALGORITHM
 TRAINING_CRITICAL_SOURCE_FILES = (
+    "configs/data/binance.toml",
+    "configs/data_quality/default.toml",
+    "configs/phase7/research_core20_primary_v1.toml",
+    "configs/phase7/research_v1.toml",
     "src/crypto_ai/data/ingestion/manifest.py",
+    "src/crypto_ai/data/schema.py",
     "src/crypto_ai/data/storage/__init__.py",
     "src/crypto_ai/data/storage/parquet.py",
     "src/crypto_ai/domain/__init__.py",
     "src/crypto_ai/domain/candle.py",
+    "src/crypto_ai/features/baseline.py",
+    "src/crypto_ai/phase4/asof.py",
+    "src/crypto_ai/phase4/features.py",
+    "src/crypto_ai/phase4_1/features.py",
     "src/crypto_ai/phase5/calibration.py",
     "src/crypto_ai/phase5/config.py",
     "src/crypto_ai/phase5/folds.py",
@@ -71,39 +108,124 @@ TRAINING_CRITICAL_SOURCE_FILES = (
     "src/crypto_ai/phase6/features.py",
     "src/crypto_ai/phase6/labels.py",
     "src/crypto_ai/phase7/artifacts.py",
+    "src/crypto_ai/phase7/acquisition.py",
+    "src/crypto_ai/phase7/backend.py",
     "src/crypto_ai/phase7/config.py",
     "src/crypto_ai/phase7/economics.py",
     "src/crypto_ai/phase7/features.py",
     "src/crypto_ai/phase7/folds.py",
     "src/crypto_ai/phase7/gold.py",
+    "src/crypto_ai/phase7/gold_validation.py",
     "src/crypto_ai/phase7/metrics.py",
     "src/crypto_ai/phase7/models.py",
     "src/crypto_ai/phase7/pipeline.py",
+    "src/crypto_ai/phase7/prepared_cache.py",
+    "src/crypto_ai/phase7/quality.py",
     "src/crypto_ai/phase7/registry.py",
     "src/crypto_ai/phase7/segments.py",
     "src/crypto_ai/phase7/targets.py",
     "src/crypto_ai/phase7/training.py",
     "src/crypto_ai/phase7/universe.py",
+    "src/crypto_ai/research/config.py",
+    "src/crypto_ai/research/metrics.py",
+    "scripts/run_phase7a_pipeline.py",
+)
+EXECUTION_CONTEXT_SOURCE_FILES = (
+    "src/crypto_ai/phase7/preflight.py",
+    "src/crypto_ai/phase7/progress.py",
+    "src/crypto_ai/phase7/runtime.py",
+    "scripts/benchmark_phase7_backend.py",
+    "scripts/benchmark_phase7_preparation.py",
+    "scripts/manage_phase7_cache.py",
+    "scripts/phase7_preflight.py",
+    "scripts/run_phase7a_lightning.py",
+    "scripts/validate_phase7_gold.py",
 )
 
 
-def training_source_identity(repository_root: Path | None = None) -> dict[str, Any]:
-    """Return a content-derived identity for training/checkpoint-critical code.
-
-    The file list is deliberately independent of Git state and excludes logs,
-    reports, tests, and other runtime artifacts. Missing files fail closed so an
-    incomplete installation cannot silently reuse an existing training checkpoint.
-    """
-
+def _content_source_identity(
+    algorithm: str,
+    source_files: tuple[str, ...],
+    repository_root: Path | None = None,
+) -> dict[str, Any]:
     root = repository_root.resolve() if repository_root is not None else Path(__file__).parents[3]
     records: list[dict[str, str]] = []
-    for relative_path in TRAINING_CRITICAL_SOURCE_FILES:
-        path = root / relative_path
+    for relative_path in sorted(set(source_files)):
+        normalized = Path(relative_path).as_posix()
+        path = root / normalized
         if not path.is_file():
-            raise RuntimeError(f"training-critical source file is missing: {relative_path}")
-        records.append({"path": relative_path, "sha256": file_sha256(path)})
-    identity = {"algorithm": TRAINING_SOURCE_IDENTITY_ALGORITHM, "files": records}
+            raise RuntimeError(f"identity-critical source file is missing: {normalized}")
+        # Git may check text out as CRLF on Windows and LF on Linux. Preserve
+        # content identity across those equivalent checkouts; historical byte
+        # freezes continue to use the exact committed bytes independently.
+        content = path.read_bytes().replace(b"\r\n", b"\n")
+        records.append({"path": normalized, "sha256": hashlib.sha256(content).hexdigest()})
+    identity = {"algorithm": algorithm, "files": records}
     return {**identity, "manifest_sha256": stable_hash(identity, length=64)}
+
+
+def scientific_source_identity(repository_root: Path | None = None) -> dict[str, Any]:
+    """Return the authoritative content identity for scientific resume compatibility.
+
+    The file list is deliberately independent of Git state and excludes logs,
+    documentation, runtime paths, and machine metadata. Missing files fail closed.
+    """
+
+    return _content_source_identity(
+        SCIENTIFIC_SOURCE_IDENTITY_ALGORITHM,
+        TRAINING_CRITICAL_SOURCE_FILES,
+        repository_root,
+    )
+
+
+def training_source_identity(repository_root: Path | None = None) -> dict[str, Any]:
+    """Backward-compatible name for :func:`scientific_source_identity`."""
+
+    return scientific_source_identity(repository_root)
+
+
+def execution_source_identity(repository_root: Path | None = None) -> dict[str, Any]:
+    """Identify operational code for audit, without making it a resume key."""
+
+    return _content_source_identity(
+        "phase7_execution_context_source_manifest_v1",
+        EXECUTION_CONTEXT_SOURCE_FILES,
+        repository_root,
+    )
+
+
+def training_stage_resume_identity(
+    *, config: Phase7Config | None = None, gold_manifest_path: Path | None = None
+) -> dict[str, Any]:
+    """Bind stage-level reuse to the same scientific code/backend as model reuse."""
+
+    identity = {
+        "schema": "phase7_training_stage_resume_v2",
+        "scientific_source_identity": training_source_identity(),
+        "model_backend_semantics": resolve_lightgbm_backend().name,
+    }
+    if config is not None:
+        identity["configuration_hash"] = config.configuration_hash
+    if gold_manifest_path is not None:
+        manifest = _load_gold_manifest(gold_manifest_path)
+        identity["gold_dataset_id"] = manifest["dataset_id"]
+        identity["gold_manifest_sha256"] = file_sha256(gold_manifest_path)
+    return identity
+
+
+def validate_training_stage_resume(
+    metadata: dict[str, Any],
+    *,
+    config: Phase7Config | None = None,
+    gold_manifest_path: Path | None = None,
+) -> None:
+    if metadata.get("scientific_resume_identity") != training_stage_resume_identity(
+        config=config, gold_manifest_path=gold_manifest_path
+    ):
+        raise ValueError(
+            "completed training-stage checkpoint has missing or incompatible scientific identity; "
+            "per-model checkpoint review is required"
+        )
 
 
 @dataclass(frozen=True, slots=True)
@@ -115,19 +237,6 @@ class ExperimentSpec:
     target_type: str
     explicit_symbol_id: bool = False
     symbol_balanced: bool = False
-
-
-@dataclass(frozen=True, slots=True)
-class PreparedTrainingSegments:
-    fold_id: str
-    research_view: str
-    feature_columns: tuple[str, ...]
-    target_column: str
-    train: pa.Table
-    validation: pa.Table
-    calibration_a: pa.Table
-    calibration_b: pa.Table
-    model_inputs: PreparedArchitectureInputs
 
 
 def phase7_experiment_specs(config: Phase7Config) -> tuple[ExperimentSpec, ...]:
@@ -214,6 +323,17 @@ def _load_gold_manifest(path: Path) -> dict[str, Any]:
     return manifest
 
 
+def experiment_output_root(run_root: Path, *, kind: str, config: Phase7Config) -> Path:
+    """Keep the legacy layout unless an explicit execution root is supplied."""
+
+    variable = "PHASE7_MODEL_ROOT" if kind == "model" else "PHASE7_REPORT_ROOT"
+    if not os.environ.get(variable, "").strip():
+        return run_root / "models"
+    paths = RuntimePaths.resolve(config.paths)
+    base = paths.model_root if kind == "model" else paths.report_root
+    return base / run_root.name / "models"
+
+
 def _load_fold_rows(
     manifest: dict[str, Any],
     plan: FoldPlan,
@@ -237,9 +357,7 @@ def _load_fold_rows(
     if "year" in dataset.schema.names:
         end_year = (plan.test_end - timedelta(microseconds=1)).year
         condition = (
-            (ds.field("year") >= plan.train_start.year)
-            & (ds.field("year") <= end_year)
-            & condition
+            (ds.field("year") >= plan.train_start.year) & (ds.field("year") <= end_year) & condition
         )
     return dataset.to_table(filter=condition).sort_by(
         [("feature_time", "ascending"), ("symbol", "ascending")]
@@ -295,6 +413,76 @@ def _prepare_training_segments(
 
 def _prediction_target(spec: ExperimentSpec) -> str:
     return "raw_future_return" if spec.target_type == "raw" else "normalized_future_return"
+
+
+def _reusable_model_key(
+    fold_id: str,
+    research_view: str,
+    spec: ExperimentSpec,
+    target: str,
+    feature_columns: tuple[str, ...],
+) -> tuple[Any, ...]:
+    return (fold_id, research_view, spec.horizon_minutes, target, feature_columns)
+
+
+def _is_reusable_g0(spec: ExperimentSpec) -> bool:
+    return (
+        spec.architecture == "G0"
+        and not spec.explicit_symbol_id
+        and spec.symbol_balanced
+        and spec.feature_group == "A6"
+    )
+
+
+def _prepared_cache_identity(
+    *,
+    config: Phase7Config,
+    manifest: dict[str, Any],
+    gold_manifest_sha256: str,
+    source_identity: dict[str, Any],
+    fold_id: str,
+    research_view: str,
+    fold_membership_hash: str,
+    universe_hash: str,
+    registry_hash: str,
+    spec: ExperimentSpec,
+    feature_columns: tuple[str, ...],
+) -> dict[str, Any]:
+    target = _prediction_target(spec)
+    partition_identity = [
+        {
+            "sha256": item.get("sha256"),
+            "row_count": item.get("row_count"),
+        }
+        for item in manifest.get("partition_files", [])
+    ]
+    lineage = manifest.get("lineage") if isinstance(manifest.get("lineage"), dict) else {}
+    return {
+        "gold_dataset_id": manifest["dataset_id"],
+        "gold_manifest_sha256": gold_manifest_sha256,
+        "gold_partition_manifest_sha256": stable_hash(partition_identity, length=64),
+        "configuration_hash": config.configuration_hash,
+        "gold_source_fingerprint": lineage.get("source_fingerprint"),
+        "scientific_source_identity": source_identity["manifest_sha256"],
+        "fold_id": fold_id,
+        "research_view": research_view,
+        "horizon_minutes": spec.horizon_minutes,
+        "target_type": spec.target_type,
+        "target_column": target,
+        "feature_group": spec.feature_group,
+        "feature_columns": list(feature_columns),
+        "fold_membership_hash": fold_membership_hash,
+        "universe_hash": universe_hash,
+        "registry_hash": registry_hash,
+        "purge": "actual_label_end_time_strictly_before_next_segment",
+        "embargo_minutes": config.schedule.embargo_minutes,
+        "preprocessing_version": PREPROCESSING_VERSION,
+        "feature_version": FEATURE_VERSION,
+        "target_version": TARGET_VERSION,
+        "matrix_dtype": "float64",
+        "matrix_code_identity": source_identity["manifest_sha256"],
+        "symbol_encoding_contract": "deferred_sorted_train_symbols_one_hot_v1",
+    }
 
 
 def _to_raw_predictions(
@@ -386,6 +574,29 @@ def _validate_complete_orphan_report(report: dict[str, Any], model: Any) -> None
         or frozen_identity != stable_hash(expected_components)
     ):
         raise ValueError("COMPLETE orphan frozen training identity mismatch")
+
+
+def _restore_completed_g0(
+    *,
+    report_path: Path,
+    model_path: Path,
+    expected_checkpoint_identity: dict[str, Any],
+) -> tuple[dict[str, Any], Any]:
+    """Load a checkpoint-validated G0 so a resumed H0 never refits it."""
+
+    if not report_path.is_file() or not model_path.is_file():
+        raise FileNotFoundError("completed G0 checkpoint is missing its report or model artifact")
+    report = json.loads(report_path.read_text(encoding="utf-8"))
+    model = load_model(model_path)
+    _validate_complete_orphan_report(report, model)
+    reported_identity = report.get("checkpoint_identity")
+    if not isinstance(reported_identity, dict) or not checkpoint_metadata_compatible(
+        reported_identity, expected_checkpoint_identity
+    ):
+        raise ValueError("completed G0 checkpoint identity mismatch")
+    if model.architecture != "G0":
+        raise ValueError("completed reusable model is not G0")
+    return report, model
 
 
 def _conditional_metrics(
@@ -577,6 +788,10 @@ def _run_one(
     folds_total: int = 1,
     prepared_segments: PreparedTrainingSegments | None = None,
     reusable_models: dict[tuple[Any, ...], Any] | None = None,
+    compute_budget: ComputeBudget | None = None,
+    cache_id: str | None = None,
+    execution_metadata: dict[str, Any] | None = None,
+    model_path: Path | None = None,
 ) -> tuple[dict[str, Any], list[Path]]:
     experiment_started = time.monotonic()
     target = _prediction_target(spec)
@@ -618,18 +833,22 @@ def _run_one(
         if reporter is not None
         else nullcontext()
     )
-    reuse_key = (
-        fold.plan.fold_id,
-        fold.research_view,
-        spec.horizon_minutes,
-        target,
-        feature_columns,
+    reuse_key = _reusable_model_key(
+        fold.plan.fold_id, fold.research_view, spec, target, feature_columns
     )
     reusable_global = (
         reusable_models.get(reuse_key)
         if reusable_models is not None and spec.architecture == "H0"
         else None
     )
+    budget = compute_budget or ComputeBudget.resolve(config.resources)
+    emit_event(
+        "MODEL_START",
+        fold_id=fold.plan.fold_id,
+        spec=spec.name,
+        **memory_snapshot(),
+    )
+    model_started = time.monotonic()
     with fit_context:
         model = fit_architecture(
             spec.architecture,  # type: ignore[arg-type]
@@ -638,8 +857,8 @@ def _run_one(
             feature_columns=feature_columns,
             target_column=target,
             config=config.models,
-            model_threads=config.resources.model_threads,
-            estimator_workers=config.resources.max_workers,
+            model_threads=budget.lightgbm_threads_per_model,
+            estimator_workers=budget.model_parallelism,
             cluster_mapping=fold.cluster_mapping,
             explicit_symbol_id=spec.explicit_symbol_id,
             symbol_balanced=spec.symbol_balanced,
@@ -648,14 +867,16 @@ def _run_one(
             prepared_inputs=prepared.model_inputs,
             reusable_global=reusable_global,
         )
-    if (
-        reusable_models is not None
-        and spec.architecture == "G0"
-        and not spec.explicit_symbol_id
-        and spec.symbol_balanced
-        and spec.feature_group == "A6"
-    ):
+    emit_event(
+        "MODEL_DONE",
+        fold_id=fold.plan.fold_id,
+        spec=spec.name,
+        elapsed_seconds=time.monotonic() - model_started,
+        **memory_snapshot(),
+    )
+    if reusable_models is not None and _is_reusable_g0(spec):
         reusable_models[reuse_key] = model
+    emit_event("CAL_A_START", fold_id=fold.plan.fold_id, spec=spec.name)
     cal_a_raw, cal_a_covered = model.predict(calibration_a)
     cal_a_table, cal_a_predictions = _subset_covered(calibration_a, cal_a_raw, cal_a_covered)
     calibrator, calibration_report = fit_calibrator(
@@ -663,6 +884,8 @@ def _run_one(
         np.asarray(cal_a_table.column(target).to_pylist(), dtype=np.float64),
         config.calibration,
     )
+    emit_event("CAL_A_DONE", fold_id=fold.plan.fold_id, spec=spec.name)
+    emit_event("CAL_B_START", fold_id=fold.plan.fold_id, spec=spec.name)
     cal_b_model, cal_b_covered = model.predict(calibration_b)
     cal_b_table, cal_b_predictions = _subset_covered(calibration_b, cal_b_model, cal_b_covered)
     cal_b_raw = _to_raw_predictions(
@@ -679,6 +902,7 @@ def _run_one(
         granularity=_threshold_granularity(spec.architecture),  # type: ignore[arg-type]
         config=config.costs,
     )
+    emit_event("CAL_B_DONE", fold_id=fold.plan.fold_id, spec=spec.name)
     threshold_payload = asdict(thresholds)
     frozen_components = _frozen_test_identity_components(
         model_identity=model.metadata["model_identity"],
@@ -686,6 +910,7 @@ def _run_one(
         thresholds=threshold_payload,
     )
     frozen_identity = stable_hash(frozen_components)
+    emit_event("TEST_EVAL_START", fold_id=fold.plan.fold_id, spec=spec.name)
     test = _finite(fold.release_test(frozen_identity=frozen_identity), feature_columns, target)
     test_model, test_covered = model.predict(test)
     calibrated = np.full(test.num_rows, np.nan)
@@ -767,11 +992,14 @@ def _run_one(
         "frozen_identity_before_test": frozen_identity,
         "frozen_identity_components": frozen_components,
         "checkpoint_identity": checkpoint_identity,
+        "prepared_cache_id": cache_id,
+        "execution_context": execution_metadata or {},
         "test_used_for_selection": False,
         **config.holdout_status_payload(),
     }
+    emit_event("TEST_EVAL_DONE", fold_id=fold.plan.fold_id, spec=spec.name)
     report_path = atomic_json(output_root / "report.json", report)
-    model_path = output_root / "model.joblib"
+    model_path = model_path or output_root / "model.joblib"
     save_model(model, model_path)
     if reporter is not None:
         reporter.fold_evaluation(
@@ -802,9 +1030,7 @@ def run_phase7_training(
     source_identity = training_source_identity()
     manifest = _load_gold_manifest(gold_manifest_path)
     gold_paths = [record["path"] for record in manifest["partition_files"]]
-    gold_dataset = (
-        ds.dataset(gold_paths, format="parquet", partitioning="hive") if gold_paths else None
-    )
+    gold_dataset: ds.Dataset | None = None
     groups = {name: tuple(values) for name, values in manifest["feature_groups"].items()}
     folds = plan_folds(
         config.data_start,
@@ -816,44 +1042,135 @@ def run_phase7_training(
     reports: list[dict[str, Any]] = []
     eligible_fold_ids_by_symbol: dict[str, set[str]] = {}
     gold_manifest_checksum = file_sha256(gold_manifest_path.resolve())
+    runtime_paths = RuntimePaths.resolve(config.paths)
+    cache_mode = cache_mode_from_environment()
+    durable_cache = PreparedDataCache(runtime_paths.cache_root, cache_mode)
+    compute_budget = ComputeBudget.resolve(config.resources)
+    selected_backend = resolve_lightgbm_backend()
+    execution_metadata = {
+        "git_commit": git_commit(),
+        "configuration_hash": config.configuration_hash,
+        "scientific_source_identity": source_identity,
+        "execution_source_identity": execution_source_identity(),
+        "gold_dataset_id": manifest["dataset_id"],
+        "gold_manifest_sha256": gold_manifest_checksum,
+        "backend": backend_metadata(selected_backend),
+        "compute_budget": asdict(compute_budget),
+        "runtime_paths": runtime_paths.payload(),
+        "os": platform.platform(),
+        "python": platform.python_version(),
+    }
+    emit_event("COMPUTE_BUDGET_RESOLVED", **asdict(compute_budget))
     for fold_position, plan in enumerate(folds, start=1):
         horizons = sorted({spec.horizon_minutes for spec in specs})
-        fold_tables = {
-            horizon: _load_fold_rows(
-                manifest,
-                plan,
-                horizon,
-                **({"dataset": gold_dataset} if gold_dataset is not None else {}),
-            )
-            for horizon in horizons
+        cached: dict[tuple[str, int, str, str], CachedPreparedData] = {}
+        if cache_mode != "disabled":
+            for research_view in RESEARCH_VIEWS:
+                try:
+                    membership = select_fold_active_universe(
+                        registry,
+                        descriptors,
+                        fold_id=plan.fold_id,
+                        train_end=plan.train_end,
+                        core_universe=universe,
+                        expansion_policy=expansion_policy,
+                        config=config.universe,
+                        research_view=research_view,  # type: ignore[arg-type]
+                        unusable_segments=unusable_segments,
+                        required_start=plan.train_start,
+                        required_end=plan.test_end,
+                    )
+                except ValueError:
+                    continue
+                for spec in specs:
+                    key = (
+                        research_view,
+                        spec.horizon_minutes,
+                        spec.target_type,
+                        spec.feature_group,
+                    )
+                    if key in cached:
+                        continue
+                    identity = _prepared_cache_identity(
+                        config=config,
+                        manifest=manifest,
+                        gold_manifest_sha256=gold_manifest_checksum,
+                        source_identity=source_identity,
+                        fold_id=plan.fold_id,
+                        research_view=research_view,
+                        fold_membership_hash=membership.membership_hash,
+                        universe_hash=universe.universe_hash,
+                        registry_hash=registry.registry_hash,
+                        spec=spec,
+                        feature_columns=groups[spec.feature_group],
+                    )
+                    try:
+                        cached[key] = durable_cache.load(identity, plan)
+                    except PreparedCacheMissError:
+                        if cache_mode == "read_only":
+                            raise
+        expected_cache_keys = {
+            (view, spec.horizon_minutes, spec.target_type, spec.feature_group)
+            for view in RESEARCH_VIEWS
+            for spec in specs
         }
+        needs_fold_load = cache_mode == "disabled" or not expected_cache_keys.issubset(cached)
+        fold_tables: dict[int, pa.Table] = {}
+        if needs_fold_load:
+            emit_event("FOLD_LOAD_START", fold_id=plan.fold_id, **memory_snapshot())
+            if gold_dataset is None and gold_paths:
+                gold_dataset = ds.dataset(gold_paths, format="parquet", partitioning="hive")
+            fold_tables = {
+                horizon: _load_fold_rows(
+                    manifest,
+                    plan,
+                    horizon,
+                    **({"dataset": gold_dataset} if gold_dataset is not None else {}),
+                )
+                for horizon in horizons
+            }
+            emit_event(
+                "FOLD_LOAD_DONE",
+                fold_id=plan.fold_id,
+                rows={key: value.num_rows for key, value in fold_tables.items()},
+                **memory_snapshot(),
+            )
         for research_view in RESEARCH_VIEWS:
             try:
-                sliced = {
-                    horizon: slice_multiasset_fold(
-                        table,
-                        plan,
-                        registry=registry,
-                        universe=universe,
-                        expansion_policy=expansion_policy,
-                        research_view=research_view,  # type: ignore[arg-type]
-                        descriptors=descriptors,
-                        universe_config=config.universe,
-                        schedule=config.schedule,
-                        holdout_start=config.prospective_holdout_start,
-                        cluster_count=config.models.cluster_count,
-                        seed=config.models.seed,
-                        unusable_segments=unusable_segments,
-                    )
-                    for horizon, table in fold_tables.items()
-                }
+                view_keys = {key for key in expected_cache_keys if key[0] == research_view}
+                if view_keys and view_keys.issubset(cached):
+                    sliced = {}
+                else:
+                    sliced = {
+                        horizon: slice_multiasset_fold(
+                            table,
+                            plan,
+                            registry=registry,
+                            universe=universe,
+                            expansion_policy=expansion_policy,
+                            research_view=research_view,  # type: ignore[arg-type]
+                            descriptors=descriptors,
+                            universe_config=config.universe,
+                            schedule=config.schedule,
+                            holdout_start=config.prospective_holdout_start,
+                            cluster_count=config.models.cluster_count,
+                            seed=config.models.seed,
+                            unusable_segments=unusable_segments,
+                        )
+                        for horizon, table in fold_tables.items()
+                    }
             except IneligibleFoldError as exc:
                 # A genuine point-in-time eligibility failure: record every
                 # experiment for this fold/view as INELIGIBLE and move on.
                 # Anything else is a defect and must propagate (fail closed).
                 for spec in specs:
                     stage = f"models/{research_view.lower()}/{plan.fold_id}/{spec.name}"
-                    output = run_root / stage
+                    output = (
+                        experiment_output_root(run_root, kind="report", config=config)
+                        / research_view.lower()
+                        / plan.fold_id
+                        / spec.name
+                    )
                     report_path = output / "report.json"
                     checkpoint_identity = {
                         "experiment_id": spec.name,
@@ -876,6 +1193,10 @@ def run_phase7_training(
                         "gold_dataset_id": manifest["dataset_id"],
                         "gold_manifest_sha256": gold_manifest_checksum,
                         "code_version": PHASE7_VERSION,
+                        "scientific_resume_identity_schema": (
+                            "phase7_scientific_resume_identity_v2"
+                        ),
+                        "model_backend_semantics": selected_backend.name,
                         "training_source_identity": source_identity,
                     }
                     report = {
@@ -887,13 +1208,29 @@ def run_phase7_training(
                         "reason": str(exc),
                         "test_used_for_selection": False,
                         "checkpoint_identity": checkpoint_identity,
+                        "prepared_cache_id": None,
+                        "execution_context": execution_metadata,
                         **config.holdout_status_payload(),
                     }
+                    if resume and checkpoint_store.is_complete(
+                        stage, expected_metadata=checkpoint_identity
+                    ):
+                        previous = json.loads(report_path.read_text(encoding="utf-8"))
+                        if previous.get("status") != "INELIGIBLE":
+                            raise ValueError(
+                                "slicing-ineligible checkpoint has an inconsistent report"
+                            ) from exc
+                        reports.append(previous)
+                        continue
                     files = [atomic_json(report_path, report)]
                     checkpoint_store.complete(stage, files, checkpoint_identity)
                     reports.append(report)
                 continue
-            reference_fold = sliced[horizons[0]]
+            reference_fold = (
+                next(cached[key].fold for key in sorted(view_keys) if key in cached)
+                if view_keys and view_keys.issubset(cached)
+                else sliced[horizons[0]]
+            )
             if reporter is not None:
                 reporter.fold_started(
                     fold_position=fold_position,
@@ -908,11 +1245,55 @@ def run_phase7_training(
             prepared_cache_key: tuple[Any, ...] | None = None
             prepared_cache: PreparedTrainingSegments | None = None
             reusable_models: dict[tuple[Any, ...], Any] = {}
+            unavailable_reusable_g0: set[tuple[Any, ...]] = set()
             for spec_position, spec in enumerate(specs, start=1):
                 stage = f"models/{research_view.lower()}/{plan.fold_id}/{spec.name}"
-                output = run_root / stage
+                relative_stage = Path(research_view.lower()) / plan.fold_id / spec.name
+                output = (
+                    experiment_output_root(run_root, kind="report", config=config) / relative_stage
+                )
+                model_path = (
+                    experiment_output_root(run_root, kind="model", config=config)
+                    / relative_stage
+                    / "model.joblib"
+                )
                 report_path = output / "report.json"
-                fold_data = sliced[spec.horizon_minutes]
+                durable_key = (
+                    research_view,
+                    spec.horizon_minutes,
+                    spec.target_type,
+                    spec.feature_group,
+                )
+                cached_bundle = cached.get(durable_key)
+                fold_data = (
+                    cached_bundle.fold
+                    if cached_bundle is not None
+                    else sliced[spec.horizon_minutes]
+                )
+                feature_columns = groups[spec.feature_group]
+                target = _prediction_target(spec)
+                cache_identity = _prepared_cache_identity(
+                    config=config,
+                    manifest=manifest,
+                    gold_manifest_sha256=gold_manifest_checksum,
+                    source_identity=source_identity,
+                    fold_id=plan.fold_id,
+                    research_view=research_view,
+                    fold_membership_hash=fold_data.eligibility_manifest["fold_membership_hash"],
+                    universe_hash=universe.universe_hash,
+                    registry_hash=registry.registry_hash,
+                    spec=spec,
+                    feature_columns=feature_columns,
+                )
+                current_cache_id = (
+                    "DISABLED"
+                    if cache_mode == "disabled"
+                    else (
+                        cached_bundle.cache_id
+                        if cached_bundle is not None
+                        else prepared_cache_id(cache_identity)
+                    )
+                )
                 checkpoint_identity = {
                     "experiment_id": spec.name,
                     "configuration_hash": config.configuration_hash,
@@ -934,42 +1315,141 @@ def run_phase7_training(
                     "gold_dataset_id": manifest["dataset_id"],
                     "gold_manifest_sha256": gold_manifest_checksum,
                     "code_version": PHASE7_VERSION,
+                    "scientific_resume_identity_schema": "phase7_scientific_resume_identity_v2",
+                    "model_backend_semantics": selected_backend.name,
                     "training_source_identity": source_identity,
                 }
                 if resume and checkpoint_store.is_complete(
                     stage, expected_metadata=checkpoint_identity
                 ):
-                    reports.append(json.loads(report_path.read_text(encoding="utf-8")))
+                    completed_report = json.loads(report_path.read_text(encoding="utf-8"))
+                    completed_status = completed_report.get("status")
+                    if completed_status == "INELIGIBLE":
+                        if _is_reusable_g0(spec):
+                            unavailable_reusable_g0.add(
+                                _reusable_model_key(
+                                    plan.fold_id,
+                                    research_view,
+                                    spec,
+                                    target,
+                                    feature_columns,
+                                )
+                            )
+                    elif completed_status != "COMPLETE":
+                        raise ValueError(
+                            f"completed checkpoint has unsupported report status: "
+                            f"{completed_status!r}"
+                        )
+                    elif _is_reusable_g0(spec):
+                        completed_report, completed_model = _restore_completed_g0(
+                            report_path=report_path,
+                            model_path=model_path,
+                            expected_checkpoint_identity=checkpoint_identity,
+                        )
+                        reuse_key = _reusable_model_key(
+                            plan.fold_id,
+                            research_view,
+                            spec,
+                            target,
+                            feature_columns,
+                        )
+                        reusable_models[reuse_key] = completed_model
+                    reports.append(completed_report)
                     continue
                 if resume and report_path.exists():
                     orphan_report = json.loads(report_path.read_text(encoding="utf-8"))
                     orphan_files = [report_path]
-                    model_path = output / "model.joblib"
-                    if orphan_report.get("status") == "COMPLETE" and model_path.exists():
+                    orphan_model: Any | None = None
+                    if orphan_report.get("status") == "COMPLETE":
+                        if not model_path.exists():
+                            raise FileNotFoundError(
+                                "COMPLETE orphan report is missing its model artifact for "
+                                f"{research_view} {plan.fold_id} {spec.name}"
+                            )
                         orphan_model = load_model(model_path)
                         _validate_complete_orphan_report(orphan_report, orphan_model)
-                        if orphan_report.get("checkpoint_identity") != checkpoint_identity:
+                        orphan_identity = orphan_report.get("checkpoint_identity")
+                        if not isinstance(
+                            orphan_identity, dict
+                        ) or not checkpoint_metadata_compatible(
+                            orphan_identity, checkpoint_identity
+                        ):
                             raise ValueError(
                                 "Orphan model/report identity mismatch for "
                                 f"{research_view} {plan.fold_id} {spec.name}"
                             )
                         orphan_files.append(model_path)
+                    elif orphan_report.get("status") not in {"INELIGIBLE"}:
+                        raise ValueError(
+                            "Orphan report has non-reusable status for "
+                            f"{research_view} {plan.fold_id} {spec.name}: "
+                            f"{orphan_report.get('status')!r}"
+                        )
                     if orphan_report.get("status") == "INELIGIBLE" or len(orphan_files) == 2:
-                        if orphan_report.get("checkpoint_identity") != checkpoint_identity:
+                        orphan_identity = orphan_report.get("checkpoint_identity")
+                        if not isinstance(
+                            orphan_identity, dict
+                        ) or not checkpoint_metadata_compatible(
+                            orphan_identity, checkpoint_identity
+                        ):
                             raise ValueError(
                                 "Orphan report identity mismatch for "
                                 f"{research_view} {plan.fold_id} {spec.name}"
                             )
                         checkpoint_store.complete(stage, orphan_files, checkpoint_identity)
+                        if _is_reusable_g0(spec) and orphan_model is not None:
+                            reuse_key = _reusable_model_key(
+                                plan.fold_id,
+                                research_view,
+                                spec,
+                                target,
+                                feature_columns,
+                            )
+                            reusable_models[reuse_key] = orphan_model
+                        elif _is_reusable_g0(spec) and orphan_report.get("status") == "INELIGIBLE":
+                            unavailable_reusable_g0.add(
+                                _reusable_model_key(
+                                    plan.fold_id,
+                                    research_view,
+                                    spec,
+                                    target,
+                                    feature_columns,
+                                )
+                            )
                         reports.append(orphan_report)
                         continue
+                required_g0_key = _reusable_model_key(
+                    plan.fold_id,
+                    research_view,
+                    spec,
+                    target,
+                    feature_columns,
+                )
+                if spec.architecture == "H0" and required_g0_key in unavailable_reusable_g0:
+                    report = {
+                        "status": "INELIGIBLE",
+                        "spec": asdict(spec),
+                        "fold_id": plan.fold_id,
+                        "research_view": research_view,
+                        "fold_membership_hash": fold_data.eligibility_manifest[
+                            "fold_membership_hash"
+                        ],
+                        "reason": "required reusable G0 base is INELIGIBLE",
+                        "test_used_for_selection": False,
+                        "checkpoint_identity": checkpoint_identity,
+                        "prepared_cache_id": current_cache_id,
+                        "execution_context": execution_metadata,
+                        **config.holdout_status_payload(),
+                    }
+                    files = [atomic_json(report_path, report)]
+                    checkpoint_store.complete(stage, files, checkpoint_identity)
+                    reports.append(report)
+                    continue
                 print(
                     f"[phase7:train] view {research_view} fold {fold_position}/{len(folds)} "
                     f"experiment {spec_position}/{len(specs)} {spec.name}",
                     flush=True,
                 )
-                target = _prediction_target(spec)
-                feature_columns = groups[spec.feature_group]
                 next_prepared_key = (
                     plan.fold_id,
                     research_view,
@@ -977,13 +1457,31 @@ def run_phase7_training(
                     target,
                     feature_columns,
                 )
-                if prepared_cache_key != next_prepared_key:
+                if cached_bundle is not None:
+                    prepared_cache = cached_bundle.prepared
+                    prepared_cache_key = next_prepared_key
+                elif prepared_cache_key != next_prepared_key:
+                    prep_started = time.monotonic()
                     prepared_cache = _prepare_training_segments(
                         fold_data,
                         feature_columns,
                         target,
                     )
                     prepared_cache_key = next_prepared_key
+                    emit_event(
+                        "MATRIX_PREPARATION_DONE",
+                        fold_id=plan.fold_id,
+                        research_view=research_view,
+                        horizon=spec.horizon_minutes,
+                        target=target,
+                        elapsed_seconds=time.monotonic() - prep_started,
+                        **memory_snapshot(),
+                    )
+                    cache_path = durable_cache.write(cache_identity, fold_data, prepared_cache)
+                    if cache_path is not None:
+                        cached_bundle = durable_cache.load(cache_identity, plan)
+                        cached[durable_key] = cached_bundle
+                        prepared_cache = cached_bundle.prepared
                 if prepared_cache is None:
                     raise AssertionError("Phase 7 prepared-segment cache was not initialized")
                 try:
@@ -999,6 +1497,10 @@ def run_phase7_training(
                         folds_total=len(folds),
                         prepared_segments=prepared_cache,
                         reusable_models=reusable_models,
+                        compute_budget=compute_budget,
+                        cache_id=current_cache_id,
+                        execution_metadata=execution_metadata,
+                        model_path=model_path,
                     )
                 except IneligibleFoldError as exc:
                     report = {
@@ -1012,10 +1514,15 @@ def run_phase7_training(
                         "reason": str(exc),
                         "test_used_for_selection": False,
                         "checkpoint_identity": checkpoint_identity,
+                        "prepared_cache_id": current_cache_id,
+                        "execution_context": execution_metadata,
                         **config.holdout_status_payload(),
                     }
                     files = [atomic_json(report_path, report)]
+                    if _is_reusable_g0(spec):
+                        unavailable_reusable_g0.add(required_g0_key)
                 checkpoint_store.complete(stage, files, checkpoint_identity)
+                emit_event("CHECKPOINT_SAVED", stage=stage)
                 reports.append(report)
         if reporter is not None:
             reporter.fold_completed(fold_position, len(folds), plan.fold_id)

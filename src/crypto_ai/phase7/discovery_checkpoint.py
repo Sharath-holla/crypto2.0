@@ -26,6 +26,7 @@ from crypto_ai.phase7.config import (
     stable_hash,
 )
 from crypto_ai.phase7.registry import SymbolRecord, SymbolRegistry
+from crypto_ai.phase7.runtime import RuntimePaths
 from crypto_ai.phase7.segments import (
     AcquisitionOutcome,
     AcquisitionStatus,
@@ -110,7 +111,7 @@ class DiscoverySymbolCheckpointStore:
         self.quality_root = data_root / "quality"
         self.silver_root = data_root / "silver" / "binance"
         self.root = (
-            config.paths.checkpoint_root.resolve()
+            RuntimePaths.resolve(config.paths).checkpoint_root
             / run_identity
             / "discovery"
             / acquisition_contract_version
@@ -355,7 +356,17 @@ class DiscoverySymbolCheckpointStore:
                 ):
                     raise ValueError("candidate evidence does not cover the full causal request")
                 proven.append((outcome, evidence))
-            except (FileNotFoundError, OSError, ValueError, KeyError, TypeError):
+            except (FileNotFoundError, OSError, ValueError, KeyError, TypeError) as exc:
+                logger.warning(
+                    "Discovery backfill candidate rejected",
+                    extra={
+                        "event": "discovery_symbol_backfill_candidate_invalid",
+                        "symbol": record.symbol,
+                        "interval": interval,
+                        "candidate": str(candidate),
+                        "reason": str(exc),
+                    },
+                )
                 continue
         if not proven:
             logger.info(
@@ -459,7 +470,15 @@ class DiscoverySymbolCheckpointStore:
                         continue
                     symbol = str(source["symbol"]).upper()
                     interval = str(source["interval"])
-            except (FileNotFoundError, OSError, ValueError, KeyError, TypeError):
+            except (FileNotFoundError, OSError, ValueError, KeyError, TypeError) as exc:
+                logger.warning(
+                    "Discovery candidate manifest rejected",
+                    extra={
+                        "event": "discovery_candidate_manifest_invalid",
+                        "candidate": str(path),
+                        "reason": str(exc),
+                    },
+                )
                 continue
             index.setdefault((symbol, interval), []).append(path.resolve())
         self._candidate_index = index

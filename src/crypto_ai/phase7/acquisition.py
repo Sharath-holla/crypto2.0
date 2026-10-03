@@ -44,6 +44,7 @@ from crypto_ai.phase7.discovery_checkpoint import (
     DiscoverySymbolCheckpointStore,
 )
 from crypto_ai.phase7.registry import SymbolRecord, SymbolRegistry
+from crypto_ai.phase7.runtime import resolve_runtime_input_path
 from crypto_ai.phase7.segments import (
     AcquisitionOutcome,
     AcquisitionStatus,
@@ -1462,7 +1463,7 @@ def _silver_segment_manifests(manifest_path: Path, payload: dict[str, Any]) -> t
     for segment in segments:
         if not isinstance(segment, dict):
             raise ValueError(f"Invalid causal segment record: {manifest_path}")
-        child = Path(str(segment.get("silver_manifest", ""))).resolve()
+        child = resolve_runtime_input_path(str(segment.get("silver_manifest", "")))
         if not child.is_file() or file_sha256(child) != segment.get("silver_manifest_sha256"):
             raise ValueError(f"Causal segment Silver lineage mismatch: {child}")
         start = datetime.fromisoformat(str(segment["start"]).replace("Z", "+00:00"))
@@ -1477,7 +1478,7 @@ def _silver_segment_manifests(manifest_path: Path, payload: dict[str, Any]) -> t
 def validated_candle_manifest_range(manifest: str | Path) -> tuple[datetime, datetime]:
     """Return the immutable Bronze range accepted by a Silver candle manifest."""
 
-    manifest_path = Path(manifest).resolve()
+    manifest_path = resolve_runtime_input_path(manifest)
     payload = read_manifest(manifest_path)
     if payload is None or payload.get("quality_status") not in {
         "PASS",
@@ -1485,7 +1486,7 @@ def validated_candle_manifest_range(manifest: str | Path) -> tuple[datetime, dat
         "SEGMENTED_VALID",
     }:
         raise ValueError(f"Ineligible Silver manifest: {manifest_path}")
-    source_path = Path(str(payload.get("source_manifest", ""))).resolve()
+    source_path = resolve_runtime_input_path(str(payload.get("source_manifest", "")))
     source = read_manifest(source_path)
     if source is None:
         raise ValueError(f"Silver source manifest is unavailable: {source_path}")
@@ -1528,7 +1529,7 @@ def load_candle_family(
     tables: list[pa.Table] = []
     lifecycle_absent = 0
     for symbol, manifest in sorted(manifests.items()):
-        manifest_path = Path(manifest).resolve()
+        manifest_path = resolve_runtime_input_path(manifest)
         payload = read_manifest(manifest_path)
         if payload is None or payload.get("quality_status") not in {
             "PASS",

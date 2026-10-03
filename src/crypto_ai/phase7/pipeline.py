@@ -28,6 +28,7 @@ from crypto_ai.phase7.features import (
     generate_multiasset_features,
 )
 from crypto_ai.phase7.gold import build_multiasset_gold_chunks
+from crypto_ai.phase7.gold_validation import locate_gold_manifest
 from crypto_ai.phase7.progress import ProgressReporter
 from crypto_ai.phase7.quality import build_point_in_time_descriptors
 from crypto_ai.phase7.registry import (
@@ -36,13 +37,19 @@ from crypto_ai.phase7.registry import (
     read_registry,
     write_registry,
 )
+from crypto_ai.phase7.runtime import RuntimePaths
 from crypto_ai.phase7.segments import CausalDataGap
 from crypto_ai.phase7.sources import (
     BinancePublicDiscoveryClient,
     source_verification_manifest,
 )
 from crypto_ai.phase7.targets import MultiAssetTargetResult, generate_multiasset_targets
-from crypto_ai.phase7.training import run_phase7_training
+from crypto_ai.phase7.training import (
+    experiment_output_root,
+    run_phase7_training,
+    training_stage_resume_identity,
+    validate_training_stage_resume,
+)
 from crypto_ai.phase7.universe import (
     ExpansionUniversePolicy,
     FrozenUniverse,
@@ -68,7 +75,7 @@ def _validated_range_payload(manifest: str) -> dict[str, str]:
 
 def _run_context(config: Phase7Config) -> tuple[str, Path, datetime]:
     run_identity = f"phase7-{config.configuration_hash}"
-    run_root = config.paths.artifact_root.resolve() / run_identity
+    run_root = RuntimePaths.resolve(config.paths).artifact_root / run_identity
     path = run_root / "run.json"
     if path.exists():
         payload = json.loads(path.read_text(encoding="utf-8"))
@@ -625,7 +632,7 @@ def _gold_stage(
     result = build_multiasset_gold_chunks(
         itertools.chain((first,), remaining),
         feature_columns=first[1].feature_columns,
-        output_root=config.paths.gold_root,
+        output_root=RuntimePaths.resolve(config.paths).gold_root,
         universe_version=UNIVERSE_VERSION,
         universe_hash=data["research_universe_hash"],
         registry_version=registry.version,
@@ -781,7 +788,13 @@ def run_phase7_cloud(
         run_started_at=observed_at,
         repository_root=Path.cwd(),
     )
-    checkpoints = CheckpointStore(config.paths.checkpoint_root, run_identity)
+    runtime = RuntimePaths.resolve(config.paths)
+    checkpoints = CheckpointStore(
+        runtime.checkpoint_root,
+        run_identity,
+        runtime.checkpoint_roots(),
+        runtime.legacy_checkpoint_roots(),
+    )
     selected = (stage,) if stage else STAGES
     completed: list[str] = []
     for stage_position, current in enumerate(selected, start=1):
@@ -793,6 +806,18 @@ def run_phase7_cloud(
             raise RuntimeError(f"Stage {current} requires completed dependencies: {missing}")
         reporter.stage_started(current, stage_position, len(selected))
         if resume and checkpoints.is_complete(current):
+            if current == "train":
+                checkpoint = json.loads(
+                    checkpoints.checkpoint_path(current).read_text(encoding="utf-8")
+                )
+                gold = json.loads((run_root / "gold" / "result.json").read_text(encoding="utf-8"))
+                validate_training_stage_resume(
+                    checkpoint["metadata"],
+                    config=config,
+                    gold_manifest_path=locate_gold_manifest(
+                        runtime.gold_root, str(gold["dataset_id"])
+                    ),
+                )
             print(f"[phase7:{current}] checkpoint verified; reusing", flush=True)
             reporter.stage_completed(
                 current,
@@ -885,12 +910,22 @@ def run_phase7_cloud(
                 reporter=reporter,
             )
             files = [descriptor_path, run_root / "training_summary.json"]
-            files.extend(run_root.glob("models/**/*.joblib"))
-            files.extend(run_root.glob("models/**/report.json"))
+            files.extend(
+                experiment_output_root(run_root, kind="model", config=config).rglob("*.joblib")
+            )
+            files.extend(
+                experiment_output_root(run_root, kind="report", config=config).rglob("report.json")
+            )
             metadata = {
                 "fold_count": summary["fold_count"],
                 "completed_reports": summary["completed_reports"],
                 "ineligible_reports": summary["ineligible_reports"],
+                "scientific_resume_identity": training_stage_resume_identity(
+                    config=config,
+                    gold_manifest_path=locate_gold_manifest(
+                        runtime.gold_root, str(gold["dataset_id"])
+                    ),
+                ),
             }
         else:
             report, files = _report_stage(config, run_root)

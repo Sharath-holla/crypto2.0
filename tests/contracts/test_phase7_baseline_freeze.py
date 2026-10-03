@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import subprocess
 from pathlib import Path
 
 from crypto_ai.contracts.baseline import PHASE7_APPROVED_BASELINE
@@ -14,9 +15,11 @@ from crypto_ai.phase7 import (
 from crypto_ai.phase7 import (
     test_phase7_universe as run_universe_test,
 )
+from crypto_ai.phase7.training import training_source_identity
 
 ROOT = Path(__file__).resolve().parents[2]
 MANIFEST_PATH = ROOT / "configs" / "contracts" / f"{PHASE7_APPROVED_BASELINE.baseline_id}.json"
+FROZEN_SOURCE_COMMIT = "28d3098a82952a3d09073e4d81b5281f856c072e"
 
 
 def _manifest() -> dict[str, object]:
@@ -36,12 +39,27 @@ def test_machine_readable_baseline_matches_typed_contract() -> None:
 
 
 def test_phase7_scientific_source_and_config_are_byte_frozen() -> None:
+    """The v1.9 byte contract is historical evidence for the frozen Git baseline."""
+
     manifest = _manifest()
     source_freeze = manifest["source_freeze"]
     assert isinstance(source_freeze, dict)
-    expected_paths = {
-        path.relative_to(ROOT).as_posix() for path in (ROOT / "src/crypto_ai/phase7").glob("*.py")
-    }
+    phase7_paths = subprocess.run(
+        [
+            "git",
+            "ls-tree",
+            "-r",
+            "--name-only",
+            FROZEN_SOURCE_COMMIT,
+            "--",
+            "src/crypto_ai/phase7",
+        ],
+        cwd=ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.splitlines()
+    expected_paths = {path for path in phase7_paths if path.endswith(".py")}
     expected_paths.update(
         {
             "configs/data_quality/default.toml",
@@ -61,8 +79,29 @@ def test_phase7_scientific_source_and_config_are_byte_frozen() -> None:
     )
     assert set(source_freeze) == expected_paths
     for relative_path, expected_sha256 in source_freeze.items():
-        actual = hashlib.sha256((ROOT / relative_path).read_bytes()).hexdigest()
+        source = subprocess.run(
+            ["git", "show", f"{FROZEN_SOURCE_COMMIT}:{relative_path}"],
+            cwd=ROOT,
+            check=True,
+            capture_output=True,
+        ).stdout
+        actual = hashlib.sha256(source).hexdigest()
         assert actual == expected_sha256, f"scientific baseline drift: {relative_path}"
+
+
+def test_active_scientific_identity_covers_remediation_modules() -> None:
+    identity = training_source_identity(ROOT)
+    paths = {item["path"] for item in identity["files"]}
+    assert {
+        "src/crypto_ai/phase7/backend.py",
+        "src/crypto_ai/phase7/gold_validation.py",
+        "src/crypto_ai/phase7/models.py",
+        "src/crypto_ai/phase7/prepared_cache.py",
+        "src/crypto_ai/phase7/training.py",
+        "src/crypto_ai/phase7/acquisition.py",
+        "src/crypto_ai/phase7/quality.py",
+        "src/crypto_ai/data/schema.py",
+    }.issubset(paths)
 
 
 def test_phase7_scientific_modules_do_not_depend_on_future_contract_package() -> None:

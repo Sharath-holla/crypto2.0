@@ -19,6 +19,7 @@ from crypto_ai.phase7.fixtures import (
     synthetic_registry,
 )
 from crypto_ai.phase7.metrics import evaluate_predictions
+from crypto_ai.phase7.runtime import RuntimePaths
 from crypto_ai.phase7.sources import source_verification_manifest
 from crypto_ai.phase7.targets import generate_multiasset_targets
 from crypto_ai.phase7.universe import build_expansion_policy, select_core_universe
@@ -30,7 +31,8 @@ def validate_phase7_configuration(config: Phase7Config) -> dict[str, Any]:
         for path in (config.binance_config, config.quality_config)
         if not path.resolve().is_file()
     ]
-    phase7_root = config.paths.artifact_root.resolve()
+    runtime_paths = RuntimePaths.resolve(config.paths)
+    phase7_root = runtime_paths.artifact_root
     protected = {
         Path("local_artifacts/phase5").resolve(),
         Path("local_artifacts/phase5_hardening").resolve(),
@@ -56,7 +58,8 @@ def validate_phase7_configuration(config: Phase7Config) -> dict[str, Any]:
         "target_version": TARGET_VERSION,
         "target_decision_latency_bars": config.targets.decision_latency_bars,
         "artifact_root": str(phase7_root),
-        "gold_root": str(config.paths.gold_root.resolve()),
+        "gold_root": str(runtime_paths.gold_root),
+        "runtime_paths": runtime_paths.payload(),
     }
 
 
