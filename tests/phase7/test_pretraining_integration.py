@@ -12,6 +12,7 @@ import pytest
 
 from crypto_ai.phase5.config import CalibrationConfig, ScheduleConfig
 from crypto_ai.phase5.folds import FoldPlan
+from crypto_ai.phase7 import training
 from crypto_ai.phase7.artifacts import CheckpointStore
 from crypto_ai.phase7.config import CostConfig, FeatureConfig, ModelConfig, Phase7Config
 from crypto_ai.phase7.features import generate_multiasset_features
@@ -29,6 +30,7 @@ from crypto_ai.phase7.training import (
     ExperimentSpec,
     _run_one,
     _validate_complete_orphan_report,
+    _validate_model_file_binding,
 )
 from crypto_ai.phase7.universe import build_expansion_policy, select_core_universe
 
@@ -189,7 +191,9 @@ def test_tiny_pipeline_connects_and_is_reproducible(tmp_path: Path) -> None:
     assert json.loads((tmp_path / "run-a" / "report.json").read_text()) == reports[0]
 
     model_path = tmp_path / "run-a" / "model.joblib"
+    _validate_model_file_binding(reports[0], model_path)
     model = load_model(model_path)
+    assert model.metadata["scientific_input_identity"] == identity
     _validate_complete_orphan_report(reports[0], model)
     for missing_path in (
         ("calibrator_identity",),
@@ -216,4 +220,24 @@ def test_tiny_pipeline_connects_and_is_reproducible(tmp_path: Path) -> None:
         _validate_complete_orphan_report(corrupted_threshold, model)
 
     model_path.write_bytes(b"corrupt-model-artifact")
+    with pytest.raises(ValueError, match="checksum"):
+        _validate_model_file_binding(reports[0], model_path)
     assert not stores[0].is_complete("train/fold-mini", expected_metadata=identity)
+
+
+@pytest.mark.parametrize("failure_at", ["model", "report"])
+def test_publication_failure_cannot_leave_complete_report_without_model(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, failure_at: str
+) -> None:
+    config, _, _, _, _, fold = _build_fold(tmp_path / "inputs")
+    spec = ExperimentSpec("G0-fixture", "G0", "A6", 60, "raw", symbol_balanced=True)
+    output = tmp_path / "output"
+
+    def fail(*_args, **_kwargs):
+        raise OSError("injected publication failure")
+
+    monkeypatch.setattr(training, "save_model" if failure_at == "model" else "atomic_json", fail)
+    with pytest.raises(OSError, match="injected publication failure"):
+        _run_one(spec, fold, ("return_5m", "range_pct"), config, output, {"fixture": True})
+    assert not (output / "report.json").exists()
+    assert (output / "model.joblib").exists() is (failure_at == "report")

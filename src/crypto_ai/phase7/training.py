@@ -80,6 +80,7 @@ from crypto_ai.phase7.universe import (
     ExpansionUniversePolicy,
     FrozenUniverse,
     SymbolDescriptor,
+    latest_descriptors,
     select_fold_active_universe,
 )
 
@@ -129,11 +130,14 @@ TRAINING_CRITICAL_SOURCE_FILES = (
     "src/crypto_ai/research/config.py",
     "src/crypto_ai/research/metrics.py",
     "scripts/run_phase7a_pipeline.py",
+    "src/crypto_ai/phase7/phase7a.py",
+    "src/crypto_ai/phase7/benchmark_one_spec.py",
 )
 EXECUTION_CONTEXT_SOURCE_FILES = (
     "src/crypto_ai/phase7/preflight.py",
     "src/crypto_ai/phase7/progress.py",
     "src/crypto_ai/phase7/runtime.py",
+    "src/crypto_ai/phase7/lightning.py",
     "scripts/benchmark_phase7_backend.py",
     "scripts/benchmark_phase7_preparation.py",
     "scripts/manage_phase7_cache.py",
@@ -326,6 +330,8 @@ def _load_gold_manifest(path: Path) -> dict[str, Any]:
 def experiment_output_root(run_root: Path, *, kind: str, config: Phase7Config) -> Path:
     """Keep the legacy layout unless an explicit execution root is supplied."""
 
+    if run_root.name.startswith("benchmark-only-"):
+        return run_root / kind / "models"
     variable = "PHASE7_MODEL_ROOT" if kind == "model" else "PHASE7_REPORT_ROOT"
     if not os.environ.get(variable, "").strip():
         return run_root / "models"
@@ -434,6 +440,20 @@ def _is_reusable_g0(spec: ExperimentSpec) -> bool:
     )
 
 
+def causal_descriptor_identity(descriptors: list[SymbolDescriptor], train_end: Any) -> str:
+    """Bind every field of exactly the descriptor records known at TRAIN end."""
+    selected = latest_descriptors(descriptors, as_of=train_end)
+    return stable_hash(
+        {
+            "train_end": train_end.isoformat(),
+            "descriptors": {
+                name: selected[name].model_dump(mode="json") for name in sorted(selected)
+            },
+        },
+        length=64,
+    )
+
+
 def _prepared_cache_identity(
     *,
     config: Phase7Config,
@@ -447,6 +467,7 @@ def _prepared_cache_identity(
     registry_hash: str,
     spec: ExperimentSpec,
     feature_columns: tuple[str, ...],
+    descriptor_identity: str,
 ) -> dict[str, Any]:
     target = _prediction_target(spec)
     partition_identity = [
@@ -474,6 +495,7 @@ def _prepared_cache_identity(
         "fold_membership_hash": fold_membership_hash,
         "universe_hash": universe_hash,
         "registry_hash": registry_hash,
+        "causal_descriptor_identity": descriptor_identity,
         "purge": "actual_label_end_time_strictly_before_next_segment",
         "embargo_minutes": config.schedule.embargo_minutes,
         "preprocessing_version": PREPROCESSING_VERSION,
@@ -576,6 +598,17 @@ def _validate_complete_orphan_report(report: dict[str, Any], model: Any) -> None
         raise ValueError("COMPLETE orphan frozen training identity mismatch")
 
 
+def _validate_model_file_binding(report: dict[str, Any], model_path: Path) -> None:
+    """Verify independent report/model content binding before loading pickle."""
+    digest = report.get("model_artifact_sha256")
+    if not isinstance(digest, str) or len(digest) != 64 or file_sha256(model_path) != digest:
+        raise ValueError("model/report checksum binding is missing or mismatched")
+    identity = dict(report)
+    claimed = identity.pop("report_identity", None)
+    if claimed != stable_hash(identity, length=64):
+        raise ValueError("model report content identity mismatch")
+
+
 def _restore_completed_g0(
     *,
     report_path: Path,
@@ -587,13 +620,16 @@ def _restore_completed_g0(
     if not report_path.is_file() or not model_path.is_file():
         raise FileNotFoundError("completed G0 checkpoint is missing its report or model artifact")
     report = json.loads(report_path.read_text(encoding="utf-8"))
-    model = load_model(model_path)
-    _validate_complete_orphan_report(report, model)
     reported_identity = report.get("checkpoint_identity")
     if not isinstance(reported_identity, dict) or not checkpoint_metadata_compatible(
         reported_identity, expected_checkpoint_identity
     ):
         raise ValueError("completed G0 checkpoint identity mismatch")
+    _validate_model_file_binding(report, model_path)
+    model = load_model(model_path)
+    if model.metadata.get("scientific_input_identity") != reported_identity:
+        raise ValueError("completed estimator scientific input identity mismatch")
+    _validate_complete_orphan_report(report, model)
     if model.architecture != "G0":
         raise ValueError("completed reusable model is not G0")
     return report, model
@@ -867,6 +903,13 @@ def _run_one(
             prepared_inputs=prepared.model_inputs,
             reusable_global=reusable_global,
         )
+    model.metadata["scientific_input_identity"] = checkpoint_identity
+    model.metadata["model_identity"] = stable_hash(
+        {
+            "structural_model_identity": model.metadata["model_identity"],
+            "scientific_input_identity": checkpoint_identity,
+        }
+    )
     emit_event(
         "MODEL_DONE",
         fold_id=fold.plan.fold_id,
@@ -998,9 +1041,12 @@ def _run_one(
         **config.holdout_status_payload(),
     }
     emit_event("TEST_EVAL_DONE", fold_id=fold.plan.fold_id, spec=spec.name)
-    report_path = atomic_json(output_root / "report.json", report)
     model_path = model_path or output_root / "model.joblib"
     save_model(model, model_path)
+    report["model_artifact_sha256"] = file_sha256(model_path)
+    report["artifact_mode"] = checkpoint_identity.get("artifact_mode", "PRODUCTION_RESEARCH")
+    report["report_identity"] = stable_hash(report, length=64)
+    report_path = atomic_json(output_root / "report.json", report)
     if reporter is not None:
         reporter.fold_evaluation(
             report,
@@ -1025,6 +1071,8 @@ def run_phase7_training(
     resume: bool,
     unusable_segments: tuple[CausalDataGap, ...] = (),
     reporter: ProgressReporter | None = None,
+    benchmark_spec_id: str | None = None,
+    benchmark_fold_id: str | None = None,
 ) -> dict[str, Any]:
     config.assert_cloud_execution_allowed()
     source_identity = training_source_identity()
@@ -1039,6 +1087,26 @@ def run_phase7_training(
         config.schedule,
     )
     specs = phase7_experiment_specs(config)
+    research_views = RESEARCH_VIEWS
+    benchmark_only = benchmark_spec_id is not None
+    if benchmark_only:
+        from crypto_ai.phase7.benchmark_one_spec import benchmark_plan
+        from crypto_ai.phase7.phase7a import select_one_spec
+
+        benchmark_plan(config, benchmark_spec_id, run_root.parent)
+        specs = (select_one_spec(config, benchmark_spec_id),)
+        if benchmark_fold_id != folds[0].fold_id:
+            raise ValueError("benchmark must select exactly the first canonical fold")
+        if (
+            not run_root.name.startswith("benchmark-only-")
+            or checkpoint_store.root.resolve() != (run_root / "checkpoints").resolve()
+            or checkpoint_store.run_identity != run_root.name
+        ):
+            raise ValueError("benchmark requires isolated BENCHMARK_ONLY artifacts/checkpoints")
+        folds = (folds[0],)
+        research_views = ("CORE",)
+    elif benchmark_fold_id is not None:
+        raise ValueError("benchmark fold selector requires exactly one canonical spec")
     reports: list[dict[str, Any]] = []
     eligible_fold_ids_by_symbol: dict[str, set[str]] = {}
     gold_manifest_checksum = file_sha256(gold_manifest_path.resolve())
@@ -1062,103 +1130,110 @@ def run_phase7_training(
     }
     emit_event("COMPUTE_BUDGET_RESOLVED", **asdict(compute_budget))
     for fold_position, plan in enumerate(folds, start=1):
-        horizons = sorted({spec.horizon_minutes for spec in specs})
         cached: dict[tuple[str, int, str, str], CachedPreparedData] = {}
-        if cache_mode != "disabled":
-            for research_view in RESEARCH_VIEWS:
+        # Keep only the current horizon and prepared key. Durable entries remain
+        # on disk; advancing a target/horizon releases prior Arrow/memmap payloads.
+        sliced: dict[int, MultiAssetFoldData] = {}
+        descriptor_identity = causal_descriptor_identity(descriptors, plan.train_end)
+
+        def load_payload(
+            view: str,
+            spec: ExperimentSpec,
+            *,
+            cached: Any = cached,
+            sliced: Any = sliced,
+            plan: Any = plan,
+            descriptor_identity: str = descriptor_identity,
+        ) -> MultiAssetFoldData:
+            nonlocal gold_dataset
+            key = (view, spec.horizon_minutes, spec.target_type, spec.feature_group)
+            if key in cached:
+                return cached[key].fold
+            cached.clear()
+            if spec.horizon_minutes not in sliced:
+                sliced.clear()
+            if cache_mode != "disabled":
+                membership = select_fold_active_universe(
+                    registry,
+                    descriptors,
+                    fold_id=plan.fold_id,
+                    train_end=plan.train_end,
+                    core_universe=universe,
+                    expansion_policy=expansion_policy,
+                    config=config.universe,
+                    research_view=view,
+                    unusable_segments=unusable_segments,
+                    required_start=plan.train_start,
+                    required_end=plan.test_end,
+                )
+                identity = _prepared_cache_identity(
+                    config=config,
+                    manifest=manifest,
+                    gold_manifest_sha256=gold_manifest_checksum,
+                    source_identity=source_identity,
+                    fold_id=plan.fold_id,
+                    research_view=view,
+                    fold_membership_hash=membership.membership_hash,
+                    universe_hash=universe.universe_hash,
+                    registry_hash=registry.registry_hash,
+                    descriptor_identity=descriptor_identity,
+                    spec=spec,
+                    feature_columns=groups[spec.feature_group],
+                )
                 try:
-                    membership = select_fold_active_universe(
-                        registry,
-                        descriptors,
-                        fold_id=plan.fold_id,
-                        train_end=plan.train_end,
-                        core_universe=universe,
-                        expansion_policy=expansion_policy,
-                        config=config.universe,
-                        research_view=research_view,  # type: ignore[arg-type]
-                        unusable_segments=unusable_segments,
-                        required_start=plan.train_start,
-                        required_end=plan.test_end,
-                    )
-                except ValueError:
-                    continue
-                for spec in specs:
-                    key = (
-                        research_view,
-                        spec.horizon_minutes,
-                        spec.target_type,
-                        spec.feature_group,
-                    )
-                    if key in cached:
-                        continue
-                    identity = _prepared_cache_identity(
-                        config=config,
-                        manifest=manifest,
-                        gold_manifest_sha256=gold_manifest_checksum,
-                        source_identity=source_identity,
-                        fold_id=plan.fold_id,
-                        research_view=research_view,
-                        fold_membership_hash=membership.membership_hash,
-                        universe_hash=universe.universe_hash,
-                        registry_hash=registry.registry_hash,
-                        spec=spec,
-                        feature_columns=groups[spec.feature_group],
-                    )
-                    try:
-                        cached[key] = durable_cache.load(identity, plan)
-                    except PreparedCacheMissError:
-                        if cache_mode == "read_only":
-                            raise
-        expected_cache_keys = {
-            (view, spec.horizon_minutes, spec.target_type, spec.feature_group)
-            for view in RESEARCH_VIEWS
-            for spec in specs
-        }
-        needs_fold_load = cache_mode == "disabled" or not expected_cache_keys.issubset(cached)
-        fold_tables: dict[int, pa.Table] = {}
-        if needs_fold_load:
-            emit_event("FOLD_LOAD_START", fold_id=plan.fold_id, **memory_snapshot())
-            if gold_dataset is None and gold_paths:
-                gold_dataset = ds.dataset(gold_paths, format="parquet", partitioning="hive")
-            fold_tables = {
-                horizon: _load_fold_rows(
+                    bundle = durable_cache.load(identity, plan)
+                except PreparedCacheMissError:
+                    if cache_mode == "read_only":
+                        raise
+                else:
+                    cached[key] = bundle
+                    return bundle.fold
+            if spec.horizon_minutes not in sliced:
+                emit_event(
+                    "FOLD_LOAD_START",
+                    fold_id=plan.fold_id,
+                    horizon=spec.horizon_minutes,
+                    **memory_snapshot(),
+                )
+                if gold_dataset is None and gold_paths:
+                    gold_dataset = ds.dataset(gold_paths, format="parquet", partitioning="hive")
+                table = _load_fold_rows(
                     manifest,
                     plan,
-                    horizon,
+                    spec.horizon_minutes,
                     **({"dataset": gold_dataset} if gold_dataset is not None else {}),
                 )
-                for horizon in horizons
-            }
-            emit_event(
-                "FOLD_LOAD_DONE",
-                fold_id=plan.fold_id,
-                rows={key: value.num_rows for key, value in fold_tables.items()},
-                **memory_snapshot(),
-            )
-        for research_view in RESEARCH_VIEWS:
+                sliced[spec.horizon_minutes] = slice_multiasset_fold(
+                    table,
+                    plan,
+                    registry=registry,
+                    universe=universe,
+                    expansion_policy=expansion_policy,
+                    research_view=view,
+                    descriptors=descriptors,
+                    universe_config=config.universe,
+                    schedule=config.schedule,
+                    holdout_start=config.prospective_holdout_start,
+                    cluster_count=config.models.cluster_count,
+                    seed=config.models.seed,
+                    unusable_segments=unusable_segments,
+                )
+                emit_event(
+                    "FOLD_LOAD_DONE",
+                    fold_id=plan.fold_id,
+                    horizon=spec.horizon_minutes,
+                    rows=table.num_rows,
+                    **memory_snapshot(),
+                )
+            return sliced[spec.horizon_minutes]
+
+        for research_view in research_views:
+            cached.clear()
+            sliced.clear()
+            reusable_models = {}
+            prepared_cache = cached_bundle = fold_data = None
             try:
-                view_keys = {key for key in expected_cache_keys if key[0] == research_view}
-                if view_keys and view_keys.issubset(cached):
-                    sliced = {}
-                else:
-                    sliced = {
-                        horizon: slice_multiasset_fold(
-                            table,
-                            plan,
-                            registry=registry,
-                            universe=universe,
-                            expansion_policy=expansion_policy,
-                            research_view=research_view,  # type: ignore[arg-type]
-                            descriptors=descriptors,
-                            universe_config=config.universe,
-                            schedule=config.schedule,
-                            holdout_start=config.prospective_holdout_start,
-                            cluster_count=config.models.cluster_count,
-                            seed=config.models.seed,
-                            unusable_segments=unusable_segments,
-                        )
-                        for horizon, table in fold_tables.items()
-                    }
+                reference_fold = load_payload(research_view, specs[0])
             except IneligibleFoldError as exc:
                 # A genuine point-in-time eligibility failure: record every
                 # experiment for this fold/view as INELIGIBLE and move on.
@@ -1198,6 +1273,8 @@ def run_phase7_training(
                         ),
                         "model_backend_semantics": selected_backend.name,
                         "training_source_identity": source_identity,
+                        "causal_descriptor_identity": descriptor_identity,
+                        **({"artifact_mode": "BENCHMARK_ONLY"} if benchmark_only else {}),
                     }
                     report = {
                         "status": "INELIGIBLE",
@@ -1226,11 +1303,6 @@ def run_phase7_training(
                     checkpoint_store.complete(stage, files, checkpoint_identity)
                     reports.append(report)
                 continue
-            reference_fold = (
-                next(cached[key].fold for key in sorted(view_keys) if key in cached)
-                if view_keys and view_keys.issubset(cached)
-                else sliced[horizons[0]]
-            )
             if reporter is not None:
                 reporter.fold_started(
                     fold_position=fold_position,
@@ -1242,6 +1314,8 @@ def run_phase7_training(
             for symbol in reference_fold.eligibility_manifest["eligible_symbols"]:
                 key = f"{research_view}:{symbol}"
                 eligible_fold_ids_by_symbol.setdefault(key, set()).add(plan.fold_id)
+            del reference_fold
+            current_payload_key: tuple[Any, ...] | None = None
             prepared_cache_key: tuple[Any, ...] | None = None
             prepared_cache: PreparedTrainingSegments | None = None
             reusable_models: dict[tuple[Any, ...], Any] = {}
@@ -1264,12 +1338,22 @@ def run_phase7_training(
                     spec.target_type,
                     spec.feature_group,
                 )
-                cached_bundle = cached.get(durable_key)
-                fold_data = (
-                    cached_bundle.fold
-                    if cached_bundle is not None
-                    else sliced[spec.horizon_minutes]
+                next_key = (
+                    plan.fold_id,
+                    research_view,
+                    spec.horizon_minutes,
+                    _prediction_target(spec),
+                    groups[spec.feature_group],
                 )
+                if current_payload_key != next_key:
+                    prepared_cache = None
+                    cached_bundle = None
+                    fold_data = None
+                    reusable_models.clear()
+                    unavailable_reusable_g0.clear()
+                    current_payload_key = next_key
+                fold_data = load_payload(research_view, spec)
+                cached_bundle = cached.get(durable_key)
                 feature_columns = groups[spec.feature_group]
                 target = _prediction_target(spec)
                 cache_identity = _prepared_cache_identity(
@@ -1282,6 +1366,7 @@ def run_phase7_training(
                     fold_membership_hash=fold_data.eligibility_manifest["fold_membership_hash"],
                     universe_hash=universe.universe_hash,
                     registry_hash=registry.registry_hash,
+                    descriptor_identity=descriptor_identity,
                     spec=spec,
                     feature_columns=feature_columns,
                 )
@@ -1318,6 +1403,16 @@ def run_phase7_training(
                     "scientific_resume_identity_schema": "phase7_scientific_resume_identity_v2",
                     "model_backend_semantics": selected_backend.name,
                     "training_source_identity": source_identity,
+                    "causal_descriptor_identity": descriptor_identity,
+                    "fold_context_identity": stable_hash(
+                        {
+                            "clusters": fold_data.cluster_mapping,
+                            "tiers": fold_data.liquidity_tiers,
+                            "age_buckets": fold_data.age_buckets,
+                        },
+                        length=64,
+                    ),
+                    **({"artifact_mode": "BENCHMARK_ONLY"} if benchmark_only else {}),
                 }
                 if resume and checkpoint_store.is_complete(
                     stage, expected_metadata=checkpoint_identity
@@ -1361,13 +1456,6 @@ def run_phase7_training(
                     orphan_files = [report_path]
                     orphan_model: Any | None = None
                     if orphan_report.get("status") == "COMPLETE":
-                        if not model_path.exists():
-                            raise FileNotFoundError(
-                                "COMPLETE orphan report is missing its model artifact for "
-                                f"{research_view} {plan.fold_id} {spec.name}"
-                            )
-                        orphan_model = load_model(model_path)
-                        _validate_complete_orphan_report(orphan_report, orphan_model)
                         orphan_identity = orphan_report.get("checkpoint_identity")
                         if not isinstance(
                             orphan_identity, dict
@@ -1378,6 +1466,18 @@ def run_phase7_training(
                                 "Orphan model/report identity mismatch for "
                                 f"{research_view} {plan.fold_id} {spec.name}"
                             )
+                        if not model_path.exists():
+                            raise FileNotFoundError(
+                                "COMPLETE orphan report is missing its model artifact for "
+                                f"{research_view} {plan.fold_id} {spec.name}"
+                            )
+                        _validate_model_file_binding(orphan_report, model_path)
+                        orphan_model = load_model(model_path)
+                        if orphan_model.metadata.get(
+                            "scientific_input_identity"
+                        ) != orphan_report.get("checkpoint_identity"):
+                            raise ValueError("orphan estimator scientific input identity mismatch")
+                        _validate_complete_orphan_report(orphan_report, orphan_model)
                         orphan_files.append(model_path)
                     elif orphan_report.get("status") not in {"INELIGIBLE"}:
                         raise ValueError(
@@ -1479,7 +1579,7 @@ def run_phase7_training(
                     )
                     cache_path = durable_cache.write(cache_identity, fold_data, prepared_cache)
                     if cache_path is not None:
-                        cached_bundle = durable_cache.load(cache_identity, plan)
+                        cached_bundle = durable_cache.open_published(cache_identity, plan)
                         cached[durable_key] = cached_bundle
                         prepared_cache = cached_bundle.prepared
                 if prepared_cache is None:
@@ -1524,8 +1624,29 @@ def run_phase7_training(
                 checkpoint_store.complete(stage, files, checkpoint_identity)
                 emit_event("CHECKPOINT_SAVED", stage=stage)
                 reports.append(report)
-        if reporter is not None:
+        cached.clear()
+        sliced.clear()
+        reusable_models.clear()
+        prepared_cache = cached_bundle = fold_data = None
+        if reporter is not None and not benchmark_only:
             reporter.fold_completed(fold_position, len(folds), plan.fold_id)
+    if benchmark_only:
+        summary = {
+            "status": "BENCHMARK_ONLY",
+            "artifact_mode": "BENCHMARK_ONLY",
+            "canonical_fold_complete": False,
+            "canonical_primary_run_complete": False,
+            "fold_count": 0,
+            "benchmark_fold_count": 1,
+            "experiment_spec_count": 1,
+            "research_views": ["CORE"],
+            "reports": reports,
+            "completed_reports": 0,
+            "benchmark_completed_reports": sum(r["status"] == "COMPLETE" for r in reports),
+            **config.holdout_status_payload(),
+        }
+        atomic_json(run_root / "benchmark_summary.json", summary)
+        return summary
     fold_completion = summarize_fold_completion(
         tuple(plan.fold_id for plan in folds),
         eligible_fold_ids_by_symbol,
@@ -1536,7 +1657,7 @@ def run_phase7_training(
         "fold_count": len(folds),
         **fold_completion,
         "experiment_spec_count": len(specs),
-        "research_views": list(RESEARCH_VIEWS),
+        "research_views": list(research_views),
         "matched_architecture_comparisons": matched_architecture_comparisons(reports),
         "completed_reports": sum(item["status"] == "COMPLETE" for item in reports),
         "ineligible_reports": sum(item["status"] == "INELIGIBLE" for item in reports),

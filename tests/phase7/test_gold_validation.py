@@ -16,7 +16,7 @@ from crypto_ai.phase7.gold_validation import (
     GoldValidationError,
     GoldValidationExpectations,
     HoldoutViolationError,
-    native_feature_columns,
+    production_feature_columns,
     validate_phase7_gold,
 )
 
@@ -30,6 +30,14 @@ def _gold_fixture(root: Path, *, start: datetime) -> GoldValidationExpectations:
     feature_times = [start + timedelta(minutes=5 * index) for index in range(rows)]
     horizons = [15, 30, 60, 120] * 2
     data: dict[str, object] = {
+        "open_time": pa.array(
+            [value - timedelta(minutes=5) for value in feature_times],
+            type=pa.timestamp("us", tz="UTC"),
+        ),
+        "market_membership_hash": ["fixture-membership"] * rows,
+        "cross_sectional_trailing_liquidity_source": np.ones(rows),
+        "cross_sectional_volatility_source": np.ones(rows),
+        "cross_sectional_trade_intensity_source": np.ones(rows),
         "symbol": ["BTCUSDT"] * rows,
         "feature_time": pa.array(feature_times, type=pa.timestamp("us", tz="UTC")),
         "entry_time": pa.array(
@@ -56,10 +64,10 @@ def _gold_fixture(root: Path, *, start: datetime) -> GoldValidationExpectations:
         "target_version": [TARGET_VERSION] * rows,
         "cross_sectional_context_scope": ["ACQUISITION_UNION_PREVIEW"] * rows,
     }
-    for index, name in enumerate(native_feature_columns()):
+    for index, name in enumerate(production_feature_columns()):
         data[name] = np.full(rows, index + 0.5, dtype=np.float64)
     pq.write_table(pa.table(data), partition)
-    feature_columns = native_feature_columns()
+    feature_columns = production_feature_columns()
     manifest = {
         "dataset_id": dataset_id,
         "classification": "RETROSPECTIVE_MULTI_ASSET_RESEARCH",

@@ -9,8 +9,9 @@ import numpy as np
 import pyarrow as pa
 import pytest
 
+from crypto_ai.data.storage import file_sha256
 from crypto_ai.phase7 import training
-from crypto_ai.phase7.config import load_phase7_config
+from crypto_ai.phase7.config import load_phase7_config, stable_hash
 from crypto_ai.phase7.models import _append_symbol_identity, _matrix
 from crypto_ai.phase7.training import _finite, _restore_completed_g0, phase7_experiment_specs
 
@@ -52,7 +53,10 @@ def test_resume_loads_validated_completed_g0_for_h0(
     model_path = tmp_path / "model.joblib"
     report_path.write_text(json.dumps({"checkpoint_identity": identity}), encoding="utf-8")
     model_path.write_bytes(b"model")
-    model = SimpleNamespace(architecture="G0")
+    payload = {"checkpoint_identity": identity, "model_artifact_sha256": file_sha256(model_path)}
+    payload["report_identity"] = stable_hash(payload, length=64)
+    report_path.write_text(json.dumps(payload), encoding="utf-8")
+    model = SimpleNamespace(architecture="G0", metadata={"scientific_input_identity": identity})
     validations: list[tuple[object, object]] = []
     monkeypatch.setattr(training, "load_model", lambda _: model)
     monkeypatch.setattr(
@@ -104,6 +108,9 @@ def test_resume_propagates_corrupt_g0_load_failure(
     model_path = tmp_path / "model.joblib"
     report_path.write_text(json.dumps({"checkpoint_identity": {}}), encoding="utf-8")
     model_path.write_bytes(b"corrupt")
+    payload = {"checkpoint_identity": {}, "model_artifact_sha256": file_sha256(model_path)}
+    payload["report_identity"] = stable_hash(payload, length=64)
+    report_path.write_text(json.dumps(payload), encoding="utf-8")
 
     def fail(_: Path) -> object:
         raise ValueError("corrupt model")

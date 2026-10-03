@@ -11,6 +11,7 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 
 from crypto_ai.data.storage import file_sha256
+from crypto_ai.phase6.features import FEATURE_GROUPS_V3_RESEARCH
 from crypto_ai.phase7.config import (
     FEATURE_VERSION,
     MARKET_CONTEXT_VERSION,
@@ -20,6 +21,7 @@ from crypto_ai.phase7.features import (
     ANCHOR_CONTEXT_COLUMNS,
     BASE_FEATURE_COLUMNS,
     COIN_CONTEXT_COLUMNS,
+    CROSS_SECTIONAL_SOURCE_COLUMNS,
     MARKET_CONTEXT_COLUMNS,
 )
 from crypto_ai.phase7.gold import feature_ablation_sets
@@ -65,6 +67,53 @@ def native_feature_columns() -> tuple[str, ...]:
         if name not in values:
             values.append(name)
     return tuple(values)
+
+
+def production_feature_columns() -> tuple[str, ...]:
+    """Exact producer catalog: native features then completed 12h and 1d context."""
+    return (
+        native_feature_columns()
+        + FEATURE_GROUPS_V3_RESEARCH["higher_timeframe_12h"]
+        + FEATURE_GROUPS_V3_RESEARCH["higher_timeframe_1d"]
+    )
+
+
+def production_gold_schema() -> dict[str, pa.DataType]:
+    fields = {
+        name: pa.float64()
+        for name in production_feature_columns()
+        + CROSS_SECTIONAL_SOURCE_COLUMNS
+        + (
+            "raw_future_return",
+            "normalized_future_return",
+            "ex_ante_volatility_scale",
+            "mfe_long",
+            "mae_long",
+            "mfe_short",
+            "mae_short",
+        )
+    }
+    fields.update(
+        {
+            name: pa.string()
+            for name in (
+                "symbol",
+                "feature_version",
+                "market_context_version",
+                "market_membership_hash",
+                "cross_sectional_context_scope",
+                "target_version",
+            )
+        }
+    )
+    fields.update(
+        {
+            name: pa.timestamp("us", tz="UTC")
+            for name in ("open_time", "feature_time", "entry_time", "label_end_time")
+        }
+    )
+    fields["horizon_minutes"] = pa.int64()
+    return fields
 
 
 @dataclass(frozen=True, slots=True)
@@ -164,17 +213,14 @@ def validate_gold_manifest(
         errors.append("feature version mismatch")
     if manifest.get("target_version") != TARGET_VERSION:
         errors.append("target version mismatch")
-    expected_features = native_feature_columns()
+    expected_features = production_feature_columns()
     manifest_features = manifest.get("feature_columns")
-    if (
-        not isinstance(manifest_features, list)
-        or tuple(manifest_features[:54]) != expected_features
-    ):
-        errors.append("native feature count/order mismatch")
+    if not isinstance(manifest_features, list) or tuple(manifest_features) != expected_features:
+        errors.append("production feature count/order mismatch (native feature contract included)")
         manifest_features = manifest_features if isinstance(manifest_features, list) else []
     groups = manifest.get("feature_groups")
     if not isinstance(groups, dict) or groups.get("A6") != list(
-        feature_ablation_sets(tuple(str(item) for item in manifest_features))["A6"]
+        feature_ablation_sets(expected_features)["A6"]
     ):
         errors.append("A6 feature-group ordering mismatch")
     if manifest.get("research_cutoff") != expectations.research_cutoff.isoformat():
@@ -233,10 +279,13 @@ def validate_phase7_gold(
     verify_hashes: bool = True,
 ) -> dict[str, Any]:
     manifest_path, manifest, paths = validate_gold_manifest(gold_root, expectations)
-    required_features = native_feature_columns()
-    if len(required_features) != 54:
-        raise AssertionError(f"native Phase 7 feature contract drifted: {len(required_features)}")
+    required_features = production_feature_columns()
+    if len(required_features) != 109:
+        raise AssertionError(
+            f"production Phase 7 feature contract drifted: {len(required_features)}"
+        )
     required_columns = {
+        *production_gold_schema(),
         "feature_version",
         "market_context_version",
         "symbol",
@@ -258,14 +307,18 @@ def validate_phase7_gold(
     symbols: set[str] = set()
     horizons: set[int] = set()
     total_rows = 0
-    numeric_audit_columns = required_features + (
-        "raw_future_return",
-        "normalized_future_return",
-        "ex_ante_volatility_scale",
-        "mfe_long",
-        "mae_long",
-        "mfe_short",
-        "mae_short",
+    numeric_audit_columns = (
+        required_features
+        + CROSS_SECTIONAL_SOURCE_COLUMNS
+        + (
+            "raw_future_return",
+            "normalized_future_return",
+            "ex_ante_volatility_scale",
+            "mfe_long",
+            "mae_long",
+            "mfe_short",
+            "mae_short",
+        )
     )
     nan_counts = {name: 0 for name in numeric_audit_columns}
     inf_counts = {name: 0 for name in numeric_audit_columns}
@@ -290,11 +343,17 @@ def validate_phase7_gold(
         missing = sorted(required_columns - set(table.column_names))
         if missing:
             raise GoldValidationError(f"partition {path} is missing required columns: {missing}")
+        unexpected = sorted(set(table.column_names) - required_columns)
+        if unexpected:
+            raise GoldValidationError(f"partition {path} has unexpected columns: {unexpected}")
+        for name, expected_type in production_gold_schema().items():
+            if table.schema.field(name).type != expected_type:
+                raise GoldValidationError(f"partition {path} has wrong type for {name}")
         physical_native_order = tuple(
             name for name in table.column_names if name in required_features
         )
         if physical_native_order != required_features:
-            raise GoldValidationError(f"native feature column order mismatch in {path}")
+            raise GoldValidationError(f"production feature column order mismatch in {path}")
         for name in ("feature_time", "entry_time", "label_end_time"):
             if not _timestamp_type_is_utc(table.schema.field(name).type):
                 raise GoldValidationError(f"partition {path} has invalid {name} type")
@@ -398,8 +457,11 @@ def validate_phase7_gold(
         "rows": total_rows,
         "symbols": sorted(symbols),
         "horizons": sorted(horizons),
-        "native_feature_count": len(required_features),
-        "native_features": list(required_features),
+        "native_feature_count": len(native_feature_columns()),
+        "native_features": list(native_feature_columns()),
+        "production_feature_count": len(required_features),
+        "production_features": list(required_features),
+        "production_schema": {name: str(value) for name, value in production_gold_schema().items()},
         "nan_counts": nan_counts,
         "infinite_counts": inf_counts,
         "cross_sectional_context_scope": scope_status,

@@ -46,6 +46,21 @@ def checkpoint_metadata_compatible(actual: dict[str, Any], expected: dict[str, A
     return normalized == expected
 
 
+def fsync_file(path: Path) -> None:
+    with path.open("r+b") as stream:
+        os.fsync(stream.fileno())
+
+
+def fsync_directory(path: Path) -> None:
+    if os.name == "nt":
+        return
+    descriptor = os.open(path, os.O_RDONLY)
+    try:
+        os.fsync(descriptor)
+    finally:
+        os.close(descriptor)
+
+
 def atomic_json(path: Path, payload: dict[str, Any], *, immutable: bool = True) -> Path:
     path = path.resolve()
     content = json.dumps(payload, indent=2, sort_keys=True, default=str) + "\n"
@@ -58,7 +73,9 @@ def atomic_json(path: Path, payload: dict[str, Any], *, immutable: bool = True) 
     temporary = path.with_name(f".{path.name}.{uuid.uuid4().hex}.tmp")
     try:
         temporary.write_text(content, encoding="utf-8", newline="\n")
+        fsync_file(temporary)
         os.replace(temporary, path)
+        fsync_directory(path.parent)
     finally:
         if temporary.exists():
             temporary.unlink()
@@ -71,12 +88,14 @@ def atomic_parquet(path: Path, table: pa.Table) -> Path:
     temporary = path.with_name(f".{path.name}.{uuid.uuid4().hex}.tmp")
     try:
         pq.write_table(table, temporary, compression="zstd", write_statistics=True)
+        fsync_file(temporary)
         checksum = file_sha256(temporary)
         if path.exists():
             if file_sha256(path) != checksum:
                 raise FileExistsError(f"Refusing to overwrite different Parquet artifact: {path}")
             return path
         os.replace(temporary, path)
+        fsync_directory(path.parent)
     finally:
         if temporary.exists():
             temporary.unlink()

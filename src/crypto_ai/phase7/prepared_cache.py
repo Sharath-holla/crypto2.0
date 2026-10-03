@@ -115,6 +115,13 @@ def _directory_size(path: Path) -> int:
     return sum(item.stat().st_size for item in path.rglob("*") if item.is_file())
 
 
+def capacity_projection(current_bytes: int, incoming_bytes: int) -> int:
+    """Current excludes the incoming directory; equality with the cap is allowed."""
+    if min(current_bytes, incoming_bytes) < 0:
+        raise ValueError("cache capacity byte counts must be nonnegative")
+    return current_bytes + incoming_bytes
+
+
 def cache_max_bytes_from_environment() -> int | None:
     value = os.environ.get("PHASE7_CACHE_MAX_GB", "").strip()
     if not value:
@@ -240,6 +247,10 @@ class PreparedDataCache:
 
     def cache_path(self, identity: dict[str, Any]) -> Path:
         return self.root / prepared_cache_id(identity)
+
+    def open_published(self, identity: dict[str, Any], plan: FoldPlan) -> CachedPreparedData:
+        """Validate a just-published entry, independently of lookup/rebuild policy."""
+        return self._load_validated(self.cache_path(identity), identity, plan)
 
     @contextmanager
     def _publication_lock(self, cache_id: str, *, timeout_seconds: float = 60.0) -> Iterator[None]:
@@ -475,6 +486,51 @@ class PreparedDataCache:
         cache_id = prepared_cache_id(identity)
         final = self.root / cache_id
         temporary = self.root / f".{cache_id}.tmp.{os.getpid()}.{uuid.uuid4().hex}"
+        maximum = cache_max_bytes_from_environment()
+        if final.exists() and self.mode != "rebuild":
+            try:
+                self._load_validated(final, identity, fold.plan)
+            except (OSError, ValueError, KeyError, TypeError):
+                pass  # Publication still quarantines invalid evidence under the lock.
+            else:
+                return final
+        # Size Arrow IPC without materializing another serialized buffer. Reserve
+        # manifest/NPY headers as well; final publication also checks exact bytes.
+        incoming = 64 * 1024
+        for table in (
+            prepared.train,
+            prepared.validation,
+            prepared.calibration_a,
+            prepared.calibration_b,
+            fold._test,
+        ):
+            sink = pa.MockOutputStream()
+            with ipc.new_file(sink, table.schema) as writer:
+                writer.write_table(table)
+            incoming += sink.size()
+        inputs = prepared.model_inputs
+        incoming += sum(
+            array.nbytes
+            for array in (inputs.train_x, inputs.validation_x, inputs.train_y, inputs.validation_y)
+        )
+        for symbols in (
+            inputs.train_symbols,
+            inputs.validation_symbols,
+            inputs.calibration_symbols,
+        ):
+            width = max((len(str(item)) for item in symbols), default=1)
+            incoming += len(symbols) * width * 4
+        current = int(cache_size_report(self.root)["total_bytes"])
+        projected = capacity_projection(current, incoming)
+        if maximum is not None and projected > maximum:
+            raise PreparedCacheCapacityError(
+                f"prepared-cache construction would exceed capacity: current={current}, "
+                f"incoming_estimate={incoming}, projected={projected}, maximum={maximum}"
+            )
+        if shutil.disk_usage(self.root).free < incoming:
+            raise PreparedCacheCapacityError(
+                "insufficient free disk for prepared-cache construction"
+            )
         emit_event("CACHE_BUILD_START", cache_id=cache_id, path=final, **memory_snapshot())
         temporary.mkdir()
         try:
@@ -553,7 +609,8 @@ class PreparedDataCache:
                 maximum = cache_max_bytes_from_environment()
                 if maximum is not None:
                     current = int(cache_size_report(self.root)["total_bytes"])
-                    projected = current
+                    incoming_bytes = _directory_size(temporary)
+                    projected = capacity_projection(current - incoming_bytes, incoming_bytes)
                     if projected > maximum:
                         if backup is not None and backup.exists():
                             self._move_directory(backup, final)

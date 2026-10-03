@@ -20,6 +20,7 @@ from crypto_ai.phase7.artifacts import CheckpointStore, atomic_json, resource_sn
 from crypto_ai.phase7.config import Phase7Config, load_phase7_config
 from crypto_ai.phase7.discovery_checkpoint import DiscoverySymbolCheckpointStore
 from crypto_ai.phase7.gold_validation import locate_gold_manifest
+from crypto_ai.phase7.phase7a import primary_specs
 from crypto_ai.phase7.progress import ProgressReporter
 from crypto_ai.phase7.registry import SymbolRegistry, read_registry, write_registry
 from crypto_ai.phase7.runtime import RuntimePaths
@@ -29,7 +30,6 @@ from crypto_ai.phase7.segments import (
     CandleFamilyAcquisition,
     CausalDataGap,
 )
-from crypto_ai.phase7.training import ExperimentSpec
 from crypto_ai.phase7.universe import (
     read_expansion_policy,
     read_universe,
@@ -61,17 +61,6 @@ def validate_phase7a_config(config: Phase7Config, source: Phase7Config) -> None:
         )
     if source.configuration_hash != "cc550337f1f4ee4654124bf6":
         raise ValueError("Canonical Phase 7 configuration identity changed")
-
-
-def primary_specs(config: Phase7Config) -> tuple[ExperimentSpec, ...]:
-    specs = tuple(
-        spec for spec in training.phase7_experiment_specs(config) if spec.feature_group == "A6"
-    )
-    if len(specs) != 48:
-        raise AssertionError("Phase 7A must derive exactly 48 primary A6 specifications")
-    if any(spec.name.startswith(("feature-ablation-", "htf-control-")) for spec in specs):
-        raise AssertionError("Deferred controls leaked into Phase 7A")
-    return specs
 
 
 def run_identity(config: Phase7Config) -> str:

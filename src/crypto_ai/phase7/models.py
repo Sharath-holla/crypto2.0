@@ -11,6 +11,7 @@ import joblib
 import numpy as np
 import pyarrow as pa
 
+from crypto_ai.phase7.artifacts import fsync_directory, fsync_file
 from crypto_ai.phase7.backend import (
     _backend_error,
     backend_metadata,
@@ -564,7 +565,9 @@ def save_model(bundle: Phase7ModelBundle, path: Path) -> Path:
     temporary = path.with_name(f".{path.name}.{uuid.uuid4().hex}.tmp")
     try:
         joblib.dump(bundle, temporary)
+        fsync_file(temporary)
         os.replace(temporary, path)
+        fsync_directory(path.parent)
     finally:
         if temporary.exists():
             temporary.unlink()

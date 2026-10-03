@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import os
 from dataclasses import asdict
 from pathlib import Path
@@ -16,7 +17,11 @@ from crypto_ai.phase7.backend import (
     smoke_test_backend,
 )
 from crypto_ai.phase7.config import load_phase7_config
-from crypto_ai.phase7.gold_validation import validate_gold_manifest
+from crypto_ai.phase7.gold_validation import (
+    production_feature_columns,
+    production_gold_schema,
+    validate_gold_manifest,
+)
 from crypto_ai.phase7.prepared_cache import cache_size_report
 from crypto_ai.phase7.runtime import (
     ComputeBudget,
@@ -50,6 +55,9 @@ def _validated_gold_report(
         or payload.get("dataset_id") != dataset_id
         or payload.get("manifest_sha256") != manifest_sha256
         or payload.get("holdout_status") != "LOCKED_UNUSED"
+        or payload.get("production_features") != list(production_feature_columns())
+        or payload.get("production_schema")
+        != {name: str(dtype) for name, dtype in production_gold_schema().items()}
     ):
         raise ValueError("Gold validation report is absent, stale, or incompatible")
     return payload
@@ -117,6 +125,18 @@ def build_preflight_report(
         }
     minimum_disk_gb = float(os.environ.get("PHASE7_MIN_FREE_DISK_GB", "25"))
     minimum_ram_gb = float(os.environ.get("PHASE7_MIN_AVAILABLE_RAM_GB", "32"))
+    if any(not math.isfinite(value) or value <= 0 for value in (minimum_disk_gb, minimum_ram_gb)):
+        raise ValueError("preflight RAM/disk minimums must be positive and finite")
+    filesystem_capacity = {}
+    for name in ("artifact_root", "cache_root", "model_root", "report_root", "checkpoint_root"):
+        location = _existing_ancestor(getattr(paths, name))
+        capacity = system_snapshot(location)
+        filesystem_capacity[name] = {
+            "path": str(location),
+            "disk_free_bytes": capacity["disk_free_bytes"],
+        }
+        if capacity["disk_free_bytes"] < minimum_disk_gb * 1024**3:
+            errors.append(f"{name} filesystem is below the configured free disk floor")
     if int(system["disk_free_bytes"]) < minimum_disk_gb * 1024**3:
         errors.append(f"available disk is below PHASE7_MIN_FREE_DISK_GB={minimum_disk_gb}")
     if int(system["ram_available_bytes"]) < minimum_ram_gb * 1024**3:
@@ -131,6 +151,7 @@ def build_preflight_report(
         "configuration_hash": config.configuration_hash,
         "paths": paths.payload(),
         "system": system,
+        "filesystem_capacity": filesystem_capacity,
         "resource_requirements": {
             "minimum_free_disk_gb": minimum_disk_gb,
             "minimum_available_ram_gb": minimum_ram_gb,
