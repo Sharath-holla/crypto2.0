@@ -27,6 +27,7 @@ def test_runtime_paths_use_environment_without_changing_scientific_config(
 def test_compute_budget_never_oversubscribes(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    monkeypatch.setattr("crypto_ai.phase7.runtime.os.cpu_count", lambda: 8)
     monkeypatch.setenv("PHASE7_TOTAL_CPU_THREADS", "8")
     monkeypatch.setenv("PHASE7_MODEL_PARALLELISM", "4")
     monkeypatch.setenv("PHASE7_LIGHTGBM_THREADS_PER_MODEL", "4")

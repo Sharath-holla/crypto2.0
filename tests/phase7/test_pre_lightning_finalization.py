@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import json
 import subprocess
 import sys
@@ -41,6 +42,27 @@ from tests.phase7.test_training_error_classification import (
 )
 
 ROOT = Path(__file__).resolve().parents[2]
+HISTORICAL_CONTRACT_PATH = "configs/contracts/phase7_scientific_baseline_v1_9.json"
+# Immutable commit targeted by crypto2.0-handoff-20260906, also used by
+# test_baseline_noninterference.py. Never derive the expected identity from HEAD.
+HISTORICAL_CONTRACT_COMMIT = "28d3098a82952a3d09073e4d81b5281f856c072e"
+HISTORICAL_CONTRACT_SHA256 = "03f74723105f3f4a389fabd0a0140bdccefa5f8e1ea9449ee71b26f5408897bb"
+
+
+def _historical_contract_blob():
+    return subprocess.run(
+        ["git", "show", f"{HISTORICAL_CONTRACT_COMMIT}:{HISTORICAL_CONTRACT_PATH}"],
+        cwd=ROOT,
+        check=True,
+        capture_output=True,
+    ).stdout
+
+
+def _assert_historical_checkout(content):
+    blob = _historical_contract_blob()
+    assert hashlib.sha256(blob).hexdigest() == HISTORICAL_CONTRACT_SHA256
+    assert content.replace(b"\r\n", b"\n") == blob
+    return hashlib.sha256(blob).hexdigest()
 
 
 def canonical():
@@ -236,16 +258,26 @@ def test_full_gold_schema_rejects_self_consistent_corrupted_partition(tmp_path, 
 def test_schema_catalog_and_historical_freeze_remain_independent():
     assert len(production_feature_columns()) == 109
     assert len(production_gold_schema()) == 130
-    historical = ROOT / "configs/contracts/phase7_scientific_baseline_v1_9.json"
-    assert (
-        file_sha256(historical)
-        == "a22c17b164792e909f39f619c59ea40db23411c8e611398e11e28d0e98e3f493"
-    )
+    _assert_historical_checkout((ROOT / HISTORICAL_CONTRACT_PATH).read_bytes())
     identity = training.scientific_source_identity()
     assert {
         "src/crypto_ai/phase7/phase7a.py",
         "src/crypto_ai/phase7/benchmark_one_spec.py",
     }.issubset({row["path"] for row in identity["files"]})
+
+
+@pytest.mark.parametrize("newline", [b"\n", b"\r\n"])
+def test_historical_identity_is_independent_of_checkout_line_endings(tmp_path, newline):
+    blob = _historical_contract_blob()
+    assert b"\r" not in blob
+    checkout = tmp_path / "contract.json"
+    checkout.write_bytes(blob.replace(b"\n", newline))
+    assert _assert_historical_checkout(checkout.read_bytes()) == HISTORICAL_CONTRACT_SHA256
+    checkout.write_bytes(
+        checkout.read_bytes().replace(b'"feature_count": 54', b'"feature_count": 53')
+    )
+    with pytest.raises(AssertionError):
+        _assert_historical_checkout(checkout.read_bytes())
 
 
 def test_one_spec_runner_cannot_complete_production_or_preload_other_keys(tmp_path, monkeypatch):

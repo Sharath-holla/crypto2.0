@@ -86,12 +86,13 @@ def test_rotation_failure_restores_live_log(tmp_path: Path) -> None:
     log = tmp_path / "phase7-cloud-run.log"
     payload = b"z" * (2 * 1024 * 1024)
     log.write_bytes(payload)
-    # Force gzip to fail while mv/stat/pgrep still work: prepend a fake bin
-    # dir whose gzip exits non-zero.
+    # Force either supported compressor to fail while mv/stat/pgrep still work.
+    # The rotation script prefers pigz when installed (as on Lightning Linux).
     fake_bin = tmp_path / "fakebin"
     fake_bin.mkdir()
-    (fake_bin / "gzip").write_text("#!/usr/bin/env bash\nexit 1\n")
-    (fake_bin / "gzip").chmod(0o755)
+    for compressor in ("gzip", "pigz"):
+        (fake_bin / compressor).write_text("#!/usr/bin/env bash\nexit 1\n")
+        (fake_bin / compressor).chmod(0o755)
     env = dict(os.environ)
     env["PHASE7_LOG_ROTATE_MB"] = "1"
     command = ["bash", str(ROTATE_SCRIPT), str(log)]
