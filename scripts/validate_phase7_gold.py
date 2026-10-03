@@ -25,6 +25,8 @@ def main() -> int:
         help="Optional immutable JSON report used by the Phase 7A preflight gate.",
     )
     args = parser.parse_args()
+    if args.output is not None and args.output.resolve().is_relative_to(args.gold_root.resolve()):
+        parser.error("validation output must be outside immutable Gold")
     report = validate_phase7_gold(
         args.gold_root,
         verify_hashes=not args.skip_file_hashes,

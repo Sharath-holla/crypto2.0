@@ -167,7 +167,19 @@ def test_tiny_pipeline_connects_and_is_reproducible(tmp_path: Path) -> None:
         target_type="raw",
         symbol_balanced=True,
     )
-    identity = {"fixture": "pretraining-integration-v1"}
+    from crypto_ai.phase7.recovery import inspect_spec_artifacts
+    from crypto_ai.phase7.training import training_source_identity
+
+    identity = {
+        "fixture": "pretraining-integration-v1",
+        "experiment_id": spec.name,
+        "fold_id": fold.plan.fold_id,
+        "gold_dataset_id": "SYNTHETIC",
+        "gold_manifest_sha256": "a" * 64,
+        "model_backend_semantics": "cpu",
+        "configuration_hash": config.configuration_hash,
+        "training_source_identity": training_source_identity(),
+    }
     reports = []
     stores = []
     for name, current_fold in (("run-a", fold), ("run-b", fold_2)):
@@ -184,10 +196,30 @@ def test_tiny_pipeline_connects_and_is_reproducible(tmp_path: Path) -> None:
         assert store.is_complete("train/fold-mini", expected_metadata=identity)
         assert report["status"] == "COMPLETE"
         assert report["test_used_for_selection"] is False
+        assert (
+            inspect_spec_artifacts(
+                model_path=tmp_path / name / "model.joblib",
+                report_path=tmp_path / name / "report.json",
+                checkpoint_store=store,
+                stage="train/fold-mini",
+                expected_identity=identity,
+            )["state"]
+            == "COMPLETE"
+        )
         reports.append(report)
         stores.append(store)
 
-    assert reports[0] == reports[1]
+    scientific_reports = deepcopy(reports)
+    for current in scientific_reports:
+        for key in (
+            "publication",
+            "model_artifact_sha256",
+            "model_receipt_sha256",
+            "report_identity",
+        ):
+            current.pop(key)
+        current["model"].pop("publication")
+    assert scientific_reports[0] == scientific_reports[1]
     assert json.loads((tmp_path / "run-a" / "report.json").read_text()) == reports[0]
 
     model_path = tmp_path / "run-a" / "model.joblib"

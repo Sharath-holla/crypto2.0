@@ -117,7 +117,7 @@ def _patch_harness(
     monkeypatch.setenv("PHASE7_CACHE_MODE", "disabled")
     manifest = _manifest(tmp_path)
     checkpoint_root = tmp_path / "checkpoints"
-    run_root = tmp_path / "run"
+    run_root = tmp_path / "audit-test-run"
 
     def fake_manifest(_: Path) -> dict[str, object]:
         import json

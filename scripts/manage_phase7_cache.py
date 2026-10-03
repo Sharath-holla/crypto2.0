@@ -10,6 +10,7 @@ from pathlib import Path
 from crypto_ai.phase7.prepared_cache import (
     cache_size_report,
     cleanup_cache_entries,
+    cleanup_cache_plan,
     referenced_cache_ids,
 )
 
@@ -21,6 +22,9 @@ def main() -> int:
     parser.add_argument("--artifact-root", type=Path, action="append", default=[])
     parser.add_argument("--offline", action="store_true", help="Confirm training is stopped.")
     parser.add_argument(
+        "--dry-run", action="store_true", help="Report candidates; never remove anything."
+    )
+    parser.add_argument(
         "--remove",
         dest="cache_ids",
         action="append",
@@ -29,7 +33,11 @@ def main() -> int:
         help="Exact cache ID to remove; may be repeated. Referenced IDs are refused.",
     )
     args = parser.parse_args()
-    if args.cache_ids and (not args.offline or not args.checkpoint_root or not args.artifact_root):
+    if (
+        args.cache_ids
+        and not args.dry_run
+        and (not args.offline or not args.checkpoint_root or not args.artifact_root)
+    ):
         parser.error("cleanup requires --offline and all active checkpoint/artifact roots")
     roots = tuple(args.checkpoint_root + args.artifact_root)
     protected = referenced_cache_ids(*roots)
@@ -40,13 +48,14 @@ def main() -> int:
             reference_roots=roots,
             offline=args.offline,
         )
-        if args.cache_ids
+        if args.cache_ids and not args.dry_run
         else []
     )
     print(
         json.dumps(
             {
                 "cache": cache_size_report(args.cache_root),
+                "cleanup_plan": cleanup_cache_plan(args.cache_root, reference_roots=roots),
                 "protected_cache_ids": sorted(protected),
                 "removed_cache_ids": removed,
                 "automatic_eviction": False,
