@@ -280,3 +280,101 @@ READY_FOR_48_MODEL_FOLD1: NO. TRAINING_READY: NO.
 Next safe action: owner reviews the pushed branch and this report, then authorizes only the
 Linux verification/migration phase under a fresh cost/deadline contract. Stop after local
 commits, safe new-branch push and exact remote verification. No PR/merge/main/tag changes.
+
+## 19. Lightning Linux software verification — 2026-10-03
+
+Starting branch: `phase7a-pre-lightning-hardening-20261003`; starting HEAD:
+`24dd8148af8cc1db4827dd40d2754d5ec1846ee6`. Initial Linux result at this continuation:
+**754 passed / 2 failed**, with all five Bash tests passing. The previous external
+verification directory was empty; this continuation's evidence is preserved separately
+under `.pytest-linux-verification/`, outside production artifact roots.
+
+### Phase 5 software lineage contract
+
+`test_real_plans_freeze_lineage_and_use_different_family_periods` was a software planning
+contract that accidentally depended on a local historical production Gold manifest. Its
+failure was `FileNotFoundError`, not a scientific or numerical failure. It now uses minimal,
+explicitly synthetic Parquet/manifest fixtures under `tmp_path`, with different planning
+periods ending before June 2026. Only the in-memory test config's manifest path changes.
+The real `read_gold_v2_1` and `walk_forward_plan` execute; no reader or planner is mocked.
+All original 17/16 fold counts, feature schemas, family-period and holdout assertions remain.
+The test additionally verifies the manifest's dataset identity and rejects wrong checksums,
+wrong Parquet/manifest lineage, missing checksum/version, missing feature timestamps and
+missing files. Existing resume identity/checksum rejection tests remain intact. These are
+software fixtures, not reconstructed market data or fake production Gold.
+
+REAL_GOLD_LINEAGE_VALIDATION = NOT RUN. This software result cannot qualify actual dataset
+lineage; any future real-data validation requires separate owner authorization.
+
+### Historical v1.9 checksum provenance and canonical identity
+
+The earlier `a22c17b164792e909f39f619c59ea40db23411c8e611398e11e28d0e98e3f493`
+claim in section 15 and the finalization/remediation documentation is superseded by this
+Git-byte investigation. The historical JSON was not modified.
+
+| Source | Exact blob SHA-256 |
+| --- | --- |
+| Working tree and starting HEAD | `03f74723105f3f4a389fabd0a0140bdccefa5f8e1ea9449ee71b26f5408897bb` |
+| Final v1.9 source-freeze update `be3a164f3fe283885dff1e3a201dbac2dfc303af` | Same |
+| Frozen handoff commit `28d3098a82952a3d09073e4d81b5281f856c072e` | Same |
+| `crypto2.0-handoff-20260906` (targets that frozen commit) | Same |
+| `phase7a-hold-20260906` (targets `b641e8b914a27f6b9a00ae4be7a2cbd75a02d9ed`) | Same |
+| Assertion-introducing commit `0cf62a67d55b9ff51e3b34f8d2726c4e9beb58b0` | Same |
+| That blob represented with CRLF | `c2e9467b3d7e4a8fe283e367442372239b2d3cc8e4277ff7d73c52d733ac1f4f` |
+
+Every inspected frozen blob is 6,769 bytes with LF and no CRLF. All nine historical
+file-changing commits were also checked: neither their exact blobs nor their CRLF
+representations match `a22c17b...`. The file was first introduced at `8f040652...` and its
+source hashes were amended before the final freeze; the initial revision is not the final
+handoff identity. The old constant is unsupported by this Git evidence, not a demonstrated
+Windows CRLF checksum. Its original provenance remains unproven; no Windows-origin claim
+is inferred. Linux failed because the test compared canonical committed bytes with that
+unsupported constant. No checkout drift or scientific-contract mutation was found.
+
+The corrected test pins the immutable handoff commit (also used by baseline noninterference
+tests), checks its exact Git blob SHA-256, and requires the current checkout to equal that
+blob after CRLF-to-LF normalization. It never derives its expected identity from current
+HEAD or mutable tags. Parameterized LF/CRLF checkout regressions prove the same identity
+on either representation and prove a substantive feature-count mutation is rejected.
+Production source identity already normalizes CRLF to LF; historical identity now remains
+anchored to exact immutable Git bytes. No production hashing behavior changed.
+
+### Review of the two preceding Linux test fixes
+
+- Rotation failure injection previously replaced only `gzip`, while Lightning has `pigz`
+  and the script prefers it. Intercepting both compressors retains the original assertion
+  that a failed compression restores the exact live log and leaves no archive.
+- CPU-budget testing requested eight threads without controlling detected CPU count;
+  this Studio has four CPUs. Mocking eight CPUs in that unit test retains the two-threads
+  per model and no-oversubscription assertions. Production resource admission is unchanged.
+
+### Final Linux gate
+
+Ubuntu 24.04.5, kernel `6.8.0-1070-gcp`, Python 3.14.5, four logical CPUs.
+The locked dev extra is enabled with `UV_EXTRA=dev` for the gate and its child commands;
+required output directories exist. No resource floors were lowered.
+
+- Targeted software/lineage/freeze/noninterference/rotation/resource checks: **102 passed**;
+  nine GPU/device cases excluded from that focused command.
+- Full pytest: **764 passed, 0 failed, 0 skipped, 0 warnings**, 111.19 seconds.
+- Bash/Linux log rotation: **5/5 passed**.
+- Ruff, format (233 files), `uv lock --check`, compileall and `git diff --check`: **PASS**.
+- Run lease, persistent-filesystem process-kill/publication/recovery and resource telemetry:
+  **PASS**, using synthetic fixtures. No production artifacts were reconciled.
+- Verification-only preflight: **PASS**; Gold manifest, Gold byte report and backend smoke
+  remain null. CPU resource telemetry emitted successfully.
+
+Full report: `.pytest-linux-verification/software-gate-e01e5a0261ff4ed1a7fd060cc483fb9f/verification-result.json`;
+JUnit is alongside it. Detailed checksum comparison: `.pytest-linux-verification/baseline-provenance.json`.
+Evidence is local and intentionally excluded from the commit.
+
+Only tests and this document changed. All `src/`, scientific configs, historical v1.9 JSON,
+data/artifacts and `uv.lock` remain unchanged. Gold: **NOT ACCESSED** in this continuation;
+GPU: **NOT RUN**; production training/Fold 1/48 specs: **NOT RUN**. The full software suite's
+existing tiny synthetic CPU estimator and mocked backend tests do not qualify GPU or
+production training. July remains unused; August remains `LOCKED_UNUSED`, used=false,
+evaluation_authorized=false.
+
+LINUX_VERIFICATION: **PASS**. READY_FOR_GOLD_MIGRATION: **NO** until a separately approved
+migration scope, complete state/path mapping and fresh resource contract are reviewed.
+TRAINING_READY: **NO**. No main merge, force push or tag changes are authorized or performed.

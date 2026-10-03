@@ -4,6 +4,8 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import pyarrow as pa
+import pyarrow.parquet as pq
+import pytest
 
 from crypto_ai.data.ingestion.manifest import write_manifest
 from crypto_ai.data.storage import file_sha256
@@ -16,15 +18,52 @@ from crypto_ai.phase5.engine import (
 from crypto_ai.phase5.folds import plan_folds, slice_fold
 
 
-def test_real_plans_freeze_lineage_and_use_different_family_periods() -> None:
+def _plan_fixture(tmp_path: Path, family: str) -> Path:
+    """Minimal synthetic planning input, never an estimate of missing market history."""
+    root = tmp_path / family
+    root.mkdir()
+    version = f"synthetic-plan-{family}"
+    start = datetime(2019, 9 if family == "primary" else 12, 1, tzinfo=UTC)
+    table = pa.table(
+        {
+            "feature_time": pa.array(
+                [start, datetime(2026, 5, 31, 23, 55, tzinfo=UTC)],
+                type=pa.timestamp("us", tz="UTC"),
+            )
+        }
+    ).replace_schema_metadata({b"dataset_version": version.encode()})
+    path = root / "synthetic.parquet"
+    pq.write_table(table, path)
+    manifest_path = root / "manifest.json"
+    write_manifest(
+        manifest_path,
+        {
+            "file": path.name,
+            "sha256": file_sha256(path),
+            "dataset_version": version,
+            "dataset_family": "core_long_history" if family == "primary" else "derivatives_overlap",
+        },
+    )
+    return manifest_path
+
+
+def test_plans_freeze_lineage_and_use_different_family_periods(tmp_path: Path) -> None:
     primary_config = load_walk_forward_config(Path("configs/walkforward/btc_primary_v1.toml"))
     derivatives_config = load_walk_forward_config(
         Path("configs/walkforward/btc_derivatives_v1.toml")
+    )
+    primary_config = primary_config.model_copy(
+        update={"dataset_manifest": _plan_fixture(tmp_path, "primary")}
+    )
+    derivatives_config = derivatives_config.model_copy(
+        update={"dataset_manifest": _plan_fixture(tmp_path, "derivatives")}
     )
     primary = walk_forward_plan(primary_config)
     derivatives = walk_forward_plan(derivatives_config)
     assert primary["fold_count"] == 17
     assert derivatives["fold_count"] == 16
+    assert primary["dataset_version"] == "synthetic-plan-primary"
+    assert derivatives["dataset_version"] == "synthetic-plan-derivatives"
     assert primary["folds"][0]["train_start"] != derivatives["folds"][0]["train_start"]
     assert primary["candidate_feature_schemas"]["L0"]["feature_count"] == 13
     assert primary["candidate_feature_schemas"]["L5"]["feature_count"] == 46
@@ -39,6 +78,35 @@ def test_real_plans_freeze_lineage_and_use_different_family_periods() -> None:
         datetime.fromisoformat(item["test_end"]) <= primary_config.prospective_holdout_start
         for item in primary["folds"]
     )
+
+
+@pytest.mark.parametrize(
+    "mutation",
+    ["hash", "lineage", "missing-sha", "missing-version", "missing-time", "missing-file"],
+)
+def test_plan_rejects_invalid_lineage_before_planning(tmp_path: Path, mutation: str) -> None:
+    import json
+
+    manifest_path = _plan_fixture(tmp_path, "primary")
+    manifest = json.loads(manifest_path.read_text())
+    path = manifest_path.parent / manifest["file"]
+    if mutation == "hash":
+        manifest["sha256"] = "0" * 64
+    elif mutation == "lineage":
+        manifest["dataset_version"] = "wrong-lineage"
+    elif mutation in {"missing-sha", "missing-version"}:
+        manifest.pop("sha256" if mutation == "missing-sha" else "dataset_version")
+    elif mutation == "missing-time":
+        table = pq.ParquetFile(path).read().rename_columns(["wrong_time"])
+        pq.write_table(table, path)
+        manifest["sha256"] = file_sha256(path)
+    else:
+        manifest["file"] = "absent.parquet"
+    write_manifest(manifest_path, manifest)
+    config = load_walk_forward_config(Path("configs/walkforward/btc_primary_v1.toml"))
+    config = config.model_copy(update={"dataset_manifest": manifest_path})
+    with pytest.raises((ValueError, KeyError)):
+        walk_forward_plan(config)
 
 
 def test_resume_validation_requires_identity_and_checksums(tmp_path: Path) -> None:
