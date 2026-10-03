@@ -75,3 +75,31 @@ Ruff/format (225 files), lock/compile/diff checks PASS.
 Local code/tests commit: `0cf62a67d55b9ff51e3b34f8d2726c4e9beb58b0`; documentation committed separately. No push.
 No real Gold validation, migration, production fit, real
 one-model benchmark or GPU benchmark. Working set PARTIALLY_BOUNDED. TRAINING_READY=NO.
+
+## Final local pre-Lightning hardening — 2026-10-03
+
+Started at `4ef91d53f2eb6b83157394078452cf4c1a85a5fe`; safe new branch requested:
+`phase7a-pre-lightning-hardening-20261003`. Full evidence and future-only commands:
+[PHASE7A_PRE_LIGHTNING_HARDENING.md](PHASE7A_PRE_LIGHTNING_HARDENING.md).
+Earlier entries above are historical evidence, not current unresolved statuses.
+
+| ID | Local changes/tests | Current status |
+| --- | --- | --- |
+| POST-NEW-02 | Exact no-copy all-finite Arrow/contiguous float64 selection; one-horizon/key release retained; optional RAM admission and structured stage telemetry | PARTIAL: early completion triage still follows context load; real RSS profile NOT RUN |
+| POST-NEW-06 | Model→receipt→bound report→checkpoint; read-only states; model-only refusal; lease-protected deterministic checkpoint reconciliation; killed-process/truncation/hash-order and synthetic ENOSPC tests | LOCAL CODE/TESTS RESOLVED; Linux filesystem crash qualification NOT RUN |
+| POST-NEW-07 | Configurable finite RAM/disk floors; artifact/cache/checkpoint/model/report/temp roots; preconstruction cache admission; fail-closed ENOSPC, protected cleanup dry-run | LOCAL CODE/TESTS RESOLVED; no reservation guarantee; real disk profile NOT RUN |
+| POST-NEW-08 | Persistent guard inode + OS lock/owner metadata; second writer rejection; conservative hash-bound stale recovery; separate benchmark lease; local subprocess kill tests | LOCAL CODE/TESTS RESOLVED; Linux target-filesystem cross-process qualification NOT RUN |
+| POST-NEW-09 | Explicit complete/partial/no-tolerance comparison semantics; prediction-only PASS scope; native fitted-backend + independent live PID/GPU UUID/VRAM evidence; no CPU retry | LOCAL CODE/TESTS RESOLVED; actual GPU smoke, numerical and policy equivalence NOT RUN |
+
+Historical v1.9 freeze unchanged; canonical config/science, 48+6+4 specs, 109 features/130 fields,
+Core20/HNT, July-unused/August LOCKED_UNUSED retained. New scientific manifest has 46 files;
+execution-only manifest 15. All existing discovery/acquisition/candle/Gold artifacts preserved.
+No large module refactor, real Gold access, migration, cloud start, GPU/real-model benchmark,
+production Fold 1, 48-spec run or Phase 8. TRAINING_READY=NO.
+
+Final verification and selective commit/push evidence: see the hardening report and the final
+owner-facing Git report. Earlier full verification during integration: 747 passed, 5 Windows
+Bash skips, 0 failures/warnings. Fresh final gate: **751 passed / 0 failed / 5 Windows-only
+Bash skips / 0 warnings in 190.52 seconds**. Final focused hardening + tiny integration:
+58 passed. Ruff/format (233 files), lock, compile and diff checks PASS. Actual external
+Linux/Gold/resource/GPU/real-benchmark gates remain NOT RUN.

@@ -44,8 +44,9 @@ export PHASE7_LGBM_DEVICE=cuda
 export PHASE7_TOTAL_CPU_THREADS=4
 export PHASE7_MODEL_PARALLELISM=1
 export PHASE7_LIGHTGBM_THREADS_PER_MODEL=4
-export PHASE7_MIN_AVAILABLE_RAM_GB=32
-export PHASE7_MIN_FREE_DISK_GB=25
+# RAM admission is optional; set only a reviewed, measured floor (not an assumed 32/64 GiB).
+# export PHASE7_MIN_FREE_RAM_GIB=OWNER_APPROVED_POSITIVE_GIB
+export PHASE7_MIN_FREE_DISK_GIB=25
 # Optional publication cap; choose after measuring the full cache/disk workload:
 # export PHASE7_CACHE_MAX_GB=100
 ```
@@ -101,7 +102,14 @@ finite filtering and fold-bound context remain part of prepared matrix construct
 
 ## 5. Preflight and full Linux verification
 
+First perform software-only verification, with approved writable output roots present.
+This entrypoint does not scan Gold or fit a GPU/backend smoke; the full suite has tiny
+synthetic CPU tests. It requires all five Bash tests to execute, plus lint/format/lock/compile.
+
 ```bash
+uv run python -m crypto_ai.phase7.verify_linux --repository "$PWD" \
+  --output-root "$PWD/.pytest-linux-verification"
+# Later, only after Gold validation and explicit synthetic backend-smoke authorization:
 uv run python -m crypto_ai.phase7.preflight \
   --config configs/phase7/research_core20_primary_v1.toml \
   --gold-validation-report "$PHASE7_GOLD_VALIDATION_REPORT"
@@ -124,6 +132,14 @@ uv run python -m scripts.benchmark_phase7_backend --backend cuda
 uv run python -m scripts.benchmark_phase7_preparation --rows 20000 --features 109
 uv run python -m scripts.benchmark_phase7_backend --backend cuda --compare-cpu
 ```
+
+The last command emits REVIEW_REQUIRED without explicit tolerances; successful computation
+alone is not equivalence. For prediction-only assessment, add
+`--tolerances /reviewed/operator-approved-limits.json` with all required keys documented in
+[the hardening report](PHASE7A_PRE_LIGHTNING_HARDENING.md). Partial limits do not authorize
+PASS. Threshold/no-trade policy equivalence needs separate review. GPU fit must be attested
+by native fitted-backend plus independent live PID/GPU UUID/VRAM evidence; invisible evidence
+fails closed without CPU retry. These commands are future-only, not executed by local hardening.
 
 These utilities use synthetic data only. GPU smoke must fit successfully on the requested backend;
 there is no CPU fallback. Record LightGBM/build/backend/GPU/driver information and elapsed time.
@@ -222,3 +238,16 @@ sufficient. Structural one-horizon/key release is tested, not a measured product
 Model/report fsync/order/binding are improved; model-only orphan recovery, conflicting-process
 run leases and Linux fault qualification remain pending. GPU comparison execution PASS is still
 not numerical equivalence approval. No target-host readiness or training authorization is implied.
+
+## Final local hardening clarification (2026-10-03)
+
+The preceding clarification describes the earlier finalization state. Current local lease,
+state-machine/reconciliation, telemetry/resource admission and GPU policy/attestation tooling
+are implemented and tested; consult [PHASE7A_PRE_LIGHTNING_HARDENING.md](PHASE7A_PRE_LIGHTNING_HARDENING.md).
+Scientific manifest is now 46 files; execution manifest 15; historical freeze unchanged.
+Use lease inspection/recovery, never delete guard files or steal by age. Model-only artifacts
+are preserved for owner decision. Cleanup `--dry-run` requires all production AND benchmark
+reference roots for meaningful candidate sizing. No actual cleanup occurred.
+Real Linux/crash/concurrency, Gold-byte, preparation RSS/disk, GPU smoke/equivalence and
+one-model benchmark gates remain NOT RUN. TRAINING_READY=NO; review the pushed branch
+before any fresh paid resource/verification/migration authorization.
