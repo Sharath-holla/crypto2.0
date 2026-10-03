@@ -145,7 +145,8 @@ uv run python -m scripts.manage_phase7_cache --cache-root "$PHASE7_CACHE_ROOT"
 
 Default `auto` loads valid entries and rebuilds missing/invalid ones safely. `read_only` fails on any
 miss/corruption. `rebuild` is an explicit replacement; `disabled` creates no durable matrix cache.
-The optional capacity cap refuses publication; it never evicts entries automatically. Temporary
+The optional capacity cap admits a conservative incoming estimate before construction and checks
+exact bytes at publication; it never evicts entries automatically. Temporary
 and quarantine bytes remain visible. Investigate stale locks; do not remove one while a writer runs.
 
 For owner-directed cleanup, stop all workers and supply **all** active reference roots, including
@@ -168,9 +169,19 @@ After the previous gates, obtain fresh owner authorization for **one canonical F
 a cost/deadline contract. Preserve exact fold rows, parameters, seeds, features and weights. Use a
 reviewed isolated benchmark harness selecting the first canonical fold and a single existing G0
 A6 specification; keep benchmark outputs distinct from canonical completion/qualification records.
-The ordinary runner does not yet offer a dedicated one-model selection flag. Do not use `--canary`
-as a substitute: its existing meaning is the **entire 48-spec Fold-1 canary**. Preparing/reviewing
-the scoped real-data benchmark invocation is a required future owner-controlled step.
+The isolated production-package selector now exists. This command only prints a plan:
+
+```bash
+uv run python -m crypto_ai.phase7.benchmark_one_spec \
+  --spec-id architecture-G0-A6-60m-raw \
+  --output-root /persistent/crypto2-benchmark-isolated
+```
+
+Only separately owner-authorized `--execute`, after all target-host gates, may fit. Outputs are
+BENCHMARK_ONLY under a separate run/checkpoint identity, with no canonical fold/run completion.
+Unknown/deferred IDs and overlapping protected roots fail closed. Do not use `--canary`
+as a substitute: its existing meaning remains the **entire 48-spec Fold-1 canary**.
+See [pre-Lightning finalization](PHASE7A_PRE_LIGHTNING_FINALIZATION.md) for exact scope and blockers.
 
 Record preparation/cache-hit time, model fit/best iteration, calibration/test stages, total runtime,
 host RAM/VRAM, disk, and cost. Review the projected 48-spec cost with the owner. Only then may the
@@ -183,7 +194,7 @@ No production training command is executed or authorized by this runbook.
 
 | Gate | Current state |
 | --- | --- |
-| Local Windows software tests | 665 passed, 5 Windows-only skips, 0 failed, 0 warnings; see final remediation report |
+| Local Windows software tests | See current pre-Lightning finalization gate; historical remediation gate was 665 passed, 5 Windows-only skips |
 | Ruff/format | PASS |
 | Lightning portability tooling | Prepared; target-host validation pending |
 | Linux full suite/Bash operations | NOT RUN |
@@ -195,3 +206,19 @@ No production training command is executed or authorized by this runbook.
 
 Next safe action: owner reviews the remediation, then authorizes the migration/verification phase
 with a fresh resource contract. Keep training stopped until all remaining gates are reviewed.
+
+## Pre-Lightning finalization clarification (2026-10-03)
+
+Canonical enumeration is unchanged: 48 primary A6 + 6 deferred ablations + 4 deferred HTF = 58.
+Use `uv run python -m crypto_ai.phase7.benchmark_one_spec --enumerate` to print all fields/counts
+without fitting. The historical v1.9 freeze stays byte-identical; current source identity is a
+separate 44-file scientific manifest. The launcher imports production code; installed/editable
+environment plus reviewed repository/configs are required. `python -m crypto_ai.phase7.lightning`
+is the production-module entrypoint; the old script remains a compatibility launcher.
+
+Gold validation now requires producer-derived 109 features / 130 physical columns. Regenerate
+the validation report on the actual authorized Linux copy; a historical native-only PASS is not
+sufficient. Structural one-horizon/key release is tested, not a measured production RAM bound.
+Model/report fsync/order/binding are improved; model-only orphan recovery, conflicting-process
+run leases and Linux fault qualification remain pending. GPU comparison execution PASS is still
+not numerical equivalence approval. No target-host readiness or training authorization is implied.

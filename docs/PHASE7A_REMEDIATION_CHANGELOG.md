@@ -38,3 +38,40 @@ Verification before: 620 passed / 8 failed / 0 skipped / 3 warnings.
 Verification after: 665 passed / 0 failed / 5 Windows-only skips / 0 warnings in 150.74 seconds.
 Ruff PASS; format PASS (221 files); dependency lock check PASS; August LOCKED_UNUSED.
 GPU smoke and migrated Gold byte validation NOT RUN. TRAINING_READY=NO.
+
+## Focused pre-Lightning finalization — 2026-10-03
+
+Starting HEAD `2dcf12bb2b7bdc8ec089d3248bbc157a9a9ef2a8`. Detailed investigation, all 58
+generated rows, current identities, tests and readiness are in
+[PHASE7A_PRE_LIGHTNING_FINALIZATION.md](PHASE7A_PRE_LIGHTNING_FINALIZATION.md).
+No config/scientific methodology expansion: original/current canonical primary count is 48;
+the quoted 40 claim was stale. Historical v1.9 bytes, July/August locks and existing artifacts
+are preserved. Current scientific source identity includes 44 files, operational identity 10.
+
+The IDs below preserve the latest fresh audit's numbering (not the superseded draft numbering).
+The five HIGH findings were confirmed in starting code; four fixed, memory/resume partly fixed.
+
+| ID / finding | Evidence | Fix | Tests | Status |
+| --- | --- | --- | --- | --- |
+| POST-NEW-01 HIGH rebuild integration | Post-write rebuild lookup forced miss | Explicit validated open_published after write | Same-object float64 roundtrip; runner fit sentinel | RESOLVED |
+| POST-NEW-02 HIGH eager memory/resume | All horizons/cache keys resident | Lazy one-horizon/key retention; release prior payload/models | Weakref previous-horizon release; isolated runner | UNRESOLVED / PARTIALLY_FIXED: production RSS/admission and early completion triage pending |
+| POST-NEW-03 HIGH descriptor identity | Numerical cluster/tier inputs not bound | Hash causal descriptor payload and fold context into cache/checkpoint/model | Descriptor change/order/future exclusion; existing identity suite | RESOLVED |
+| POST-NEW-04 HIGH orphan content binding | Filename/structural identity insufficient | Pre-load model SHA + report digest + expected science; serialized input identity | Content swap/report mismatch; actual tiny estimator roundtrip | RESOLVED |
+| POST-NEW-05 HIGH full Gold contract | Native-only 54-column PASS | Producer-derived 109 features/130 physical types/order; reject stale preflight evidence | Seven partition mutations; old native-only PASS | RESOLVED |
+| POST-NEW-06 MEDIUM publication durability | COMPLETE report before model; weak fsync | Model→bound report→checkpoint; file/POSIX-directory fsync | Injected model/report/replace failure; fsync ordering | UNRESOLVED / PARTIALLY_FIXED: model-only recovery/multi-file Linux crash gate pending |
+| POST-NEW-07 MEDIUM capacity admission | Full build before cap; single mount floor | Preconstruction estimate + exact final bytes without double count; finite per-output floors | Below/equal/above cap; protected/temp behavior; runtime trust | PARTIALLY_FIXED: no reserved capacity/production ENOSPC qualification |
+| POST-NEW-08 MEDIUM cross-process race | No model/report run lease | No conflicting process execution authorized; retain blocker | Cache locks do not certify model/report concurrency | UNRESOLVED |
+| POST-NEW-09 MEDIUM GPU equivalence | Computation PASS has no acceptance tolerances | Retain explicit gate; no unapproved device/scientific change | GPU benchmark NOT RUN | UNRESOLVED |
+| POST-NEW-10 LOW comment hash policy | Full normalized source bytes include comments | Preserve conservative content identity | Existing source identity tests | DOCUMENTED / DEFERRED |
+
+Additional requested items: exact canonical ID/combination/deferred-count tests; production-package
+Lightning launcher/startup tests; plan-only exact-one canonical selector with BENCHMARK_ONLY
+root/checkpoint/completion isolation; protected historical/current identity tests. Cache cap's
+old final `current` already included temporary bytes: undercount allegation not reproduced;
+admission timing was the actual defect. No automatic LRU introduced.
+
+Final full verification: 696 passed / 0 failed / 5 Windows-only skips / 0 warnings in 335.98 seconds.
+Ruff/format (225 files), lock/compile/diff checks PASS.
+Local code/tests commit: `0cf62a67d55b9ff51e3b34f8d2726c4e9beb58b0`; documentation committed separately. No push.
+No real Gold validation, migration, production fit, real
+one-model benchmark or GPU benchmark. Working set PARTIALLY_BOUNDED. TRAINING_READY=NO.
