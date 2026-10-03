@@ -16,6 +16,8 @@ from crypto_ai.phase7.gold_validation import (
     GoldValidationError,
     GoldValidationExpectations,
     HoldoutViolationError,
+    native_feature_columns,
+    production_a6_model_columns,
     production_feature_columns,
     validate_phase7_gold,
 )
@@ -170,3 +172,121 @@ def test_gold_validation_detects_partition_hash_corruption(tmp_path: Path) -> No
         stream.write(b"corrupt")
     with pytest.raises(GoldValidationError, match="checksum mismatch"):
         validate_phase7_gold(tmp_path, expectations=expectations)
+
+
+def _producer_order():
+    from crypto_ai.phase7.features import build_higher_timeframe_context
+    from crypto_ai.phase7.fixtures import synthetic_candles
+
+    source = synthetic_candles(rows_per_symbol=4)
+    tables = []
+    for hours in (12, 24):
+        times = [
+            datetime(2025, 1, 1, tzinfo=UTC) + timedelta(hours=hours * (i % 4))
+            for i in range(source.num_rows)
+        ]
+        tables.append(
+            source.set_column(
+                source.column_names.index("open_time"),
+                "open_time",
+                pa.array(times, type=pa.timestamp("us", tz="UTC")),
+            )
+        )
+    context = build_higher_timeframe_context(*tables)
+    return native_feature_columns() + tuple(
+        name for name in context.column_names if name.startswith(("htf_12h_", "htf_1d_"))
+    )
+
+
+def test_producer_physical_order_and_independent_a6_order_are_accepted(tmp_path):
+    physical = _producer_order()
+    assert production_feature_columns() == physical
+    assert len(set(physical)) == len(physical) == 109
+    assert len(native_feature_columns()) == 54
+    assert sum(name.startswith("htf_12h_") for name in physical) == 22
+    assert sum(name.startswith("htf_1d_") for name in physical) == 33
+    model = feature_ablation_sets(physical)["A6"]
+    assert production_a6_model_columns() == model
+    assert model != physical
+    assert len(model) == 109 and set(model) == set(physical)
+    assert model[-3:] == ("funding_zscore", "mark_index_basis", "contract_mark_basis")
+
+    expectations = _gold_fixture(tmp_path, start=datetime(2025, 1, 1, tzinfo=UTC))
+    root = tmp_path / expectations.dataset_id
+    manifest_path = root / "manifest.json"
+    manifest = json.loads(manifest_path.read_text())
+    partition = root / manifest["partition_files"][0]["path"]
+    table = pq.ParquetFile(partition).read()
+    nonfeatures = [name for name in table.column_names if name not in physical]
+    pq.write_table(table.select(nonfeatures + list(physical)), partition)
+    manifest["feature_columns"] = list(physical)
+    manifest["feature_groups"]["A6"] = list(model)
+    manifest["partition_files"][0]["sha256"] = file_sha256(partition)
+    manifest_path.write_text(json.dumps(manifest))
+    report = validate_phase7_gold(root, expectations=expectations)
+    assert report["production_features"] == list(physical)
+    assert report["a6_model_features"] == list(model)
+
+
+@pytest.mark.parametrize("mutation", ["swap", "missing", "extra", "dtype"])
+def test_physical_contract_rejects_self_consistent_mutations(tmp_path, mutation):
+    expectations = _gold_fixture(tmp_path, start=datetime(2025, 1, 1, tzinfo=UTC))
+    root = tmp_path / expectations.dataset_id
+    manifest_path = root / "manifest.json"
+    manifest = json.loads(manifest_path.read_text())
+    path = root / manifest["partition_files"][0]["path"]
+    table = pq.ParquetFile(path).read()
+    name = "htf_12h_rsi14"
+    match = {
+        "swap": "feature column order",
+        "missing": "missing required columns",
+        "extra": "unexpected columns",
+        "dtype": "wrong type",
+    }[mutation]
+    if mutation == "swap":
+        names = table.column_names
+        a, b = names.index(name), names.index("htf_12h_ema20_slope_3bar")
+        names[a], names[b] = names[b], names[a]
+        table = table.select(names)
+    elif mutation == "missing":
+        table = table.drop([name])
+    elif mutation == "extra":
+        table = table.append_column("htf_12h_unapproved", pa.array([1.0] * table.num_rows))
+    else:
+        table = table.set_column(
+            table.column_names.index(name), name, table[name].cast(pa.float32())
+        )
+    pq.write_table(table, path)
+    manifest["partition_files"][0]["sha256"] = file_sha256(path)
+    manifest_path.write_text(json.dumps(manifest))
+    with pytest.raises(GoldValidationError, match=match):
+        validate_phase7_gold(root, expectations=expectations)
+
+
+def test_model_order_tampering_rejected_with_unchanged_physical_bytes(tmp_path):
+    expectations = _gold_fixture(tmp_path, start=datetime(2025, 1, 1, tzinfo=UTC))
+    root = tmp_path / expectations.dataset_id
+    manifest_path = root / "manifest.json"
+    manifest = json.loads(manifest_path.read_text())
+    path = root / manifest["partition_files"][0]["path"]
+    before = file_sha256(path)
+    model = manifest["feature_groups"]["A6"]
+    model[0], model[1] = model[1], model[0]
+    manifest_path.write_text(json.dumps(manifest))
+    with pytest.raises(GoldValidationError, match="A6 feature-group ordering"):
+        validate_phase7_gold(root, expectations=expectations)
+    assert file_sha256(path) == before
+
+
+def test_grouping_catalog_reordering_cannot_redefine_storage_order(monkeypatch):
+    from crypto_ai.phase6.features import FEATURE_GROUPS_V3_RESEARCH
+
+    before = production_feature_columns()
+    model = production_a6_model_columns()
+    for interval in ("12h", "1d"):
+        key = f"higher_timeframe_{interval}"
+        monkeypatch.setitem(
+            FEATURE_GROUPS_V3_RESEARCH, key, tuple(reversed(FEATURE_GROUPS_V3_RESEARCH[key]))
+        )
+    assert production_feature_columns() == before == _producer_order()
+    assert production_a6_model_columns() == model

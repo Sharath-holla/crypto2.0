@@ -11,7 +11,7 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 
 from crypto_ai.data.storage import file_sha256
-from crypto_ai.phase6.features import FEATURE_GROUPS_V3_RESEARCH
+from crypto_ai.phase6.features import FEATURE_GROUPS_V3_RESEARCH, _higher_timeframe_values
 from crypto_ai.phase7.config import (
     FEATURE_VERSION,
     MARKET_CONTEXT_VERSION,
@@ -71,12 +71,42 @@ def native_feature_columns() -> tuple[str, ...]:
 
 
 def production_feature_columns() -> tuple[str, ...]:
-    """Exact producer catalog: native features then completed 12h and 1d context."""
-    return (
-        native_feature_columns()
-        + FEATURE_GROUPS_V3_RESEARCH["higher_timeframe_12h"]
-        + FEATURE_GROUPS_V3_RESEARCH["higher_timeframe_1d"]
+    """Physical feature order from the producer, independent of grouping order.
+
+    The HTF producer defines dict insertion order; the Phase 7 context builder
+    and as-of join preserve it. A zero-row schema probe creates no research data.
+    Group catalogs constrain inventory, not the order of persisted columns.
+    """
+    empty = pa.table(
+        {
+            "open_time": pa.array([], type=pa.timestamp("us", tz="UTC")),
+            **{
+                name: pa.array([], type=pa.float64())
+                for name in (
+                    "open",
+                    "high",
+                    "low",
+                    "close",
+                    "quote_volume",
+                    "trade_count",
+                    "taker_buy_quote_volume",
+                )
+            },
+        }
     )
+    higher: tuple[str, ...] = ()
+    for interval, count in (("12h", 22), ("1d", 33)):
+        columns = tuple(_higher_timeframe_values(empty, interval))
+        catalog = FEATURE_GROUPS_V3_RESEARCH[f"higher_timeframe_{interval}"]
+        if len(columns) != count or len(catalog) != count or set(columns) != set(catalog):
+            raise AssertionError(f"production {interval} feature inventory drifted")
+        higher += columns
+    return native_feature_columns() + higher
+
+
+def production_a6_model_columns() -> tuple[str, ...]:
+    """Established model order; not the physical storage order."""
+    return feature_ablation_sets(production_feature_columns())["A6"]
 
 
 def production_gold_schema() -> dict[str, pa.DataType]:
@@ -220,9 +250,7 @@ def validate_gold_manifest(
         errors.append("production feature count/order mismatch (native feature contract included)")
         manifest_features = manifest_features if isinstance(manifest_features, list) else []
     groups = manifest.get("feature_groups")
-    if not isinstance(groups, dict) or groups.get("A6") != list(
-        feature_ablation_sets(expected_features)["A6"]
-    ):
+    if not isinstance(groups, dict) or groups.get("A6") != list(production_a6_model_columns()):
         errors.append("A6 feature-group ordering mismatch")
     if manifest.get("research_cutoff") != expectations.research_cutoff.isoformat():
         errors.append("research cutoff mismatch")
@@ -463,6 +491,7 @@ def validate_phase7_gold(
         "native_features": list(native_feature_columns()),
         "production_feature_count": len(required_features),
         "production_features": list(required_features),
+        "a6_model_features": list(production_a6_model_columns()),
         "production_schema": {name: str(value) for name, value in production_gold_schema().items()},
         "nan_counts": nan_counts,
         "infinite_counts": inf_counts,
