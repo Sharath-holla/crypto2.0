@@ -10,6 +10,8 @@ from typing import Any, Literal
 import numpy as np
 
 from crypto_ai.phase7.config import ModelConfig
+from crypto_ai.phase7.device_evidence import fit_with_device_evidence
+from crypto_ai.phase7.equivalence import assess_equivalence
 from crypto_ai.research.metrics import regression_metrics
 
 BackendName = Literal["cpu", "gpu", "cuda"]
@@ -44,7 +46,7 @@ def gpu_snapshot() -> dict[str, Any]:
         result = subprocess.run(
             [
                 "nvidia-smi",
-                "--query-gpu=name,driver_version,memory.total,memory.used,utilization.gpu",
+                "--query-gpu=index,uuid,name,driver_version,memory.total,memory.used,utilization.gpu",
                 "--format=csv,noheader,nounits",
             ],
             check=True,
@@ -55,7 +57,26 @@ def gpu_snapshot() -> dict[str, Any]:
     except (OSError, subprocess.SubprocessError) as exc:
         return {"detected": False, "error": str(exc)}
     devices = [line.strip() for line in result.stdout.splitlines() if line.strip()]
-    return {"detected": bool(devices), "devices": devices}
+    details = []
+    fields = (
+        "ordinal",
+        "uuid",
+        "name",
+        "driver_version",
+        "memory_total_mib",
+        "memory_used_mib",
+        "utilization_percent",
+    )
+    for line in devices:
+        values = [value.strip() for value in line.split(",")]
+        if len(values) == len(fields):
+            details.append(dict(zip(fields, values, strict=True)))
+    return {
+        "detected": bool(devices),
+        "devices": devices,
+        "device_details": details,
+        "cuda_opencl_runtime_info": "NOT_OBSERVED_BY_THIS_QUERY",
+    }
 
 
 def lightgbm_estimator_parameters(
@@ -140,7 +161,9 @@ def smoke_test_backend(name: BackendName, *, rows: int = 512, features: int = 8)
     started = time.perf_counter()
     try:
         model = lgb.LGBMRegressor(**params)
-        model.fit(
+        fit_with_device_evidence(
+            model,
+            backend,
             matrix[:400],
             target[:400],
             eval_X=matrix[400:],
@@ -158,11 +181,16 @@ def smoke_test_backend(name: BackendName, *, rows: int = 512, features: int = 8)
         "device": gpu_snapshot() if backend.gpu_requested else {"name": "CPU"},
         "lightgbm_version": lightgbm_version(),
         "elapsed_seconds": time.perf_counter() - started,
+        "device_attestation": getattr(model, "phase7_device_evidence_", {"status": "CPU_ONLY"}),
     }
 
 
 def compare_cpu_gpu_backends(
-    requested: Literal["gpu", "cuda"], *, rows: int = 2_000, features: int = 16
+    requested: Literal["gpu", "cuda"],
+    *,
+    rows: int = 2_000,
+    features: int = 16,
+    tolerances: dict[str, float] | None = None,
 ) -> dict[str, Any]:
     import lightgbm as lgb
 
@@ -180,7 +208,9 @@ def compare_cpu_gpu_backends(
         started = time.perf_counter()
         try:
             model = lgb.LGBMRegressor(**params)
-            model.fit(
+            fit_with_device_evidence(
+                model,
+                backend,
                 matrix[:split],
                 target[:split],
                 sample_weight=weights[:split],
@@ -200,19 +230,22 @@ def compare_cpu_gpu_backends(
             "best_iteration": int(model.best_iteration_ or config.n_estimators),
             "runtime_seconds": time.perf_counter() - started,
             "backend_metadata": backend_metadata(backend),
+            "device_attestation": getattr(model, "phase7_device_evidence_", {"status": "CPU_ONLY"}),
         }
-    difference = predictions[requested] - predictions["cpu"]
+    assessment = assess_equivalence(
+        target[split:],
+        predictions["cpu"],
+        predictions[requested],
+        limits=tolerances,
+        cpu_best_iteration=results["cpu"]["best_iteration"],
+        gpu_best_iteration=results[requested]["best_iteration"],
+    )
     return {
-        "status": "PASS",
+        **assessment,
         "rows": rows,
         "features": features,
         "seed": config.seed,
         "parameters": config.model_dump(mode="json"),
         "cpu": results["cpu"],
         requested: results[requested],
-        "prediction_correlation": float(
-            np.corrcoef(predictions["cpu"], predictions[requested])[0, 1]
-        ),
-        "max_abs_prediction_difference": float(np.max(np.abs(difference))),
-        "mean_abs_prediction_difference": float(np.mean(np.abs(difference))),
     }

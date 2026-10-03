@@ -67,6 +67,8 @@ from crypto_ai.phase7.prepared_cache import (
 )
 from crypto_ai.phase7.progress import ProgressReporter, oos_trade_summary
 from crypto_ai.phase7.registry import SymbolRegistry
+from crypto_ai.phase7.resources import resource_admission
+from crypto_ai.phase7.run_lease import owned_run
 from crypto_ai.phase7.runtime import (
     ComputeBudget,
     RuntimePaths,
@@ -76,6 +78,7 @@ from crypto_ai.phase7.runtime import (
     memory_snapshot,
 )
 from crypto_ai.phase7.segments import CausalDataGap
+from crypto_ai.phase7.telemetry import instrument, telemetry
 from crypto_ai.phase7.universe import (
     ExpansionUniversePolicy,
     FrozenUniverse,
@@ -132,12 +135,19 @@ TRAINING_CRITICAL_SOURCE_FILES = (
     "scripts/run_phase7a_pipeline.py",
     "src/crypto_ai/phase7/phase7a.py",
     "src/crypto_ai/phase7/benchmark_one_spec.py",
+    "src/crypto_ai/phase7/recovery.py",
+    "src/crypto_ai/phase7/device_evidence.py",
 )
 EXECUTION_CONTEXT_SOURCE_FILES = (
     "src/crypto_ai/phase7/preflight.py",
     "src/crypto_ai/phase7/progress.py",
     "src/crypto_ai/phase7/runtime.py",
     "src/crypto_ai/phase7/lightning.py",
+    "src/crypto_ai/phase7/run_lease.py",
+    "src/crypto_ai/phase7/resources.py",
+    "src/crypto_ai/phase7/telemetry.py",
+    "src/crypto_ai/phase7/verify_linux.py",
+    "src/crypto_ai/phase7/equivalence.py",
     "scripts/benchmark_phase7_backend.py",
     "scripts/benchmark_phase7_preparation.py",
     "scripts/manage_phase7_cache.py",
@@ -340,6 +350,7 @@ def experiment_output_root(run_root: Path, *, kind: str, config: Phase7Config) -
     return base / run_root.name / "models"
 
 
+@instrument("FOLD_LOAD", admit=True)
 def _load_fold_rows(
     manifest: dict[str, Any],
     plan: FoldPlan,
@@ -375,9 +386,11 @@ def _finite(table: pa.Table, columns: tuple[str, ...], target: str) -> pa.Table:
     mask: pa.Array | pa.ChunkedArray = pc.is_finite(table.column(names[0]))
     for name in names[1:]:
         mask = pc.and_(mask, pc.is_finite(table.column(name)))
-    return table.filter(pc.fill_null(mask, False))
+    valid = pc.fill_null(mask, False)
+    return table if pc.all(valid).as_py() is True else table.filter(valid)
 
 
+@instrument("PREPARE", admit=True)
 def _prepare_training_segments(
     fold: MultiAssetFoldData,
     feature_columns: tuple[str, ...],
@@ -391,7 +404,7 @@ def _prepare_training_segments(
     ):
         if "cross_sectional_context_scope" not in segment.column_names:
             raise ValueError(f"{segment_name} is missing fold-bound cross-sectional context")
-        scopes = set(segment.column("cross_sectional_context_scope").to_pylist())
+        scopes = set(pc.unique(segment.column("cross_sectional_context_scope")).to_pylist())
         if scopes != {"FOLD_ACTIVE_SYMBOLS"}:
             raise ValueError(f"{segment_name} contains non-fold cross-sectional context: {scopes}")
     train = _finite(fold.train, feature_columns, target)
@@ -607,6 +620,10 @@ def _validate_model_file_binding(report: dict[str, Any], model_path: Path) -> No
     claimed = identity.pop("report_identity", None)
     if claimed != stable_hash(identity, length=64):
         raise ValueError("model report content identity mismatch")
+    if "model_receipt_sha256" in report:
+        from crypto_ai.phase7.recovery import validate_model_receipt
+
+        validate_model_receipt(model_path, report)
 
 
 def _restore_completed_g0(
@@ -629,6 +646,8 @@ def _restore_completed_g0(
     model = load_model(model_path)
     if model.metadata.get("scientific_input_identity") != reported_identity:
         raise ValueError("completed estimator scientific input identity mismatch")
+    if model.metadata.get("publication") != report.get("publication"):
+        raise ValueError("completed estimator publication identity mismatch")
     _validate_complete_orphan_report(report, model)
     if model.architecture != "G0":
         raise ValueError("completed reusable model is not G0")
@@ -829,6 +848,7 @@ def _run_one(
     execution_metadata: dict[str, Any] | None = None,
     model_path: Path | None = None,
 ) -> tuple[dict[str, Any], list[Path]]:
+    resource_admission("MODEL_FIT_START", additional_roots=(output_root, model_path or output_root))
     experiment_started = time.monotonic()
     target = _prediction_target(spec)
     prepared = prepared_segments or _prepare_training_segments(fold, feature_columns, target)
@@ -885,6 +905,15 @@ def _run_one(
         **memory_snapshot(),
     )
     model_started = time.monotonic()
+    telemetry(
+        "MODEL_FIT_START",
+        "START",
+        started=model_started,
+        matrix_shape=list(prepared.model_inputs.train_x.shape),
+        matrix_bytes=prepared.model_inputs.train_x.nbytes
+        + prepared.model_inputs.validation_x.nbytes,
+        model_threads=budget.lightgbm_threads_per_model,
+    )
     with fit_context:
         model = fit_architecture(
             spec.architecture,  # type: ignore[arg-type]
@@ -917,9 +946,12 @@ def _run_one(
         elapsed_seconds=time.monotonic() - model_started,
         **memory_snapshot(),
     )
+    telemetry("MODEL_FIT_END", "END", started=model_started)
     if reusable_models is not None and _is_reusable_g0(spec):
         reusable_models[reuse_key] = model
     emit_event("CAL_A_START", fold_id=fold.plan.fold_id, spec=spec.name)
+    calibration_started = time.monotonic()
+    telemetry("CALIBRATE", "START", started=calibration_started)
     cal_a_raw, cal_a_covered = model.predict(calibration_a)
     cal_a_table, cal_a_predictions = _subset_covered(calibration_a, cal_a_raw, cal_a_covered)
     calibrator, calibration_report = fit_calibrator(
@@ -928,7 +960,10 @@ def _run_one(
         config.calibration,
     )
     emit_event("CAL_A_DONE", fold_id=fold.plan.fold_id, spec=spec.name)
+    telemetry("CALIBRATE", "END", started=calibration_started)
     emit_event("CAL_B_START", fold_id=fold.plan.fold_id, spec=spec.name)
+    threshold_started = time.monotonic()
+    telemetry("THRESHOLD", "START", started=threshold_started)
     cal_b_model, cal_b_covered = model.predict(calibration_b)
     cal_b_table, cal_b_predictions = _subset_covered(calibration_b, cal_b_model, cal_b_covered)
     cal_b_raw = _to_raw_predictions(
@@ -946,6 +981,7 @@ def _run_one(
         config=config.costs,
     )
     emit_event("CAL_B_DONE", fold_id=fold.plan.fold_id, spec=spec.name)
+    telemetry("THRESHOLD", "END", started=threshold_started)
     threshold_payload = asdict(thresholds)
     frozen_components = _frozen_test_identity_components(
         model_identity=model.metadata["model_identity"],
@@ -954,6 +990,8 @@ def _run_one(
     )
     frozen_identity = stable_hash(frozen_components)
     emit_event("TEST_EVAL_START", fold_id=fold.plan.fold_id, spec=spec.name)
+    test_started = time.monotonic()
+    telemetry("TEST", "START", started=test_started)
     test = _finite(fold.release_test(frozen_identity=frozen_identity), feature_columns, target)
     test_model, test_covered = model.predict(test)
     calibrated = np.full(test.num_rows, np.nan)
@@ -1038,15 +1076,38 @@ def _run_one(
         "prepared_cache_id": cache_id,
         "execution_context": execution_metadata or {},
         "test_used_for_selection": False,
+        "july_2026_used": False,
         **config.holdout_status_payload(),
     }
     emit_event("TEST_EVAL_DONE", fold_id=fold.plan.fold_id, spec=spec.name)
+    telemetry("TEST", "END", started=test_started)
     model_path = model_path or output_root / "model.joblib"
+    from crypto_ai.phase7.recovery import publish_model_receipt
+
+    publication = {
+        "run_identity": (execution_metadata or {}).get("run_identity", output_root.name),
+        "mode": "benchmark"
+        if checkpoint_identity.get("artifact_mode") == "BENCHMARK_ONLY"
+        else "production",
+        "fold_id": fold.plan.fold_id,
+        "spec_id": spec.name,
+        "state": "MODEL_REPORT_PUBLICATION_V1",
+    }
+    model.metadata["publication"] = publication
+    report["publication"] = publication
+    resource_admission("MODEL_PUBLISH", additional_roots=(model_path.parent, output_root))
+    telemetry("MODEL_PUBLISH", "START")
     save_model(model, model_path)
+    receipt_path = publish_model_receipt(model_path, checkpoint_identity, publication)
+    telemetry("MODEL_PUBLISH", "END")
     report["model_artifact_sha256"] = file_sha256(model_path)
+    report["model_receipt_sha256"] = file_sha256(receipt_path)
     report["artifact_mode"] = checkpoint_identity.get("artifact_mode", "PRODUCTION_RESEARCH")
     report["report_identity"] = stable_hash(report, length=64)
+    resource_admission("REPORT_PUBLISH", additional_roots=(output_root,))
+    telemetry("REPORT_PUBLISH", "START")
     report_path = atomic_json(output_root / "report.json", report)
+    telemetry("REPORT_PUBLISH", "END")
     if reporter is not None:
         reporter.fold_evaluation(
             report,
@@ -1055,10 +1116,39 @@ def _run_one(
             fold_position=fold_position,
             folds_total=folds_total,
         )
-    return report, [model_path, report_path]
+    return report, [model_path, receipt_path, report_path]
 
 
-def run_phase7_training(
+def run_phase7_training(config: Phase7Config, **kwargs: Any) -> dict[str, Any]:
+    """Every direct training call owns an isolated persistent filesystem lease."""
+    config.assert_cloud_execution_allowed()
+    root = kwargs["run_root"]
+    mode = "benchmark" if kwargs.get("benchmark_spec_id") is not None else "production"
+    store = kwargs["checkpoint_store"]
+    if store.run_identity != root.name:
+        raise ValueError("training lease/checkpoint run identity mismatch")
+    if mode == "benchmark":
+        from crypto_ai.phase7.benchmark_one_spec import benchmark_plan
+
+        benchmark_plan(config, kwargs["benchmark_spec_id"], root.parent)
+        first = plan_folds(
+            config.data_start,
+            config.research_cutoff,
+            config.prospective_holdout_start,
+            config.schedule,
+        )[0]
+        if (
+            kwargs.get("benchmark_fold_id") != first.fold_id
+            or store.root.resolve() != (root / "checkpoints").resolve()
+        ):
+            raise ValueError("benchmark requires isolated checkpoints and first canonical fold")
+    elif kwargs.get("benchmark_fold_id") is not None:
+        raise ValueError("benchmark fold selector requires exactly one canonical spec")
+    with owned_run(root, root.name, training_source_identity(), mode=mode):
+        return _run_phase7_training_owned(config, **kwargs)
+
+
+def _run_phase7_training_owned(
     config: Phase7Config,
     *,
     gold_manifest_path: Path,
@@ -1116,6 +1206,7 @@ def run_phase7_training(
     compute_budget = ComputeBudget.resolve(config.resources)
     selected_backend = resolve_lightgbm_backend()
     execution_metadata = {
+        "run_identity": run_root.name,
         "git_commit": git_commit(),
         "configuration_hash": config.configuration_hash,
         "scientific_source_identity": source_identity,
@@ -1451,11 +1542,31 @@ def run_phase7_training(
                         reusable_models[reuse_key] = completed_model
                     reports.append(completed_report)
                     continue
+                if model_path.exists() and not report_path.exists():
+                    raise ValueError(
+                        "MODEL_ONLY: preserve model; explicit operator decision required, no refit"
+                    )
                 if resume and report_path.exists():
                     orphan_report = json.loads(report_path.read_text(encoding="utf-8"))
                     orphan_files = [report_path]
                     orphan_model: Any | None = None
                     if orphan_report.get("status") == "COMPLETE":
+                        from crypto_ai.phase7.recovery import (
+                            inspect_spec_artifacts,
+                            model_receipt_path,
+                        )
+
+                        artifact_state = inspect_spec_artifacts(
+                            model_path=model_path,
+                            report_path=report_path,
+                            checkpoint_store=checkpoint_store,
+                            stage=stage,
+                            expected_identity=checkpoint_identity,
+                        )
+                        if artifact_state["state"] != "MODEL_REPORT":
+                            raise ValueError(
+                                f"orphan state {artifact_state['state']}: preserve and investigate"
+                            )
                         orphan_identity = orphan_report.get("checkpoint_identity")
                         if not isinstance(
                             orphan_identity, dict
@@ -1479,13 +1590,14 @@ def run_phase7_training(
                             raise ValueError("orphan estimator scientific input identity mismatch")
                         _validate_complete_orphan_report(orphan_report, orphan_model)
                         orphan_files.append(model_path)
+                        orphan_files.append(model_receipt_path(model_path))
                     elif orphan_report.get("status") not in {"INELIGIBLE"}:
                         raise ValueError(
                             "Orphan report has non-reusable status for "
                             f"{research_view} {plan.fold_id} {spec.name}: "
                             f"{orphan_report.get('status')!r}"
                         )
-                    if orphan_report.get("status") == "INELIGIBLE" or len(orphan_files) == 2:
+                    if orphan_report.get("status") == "INELIGIBLE" or len(orphan_files) == 3:
                         orphan_identity = orphan_report.get("checkpoint_identity")
                         if not isinstance(
                             orphan_identity, dict

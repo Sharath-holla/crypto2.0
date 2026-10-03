@@ -110,7 +110,16 @@ class CheckpointStore:
     legacy_roots: tuple[tuple[str, Path], ...] = ()
 
     def checkpoint_path(self, stage: str) -> Path:
-        return self.root.resolve() / self.run_identity / f"{stage}.json"
+        base = self.root.resolve() / self.run_identity
+        target = base / f"{stage}.json"
+        if (
+            not self.run_identity
+            or Path(self.run_identity).name != self.run_identity
+            or self.run_identity in {".", ".."}
+            or not target.resolve().is_relative_to(base.resolve())
+        ):
+            raise ValueError("checkpoint run/stage escaped its root")
+        return target
 
     def _resolve_file_record(self, stage: str, item: dict[str, Any]) -> Path:
         logical_root = item.get("logical_root")
@@ -199,6 +208,11 @@ class CheckpointStore:
         return claimed == stable_hash(identity_payload)
 
     def complete(self, stage: str, files: list[Path], metadata: dict[str, Any]) -> Path:
+        from crypto_ai.phase7.resources import resource_admission
+        from crypto_ai.phase7.telemetry import telemetry
+
+        resource_admission("CHECKPOINT", additional_roots=(self.root,))
+        telemetry("CHECKPOINT", "START", checkpoint_stage=stage)
         records = [
             self._portable_file_record(stage, path)
             for path in sorted(files, key=lambda item: str(item))
@@ -213,7 +227,9 @@ class CheckpointStore:
             "metadata": metadata,
         }
         payload["checkpoint_hash"] = stable_hash(payload)
-        return atomic_json(self.checkpoint_path(stage), payload)
+        result = atomic_json(self.checkpoint_path(stage), payload)
+        telemetry("CHECKPOINT", "END", checkpoint_stage=stage)
+        return result
 
 
 def _total_ram_bytes() -> int | None:

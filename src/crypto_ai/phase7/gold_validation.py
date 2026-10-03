@@ -26,6 +26,7 @@ from crypto_ai.phase7.features import (
 )
 from crypto_ai.phase7.gold import feature_ablation_sets
 from crypto_ai.phase7.targets import FIVE_MINUTES_US
+from crypto_ai.phase7.telemetry import instrument
 
 EXPECTED_GOLD_DATASET_ID = "gold-phase7-0cbf2910e8d96c9d19826598"
 EXPECTED_GOLD_PARTITIONS = 138
@@ -272,6 +273,7 @@ def _timestamp_type_is_utc(data_type: pa.DataType) -> bool:
     return pa.types.is_timestamp(data_type) and getattr(data_type, "tz", None) == "UTC"
 
 
+@instrument("GOLD_VALIDATE")
 def validate_phase7_gold(
     gold_root: Path,
     *,

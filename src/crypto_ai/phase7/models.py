@@ -19,7 +19,9 @@ from crypto_ai.phase7.backend import (
     resolve_lightgbm_backend,
 )
 from crypto_ai.phase7.config import ModelConfig, stable_hash
+from crypto_ai.phase7.device_evidence import fit_with_device_evidence
 from crypto_ai.phase7.folds import IneligibleFoldError
+from crypto_ai.phase7.resources import resource_admission
 
 Architecture = Literal["G0", "C0", "P0", "H0"]
 
@@ -148,10 +150,13 @@ def _fit(
 
     if not len(train_y) or not len(validation_y):
         raise IneligibleFoldError("LightGBM requires non-empty train and validation rows")
+    resource_admission("ESTIMATOR_FIT")
     estimator = _estimator(config, model_threads=model_threads)
     backend = resolve_lightgbm_backend()
     try:
-        estimator.fit(
+        fit_with_device_evidence(
+            estimator,
+            backend,
             train_x,
             train_y,
             sample_weight=sample_weight,
@@ -169,6 +174,22 @@ def _fit(
             raise _backend_error(backend, exc) from exc
         raise
     return estimator
+
+
+def masked_rows(array: np.ndarray, mask: np.ndarray) -> np.ndarray:
+    """Keep exact row order/dtype; use a view only for contiguous selections."""
+    mask = np.asarray(mask, dtype=bool)
+    if mask.ndim != 1 or len(mask) != len(array):
+        raise ValueError("row mask shape mismatch")
+    count = int(np.count_nonzero(mask))
+    if count == len(array):
+        return array
+    if not count:
+        return array[:0]
+    first = int(np.argmax(mask))
+    if np.all(mask[first : first + count]):
+        return array[first : first + count]
+    return array[mask]
 
 
 def _fit_partitioned_estimators(
@@ -190,10 +211,10 @@ def _fit_partitioned_estimators(
         sample_weight: np.ndarray | None,
     ) -> Any:
         return _fit(
-            train_x[train_mask],
-            train_y[train_mask],
-            validation_x[validation_mask],
-            validation_y[validation_mask],
+            masked_rows(train_x, train_mask),
+            masked_rows(train_y, train_mask),
+            masked_rows(validation_x, validation_mask),
+            masked_rows(validation_y, validation_mask),
             config=config,
             model_threads=model_threads,
             sample_weight=sample_weight,
@@ -240,7 +261,6 @@ class Phase7ModelBundle:
     def predict(self, table: pa.Table) -> tuple[np.ndarray, np.ndarray]:
         base = _matrix(table, self.feature_columns)
         symbols = _symbols(table)
-        predicted = np.full(table.num_rows, np.nan)
         covered = np.zeros(table.num_rows, dtype=bool)
         if self.architecture in {"G0", "H0"}:
             matrix = (
@@ -260,6 +280,7 @@ class Phase7ModelBundle:
                         if cluster in self.cluster_corrections:
                             predicted[index] += self.cluster_corrections[cluster]
         elif self.architecture == "C0":
+            predicted = np.full(table.num_rows, np.nan)
             for symbol in np.unique(symbols):
                 cluster = self.cluster_mapping.get(str(symbol))
                 key = f"cluster:{cluster}" if cluster is not None else ""
@@ -268,12 +289,15 @@ class Phase7ModelBundle:
                     predicted[rows] = self.estimators[key].predict(base[rows])
                     covered[rows] = True
         elif self.architecture == "P0":
+            predicted = np.full(table.num_rows, np.nan)
             for symbol in np.unique(symbols):
                 key = f"symbol:{symbol}"
                 rows = np.flatnonzero(symbols == symbol)
                 if key in self.estimators:
                     predicted[rows] = self.estimators[key].predict(base[rows])
                     covered[rows] = True
+        else:
+            raise ValueError("unsupported architecture")
         if np.any(covered & ~np.isfinite(predicted)):
             raise ValueError("Phase 7 model produced non-finite covered predictions")
         return predicted, covered
@@ -541,6 +565,10 @@ def fit_architecture(
         "effective_partition_workers": partition_workers,
         "pooled_model_threads": pooled_model_threads,
         "global_estimator_reused_from_model_identity": reused_global_identity,
+    }
+    metadata["device_attestation"] = {
+        key: getattr(estimator, "phase7_device_evidence_", {"status": "CPU_ONLY"})
+        for key, estimator in estimators.items()
     }
     return Phase7ModelBundle(
         architecture=architecture,

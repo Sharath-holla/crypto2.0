@@ -23,6 +23,7 @@ from crypto_ai.phase7.gold_validation import (
     validate_gold_manifest,
 )
 from crypto_ai.phase7.prepared_cache import cache_size_report
+from crypto_ai.phase7.resources import configured_floor
 from crypto_ai.phase7.runtime import (
     ComputeBudget,
     RuntimePaths,
@@ -30,6 +31,7 @@ from crypto_ai.phase7.runtime import (
     git_commit,
     system_snapshot,
 )
+from crypto_ai.phase7.telemetry import telemetry
 from crypto_ai.phase7.training import execution_source_identity, scientific_source_identity
 
 
@@ -40,6 +42,10 @@ def _existing_ancestor(path: Path) -> Path:
     while not candidate.exists() and candidate != candidate.parent:
         candidate = candidate.parent
     return candidate if candidate.is_dir() else candidate.parent
+
+
+class _SkipGoldInspection(Exception):
+    """Internal verification-only branch: never open research Gold."""
 
 
 def _validated_gold_report(
@@ -69,13 +75,16 @@ def build_preflight_report(
     create_outputs: bool = True,
     gold_validation_report: Path | None = None,
     run_backend_smoke: bool = True,
+    verification_only: bool = False,
 ) -> dict[str, Any]:
     config = load_phase7_config(config_path)
     paths = RuntimePaths.resolve(config.paths)
-    errors = paths.validate(require_gold=True, create_outputs=create_outputs)
+    errors = paths.validate(require_gold=not verification_only, create_outputs=create_outputs)
     manifest_report: dict[str, Any] | None = None
     byte_validation: dict[str, Any] | None = None
     try:
+        if verification_only:
+            raise _SkipGoldInspection
         manifest_path, manifest, partitions = validate_gold_manifest(paths.gold_root)
         manifest_sha = file_sha256(manifest_path)
         manifest_report = {
@@ -93,17 +102,19 @@ def build_preflight_report(
                 dataset_id=str(manifest["dataset_id"]),
                 manifest_sha256=manifest_sha,
             )
+    except _SkipGoldInspection:
+        pass
     except (OSError, ValueError, json.JSONDecodeError) as exc:
         errors.append(str(exc))
 
     backend = resolve_lightgbm_backend()
     smoke: dict[str, Any] | None = None
-    if run_backend_smoke:
+    if run_backend_smoke and not verification_only:
         try:
             smoke = smoke_test_backend(backend.name)
         except Exception as exc:
             errors.append(str(exc))
-    else:
+    elif not verification_only:
         errors.append("backend smoke was skipped; training readiness cannot be established")
     try:
         budget: dict[str, Any] | None = asdict(ComputeBudget.resolve(config.resources))
@@ -123,13 +134,27 @@ def build_preflight_report(
             "disk_total_bytes": 0,
             "disk_free_bytes": 0,
         }
-    minimum_disk_gb = float(os.environ.get("PHASE7_MIN_FREE_DISK_GB", "25"))
-    minimum_ram_gb = float(os.environ.get("PHASE7_MIN_AVAILABLE_RAM_GB", "32"))
-    if any(not math.isfinite(value) or value <= 0 for value in (minimum_disk_gb, minimum_ram_gb)):
+    minimum_disk_gb = configured_floor(
+        "PHASE7_MIN_FREE_DISK_GIB", "PHASE7_MIN_FREE_DISK_GB", default=25
+    )
+    minimum_ram_gb = configured_floor("PHASE7_MIN_FREE_RAM_GIB", "PHASE7_MIN_AVAILABLE_RAM_GB")
+    if any(not math.isfinite(value) or value < 0 for value in (minimum_disk_gb, minimum_ram_gb)):
         raise ValueError("preflight RAM/disk minimums must be positive and finite")
     filesystem_capacity = {}
-    for name in ("artifact_root", "cache_root", "model_root", "report_root", "checkpoint_root"):
-        location = _existing_ancestor(getattr(paths, name))
+    for name in (
+        "artifact_root",
+        "cache_root",
+        "model_root",
+        "report_root",
+        "checkpoint_root",
+        "temporary_root",
+    ):
+        target = (
+            Path(os.environ.get("PHASE7_TEMP_ROOT", str(paths.cache_root)))
+            if name == "temporary_root"
+            else getattr(paths, name)
+        )
+        location = _existing_ancestor(target)
         capacity = system_snapshot(location)
         filesystem_capacity[name] = {
             "path": str(location),
@@ -143,7 +168,10 @@ def build_preflight_report(
         errors.append(f"available RAM is below PHASE7_MIN_AVAILABLE_RAM_GB={minimum_ram_gb}")
     report = {
         "status": "PASS" if not errors else "FAIL",
-        "training_readiness": "READY" if not errors else "NOT_READY",
+        "training_readiness": "READY" if not errors and not verification_only else "NOT_READY",
+        "qualification_mode": "SOFTWARE_ENVIRONMENT_ONLY"
+        if verification_only
+        else "TRAINING_PREFLIGHT",
         "blocking_errors": errors,
         "git_commit": git_commit(),
         "scientific_source_identity": scientific_source_identity(),
@@ -165,6 +193,7 @@ def build_preflight_report(
         "gold_byte_validation": byte_validation,
         "holdout": config.holdout_status_payload(),
     }
+    telemetry("PREFLIGHT", "END", qualification_mode=report["qualification_mode"])
     return report
 
 

@@ -454,6 +454,19 @@ def _phase7a_data_stage(
 
 
 def run_stage(config: Phase7Config, stage: str, *, resume: bool, canary: bool) -> dict[str, object]:
+    from crypto_ai.phase7.run_lease import owned_run
+
+    validate_phase7a_config(config, load_phase7_config(SOURCE_CONFIG_PATH))
+    primary_specs(config)
+    identity = run_identity(config)
+    root = RuntimePaths.resolve(config.paths).artifact_root / identity
+    with owned_run(root, identity, training.training_source_identity(), mode="production"):
+        return _run_stage_owned(config, stage, resume=resume, canary=canary)
+
+
+def _run_stage_owned(
+    config: Phase7Config, stage: str, *, resume: bool, canary: bool
+) -> dict[str, object]:
     source = load_phase7_config(SOURCE_CONFIG_PATH)
     validate_phase7a_config(config, source)
     primary_specs(config)

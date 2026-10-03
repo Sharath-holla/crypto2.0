@@ -22,6 +22,7 @@ from crypto_ai.phase7.config import stable_hash
 from crypto_ai.phase7.folds import MultiAssetFoldData
 from crypto_ai.phase7.models import PreparedArchitectureInputs
 from crypto_ai.phase7.runtime import CacheMode, emit_event, memory_snapshot
+from crypto_ai.phase7.telemetry import instrument
 
 PREPARED_CACHE_SCHEMA = "phase7_prepared_matrix_cache_v1"
 PREPROCESSING_VERSION = "phase7_train_finite_filter_v1"
@@ -190,6 +191,53 @@ def referenced_cache_ids(*roots: Path) -> set[str]:
     return referenced
 
 
+def cleanup_cache_plan(root: Path, *, reference_roots: tuple[Path, ...]) -> dict[str, Any]:
+    """Read-only, conservative plan; callers must include production AND benchmark roots."""
+    referenced = referenced_cache_ids(*reference_roots)
+    entries = []
+    resolved = root.resolve()
+    if resolved.is_dir():
+        for candidate in sorted(resolved.iterdir()):
+            canonical_id = len(candidate.name) == 64 and all(
+                char in "0123456789abcdef" for char in candidate.name
+            )
+            aliased = candidate.is_symlink() or candidate.resolve().parent != resolved
+            reason = (
+                "ALIASED_OR_SYMLINK"
+                if aliased
+                else "TEMPORARY_OR_NON_ENTRY"
+                if not canonical_id or not candidate.is_dir()
+                else "REFERENCED"
+                if candidate.name in referenced
+                else "REFERENCE_ROOTS_NOT_SUPPLIED"
+                if not reference_roots
+                else "UNREFERENCED"
+            )
+            size = (
+                0
+                if aliased
+                else (
+                    _directory_size(candidate) if candidate.is_dir() else candidate.stat().st_size
+                )
+            )
+            entries.append(
+                {
+                    "cache_id": candidate.name,
+                    "bytes": size,
+                    "reason": reason,
+                    "deletable": reason == "UNREFERENCED",
+                }
+            )
+    return {
+        "dry_run": True,
+        "entries": entries,
+        "reference_roots": [str(p) for p in reference_roots],
+        "estimated_reclaimable_bytes": sum(e["bytes"] for e in entries if e["deletable"]),
+        "automatic_eviction": False,
+        "all_active_reference_roots_required": True,
+    }
+
+
 def cleanup_cache_entries(
     root: Path,
     cache_ids: tuple[str, ...],
@@ -294,6 +342,7 @@ class PreparedDataCache:
         emit_event("CACHE_QUARANTINED", cache_id=cache_id, path=quarantine)
         return quarantine
 
+    @instrument("CACHE_READ", admit=True)
     def load(self, identity: dict[str, Any], plan: FoldPlan) -> CachedPreparedData:
         cache_id = prepared_cache_id(identity)
         path = self.root / cache_id
@@ -472,6 +521,7 @@ class PreparedDataCache:
             raise PreparedCacheCorruptError("calibration symbol dimensions do not match table")
         return CachedPreparedData(cache_id, fold, prepared)
 
+    @instrument("CACHE_WRITE", admit=True)
     def write(
         self,
         identity: dict[str, Any],
