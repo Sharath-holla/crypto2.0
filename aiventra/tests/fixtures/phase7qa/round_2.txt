@@ -1,0 +1,34 @@
+import os
+import tempfile
+import unittest
+
+from task_api import TaskAPI
+
+
+class Independent(unittest.TestCase):
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.temp.cleanup)
+        self.path = os.path.join(self.temp.name, "qa.db")
+        self.app = TaskAPI(self.path)
+
+    def test_journey(self):
+        status, task = self.app.request("POST", "/tasks", {"title": "QA journey"})
+        self.assertEqual(status, 201)
+        self.assertEqual(
+            self.app.request("PATCH", f"/tasks/{task['id']}", {"completed": True})[0],
+            200,
+        )
+        self.assertEqual(
+            TaskAPI(self.path).request("GET", "/tasks", {})[1][0]["completed"], 1
+        )
+        self.assertEqual(self.app.request("POST", "/tasks", {"title": " "})[0], 400)
+        self.assertEqual(self.app.request("DELETE", f"/tasks/{task['id']}", {})[0], 200)
+        self.assertEqual(self.app.request("GET", "/tasks", {})[1], [])
+
+    def test_unknown_fields(self):
+        self.assertEqual(
+            self.app.request("POST", "/tasks", {"title": "Valid", "unknown": True})[0],
+            400,
+        )
+        self.assertEqual(self.app.request("GET", "/tasks", {})[1], [])

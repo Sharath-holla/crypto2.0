@@ -1,0 +1,41 @@
+import os
+import sqlite3
+import tempfile
+import time
+import unittest
+from pathlib import Path
+
+from task_api import TaskAPI
+
+
+class Independent(unittest.TestCase):
+    def test_security_and_recovery(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = os.path.join(directory, "release.db")
+            app = TaskAPI(path)
+            started = time.monotonic()
+            for index in range(100):
+                self.assertEqual(
+                    app.request("POST", "/tasks", {"title": f"Task {index}"})[0], 201
+                )
+            self.assertLess(time.monotonic() - started, 10)
+            title = "'); DROP TABLE tasks; --"
+            self.assertEqual(app.request("POST", "/tasks", {"title": title})[0], 201)
+            app = TaskAPI(path)
+            self.assertEqual(len(app.request("GET", "/tasks", {})[1]), 101)
+            backup = os.path.join(directory, "backup.db")
+            with (
+                sqlite3.connect(path) as source,
+                sqlite3.connect(backup) as destination,
+            ):
+                source.backup(destination)
+                self.assertEqual(
+                    destination.execute("PRAGMA integrity_check").fetchone()[0], "ok"
+                )
+            self.assertEqual(
+                TaskAPI(backup).request("GET", "/tasks", {})[1],
+                app.request("GET", "/tasks", {})[1],
+            )
+            self.assertTrue(Path("README.md").read_text().strip())
+            self.assertFalse(Path("/var/run/docker.sock").exists())
+            self.assertNotIn("RUNNER_TOKEN", os.environ)

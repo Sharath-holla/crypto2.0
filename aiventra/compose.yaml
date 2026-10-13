@@ -1,0 +1,64 @@
+services:
+  database:
+    image: pgvector/pgvector:pg17
+    environment:
+      POSTGRES_USER: company
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in .env}
+      POSTGRES_DB: company
+    volumes: ["database:/var/lib/postgresql/data"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U company -d company"]
+      interval: 5s
+      retries: 20
+  migrate:
+    build: {context: ., dockerfile: infrastructure/docker/Dockerfile.api}
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql+psycopg://company:${DB_PASSWORD}@database/company
+      AI_SPENDING_MODE: ZERO_COST_ONLY
+      REQUIRED_DATABASE_BACKEND: postgresql
+    command: ["python", "-m", "company_os.cli", "init"]
+    depends_on: {database: {condition: service_healthy}}
+  api:
+    build: {context: ., dockerfile: infrastructure/docker/Dockerfile.api}
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql+psycopg://company:${DB_PASSWORD}@database/company
+      AI_SPENDING_MODE: ZERO_COST_ONLY
+      REQUIRED_DATABASE_BACKEND: postgresql
+    ports: ["127.0.0.1:8000:8000"]
+    volumes: ["artifacts:/app/artifacts", "repositories:/app/data/repositories", "embeddings:/app/data/embeddings"]
+    depends_on: {migrate: {condition: service_completed_successfully}}
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 10s
+      retries: 10
+  worker:
+    build: {context: ., dockerfile: infrastructure/docker/Dockerfile.api}
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql+psycopg://company:${DB_PASSWORD}@database/company
+      AI_SPENDING_MODE: ZERO_COST_ONLY
+      REQUIRED_DATABASE_BACKEND: postgresql
+      EXECUTION_ENABLED: "false"
+    command: ["python", "-m", "company_os.workflows"]
+    volumes: ["artifacts:/app/artifacts", "repositories:/app/data/repositories", "embeddings:/app/data/embeddings"]
+    depends_on: {migrate: {condition: service_completed_successfully}}
+    healthcheck:
+      test: ["CMD", "python", "-c", "from company_os.db import SessionLocal; from company_os.health import workers; import sys; session=SessionLocal(); state=workers(session); session.close(); sys.exit(state['status'] != 'ready')"]
+      interval: 10s
+      start_period: 20s
+      retries: 3
+  web:
+    build: {context: ., dockerfile: infrastructure/docker/Dockerfile.web}
+    environment:
+      API_INTERNAL_URL: http://api:8000
+      WEB_ORIGIN: http://localhost:3000
+    ports: ["127.0.0.1:3000:3000"]
+    depends_on: {api: {condition: service_healthy}, worker: {condition: service_healthy}}
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 10s
+      start_period: 20s
+      retries: 3
+volumes: {database: {}, artifacts: {}, repositories: {}, embeddings: {}}

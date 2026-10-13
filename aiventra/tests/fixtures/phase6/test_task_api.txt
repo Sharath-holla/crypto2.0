@@ -1,0 +1,86 @@
+import io
+import json
+import os
+import tempfile
+import unittest
+
+from task_api import TaskAPI
+
+
+class TaskApiTests(unittest.TestCase):
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.temp.cleanup)
+        self.path = os.path.join(self.temp.name, "tasks.db")
+        self.app = TaskAPI(self.path)
+
+    def call(self, method, path="/tasks", body=None):
+        raw = json.dumps(body or {}).encode()
+        seen = []
+        result = self.app(
+            {
+                "REQUEST_METHOD": method,
+                "PATH_INFO": path,
+                "CONTENT_LENGTH": str(len(raw)),
+                "wsgi.input": io.BytesIO(raw),
+            },
+            lambda status, headers: seen.append((int(status.split()[0]), headers)),
+        )
+        return seen[0][0], json.loads(b"".join(result))
+
+    def test_create_and_list(self):
+        status, task = self.call("POST", body={"title": "Ship sample"})
+        self.assertEqual(status, 201)
+        self.assertEqual(self.call("GET")[1][0]["id"], task["id"])
+
+    def test_update(self):
+        task = self.call("POST", body={"title": "Old"})[1]
+        self.assertEqual(
+            self.call("PATCH", "/tasks/" + str(task["id"]), {"title": "New"})[1][
+                "title"
+            ],
+            "New",
+        )
+
+    def test_complete(self):
+        task = self.call("POST", body={"title": "Finish"})[1]
+        self.assertEqual(
+            self.call("PATCH", "/tasks/" + str(task["id"]), {"completed": True})[1][
+                "completed"
+            ],
+            1,
+        )
+
+    def test_delete(self):
+        task = self.call("POST", body={"title": "Remove"})[1]
+        self.assertEqual(self.call("DELETE", "/tasks/" + str(task["id"]))[0], 200)
+        self.assertEqual(self.call("GET")[1], [])
+
+    def test_validation(self):
+        for title in ("", " " * 3, 8, "x" * 201):
+            self.assertEqual(self.call("POST", body={"title": title})[0], 400)
+
+    def test_missing(self):
+        self.assertEqual(self.call("PATCH", "/tasks/999", {"completed": True})[0], 404)
+
+    def test_invalid_patch_is_atomic(self):
+        task = self.call("POST", body={"title": "Original"})[1]
+        self.assertEqual(
+            self.call(
+                "PATCH",
+                "/tasks/" + str(task["id"]),
+                {"title": "Changed", "completed": "invalid"},
+            )[0],
+            400,
+        )
+        self.assertEqual(self.call("GET")[1][0]["title"], "Original")
+
+    def test_restart_persistence(self):
+        self.call("POST", body={"title": "Persist"})
+        self.app = TaskAPI(self.path)
+        self.assertEqual(self.call("GET")[1][0]["title"], "Persist")
+
+    def test_sql_injection_is_data(self):
+        title = "'); DROP TABLE tasks; --"
+        self.call("POST", body={"title": title})
+        self.assertEqual(self.call("GET")[1][0]["title"], title)

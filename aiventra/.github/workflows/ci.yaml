@@ -1,0 +1,234 @@
+name: verify
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      allow_model_downloads:
+        description: 'Explicitly authorize embedding model weights download for this CI run'
+        type: boolean
+        default: false
+env:
+  AIVENTRA_ALLOW_MODEL_DOWNLOADS: ${{ github.event_name == 'workflow_dispatch' && inputs.allow_model_downloads }}
+permissions: {contents: read}
+jobs:
+  runner:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - run: python scripts/configure.py
+      - run: docker compose -f compose.yaml -f compose.runner.yaml up --build -d --wait --wait-timeout 240 runner
+      - name: Verify actual dedicated Docker isolation
+        run: docker compose -f compose.yaml -f compose.runner.yaml exec -T runner python - < scripts/verify_runner_isolation.py
+      - name: Preserve runner results across broker restart
+        run: |
+          docker compose -f compose.yaml -f compose.runner.yaml exec -T runner python - --snapshot < scripts/verify_runner_isolation.py > /tmp/runner-before.json
+          docker compose -f compose.yaml -f compose.runner.yaml restart runner
+          docker compose -f compose.yaml -f compose.runner.yaml up -d --wait --wait-timeout 120 runner
+          docker compose -f compose.yaml -f compose.runner.yaml exec -T runner python - --snapshot < scripts/verify_runner_isolation.py > /tmp/runner-after.json
+          cmp /tmp/runner-before.json /tmp/runner-after.json
+          cat /tmp/runner-after.json
+      - name: Reconcile an actual interrupted QA container without duplicate execution
+        run: |
+          docker compose -f compose.yaml -f compose.runner.yaml exec -T runner python - --start-interrupted < scripts/verify_runner_isolation.py
+          docker compose -f compose.yaml -f compose.runner.yaml restart --timeout 1 runner
+          docker compose -f compose.yaml -f compose.runner.yaml up -d --wait --wait-timeout 120 runner
+          docker compose -f compose.yaml -f compose.runner.yaml exec -T runner python - --check-interrupted < scripts/verify_runner_isolation.py
+      - name: Verify checkout fixtures with actual Docker execution and broker restart
+        run: |
+          docker compose -f compose.yaml -f compose.runner.yaml exec -T runner python - < scripts/verify_checkout_isolation.py
+          docker compose -f compose.yaml -f compose.runner.yaml exec -T runner python - --snapshot < scripts/verify_checkout_isolation.py > /tmp/checkout-before.json
+          docker compose -f compose.yaml -f compose.runner.yaml restart runner
+          docker compose -f compose.yaml -f compose.runner.yaml up -d --wait --wait-timeout 120 runner
+          docker compose -f compose.yaml -f compose.runner.yaml exec -T runner python - --snapshot < scripts/verify_checkout_isolation.py > /tmp/checkout-after.json
+          cmp /tmp/checkout-before.json /tmp/checkout-after.json
+          cat /tmp/checkout-after.json
+      - run: pip install uv && uv sync --extra dev --locked
+      - name: Controlled intake, approved coding, bounded repair and delivery gate with real Docker
+        run: |
+          docker compose -f compose.yaml -f compose.runner.yaml -f compose.phase6-ci.yaml up -d --wait --wait-timeout 120 runner
+          mkdir -p data/pytest-temp
+          .venv/bin/python -m pytest tests/test_phase6_engineering.py -q -s --basetemp=data/pytest-temp/p6-docker
+        env:
+          PHASE6_REAL_RUNNER: 'true'
+      - run: docker compose -f compose.yaml -f compose.runner.yaml logs && docker compose -f compose.yaml -f compose.runner.yaml down -v
+        if: always()
+  secrets:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - run: python scripts/secret_scan.py --history
+  backend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - run: pip install uv
+      - run: uv sync --extra dev --locked
+      - run: uv run --locked --extra dev python scripts/configure.py
+      - run: uv run --locked --extra dev python -m company_os.cli init
+      - run: uv run --locked --extra dev ruff check apps/api tests scripts infrastructure/database/migrations
+      - run: uv run --locked --extra dev ruff format --check apps/api tests scripts infrastructure/database/migrations
+      - run: uv run --locked --extra dev pytest -q
+      - name: Recover collaborative requirements after actual API and worker interruption
+        run: uv run --locked --extra dev python scripts/verify_requirements_restart.py
+      - run: uv run --locked --extra dev pip-audit
+  frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: '22', cache: npm, cache-dependency-path: apps/web/package-lock.json}
+      - run: npm ci
+        working-directory: apps/web
+      - run: npm run format:check && npm run typecheck && npm run build && npm audit --omit=dev
+        working-directory: apps/web
+  delivery-browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - uses: actions/setup-node@v4
+        with: {node-version: '22'}
+      - run: pip install uv && uv sync --extra dev --locked
+      - run: npm ci && npx playwright install --with-deps chromium
+        working-directory: apps/web
+      - name: Isolated delivery UI contracts; outbound inference prohibited
+        run: npx playwright test --config playwright.phase5.config.ts --reporter=line
+        working-directory: apps/web
+        env:
+          PHASE5_FIXTURE_PYTHON: ../../.venv/bin/python
+      - name: Restart isolated catalog API and verify synthetic vault/preferences recovery
+        run: .venv/bin/python scripts/verify_registry_restart.py
+  integration:
+    runs-on: ubuntu-latest
+    env:
+      COMPOSE_FILE: compose.yaml:compose.browser-ci.yaml
+      BROWSER_CI_DATABASE: browser_ci_${{ github.run_id }}_${{ github.run_attempt }}
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - uses: actions/setup-node@v4
+        with: {node-version: '22'}
+      - run: python scripts/configure.py
+      - run: docker compose up --build -d --wait --wait-timeout 180
+      - run: curl --fail http://localhost:8000/health/ready
+      - run: docker compose exec -T api python -m alembic check
+      - run: docker compose exec -T api python - --allow-test-records < scripts/verify_postgres.py
+      - name: Verify SQLite transfer, safe refusal and transactional rollback on real PostgreSQL
+        run: docker compose exec -T -e CI=true api python - < scripts/verify_database_transfer.py
+      - name: Verify actual local embeddings and PostgreSQL vector retrieval
+        if: env.AIVENTRA_ALLOW_MODEL_DOWNLOADS == 'true'
+        run: |
+          docker compose exec -T api python -m company_os.embeddings --download
+          docker compose exec -T api python - --prepare < scripts/verify_semantic_memory.py
+      - run: pip install uv && uv sync --extra dev --locked
+      - run: npm ci && npx playwright install --with-deps chromium && npm run test:e2e
+        working-directory: apps/web
+        env:
+          BROWSER_FIXTURE_PYTHON: ../../.venv/bin/python
+      - name: Browser regressions against separately fenced PostgreSQL CI workspace
+        run: npx playwright test --config playwright.postgres.config.ts --reporter=line
+        working-directory: apps/web
+      - name: Verify durable conversations across actual service restarts
+        run: |
+          docker compose exec -T api python - < scripts/verify_conversation_recovery.py > /tmp/conversations-before.json
+          docker compose exec -T api python - < scripts/verify_model_catalog_recovery.py > /tmp/model-catalog-before.json
+          if [ "$AIVENTRA_ALLOW_MODEL_DOWNLOADS" = true ]; then
+            docker compose exec -T api python - < scripts/verify_semantic_memory.py > /tmp/memory-before.json
+          fi
+          docker compose exec -T api python - < scripts/verify_staffing_recovery.py > /tmp/staffing-before.json
+          docker compose exec -T api python - < scripts/verify_zero_cost_recovery.py > /tmp/zero-cost-before.json
+          docker compose exec -T api python - < scripts/verify_planning_recovery.py > /tmp/planning-before.json
+          docker compose exec -T api python - < scripts/verify_delivery_recovery.py > /tmp/delivery-before.json
+          docker compose exec -T api python - < scripts/verify_package_recovery.py > /tmp/packages-before.json
+          docker compose exec -T api python - < scripts/verify_project_setup_recovery.py > /tmp/project-setup-before.json
+          docker compose exec -T api python - < scripts/verify_history_recovery.py > /tmp/history-before.json
+          docker compose exec -T api python - < scripts/verify_deployment_recovery.py > /tmp/deployments-before.json
+          docker compose restart api worker web
+          docker compose up -d --wait --wait-timeout 90
+          curl --fail http://localhost:8000/health/ready
+          docker compose exec -T api python - < scripts/verify_deployment_recovery.py > /tmp/deployments-after.json
+          cmp /tmp/deployments-before.json /tmp/deployments-after.json
+          cat /tmp/deployments-after.json
+          docker compose exec -T api python - < scripts/verify_history_recovery.py > /tmp/history-after.json
+          cmp /tmp/history-before.json /tmp/history-after.json
+          cat /tmp/history-after.json
+          docker compose exec -T api python - < scripts/verify_project_setup_recovery.py > /tmp/project-setup-after.json
+          cmp /tmp/project-setup-before.json /tmp/project-setup-after.json
+          cat /tmp/project-setup-after.json
+          docker compose exec -T api python - < scripts/verify_planning_recovery.py > /tmp/planning-after.json
+          cmp /tmp/planning-before.json /tmp/planning-after.json
+          cat /tmp/planning-after.json
+          docker compose exec -T api python - < scripts/verify_delivery_recovery.py > /tmp/delivery-after.json
+          cmp /tmp/delivery-before.json /tmp/delivery-after.json
+          cat /tmp/delivery-after.json
+          docker compose exec -T api python - < scripts/verify_package_recovery.py > /tmp/packages-after.json
+          cmp /tmp/packages-before.json /tmp/packages-after.json
+          cat /tmp/packages-after.json
+          docker compose exec -T api python - < scripts/verify_conversation_recovery.py > /tmp/conversations-after.json
+          docker compose exec -T api python - < scripts/verify_model_catalog_recovery.py > /tmp/model-catalog-after.json
+          diff -u /tmp/model-catalog-before.json /tmp/model-catalog-after.json
+          cmp /tmp/conversations-before.json /tmp/conversations-after.json
+          cat /tmp/conversations-after.json
+          if [ "$AIVENTRA_ALLOW_MODEL_DOWNLOADS" = true ]; then
+            docker compose exec -T api python - < scripts/verify_semantic_memory.py > /tmp/memory-after.json
+            cmp /tmp/memory-before.json /tmp/memory-after.json
+            cat /tmp/memory-after.json
+          fi
+          docker compose exec -T api python - < scripts/verify_staffing_recovery.py > /tmp/staffing-after.json
+          cmp /tmp/staffing-before.json /tmp/staffing-after.json
+          cat /tmp/staffing-after.json
+          docker compose exec -T api python - < scripts/verify_zero_cost_recovery.py > /tmp/zero-cost-after.json
+          cmp /tmp/zero-cost-before.json /tmp/zero-cost-after.json
+          cat /tmp/zero-cost-after.json
+      - name: Recover partial simulated deployment after actual API and worker restart
+        # Deployment is an explicit simulator; API/worker restart is real.
+        run: |
+          docker compose stop worker
+          docker compose exec -T api python - --prepare < scripts/verify_deployment_preparation_recovery.py > /tmp/deployment-preparation-before.json
+          docker compose restart api worker web
+          docker compose up -d --wait --wait-timeout 90
+          docker compose exec -T api python - < scripts/verify_deployment_preparation_recovery.py > /tmp/deployment-preparation-after.json
+          cmp /tmp/deployment-preparation-before.json /tmp/deployment-preparation-after.json
+          docker compose exec -T api python - --resume --verify < scripts/verify_deployment_preparation_recovery.py
+      - name: Recover partial deterministic package after actual API and worker restart
+        run: |
+          docker compose stop worker
+          docker compose exec -T api python - --prepare < scripts/verify_package_preparation_recovery.py > /tmp/preparation-before.json
+          docker compose restart api worker web
+          docker compose up -d --wait --wait-timeout 90
+          docker compose exec -T api python - < scripts/verify_package_preparation_recovery.py > /tmp/preparation-after.json
+          cmp /tmp/preparation-before.json /tmp/preparation-after.json
+          cat /tmp/preparation-after.json
+          docker compose exec -T api python - --resume --verify < scripts/verify_package_preparation_recovery.py
+      - name: Verify actual database restart and pg_dump restoration without replacing active data
+        run: |
+          docker compose stop api worker web
+          docker compose run --rm -T --no-deps api python - < scripts/verify_database_snapshot.py > /tmp/database-before.json
+          docker compose restart database
+          docker compose up -d --wait --wait-timeout 90 database
+          docker compose run --rm -T --no-deps api python - < scripts/verify_database_snapshot.py > /tmp/database-after.json
+          cmp /tmp/database-before.json /tmp/database-after.json
+          docker compose exec -T database pg_dump -U company -d "$BROWSER_CI_DATABASE" --format=custom --file=/tmp/recovery.dump
+          docker compose exec -T database createdb -U company recovery_fixture
+          docker compose exec -T database pg_restore -U company -d recovery_fixture --exit-on-error /tmp/recovery.dump
+          docker compose run --rm -T --no-deps -e CI=true api python - --restored-database recovery_fixture < scripts/verify_database_snapshot.py > /tmp/database-restored.json
+          cmp /tmp/database-before.json /tmp/database-restored.json
+          docker compose exec -T database dropdb -U company recovery_fixture
+          docker compose up -d --wait --wait-timeout 120
+          curl --fail http://localhost:8000/health/ready
+          echo 'All application table digests matched after PostgreSQL restart and separate database restore.'
+      - run: docker compose logs && docker compose down
+        if: always()

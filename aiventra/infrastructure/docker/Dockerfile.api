@@ -1,0 +1,14 @@
+FROM python:3.12-slim
+RUN apt-get update && apt-get install -y --no-install-recommends git && rm -rf /var/lib/apt/lists/*
+WORKDIR /app
+COPY pyproject.toml uv.lock ./
+COPY apps/api ./apps/api
+RUN pip install --no-cache-dir uv==0.12.3 && uv sync --locked --no-dev --extra local-embeddings
+ENV PATH="/app/.venv/bin:$PATH"
+COPY alembic.ini ./
+COPY infrastructure/database ./infrastructure/database
+COPY docs ./docs
+RUN useradd -u 10001 -m company && mkdir -p data/embeddings artifacts && chown -R company:company /app
+USER company
+EXPOSE 8000
+CMD ["uvicorn", "company_os.api:app", "--host", "0.0.0.0", "--port", "8000"]

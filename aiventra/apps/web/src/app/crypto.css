@@ -1,0 +1,204 @@
+.crypto-workspace {
+  --border: var(--line);
+  --panel: var(--surface);
+  --text: var(--ink);
+  display: grid;
+  gap: 20px;
+  min-width: 0;
+}
+.crypto-masthead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 28px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--panel);
+}
+.crypto-masthead h2 {
+  font-size: 30px;
+  margin: 6px 0;
+  letter-spacing: -0.8px;
+}
+.crypto-masthead p {
+  margin: 4px 0;
+  color: var(--muted);
+}
+.crypto-lock {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+.crypto-lock small {
+  display: block;
+  margin-top: 5px;
+}
+.crypto-toolbar,
+.crypto-project-link {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.crypto-project-link {
+  justify-content: space-between;
+}
+.crypto-toolbar > span {
+  color: var(--muted);
+  font-size: 12px;
+}
+.crypto-tabs {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  max-width: 100%;
+  padding: 5px 0 12px;
+  border-bottom: 1px solid var(--border);
+}
+.crypto-tabs button {
+  white-space: nowrap;
+  background: transparent;
+  color: var(--muted);
+  border: 1px solid transparent;
+  border-radius: 8px;
+  padding: 9px 12px;
+  cursor: pointer;
+}
+.crypto-tabs button.selected {
+  color: var(--text);
+  background: var(--panel);
+  border-color: var(--border);
+}
+.crypto-facts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0 28px;
+  margin: 0;
+}
+.crypto-facts > div {
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+  min-width: 0;
+}
+.crypto-facts dt {
+  text-transform: capitalize;
+  color: var(--muted);
+  font-size: 12px;
+  margin-bottom: 5px;
+}
+.crypto-facts dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+  font-size: 13px;
+}
+.crypto-status-value {
+  font-size: 18px;
+  overflow-wrap: anywhere;
+}
+.crypto-fold-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 12px;
+}
+.crypto-fold-card {
+  display: grid;
+  gap: 9px;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  min-width: 0;
+}
+.crypto-fold-card small,
+.crypto-job-card small {
+  overflow-wrap: anywhere;
+  color: var(--muted);
+}
+.crypto-fold-card p {
+  margin: 0;
+  font-size: 12px;
+}
+.crypto-fold-card > span {
+  font-size: 12px;
+}
+.crypto-job-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+.crypto-job-form label,
+.crypto-toolbar label {
+  display: grid;
+  gap: 6px;
+  font-size: 12px;
+  min-width: 0;
+}
+.crypto-job-form select,
+.crypto-job-form input {
+  width: 100%;
+  max-width: 100%;
+}
+.crypto-job-card {
+  padding: 18px 0;
+  border-top: 1px solid var(--border);
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}
+.crypto-consent {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  font-size: 12px;
+}
+.crypto-consent input {
+  width: auto;
+}
+.crypto-artifacts {
+  display: grid;
+  gap: 8px;
+  margin-top: 16px;
+}
+.crypto-artifacts button {
+  text-align: left;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+  overflow-wrap: anywhere;
+}
+.crypto-workspace .code {
+  max-width: 100%;
+  overflow-x: auto;
+}
+.crypto-workspace details {
+  min-width: 0;
+}
+.crypto-workspace summary {
+  cursor: pointer;
+  font-size: 12px;
+}
+@media (max-width: 700px) {
+  .crypto-masthead {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 20px;
+  }
+  .crypto-facts,
+  .crypto-job-form {
+    grid-template-columns: 1fr;
+  }
+  .crypto-lock {
+    max-width: 100%;
+    overflow-wrap: anywhere;
+  }
+}
+.crypto-workspace .table-scroll {
+  max-width: 100%;
+  overflow-x: auto;
+}
