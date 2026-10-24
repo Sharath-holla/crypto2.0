@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 from dataclasses import dataclass
+from numbers import Real
 from typing import Any, Literal
 
 import numpy as np
@@ -10,6 +11,7 @@ import pyarrow as pa
 from crypto_ai.phase7.config import CostConfig
 
 ThresholdGranularity = Literal["global", "cluster", "per_coin"]
+COST_POLICY_VERSION = "phase7_nonoverlapping_cal_b_v2"
 
 
 @dataclass(frozen=True, slots=True)
@@ -17,9 +19,28 @@ class ThresholdSet:
     granularity: ThresholdGranularity
     values_bps: dict[str, float | None]
     selection_source: str = "CAL_B_ONLY"
+    policy_version: str = COST_POLICY_VERSION
+
+    def __post_init__(self) -> None:
+        self.validate()
+
+    def validate(self) -> None:
+        if (
+            self.granularity not in {"global", "cluster", "per_coin"}
+            or self.selection_source != "CAL_B_ONLY"
+            or self.policy_version != COST_POLICY_VERSION
+        ):
+            raise ValueError("unsupported threshold policy identity")
+        for value in self.values_bps.values():
+            if value is not None and (
+                not isinstance(value, Real) or not np.isfinite(value) or value < 0
+            ):
+                raise ValueError("threshold values must be finite and non-negative, or None")
 
 
 def _times(table: pa.Table, name: str) -> np.ndarray:
+    if table.column(name).null_count:
+        raise ValueError(f"policy timestamp cannot be null: {name}")
     return table.column(name).combine_chunks().cast(pa.int64()).to_numpy()
 
 
@@ -51,6 +72,51 @@ def _threshold_key(
     return f"symbol:{symbol}"
 
 
+def _policy_indices(
+    table: pa.Table,
+    predictions: np.ndarray,
+    thresholds: ThresholdSet,
+    *,
+    target_column: str,
+    liquidity_tiers: dict[str, str],
+    cluster_mapping: dict[str, int],
+    config: CostConfig,
+    cost_multiplier: float = 1.0,
+) -> list[int]:
+    """One chronological, per-symbol execution policy for Cal-B and OOS alike."""
+    thresholds.validate()  # A frozen dataclass can still contain a mutated mapping.
+    if not np.isfinite(cost_multiplier) or cost_multiplier < 0:
+        raise ValueError("cost multiplier must be finite and non-negative")
+    actual = _values(table, target_column)
+    predicted = np.asarray(predictions, dtype=np.float64)
+    if predicted.shape != actual.shape or predicted.ndim != 1:
+        raise ValueError("policy predictions must be aligned one-dimensional values")
+    feature_times = _times(table, "feature_time")
+    entry_times = (
+        _times(table, "entry_time") if "entry_time" in table.column_names else feature_times
+    )
+    exits = _times(table, "label_end_time")
+    if np.any(entry_times < feature_times) or np.any(exits <= entry_times):
+        raise ValueError("policy requires causal entry and positive label duration")
+    symbols = table.column("symbol").to_pylist()
+    active_until: dict[str, int] = {}
+    selected: list[int] = []
+    for index in np.argsort(feature_times, kind="stable"):
+        if not np.isfinite(predicted[index]) or not np.isfinite(actual[index]):
+            continue
+        symbol = str(symbols[index])
+        key = _threshold_key(symbol, thresholds.granularity, cluster_mapping)
+        threshold = thresholds.values_bps.get(key)
+        if threshold is None or entry_times[index] < active_until.get(symbol, -1):
+            continue
+        cost = _tier_cost_bps(liquidity_tiers[symbol], config) * cost_multiplier
+        if abs(predicted[index]) * 10_000 < cost + threshold:
+            continue
+        selected.append(int(index))
+        active_until[symbol] = int(exits[index])
+    return selected
+
+
 def select_cal_b_thresholds(
     table: pa.Table,
     predictions: np.ndarray,
@@ -64,7 +130,11 @@ def select_cal_b_thresholds(
     predicted = np.asarray(predictions, dtype=np.float64)
     actual = _values(table, target_column)
     symbols = np.asarray(table.column("symbol").combine_chunks().to_pylist(), dtype=object)
-    if predicted.shape != actual.shape or not np.all(np.isfinite(predicted)):
+    if (
+        predicted.shape != actual.shape
+        or not np.all(np.isfinite(predicted))
+        or not np.all(np.isfinite(actual))
+    ):
         raise ValueError("Cal-B predictions must be finite and aligned")
     groups: dict[str, list[int]] = {}
     for index, symbol_value in enumerate(symbols):
@@ -77,12 +147,16 @@ def select_cal_b_thresholds(
         indices = np.asarray(positions, dtype=np.int64)
         candidates: list[dict[str, Any]] = []
         for threshold in config.threshold_grid_bps:
-            selected: list[int] = []
-            for index in indices:
-                symbol = str(symbols[index])
-                cost = _tier_cost_bps(liquidity_tiers[symbol], config)
-                if abs(predicted[index]) * 10_000 >= cost + threshold:
-                    selected.append(int(index))
+            selected_local = _policy_indices(
+                table.take(pa.array(indices)),
+                predicted[indices],
+                ThresholdSet(granularity, {key: threshold}),
+                target_column=target_column,
+                liquidity_tiers=liquidity_tiers,
+                cluster_mapping=cluster_mapping,
+                config=config,
+            )
+            selected = indices[selected_local].tolist()
             if selected:
                 chosen = np.asarray(selected, dtype=np.int64)
                 gross = np.sign(predicted[chosen]) * actual[chosen]
@@ -115,6 +189,8 @@ def select_cal_b_thresholds(
         diagnostics[key] = {"candidates": candidates, "selected_bps": values[key]}
     return ThresholdSet(granularity=granularity, values_bps=values), {
         "selection_source": "CAL_B_ONLY",
+        "policy_version": COST_POLICY_VERSION,
+        "trade_count_semantics": "EXECUTABLE_NON_OVERLAPPING_PER_SYMBOL",
         "cost_assumption_classification": config.assumption_classification,
         "groups": diagnostics,
     }
@@ -132,8 +208,8 @@ def build_oos_trades(
     config: CostConfig,
     cost_multiplier: float = 1.0,
 ) -> pa.Table:
-    if cost_multiplier < 0:
-        raise ValueError("cost multiplier must be non-negative")
+    if horizon_minutes <= 0:
+        raise ValueError("horizon must be positive")
     predicted = np.asarray(predictions, dtype=np.float64)
     actual = _values(table, target_column)
     symbols = np.asarray(table.column("symbol").combine_chunks().to_pylist(), dtype=object)
@@ -143,20 +219,20 @@ def build_oos_trades(
     )
     label_end_times = _times(table, "label_end_time")
     rows: list[dict[str, Any]] = []
-    active_until: dict[str, int] = {}
-    order = np.argsort(feature_times, kind="mergesort")
+    order = _policy_indices(
+        table,
+        predicted,
+        thresholds,
+        target_column=target_column,
+        liquidity_tiers=liquidity_tiers,
+        cluster_mapping=cluster_mapping,
+        config=config,
+        cost_multiplier=cost_multiplier,
+    )
     for index in order:
-        if not np.isfinite(predicted[index]) or not np.isfinite(actual[index]):
-            continue
         symbol = str(symbols[index])
-        key = _threshold_key(symbol, thresholds.granularity, cluster_mapping)
-        threshold = thresholds.values_bps.get(key)
-        if threshold is None or feature_times[index] < active_until.get(symbol, -1):
-            continue
         tier = liquidity_tiers[symbol]
         cost_bps = _tier_cost_bps(tier, config) * cost_multiplier
-        if abs(predicted[index]) * 10_000 < cost_bps + threshold:
-            continue
         direction = 1 if predicted[index] > 0 else -1
         gross = direction * actual[index]
         trade_id = hashlib.sha256(
@@ -177,7 +253,6 @@ def build_oos_trades(
                 "net_return": float(gross - cost_bps / 10_000),
             }
         )
-        active_until[symbol] = int(feature_times[index] + horizon_minutes * 60_000_000)
     return pa.Table.from_pylist(rows)
 
 

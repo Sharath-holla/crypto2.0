@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import Any
 
 from crypto_ai.phase7.config import PathConfig
-from crypto_ai.phase7.runtime import RuntimePaths, memory_snapshot
+from crypto_ai.phase7.runtime import RuntimePaths, cache_mode_from_environment, memory_snapshot
 
 
 def existing_ancestor(path: Path) -> Path:
@@ -28,6 +28,17 @@ def configured_floor(primary: str, legacy: str, *, default: float = 0) -> float:
     if (primary in os.environ or legacy in os.environ) and value <= 0:
         raise ValueError(f"{primary}/{legacy} must be positive and finite when configured")
     return value
+
+
+def require_training_runtime_contract() -> None:
+    """Cheap fail-closed CLI admission before Gold scans or backend smoke fits."""
+    if configured_floor("PHASE7_MIN_FREE_RAM_GIB", "PHASE7_MIN_AVAILABLE_RAM_GB") <= 0:
+        raise ValueError("training requires an explicit positive PHASE7_MIN_FREE_RAM_GIB floor")
+    if cache_mode_from_environment() != "read_only":
+        raise ValueError("training requires PHASE7_CACHE_MODE=read_only; no implicit preparation")
+    from crypto_ai.phase7.training_metrics import reporting_period
+
+    reporting_period()
 
 
 def resource_admission(

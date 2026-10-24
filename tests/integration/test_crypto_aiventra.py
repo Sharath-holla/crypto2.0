@@ -25,7 +25,11 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 @pytest.fixture
-def adapter(tmp_path):
+def adapter(tmp_path, monkeypatch):
+    # Job protocol tests use synthetic metadata/authority, not an approval of the
+    # live checkout. Keep them independent of later standalone engine amendments.
+    # The dedicated branch/source-drift tests below exercise the real guard.
+    monkeypatch.setattr(jobs, "require_branch", lambda _root: None)
     paths = CryptoPaths(
         ROOT,
         tmp_path,
@@ -260,6 +264,25 @@ def test_source_branch_and_scientific_drift_refused(monkeypatch):
     )
     with pytest.raises(PermissionError, match="Scientific source"):
         config.require_branch(ROOT)
+
+
+def test_job_preview_still_refuses_real_guard_drift(adapter, monkeypatch):
+    # Restore the real production guard for this explicit fail-closed test.
+    monkeypatch.setattr(jobs, "require_branch", config.require_branch)
+    monkeypatch.setattr(
+        config,
+        "git",
+        lambda _root, *args: (
+            config.BRANCH
+            if args[0] == "branch"
+            else SOURCE_HEAD
+            if args[0] == "rev-parse"
+            else "src/crypto_ai/phase7/models.py"
+        ),
+    )
+    with pytest.raises(PermissionError, match="Scientific source"):
+        jobs.preview(request(), adapter)
+    assert not adapter.paths.runtime.exists()
 
 
 def test_typed_scope_rejects_shell_holdout_and_unknown_spec(adapter):

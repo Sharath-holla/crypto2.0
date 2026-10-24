@@ -71,6 +71,22 @@ class RuntimePaths:
 
     def validate(self, *, require_gold: bool = True, create_outputs: bool = True) -> list[str]:
         errors: list[str] = []
+        for name in (
+            "artifact_root",
+            "cache_root",
+            "checkpoint_root",
+            "model_root",
+            "report_root",
+            "log_root",
+        ):
+            output = getattr(self, name).resolve()
+            if any(
+                output.is_relative_to(source.resolve()) or source.resolve().is_relative_to(output)
+                for source in (self.gold_root, self.data_root)
+            ):
+                errors.append(f"{name} overlaps protected Gold/Silver input roots: {output}")
+        if errors:
+            return errors  # Do not even create/probe output directories on an unsafe mapping.
         if require_gold and (not self.gold_root.is_dir() or not os.access(self.gold_root, os.R_OK)):
             errors.append(f"Gold root is not a readable directory: {self.gold_root}")
         for name in (
@@ -87,10 +103,13 @@ class RuntimePaths:
                     path.mkdir(parents=True, exist_ok=True)
                 if not path.is_dir():
                     raise OSError("not a directory")
-                with tempfile.NamedTemporaryFile(
-                    prefix=".phase7-write-test-", dir=path, delete=True
-                ):
-                    pass
+                if create_outputs:
+                    with tempfile.NamedTemporaryFile(
+                        prefix=".phase7-write-test-", dir=path, delete=True
+                    ):
+                        pass
+                elif not os.access(path, os.R_OK | os.W_OK):
+                    raise OSError("directory access check failed (write probe not performed)")
             except OSError as exc:
                 errors.append(f"{name} is not writable ({path}): {exc}")
         return errors

@@ -4,6 +4,16 @@
 
 This project is currently **ON HOLD**.
 
+**Changing laptops:** start with [the 24 October 2026 migration guide](docs/LAPTOP_MIGRATION_2026_10_24.md).
+The latest local remediation is preserved on `codex/laptop-migration-20261024`, not merged into
+`main`. Clone that branch to restore this working state. GitHub does not contain the ignored
+research datasets, saved artifacts, private application state, or credentials; preserve those
+separately before wiping the old laptop. Do not restart training or cloud compute.
+
+The [complete Phases 1 through 18 project guide](docs/CRYPTO_2_PROJECT_GUIDE_PHASES_1_TO_18.md)
+and its [shareable PDF](output/pdf/Crypto_2_Project_Guide_Phases_1_to_18.pdf) distinguish completed
+research from planned future capabilities.
+
 Before modifying or running Phase 7A, read:
 
 - [docs/PROJECT_HANDOFF/00_START_HERE.md](docs/PROJECT_HANDOFF/00_START_HERE.md)
@@ -42,7 +52,7 @@ uv run ruff check src tests
 The range is half-open and must include a timezone. This example downloads one hour of closed USD-M 5-minute candles using the primary-market configuration.
 
 ```powershell
-uv run crypto-ai download --config configs/data/binance.toml --start 2026-08-01T00:00:00Z --end 2026-08-01T01:00:00Z
+uv run crypto-ai download --config configs/data/binance.toml --start 2026-06-01T00:00:00Z --end 2026-06-01T01:00:00Z
 ```
 
 Use `--interval 1m` for USD-M futures 1-minute candles. Use `--market spot` only when intentionally creating the secondary Spot dataset. No API key is required for either Binance public endpoint.

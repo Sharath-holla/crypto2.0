@@ -368,8 +368,10 @@ def test_06_fold_before_gap_is_not_disqualified(tmp_path: Path) -> None:
     assert "NEWUSDT" in membership.active_symbols
 
 
-def test_07_fold_crossing_gap_rejects_symbol(tmp_path: Path) -> None:
-    gap = _gap(tmp_path)
+def test_07_training_history_gap_rejects_symbol(tmp_path: Path) -> None:
+    # Only evidence completed by TRAIN end may determine earlier membership.
+    # The former fixture put this corruption in December after the July cutoff.
+    gap = _gap(tmp_path, start=datetime(2024, 6, 1, tzinfo=UTC))
     membership = _fold_membership(
         tmp_path,
         train_end=datetime(2024, 7, 1, tzinfo=UTC),

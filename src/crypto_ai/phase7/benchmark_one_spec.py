@@ -87,6 +87,9 @@ def main() -> int:
         result = benchmark_plan(config, args.spec_id, args.output_root)
         if args.execute:
             config.assert_cloud_execution_allowed()
+            from crypto_ai.phase7.resources import require_training_runtime_contract
+
+            require_training_runtime_contract()
             runtime = RuntimePaths.resolve(config.paths)
             root = runtime.artifact_root / dispatcher.run_identity(config)
             store = CheckpointStore(
@@ -120,7 +123,9 @@ def main() -> int:
                 registry=registry,
                 universe=universe,
                 expansion_policy=policy,
-                descriptors=dispatcher.pipeline._fold_descriptors(config, registry, data),
+                descriptors=dispatcher.pipeline._fold_descriptors(
+                    config, registry, data, fold_ids=(result["fold_id"],)
+                ),
                 unusable_segments=tuple(
                     dispatcher.CausalDataGap.model_validate(item)
                     for item in data.get("unusable_segments", [])

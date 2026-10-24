@@ -656,6 +656,8 @@ def _fold_descriptors(
     config: Phase7Config,
     registry: SymbolRegistry,
     data: dict[str, Any],
+    *,
+    fold_ids: tuple[str, ...] | None = None,
 ) -> list[SymbolDescriptor]:
     plans = plan_folds(
         config.data_start,
@@ -663,6 +665,15 @@ def _fold_descriptors(
         config.prospective_holdout_start,
         config.schedule,
     )
+    if fold_ids is not None:
+        requested = set(fold_ids)
+        if (
+            not requested
+            or len(requested) != len(fold_ids)
+            or requested - {p.fold_id for p in plans}
+        ):
+            raise ValueError("descriptor selection requires unique canonical fold IDs")
+        plans = tuple(plan for plan in plans if plan.fold_id in requested)
     descriptors: list[SymbolDescriptor] = []
     unusable_segments = tuple(
         CausalDataGap.model_validate(item) for item in data.get("unusable_segments", [])

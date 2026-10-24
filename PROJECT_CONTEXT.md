@@ -8,6 +8,20 @@ BEFORE MODIFYING OR RUNNING THIS PROJECT.
 - Status: **PROJECT HOLD**
 - Current phase: **Phase 7A CORE20 PRIMARY**
 
+## Laptop migration and later local remediation
+
+For the latest laptop snapshot and restoration instructions, read
+`docs/LAPTOP_MIGRATION_2026_10_24.md`. Restore branch `codex/laptop-migration-20261024`;
+do not assume cloning `main` restores the latest local fixes. That branch preserves the existing
+integration tree without launching it; standalone research still installs from the root package.
+
+The September handoff below is historical remote evidence, not a fresh cloud verification.
+October local work implemented prepared-matrix caching and hardened identities, live training
+metrics, non-overlapping Cal-B selection, preflight, and TRAIN-only universe gap gating. Read
+`docs/PHASE7A_MEMBERSHIP_LOOKAHEAD_FIX_2026_10_23.md` and the migration verification record.
+Real-data cached/uncached equivalence, Linux verification, resource profiling, and a fresh owner
+cost/deadline authorization are still required. Do not rerun already valid acquisition or Gold.
+
 Crypto 2.0 is a production-oriented quantitative ML research system using official Binance USD-M
 perpetual-futures market data. It separates immutable data, validation, causal features/targets,
 point-in-time universe construction, chronological models, calibration, cost-aware `NO_TRADE`,

@@ -3,6 +3,7 @@ from __future__ import annotations
 import os
 import uuid
 from concurrent.futures import Future, ThreadPoolExecutor
+from contextvars import copy_context
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Literal
@@ -22,6 +23,7 @@ from crypto_ai.phase7.config import ModelConfig, stable_hash
 from crypto_ai.phase7.device_evidence import fit_with_device_evidence
 from crypto_ai.phase7.folds import IneligibleFoldError
 from crypto_ai.phase7.resources import resource_admission
+from crypto_ai.phase7.training_metrics import display_metrics, fit_observer
 
 Architecture = Literal["G0", "C0", "P0", "H0"]
 
@@ -145,6 +147,7 @@ def _fit(
     config: ModelConfig,
     model_threads: int,
     sample_weight: np.ndarray | None,
+    estimator_key: str = "global",
 ) -> Any:
     import lightgbm as lgb
 
@@ -153,6 +156,21 @@ def _fit(
     resource_admission("ESTIMATOR_FIT")
     estimator = _estimator(config, model_threads=model_threads)
     backend = resolve_lightgbm_backend()
+    observer = fit_observer(estimator_key)
+    evaluation = {"eval_X": validation_x, "eval_y": validation_y}
+    callbacks = [
+        lgb.early_stopping(config.early_stopping_rounds, first_metric_only=True, verbose=False),
+    ]
+    if observer is not None:
+        evaluation = {
+            "eval_X": (train_x, validation_x),
+            "eval_y": (train_y, validation_y),
+            "eval_names": ["train", "validation"],
+            "eval_sample_weight": [sample_weight, None],
+            # A callable appends diagnostics AFTER the unchanged default L2 metric.
+            "eval_metric": display_metrics,
+        }
+        callbacks.append(observer)
     try:
         fit_with_device_evidence(
             estimator,
@@ -160,16 +178,17 @@ def _fit(
             train_x,
             train_y,
             sample_weight=sample_weight,
-            eval_X=validation_x,
-            eval_y=validation_y,
-            callbacks=[
-                lgb.early_stopping(
-                    config.early_stopping_rounds, first_metric_only=True, verbose=False
-                ),
-                lgb.log_evaluation(period=0),
-            ],
+            **evaluation,
+            callbacks=callbacks,
         )
+        if observer is not None:
+            observer.finish(estimator)
     except Exception as exc:
+        if observer is not None:
+            try:
+                observer.fail(exc)
+            except Exception as logging_error:
+                exc.add_note(f"Fit failure logging also failed: {type(logging_error).__name__}")
         if backend.gpu_requested:
             raise _backend_error(backend, exc) from exc
         raise
@@ -206,6 +225,7 @@ def _fit_partitioned_estimators(
     """Fit independent cluster/per-coin estimators under one CPU budget."""
 
     def run(
+        key: str,
         train_mask: np.ndarray,
         validation_mask: np.ndarray,
         sample_weight: np.ndarray | None,
@@ -218,11 +238,12 @@ def _fit_partitioned_estimators(
             config=config,
             model_threads=model_threads,
             sample_weight=sample_weight,
+            estimator_key=key,
         )
 
     if estimator_workers == 1 or len(jobs) <= 1:
         return {
-            key: run(train_mask, validation_mask, sample_weight)
+            key: run(key, train_mask, validation_mask, sample_weight)
             for key, train_mask, validation_mask, sample_weight in jobs
         }
     results: dict[str, Any] = {}
@@ -233,7 +254,9 @@ def _fit_partitioned_estimators(
         futures: list[tuple[str, Future[Any]]] = [
             (
                 key,
-                executor.submit(run, train_mask, validation_mask, sample_weight),
+                executor.submit(
+                    copy_context().run, run, key, train_mask, validation_mask, sample_weight
+                ),
             )
             for key, train_mask, validation_mask, sample_weight in jobs
         ]

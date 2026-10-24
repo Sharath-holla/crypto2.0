@@ -1,0 +1,3 @@
+# PDFs must round-trip byte-for-byte on Windows and Linux.
+# ReportLab ASCII-encoded PDFs may otherwise be mistaken for text by Git.
+*.pdf binary

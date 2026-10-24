@@ -207,6 +207,21 @@ def slice_multiasset_fold(
     eligible_symbols = set(membership.active_symbols)
     if not eligible_symbols:
         raise IneligibleFoldError(f"{plan.fold_id} has no point-in-time eligible symbols")
+    later_gaps = sorted(
+        {
+            f"{gap.symbol}:{gap.interval}:{gap.partition}"
+            for gap in unusable_segments
+            if gap.symbol in eligible_symbols and gap.intersects(plan.train_end, plan.test_end)
+        }
+    )
+    if later_gaps:
+        # Do not replace a noncausal symbol exclusion with permissive partial OOS
+        # evaluation. Preserve membership and stop the entire affected fold as
+        # a data defect (never INELIGIBLE or a completed scientific result).
+        raise ValueError(
+            f"{plan.fold_id} has post-TRAIN data-quality gaps for active symbols; "
+            f"TRAIN membership is unchanged; explicit data-quality review required: {later_gaps}"
+        )
     eligible_table = _filter_symbols(table, eligible_symbols)
     if eligible_table.num_rows == 0:
         # Eligible symbols exist, yet this fold table carries no rows for them:
@@ -248,12 +263,14 @@ def slice_multiasset_fold(
         "expansion_eligible_symbols": list(membership.expansion_eligible_symbols),
         "fold_active_symbols": list(membership.active_symbols),
         "fold_membership_hash": membership.membership_hash,
+        "gap_gate_policy": membership.gap_gate_policy,
         "fold_membership": [item.model_dump(mode="json") for item in membership.members],
         "unusable_segments": [
             gap.model_dump(mode="json")
             for gap in unusable_segments
             if gap.intersects(plan.train_start, plan.test_end)
         ],
+        "unusable_segments_role": "FOLD_COVERAGE_DIAGNOSTICS_NOT_MEMBERSHIP_SELECTION",
         "core_universe_version": universe.version,
         "core_universe_hash": universe.universe_hash,
         "core_candidate_symbols": list(universe.symbols),

@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import math
 import os
 from dataclasses import asdict
 from pathlib import Path
@@ -44,10 +43,6 @@ def _existing_ancestor(path: Path) -> Path:
     return candidate if candidate.is_dir() else candidate.parent
 
 
-class _SkipGoldInspection(Exception):
-    """Internal verification-only branch: never open research Gold."""
-
-
 def _validated_gold_report(
     report_path: Path,
     *,
@@ -56,7 +51,8 @@ def _validated_gold_report(
 ) -> dict[str, Any]:
     payload = json.loads(report_path.read_text(encoding="utf-8"))
     if (
-        payload.get("status") != "PASS"
+        not isinstance(payload, dict)
+        or payload.get("status") != "PASS"
         or payload.get("partition_hashes_verified") is not True
         or payload.get("dataset_id") != dataset_id
         or payload.get("manifest_sha256") != manifest_sha256
@@ -82,39 +78,15 @@ def build_preflight_report(
     errors = paths.validate(require_gold=not verification_only, create_outputs=create_outputs)
     manifest_report: dict[str, Any] | None = None
     byte_validation: dict[str, Any] | None = None
+    # Cheap contract/capacity checks precede any Gold inspection or backend fit.
+    # Invalid environment values become an actionable FAIL report, not a traceback.
     try:
-        if verification_only:
-            raise _SkipGoldInspection
-        manifest_path, manifest, partitions = validate_gold_manifest(paths.gold_root)
-        manifest_sha = file_sha256(manifest_path)
-        manifest_report = {
-            "path": str(manifest_path),
-            "sha256": manifest_sha,
-            "dataset_id": manifest["dataset_id"],
-            "parquet_partition_count": len(partitions),
-            "row_count": manifest.get("rows", manifest.get("row_count")),
-        }
-        if gold_validation_report is None:
-            errors.append("byte-level Gold validation report is required")
-        else:
-            byte_validation = _validated_gold_report(
-                gold_validation_report.resolve(),
-                dataset_id=str(manifest["dataset_id"]),
-                manifest_sha256=manifest_sha,
-            )
-    except _SkipGoldInspection:
-        pass
-    except (OSError, ValueError, json.JSONDecodeError) as exc:
+        backend = resolve_lightgbm_backend()
+    except ValueError as exc:
+        backend = None
         errors.append(str(exc))
-
-    backend = resolve_lightgbm_backend()
     smoke: dict[str, Any] | None = None
-    if run_backend_smoke and not verification_only:
-        try:
-            smoke = smoke_test_backend(backend.name)
-        except Exception as exc:
-            errors.append(str(exc))
-    elif not verification_only:
+    if not run_backend_smoke and not verification_only:
         errors.append("backend smoke was skipped; training readiness cannot be established")
     try:
         budget: dict[str, Any] | None = asdict(ComputeBudget.resolve(config.resources))
@@ -134,12 +106,27 @@ def build_preflight_report(
             "disk_total_bytes": 0,
             "disk_free_bytes": 0,
         }
-    minimum_disk_gb = configured_floor(
-        "PHASE7_MIN_FREE_DISK_GIB", "PHASE7_MIN_FREE_DISK_GB", default=25
-    )
-    minimum_ram_gb = configured_floor("PHASE7_MIN_FREE_RAM_GIB", "PHASE7_MIN_AVAILABLE_RAM_GB")
-    if any(not math.isfinite(value) or value < 0 for value in (minimum_disk_gb, minimum_ram_gb)):
-        raise ValueError("preflight RAM/disk minimums must be positive and finite")
+
+    def floor(primary: str, legacy: str, *, default: float = 0) -> float | None:
+        try:
+            return configured_floor(primary, legacy, default=default)
+        except ValueError as exc:
+            errors.append(f"{primary}: {exc}")
+            return None
+
+    minimum_disk_gb = floor("PHASE7_MIN_FREE_DISK_GIB", "PHASE7_MIN_FREE_DISK_GB", default=25)
+    minimum_ram_gb = floor("PHASE7_MIN_FREE_RAM_GIB", "PHASE7_MIN_AVAILABLE_RAM_GB")
+    if not verification_only and minimum_ram_gb == 0:
+        errors.append("explicit positive PHASE7_MIN_FREE_RAM_GIB workload floor is required")
+    try:
+        cache_mode = cache_mode_from_environment()
+    except ValueError as exc:
+        cache_mode = "INVALID"
+        errors.append(str(exc))
+    if not verification_only and cache_mode != "read_only":
+        errors.append(
+            "training preflight requires PHASE7_CACHE_MODE=read_only; do not rebuild data"
+        )
     filesystem_capacity = {}
     for name in (
         "artifact_root",
@@ -147,6 +134,7 @@ def build_preflight_report(
         "model_root",
         "report_root",
         "checkpoint_root",
+        "log_root",
         "temporary_root",
     ):
         target = (
@@ -154,21 +142,80 @@ def build_preflight_report(
             if name == "temporary_root"
             else getattr(paths, name)
         )
-        location = _existing_ancestor(target)
-        capacity = system_snapshot(location)
+        try:
+            location = _existing_ancestor(target)
+            capacity = system_snapshot(location)
+        except OSError as exc:
+            errors.append(f"unable to inspect {name} filesystem capacity: {exc}")
+            filesystem_capacity[name] = {"path": str(target), "disk_free_bytes": None}
+            continue
         filesystem_capacity[name] = {
             "path": str(location),
             "disk_free_bytes": capacity["disk_free_bytes"],
         }
-        if capacity["disk_free_bytes"] < minimum_disk_gb * 1024**3:
+        if minimum_disk_gb is not None and capacity["disk_free_bytes"] < minimum_disk_gb * 1024**3:
             errors.append(f"{name} filesystem is below the configured free disk floor")
-    if int(system["disk_free_bytes"]) < minimum_disk_gb * 1024**3:
+    if minimum_disk_gb is not None and int(system["disk_free_bytes"]) < minimum_disk_gb * 1024**3:
         errors.append(f"available disk is below PHASE7_MIN_FREE_DISK_GB={minimum_disk_gb}")
-    if int(system["ram_available_bytes"]) < minimum_ram_gb * 1024**3:
+    if minimum_ram_gb is not None and int(system["ram_available_bytes"]) < minimum_ram_gb * 1024**3:
         errors.append(f"available RAM is below PHASE7_MIN_AVAILABLE_RAM_GB={minimum_ram_gb}")
+    if not verification_only and not errors:
+        try:
+            manifest_path, manifest, partitions = validate_gold_manifest(paths.gold_root)
+            manifest_sha = file_sha256(manifest_path)
+            manifest_report = {
+                "path": str(manifest_path),
+                "sha256": manifest_sha,
+                "dataset_id": manifest["dataset_id"],
+                "parquet_partition_count": len(partitions),
+                "row_count": manifest.get("rows", manifest.get("row_count")),
+            }
+            if gold_validation_report is None:
+                errors.append("byte-level Gold validation report is required")
+            else:
+                byte_validation = _validated_gold_report(
+                    gold_validation_report.resolve(),
+                    dataset_id=str(manifest["dataset_id"]),
+                    manifest_sha256=manifest_sha,
+                )
+        except (OSError, ValueError, TypeError, KeyError) as exc:
+            errors.append(str(exc))
+    cache: dict[str, Any] = {"status": "NOT_INSPECTED_BLOCKING_ERRORS"}
+    if not errors:
+        try:
+            cache = cache_size_report(paths.cache_root)
+        except (OSError, ValueError) as exc:
+            errors.append(f"unable to inspect prepared cache: {exc}")
+    if not verification_only and not errors and backend is not None:
+        try:
+            smoke = smoke_test_backend(backend.name)
+            if smoke.get("status") != "PASS" or smoke.get("fit_success") is False:
+                errors.append("backend smoke did not report PASS")
+        except Exception as exc:
+            errors.append(str(exc))
+    # Do not probe a GPU device when an earlier prerequisite already failed.
+    backend_report = (
+        {"status": "INVALID"}
+        if backend is None
+        else {**asdict(backend), "runtime_probe": "NOT_RUN_BLOCKING_ERRORS"}
+    )
+    if not errors and backend is not None:
+        try:
+            backend_report = backend_metadata(backend)
+        except (OSError, ValueError) as exc:
+            errors.append(f"unable to inspect backend metadata: {exc}")
     report = {
         "status": "PASS" if not errors else "FAIL",
-        "training_readiness": "READY" if not errors and not verification_only else "NOT_READY",
+        "training_readiness": "READY"
+        if not errors and not verification_only and create_outputs
+        else "NOT_READY",
+        "output_write_probe": (
+            "NOT_RUN_READ_ONLY_INSPECTION"
+            if not create_outputs
+            else "REQUESTED_NOT_FULLY_VERIFIED"
+            if errors
+            else "PERFORMED"
+        ),
         "qualification_mode": "SOFTWARE_ENVIRONMENT_ONLY"
         if verification_only
         else "TRAINING_PREFLIGHT",
@@ -184,16 +231,17 @@ def build_preflight_report(
             "minimum_free_disk_gb": minimum_disk_gb,
             "minimum_available_ram_gb": minimum_ram_gb,
         },
-        "cache_mode": cache_mode_from_environment(),
-        "cache": cache_size_report(paths.cache_root),
+        "cache_mode": cache_mode,
+        "cache": cache,
         "compute_budget": budget,
-        "backend": backend_metadata(backend),
+        "backend": backend_report,
         "backend_smoke": smoke,
         "gold_manifest": manifest_report,
         "gold_byte_validation": byte_validation,
         "holdout": config.holdout_status_payload(),
     }
-    telemetry("PREFLIGHT", "END", qualification_mode=report["qualification_mode"])
+    if not errors:
+        telemetry("PREFLIGHT", "END", qualification_mode=report["qualification_mode"])
     return report
 
 

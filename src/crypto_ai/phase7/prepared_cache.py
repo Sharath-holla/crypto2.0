@@ -7,9 +7,10 @@ import shutil
 import time
 import uuid
 from collections.abc import Iterator
-from contextlib import contextmanager
+from contextlib import ExitStack, contextmanager
 from dataclasses import dataclass
 from pathlib import Path
+from traceback import clear_frames
 from typing import Any
 
 import numpy as np
@@ -90,6 +91,54 @@ def _symbol_array(values: np.ndarray) -> np.ndarray:
     strings = [str(value) for value in np.asarray(values, dtype=object)]
     width = max((len(value) for value in strings), default=1)
     return np.asarray(strings, dtype=f"<U{width}")
+
+
+def _validate_matrix_alignment(
+    arrays: dict[str, np.ndarray],
+    tables: dict[str, pa.Table],
+    feature_columns: tuple[str, ...],
+    target_column: str,
+) -> None:
+    """Checksums prove bytes, not that two representations contain the same rows.
+
+    Compare in bounded column/row batches; never allocate a second full matrix.
+    This is an internal consistency check, not independent Gold equivalence proof.
+    """
+    for segment in ("train", "validation", "calibration_a"):
+        table = tables[segment]
+        columns = (
+            ("symbol",)
+            if segment == "calibration_a"
+            else ("symbol", target_column, *feature_columns)
+        )
+        if any(name not in table.column_names for name in columns):
+            raise PreparedCacheCorruptError(f"matrix/table alignment columns missing: {segment}")
+        symbol_key = (
+            "calibration_symbols.npy" if segment == "calibration_a" else f"{segment}_symbols.npy"
+        )
+        for start in range(0, table.num_rows, 65_536):
+            stop = min(start + 65_536, table.num_rows)
+            batch = table.slice(start, stop - start)
+            symbols = batch.column("symbol")
+            if symbols.null_count or not np.array_equal(
+                arrays[symbol_key][start:stop], np.asarray(symbols.to_pylist(), dtype=object)
+            ):
+                raise PreparedCacheCorruptError(
+                    f"matrix/table symbol alignment mismatch: {segment}"
+                )
+            if segment == "calibration_a":
+                continue
+            for index, name in enumerate((target_column, *feature_columns)):
+                expected = batch.column(name).combine_chunks().to_numpy(zero_copy_only=False)
+                actual = (
+                    arrays[f"{segment}_y.npy"][start:stop]
+                    if index == 0
+                    else arrays[f"{segment}_x.npy"][start:stop, index - 1]
+                )
+                if not np.all(np.isfinite(actual)) or not np.array_equal(actual, expected):
+                    raise PreparedCacheCorruptError(
+                        f"matrix/table value alignment mismatch: {segment}/{name}"
+                    )
 
 
 def _fsync_file(path: Path) -> None:
@@ -385,6 +434,21 @@ class PreparedDataCache:
     def _load_validated(
         self, path: Path, identity: dict[str, Any], plan: FoldPlan
     ) -> CachedPreparedData:
+        # Failed validation must release mappings before quarantine/temp cleanup,
+        # particularly on Windows where an open mmap prevents rename/deletion.
+        with ExitStack() as cleanup:
+            try:
+                return self._load_validated_content(path, identity, plan, cleanup)
+            except BaseException as exc:
+                # Drop failed-loader frame references before closing mappings.
+                # Otherwise traceback-local inspection could dereference an
+                # already closed memmap, and Arrow buffers can retain file locks.
+                clear_frames(exc.__traceback__)
+                raise
+
+    def _load_validated_content(
+        self, path: Path, identity: dict[str, Any], plan: FoldPlan, cleanup: ExitStack
+    ) -> CachedPreparedData:
         manifest_path = path / "manifest.json"
         marker_path = path / "CACHE_COMPLETE"
         if not manifest_path.is_file() or not marker_path.is_file():
@@ -435,6 +499,7 @@ class PreparedDataCache:
         arrays: dict[str, np.ndarray] = {}
         for name, record in manifest["arrays"].items():
             array = np.load(path / name, mmap_mode="r", allow_pickle=False)
+            cleanup.callback(array._mmap.close)
             if list(array.shape) != record["shape"] or str(array.dtype) != record["dtype"]:
                 raise PreparedCacheCorruptError(f"array shape/dtype mismatch: {name}")
             arrays[name] = array
@@ -513,12 +578,16 @@ class PreparedDataCache:
             for name in (f"{segment}_y.npy", f"{segment}_symbols.npy"):
                 if arrays[name].shape != (row_count,):
                     raise PreparedCacheCorruptError(f"vector dimensions do not match table: {name}")
-            if not np.all(np.isfinite(arrays[f"{segment}_x.npy"])) or not np.all(
-                np.isfinite(arrays[f"{segment}_y.npy"])
-            ):
-                raise PreparedCacheCorruptError(f"cached {segment} matrix/target is not finite")
         if arrays["calibration_symbols.npy"].shape != (prepared.calibration_a.num_rows,):
             raise PreparedCacheCorruptError("calibration symbol dimensions do not match table")
+        if (
+            metadata["research_view"] != identity["research_view"]
+            or metadata["eligibility_manifest"].get("fold_membership_hash")
+            != identity["fold_membership_hash"]
+        ):
+            raise PreparedCacheIdentityError("cached fold context identity mismatch")
+        _validate_matrix_alignment(arrays, tables, feature_columns, target_column)
+        cleanup.pop_all()  # Returned memmaps retain ownership on successful load.
         return CachedPreparedData(cache_id, fold, prepared)
 
     @instrument("CACHE_WRITE", admit=True)
@@ -643,6 +712,9 @@ class PreparedDataCache:
             )
             _fsync_file(temporary / "CACHE_COMPLETE")
             _fsync_directory(temporary)
+            # Validate before touching a previous valid entry or exposing a new
+            # completion marker. Incorrect prepared inputs must not replace it.
+            self._load_validated(temporary, identity, fold.plan)
             with self._publication_lock("publication"):
                 backup: Path | None = None
                 if final.exists():

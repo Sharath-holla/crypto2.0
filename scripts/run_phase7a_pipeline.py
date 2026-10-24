@@ -546,7 +546,19 @@ def _run_stage_owned(
         # Resolve Gold by dataset identity after migration; retain historical
         # result.json bytes and their old absolute location as audit evidence.
         gold_manifest_path = locate_gold_manifest(runtime.gold_root, str(gold["dataset_id"]))
-        descriptors = pipeline._fold_descriptors(config, registry, data)
+        descriptor_fold_ids = None
+        if canary:
+            descriptor_fold_ids = (
+                plan_folds(
+                    config.data_start,
+                    config.research_cutoff,
+                    config.prospective_holdout_start,
+                    config.schedule,
+                )[0].fold_id,
+            )
+        descriptors = pipeline._fold_descriptors(
+            config, registry, data, fold_ids=descriptor_fold_ids
+        )
         descriptor_path = atomic_json(
             root / "fold_descriptors.json",
             {"descriptors": [item.model_dump(mode="json") for item in descriptors]},
@@ -699,6 +711,17 @@ def main() -> int:
         raise ValueError("--canary is valid only for the train stage")
     config = load_phase7_config(args.config)
     config.assert_cloud_execution_allowed()
+    if args.stage == "train":
+        from crypto_ai.phase7.preflight import build_preflight_report
+        from crypto_ai.phase7.resources import require_training_runtime_contract
+
+        require_training_runtime_contract()
+        validation = os.environ.get("PHASE7_GOLD_VALIDATION_REPORT", "").strip()
+        report = build_preflight_report(
+            args.config, gold_validation_report=Path(validation) if validation else None
+        )
+        if report["status"] != "PASS":
+            raise RuntimeError("training preflight failed: " + "; ".join(report["blocking_errors"]))
     result = run_stage(config, args.stage, resume=args.resume, canary=args.canary)
     print(json.dumps(result, indent=2, sort_keys=True, default=str))
     return 0

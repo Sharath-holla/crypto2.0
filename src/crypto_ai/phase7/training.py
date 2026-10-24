@@ -35,12 +35,14 @@ from crypto_ai.phase7.config import (
     stable_hash,
 )
 from crypto_ai.phase7.economics import (
+    COST_POLICY_VERSION,
     ThresholdSet,
     adaptive_policy_cost_stress,
     build_oos_trades,
     fixed_policy_cost_stress,
     select_cal_b_thresholds,
 )
+from crypto_ai.phase7.environment import scientific_environment_identity
 from crypto_ai.phase7.folds import (
     IneligibleFoldError,
     MultiAssetFoldData,
@@ -79,6 +81,7 @@ from crypto_ai.phase7.runtime import (
 )
 from crypto_ai.phase7.segments import CausalDataGap
 from crypto_ai.phase7.telemetry import instrument, telemetry
+from crypto_ai.phase7.training_metrics import training_metric_scope
 from crypto_ai.phase7.universe import (
     ExpansionUniversePolicy,
     FrozenUniverse,
@@ -137,6 +140,8 @@ TRAINING_CRITICAL_SOURCE_FILES = (
     "src/crypto_ai/phase7/benchmark_one_spec.py",
     "src/crypto_ai/phase7/recovery.py",
     "src/crypto_ai/phase7/device_evidence.py",
+    "src/crypto_ai/phase7/environment.py",
+    "src/crypto_ai/phase7/training_metrics.py",
 )
 EXECUTION_CONTEXT_SOURCE_FILES = (
     "src/crypto_ai/phase7/preflight.py",
@@ -217,6 +222,8 @@ def training_stage_resume_identity(
         "schema": "phase7_training_stage_resume_v2",
         "scientific_source_identity": training_source_identity(),
         "model_backend_semantics": resolve_lightgbm_backend().name,
+        "scientific_environment": scientific_environment_identity(),
+        "cost_policy_version": COST_POLICY_VERSION,
     }
     if config is not None:
         identity["configuration_hash"] = config.configuration_hash
@@ -517,6 +524,7 @@ def _prepared_cache_identity(
         "matrix_dtype": "float64",
         "matrix_code_identity": source_identity["manifest_sha256"],
         "symbol_encoding_contract": "deferred_sorted_train_symbols_one_hot_v1",
+        "scientific_environment": scientific_environment_identity(),
     }
 
 
@@ -914,7 +922,29 @@ def _run_one(
         + prepared.model_inputs.validation_x.nbytes,
         model_threads=budget.lightgbm_threads_per_model,
     )
-    with fit_context:
+    log_identity = (execution_metadata or {}).get("run_identity", "isolated")
+    log_directory = (
+        RuntimePaths.resolve(config.paths).log_root / log_identity / fold.plan.fold_id / spec.name
+    )
+    if execution_metadata is None:
+        log_directory = output_root / "training-metrics"
+    with (
+        fit_context,
+        training_metric_scope(
+            log_directory,
+            run_identity=log_identity,
+            fold_id=fold.plan.fold_id,
+            spec_id=spec.name,
+            architecture=spec.architecture,
+            research_view=fold.research_view,
+            target_type=spec.target_type,
+            target_column=target,
+            horizon_minutes=spec.horizon_minutes,
+            feature_count=len(feature_columns),
+            round_limit=config.models.n_estimators,
+            symbol_balanced=spec.symbol_balanced,
+        ),
+    ):
         model = fit_architecture(
             spec.architecture,  # type: ignore[arg-type]
             train,
@@ -1166,6 +1196,7 @@ def _run_phase7_training_owned(
 ) -> dict[str, Any]:
     config.assert_cloud_execution_allowed()
     source_identity = training_source_identity()
+    environment_identity = scientific_environment_identity()
     manifest = _load_gold_manifest(gold_manifest_path)
     gold_paths = [record["path"] for record in manifest["partition_files"]]
     gold_dataset: ds.Dataset | None = None
@@ -1210,6 +1241,7 @@ def _run_phase7_training_owned(
         "git_commit": git_commit(),
         "configuration_hash": config.configuration_hash,
         "scientific_source_identity": source_identity,
+        "scientific_environment": environment_identity,
         "execution_source_identity": execution_source_identity(),
         "gold_dataset_id": manifest["dataset_id"],
         "gold_manifest_sha256": gold_manifest_checksum,
@@ -1363,6 +1395,8 @@ def _run_phase7_training_owned(
                             "phase7_scientific_resume_identity_v2"
                         ),
                         "model_backend_semantics": selected_backend.name,
+                        "scientific_environment": environment_identity,
+                        "cost_policy_version": COST_POLICY_VERSION,
                         "training_source_identity": source_identity,
                         "causal_descriptor_identity": descriptor_identity,
                         **({"artifact_mode": "BENCHMARK_ONLY"} if benchmark_only else {}),
@@ -1493,6 +1527,8 @@ def _run_phase7_training_owned(
                     "code_version": PHASE7_VERSION,
                     "scientific_resume_identity_schema": "phase7_scientific_resume_identity_v2",
                     "model_backend_semantics": selected_backend.name,
+                    "scientific_environment": environment_identity,
+                    "cost_policy_version": COST_POLICY_VERSION,
                     "training_source_identity": source_identity,
                     "causal_descriptor_identity": descriptor_identity,
                     "fold_context_identity": stable_hash(
