@@ -27,7 +27,7 @@
   },
   "operational_only": true,
   "predecessor_contract_id": "phase7_vm_supervisor_v1_1_1",
-  "scientific_baseline": "phase7_scientific_baseline_v1_8",
+  "scientific_baseline": "phase7_scientific_baseline_v1_9",
   "states": [
     "READY",
     "RUNNING",

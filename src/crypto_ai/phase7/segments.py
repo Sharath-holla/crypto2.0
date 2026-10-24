@@ -11,6 +11,7 @@ from pydantic import BaseModel, ConfigDict, field_validator, model_validator
 class AcquisitionStatus(StrEnum):
     VALID = "VALID"
     QUALITY_REJECTED_SEGMENT = "QUALITY_REJECTED_SEGMENT"
+    SYMBOL_EXCLUDED_DATA_QUALITY = "SYMBOL_EXCLUDED_DATA_QUALITY"
     SOURCE_UNAVAILABLE = "SOURCE_UNAVAILABLE"
     LIFECYCLE_ABSENCE = "LIFECYCLE_ABSENCE"
 
@@ -90,6 +91,7 @@ class AcquisitionOutcome(_Frozen):
     silver_manifest: str | None = None
     reason: str | None = None
     gaps: tuple[CausalDataGap, ...] = ()
+    exclusion_evidence: str | None = None
 
     @field_validator("symbol")
     @classmethod
@@ -109,6 +111,14 @@ class AcquisitionOutcome(_Frozen):
             raise ValueError("segmented acquisition requires Silver lineage and gaps")
         if self.status is AcquisitionStatus.LIFECYCLE_ABSENCE and self.silver_manifest is not None:
             raise ValueError("lifecycle absence cannot have a Silver manifest")
+        if self.status is AcquisitionStatus.SYMBOL_EXCLUDED_DATA_QUALITY and (
+            self.silver_manifest is not None or self.exclusion_evidence is None
+        ):
+            raise ValueError("data-quality exclusion requires evidence and cannot have Silver")
+        if self.status is not AcquisitionStatus.SYMBOL_EXCLUDED_DATA_QUALITY and (
+            self.exclusion_evidence is not None
+        ):
+            raise ValueError("only data-quality exclusion may reference exclusion evidence")
         return self
 
 
@@ -128,8 +138,19 @@ class CandleFamilyAcquisition:
     def gaps(self) -> tuple[CausalDataGap, ...]:
         return tuple(gap for outcome in self.outcomes for gap in outcome.gaps)
 
+    @property
+    def exclusions(self) -> tuple[AcquisitionOutcome, ...]:
+        return tuple(
+            outcome
+            for outcome in self.outcomes
+            if outcome.status is AcquisitionStatus.SYMBOL_EXCLUDED_DATA_QUALITY
+        )
+
     def model_dump(self) -> dict[str, object]:
         return {
             "outcomes": [outcome.model_dump(mode="json") for outcome in self.outcomes],
             "unusable_segments": [gap.model_dump(mode="json") for gap in self.gaps],
+            "data_quality_exclusions": [
+                outcome.model_dump(mode="json") for outcome in self.exclusions
+            ],
         }

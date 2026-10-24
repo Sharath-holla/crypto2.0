@@ -13,7 +13,8 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator, model_valida
 from crypto_ai.phase5.config import CalibrationConfig, ScheduleConfig
 from crypto_ai.phase5.folds import add_calendar_months
 
-PHASE7_VERSION = "1.7.0"
+PHASE7_VERSION = "1.8.0"
+SCIENTIFIC_BASELINE_ID = "phase7_scientific_baseline_v1_9"
 SYMBOL_REGISTRY_VERSION = "symbol_registry_v1"
 UNIVERSE_VERSION = "dual_universe_v3"
 CORE_UNIVERSE_VERSION = "core_universe_v1"

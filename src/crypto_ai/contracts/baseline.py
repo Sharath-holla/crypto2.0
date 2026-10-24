@@ -108,9 +108,9 @@ class Phase7ScientificBaseline:
 
 
 PHASE7_APPROVED_BASELINE = Phase7ScientificBaseline(
-    baseline_id="phase7_scientific_baseline_v1_8",
-    contract_version="1.0.9",
-    phase7_version="1.7.0",
+    baseline_id="phase7_scientific_baseline_v1_9",
+    contract_version="1.0.10",
+    phase7_version="1.8.0",
     configuration_hash="cc550337f1f4ee4654124bf6",
     feature_version="multiasset_features_v2",
     market_context_version="market_context_v2",
