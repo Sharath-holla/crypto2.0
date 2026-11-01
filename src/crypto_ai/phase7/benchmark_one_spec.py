@@ -69,6 +69,12 @@ def main() -> int:
     parser.add_argument("--output-root", type=Path)
     parser.add_argument("--enumerate", action="store_true")
     parser.add_argument(
+        "--prepare-only",
+        action="store_true",
+        help="With --execute: build and publish the single selected spec's prepared cache; "
+        "fit nothing, write no model/report/checkpoint.",
+    )
+    parser.add_argument(
         "--execute",
         action="store_true",
         help="Future owner-authorized real-data run; default only prints a plan.",
@@ -85,11 +91,19 @@ def main() -> int:
         if not args.spec_id or args.output_root is None:
             parser.error("--spec-id and isolated --output-root are required")
         result = benchmark_plan(config, args.spec_id, args.output_root)
+        if args.prepare_only and not args.execute:
+            parser.error("--prepare-only requires --execute")
         if args.execute:
             config.assert_cloud_execution_allowed()
-            from crypto_ai.phase7.resources import require_training_runtime_contract
+            from crypto_ai.phase7.resources import (
+                require_preparation_runtime_contract,
+                require_training_runtime_contract,
+            )
 
-            require_training_runtime_contract()
+            if args.prepare_only:
+                require_preparation_runtime_contract()
+            else:
+                require_training_runtime_contract()
             runtime = RuntimePaths.resolve(config.paths)
             root = runtime.artifact_root / dispatcher.run_identity(config)
             store = CheckpointStore(
@@ -136,6 +150,7 @@ def main() -> int:
                 benchmark_spec_id=args.spec_id,
                 benchmark_fold_id=result["fold_id"],
                 scope=PHASE7A_SCOPE,
+                prepare_only=args.prepare_only,
             )
     print(json.dumps(result, indent=2, sort_keys=True, default=str))
     return 0

@@ -41,6 +41,14 @@ def require_training_runtime_contract() -> None:
     reporting_period()
 
 
+def require_preparation_runtime_contract() -> None:
+    """Admission for preparation-only runs: a cache must be writable, nothing is fitted."""
+    if configured_floor("PHASE7_MIN_FREE_RAM_GIB", "PHASE7_MIN_AVAILABLE_RAM_GB") <= 0:
+        raise ValueError("preparation requires an explicit positive PHASE7_MIN_FREE_RAM_GIB floor")
+    if cache_mode_from_environment() not in {"auto", "rebuild"}:
+        raise ValueError("preparation requires PHASE7_CACHE_MODE=auto or rebuild")
+
+
 def resource_admission(
     stage: str,
     *,

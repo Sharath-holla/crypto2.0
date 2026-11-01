@@ -95,6 +95,19 @@ RESEARCH_VIEWS = ("CORE", "EXPANDING")
 PHASE7A_SCOPE = "PHASE7A_CORE20_PRIMARY"
 
 
+class PreparedOnlyComplete(Exception):
+    """Raised after the prepared cache for the single selected spec is published.
+
+    Preparation-only runs fit nothing, write no model/report/checkpoint and never
+    mark a spec or fold complete.
+    """
+
+    def __init__(self, cache_id: str, cache_path: Path | None) -> None:
+        super().__init__(f"prepared cache published: {cache_id}")
+        self.cache_id = cache_id
+        self.cache_path = cache_path
+
+
 def resolve_training_scope(
     config: Phase7Config, scope: str | None
 ) -> tuple[tuple[ExperimentSpec, ...], tuple[str, ...]]:
@@ -1260,7 +1273,17 @@ def run_phase7_training(config: Phase7Config, **kwargs: Any) -> dict[str, Any]:
     elif kwargs.get("benchmark_fold_id") is not None:
         raise ValueError("benchmark fold selector requires exactly one canonical spec")
     with owned_run(root, root.name, training_source_identity(), mode=mode):
-        return _run_phase7_training_owned(config, **kwargs)
+        try:
+            return _run_phase7_training_owned(config, **kwargs)
+        except PreparedOnlyComplete as done:
+            return {
+                "status": "PREPARED_ONLY",
+                "cache_id": done.cache_id,
+                "cache_path": str(done.cache_path),
+                "models_fitted": 0,
+                "specs_completed": 0,
+                "run_root": str(root),
+            }
 
 
 def _run_phase7_training_owned(
@@ -1279,8 +1302,11 @@ def _run_phase7_training_owned(
     benchmark_spec_id: str | None = None,
     benchmark_fold_id: str | None = None,
     scope: str | None = None,
+    prepare_only: bool = False,
 ) -> dict[str, Any]:
     config.assert_cloud_execution_allowed()
+    if prepare_only and benchmark_spec_id is None:
+        raise ValueError("preparation-only requires exactly one selected canonical spec")
     source_identity = training_source_identity()
     environment_identity = scientific_environment_identity()
     manifest = _load_gold_manifest(gold_manifest_path)
@@ -1827,6 +1853,15 @@ def _run_phase7_training_owned(
                         prepared_cache = cached_bundle.prepared
                 if prepared_cache is None:
                     raise AssertionError("Phase 7 prepared-segment cache was not initialized")
+                if prepare_only:
+                    if cache_mode not in {"auto", "rebuild"} or cached_bundle is None:
+                        raise ValueError(
+                            "preparation-only needs PHASE7_CACHE_MODE=auto|rebuild and a "
+                            "verified published cache; nothing was fitted"
+                        )
+                    raise PreparedOnlyComplete(
+                        cached_bundle.cache_id, durable_cache.cache_path(cache_identity)
+                    )
                 try:
                     report, files = _run_one(
                         spec,
