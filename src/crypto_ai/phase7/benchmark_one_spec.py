@@ -19,7 +19,7 @@ from crypto_ai.phase7.phase7a import (
     select_one_spec,
 )
 from crypto_ai.phase7.runtime import RuntimePaths
-from crypto_ai.phase7.training import run_phase7_training
+from crypto_ai.phase7.training import PHASE7A_SCOPE, run_phase7_training
 
 
 def benchmark_plan(config: Any, spec_id: str, output_root: Path) -> dict[str, Any]:
@@ -135,6 +135,7 @@ def main() -> int:
                 resume=True,
                 benchmark_spec_id=args.spec_id,
                 benchmark_fold_id=result["fold_id"],
+                scope=PHASE7A_SCOPE,
             )
     print(json.dumps(result, indent=2, sort_keys=True, default=str))
     return 0

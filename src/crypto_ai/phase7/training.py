@@ -92,6 +92,32 @@ from crypto_ai.phase7.universe import (
 )
 
 RESEARCH_VIEWS = ("CORE", "EXPANDING")
+PHASE7A_SCOPE = "PHASE7A_CORE20_PRIMARY"
+
+
+def resolve_training_scope(
+    config: Phase7Config, scope: str | None
+) -> tuple[tuple[ExperimentSpec, ...], tuple[str, ...]]:
+    """Resolve (specs, research views) for a training call.
+
+    Phase 7A is a first-class scope: CORE only, the 48 canonical A6 primary specs.
+    A Phase 7A configuration must be run with that explicit scope; the generic
+    58-spec x CORE+EXPANDING run is refused for it rather than silently expanded.
+    """
+
+    if scope is None:
+        if str(config.name).startswith("phase7a-"):
+            raise ValueError(
+                f"configuration {config.name!r} is a Phase 7A run and must be trained with "
+                f"scope={PHASE7A_SCOPE!r} (CORE only, 48 primary specs); refusing the generic "
+                "CORE+EXPANDING 58-spec expansion"
+            )
+        return phase7_experiment_specs(config), RESEARCH_VIEWS
+    if scope != PHASE7A_SCOPE:
+        raise ValueError(f"unknown training scope: {scope!r}")
+    from crypto_ai.phase7.phase7a import primary_specs
+
+    return primary_specs(config), ("CORE",)
 SCIENTIFIC_SOURCE_IDENTITY_ALGORITHM = "phase7_scientific_source_manifest_v2"
 TRAINING_SOURCE_IDENTITY_ALGORITHM = SCIENTIFIC_SOURCE_IDENTITY_ALGORITHM
 TRAINING_CRITICAL_SOURCE_FILES = (
@@ -1181,6 +1207,7 @@ def _run_one(
 def run_phase7_training(config: Phase7Config, **kwargs: Any) -> dict[str, Any]:
     """Every direct training call owns an isolated persistent filesystem lease."""
     config.assert_cloud_execution_allowed()
+    resolve_training_scope(config, kwargs.get("scope"))  # fail before any lease/filesystem work
     root = kwargs["run_root"]
     mode = "benchmark" if kwargs.get("benchmark_spec_id") is not None else "production"
     store = kwargs["checkpoint_store"]
@@ -1222,6 +1249,7 @@ def _run_phase7_training_owned(
     reporter: ProgressReporter | None = None,
     benchmark_spec_id: str | None = None,
     benchmark_fold_id: str | None = None,
+    scope: str | None = None,
 ) -> dict[str, Any]:
     config.assert_cloud_execution_allowed()
     source_identity = training_source_identity()
@@ -1236,8 +1264,7 @@ def _run_phase7_training_owned(
         config.prospective_holdout_start,
         config.schedule,
     )
-    specs = phase7_experiment_specs(config)
-    research_views = RESEARCH_VIEWS
+    specs, research_views = resolve_training_scope(config, scope)
     benchmark_only = benchmark_spec_id is not None
     if benchmark_only:
         from crypto_ai.phase7.benchmark_one_spec import benchmark_plan

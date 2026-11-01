@@ -380,13 +380,14 @@ def _core_universe_stage(
 
 
 def _training_patches(config: Phase7Config) -> ExitStack:
-    original_specs = training.phase7_experiment_specs
-    specs = tuple(spec for spec in original_specs(config) if spec.feature_group == "A6")
-    if specs != primary_specs(config):
+    """Bind the Phase 7A source file into the training identity.
+
+    Scope (CORE only, 48 primary specs) is a first-class ``scope=PHASE7A_SCOPE``
+    argument to ``training.run_phase7_training``; nothing is monkey-patched.
+    """
+    if training.resolve_training_scope(config, training.PHASE7A_SCOPE)[0] != primary_specs(config):
         raise AssertionError("Primary specification derivation is unstable")
     stack = ExitStack()
-    stack.enter_context(patch.object(training, "RESEARCH_VIEWS", ("CORE",)))
-    stack.enter_context(patch.object(training, "phase7_experiment_specs", lambda _: specs))
     source_files = training.TRAINING_CRITICAL_SOURCE_FILES
     if PHASE7A_SOURCE_FILE not in source_files:
         source_files = (*source_files, PHASE7A_SOURCE_FILE)
@@ -594,6 +595,7 @@ def _run_stage_owned(
                 ):
                     training.run_phase7_training(
                         config,
+                        scope=training.PHASE7A_SCOPE,
                         gold_manifest_path=gold_manifest_path,
                         registry=registry,
                         universe=universe,
@@ -659,6 +661,7 @@ def _run_stage_owned(
                 }
             summary = training.run_phase7_training(
                 config,
+                scope=training.PHASE7A_SCOPE,
                 gold_manifest_path=gold_manifest_path,
                 registry=registry,
                 universe=universe,
