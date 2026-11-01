@@ -4,16 +4,19 @@ import json
 import math
 import os
 import shutil
+import socket
 import time
 import uuid
 from collections.abc import Iterator
 from contextlib import ExitStack, contextmanager
 from dataclasses import dataclass
+from datetime import UTC, datetime
 from pathlib import Path
 from traceback import clear_frames
 from typing import Any
 
 import numpy as np
+import psutil
 import pyarrow as pa
 import pyarrow.ipc as ipc
 
@@ -22,6 +25,7 @@ from crypto_ai.phase5.folds import FoldPlan
 from crypto_ai.phase7.config import stable_hash
 from crypto_ai.phase7.folds import MultiAssetFoldData
 from crypto_ai.phase7.models import PreparedArchitectureInputs
+from crypto_ai.phase7.run_lease import owner_liveness
 from crypto_ai.phase7.runtime import CacheMode, emit_event, memory_snapshot
 from crypto_ai.phase7.telemetry import instrument
 
@@ -349,27 +353,101 @@ class PreparedDataCache:
         """Validate a just-published entry, independently of lookup/rebuild policy."""
         return self._load_validated(self.cache_path(identity), identity, plan)
 
+    @staticmethod
+    def _lock_owner_payload() -> dict[str, Any]:
+        try:
+            start: float | None = psutil.Process().create_time()
+        except psutil.Error:
+            start = None
+        return {
+            "schema": "phase7_cache_publication_lock_v1",
+            "pid": os.getpid(),
+            "hostname": socket.gethostname(),
+            "process_start_time": start,
+            "created_at": datetime.now(UTC).isoformat(),
+            "token": uuid.uuid4().hex,
+        }
+
+    def _try_break_stale_lock(self, lock: Path) -> bool:
+        """Archive a publication lock only when its owner is *proven* dead.
+
+        Proof requires same-host PID liveness checked against the recorded process
+        start time (PID reuse counts as dead).  Foreign host, unreadable/legacy
+        content, missing start time, or an unavailable kernel advisory lock all fail
+        closed.  Concurrent breakers are serialised by a flock guard (kernel-released
+        on death, so it can never itself be stale) and the lock content is re-verified
+        byte-for-byte under that guard before the atomic rename.
+        """
+        if os.name == "nt":
+            return False
+        try:
+            raw = lock.read_bytes()
+            owner = json.loads(raw)
+        except (FileNotFoundError, ValueError, UnicodeDecodeError):
+            return False
+        if not isinstance(owner, dict) or owner.get("schema") != "phase7_cache_publication_lock_v1":
+            return False
+        liveness = owner_liveness(owner)
+        if liveness not in {"DEAD", "DEAD_PID_REUSED"}:
+            return False
+        import fcntl
+
+        guard = os.open(self.root / ".publication.steal.guard", os.O_CREAT | os.O_RDWR, 0o600)
+        try:
+            try:
+                fcntl.flock(guard, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            except OSError:
+                return False
+            try:
+                if lock.read_bytes() != raw:
+                    return False
+            except FileNotFoundError:
+                return False
+            stale = self.root / f".publication.stale.{uuid.uuid4().hex}"
+            os.rename(lock, stale)
+            _fsync_directory(self.root)
+            emit_event(
+                "CACHE_LOCK_STALE_RECOVERED",
+                lock=lock,
+                archived=stale,
+                liveness=liveness,
+                dead_pid=owner.get("pid"),
+            )
+            return True
+        finally:
+            os.close(guard)
+
     @contextmanager
     def _publication_lock(self, cache_id: str, *, timeout_seconds: float = 60.0) -> Iterator[None]:
         lock = self.root / f".{cache_id}.lock"
         deadline = time.monotonic() + timeout_seconds
         descriptor: int | None = None
+        payload = self._lock_owner_payload()
         while descriptor is None:
             try:
                 descriptor = os.open(lock, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
             except FileExistsError as exc:
+                if self._try_break_stale_lock(lock):
+                    continue
                 if time.monotonic() >= deadline:
                     raise TimeoutError(
-                        f"timed out waiting for prepared-cache lock: {lock}"
+                        f"timed out waiting for prepared-cache lock (owner not proven dead): {lock}"
                     ) from exc
                 time.sleep(0.05)
         try:
-            os.write(descriptor, f"pid={os.getpid()}\n".encode("ascii"))
+            os.write(descriptor, json.dumps(payload, sort_keys=True).encode("utf-8"))
             os.fsync(descriptor)
             yield
         finally:
             os.close(descriptor)
-            lock.unlink(missing_ok=True)
+            try:
+                current = json.loads(lock.read_bytes())
+            except (FileNotFoundError, ValueError, UnicodeDecodeError):
+                current = None
+            if isinstance(current, dict) and current.get("token") == payload["token"]:
+                lock.unlink(missing_ok=True)
+            elif current is not None:
+                emit_event("CACHE_LOCK_REPLACED_WHILE_HELD", lock=lock)
 
     def _move_directory(self, source: Path, destination: Path) -> None:
         if source.parent != self.root or destination.parent != self.root:
