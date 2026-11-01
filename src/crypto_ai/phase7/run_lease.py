@@ -103,6 +103,32 @@ class RunLease:
             raise RunLeaseError("run already has an active filesystem lease") from exc
         self.descriptor = descriptor
 
+    def _create_exclusive(self, owner: dict[str, Any]) -> None:
+        """Create the lease with O_EXCL so correctness never relies on flock alone.
+
+        flock is advisory and unreliable on unqualified NFS; O_CREAT|O_EXCL creation
+        is the second, filesystem-level arbiter. A crash mid-write leaves unreadable
+        evidence that blocks the next run and needs explicit recovery (fail closed).
+        """
+        payload = json.dumps(owner, indent=2, sort_keys=True).encode("utf-8")
+        try:
+            descriptor = os.open(
+                self.path,
+                os.O_CREAT | os.O_EXCL | os.O_WRONLY | getattr(os, "O_NOFOLLOW", 0),
+                0o600,
+            )
+        except FileExistsError as exc:
+            raise RunLeaseError(
+                "run has retained lease evidence; explicit hash-bound recovery is required: "
+                + str(self.path)
+            ) from exc
+        try:
+            os.write(descriptor, payload)
+            os.fsync(descriptor)
+        finally:
+            os.close(descriptor)
+        fsync_directory(self.root)
+
     def _close_guard(self) -> None:
         if self.descriptor is not None:
             _unlock(self.descriptor)
@@ -132,7 +158,7 @@ class RunLease:
                 "mode": self.mode,
                 "acquired_at": datetime.now(UTC).isoformat(),
             }
-            atomic_json(self.path, self.owner)
+            self._create_exclusive(self.owner)
         except BaseException:
             self._close_guard()
             raise
