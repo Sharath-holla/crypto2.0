@@ -442,6 +442,25 @@ def _load_fold_context_source(
     return pa.concat_tables(parts)
 
 
+def finite_row_accounting(segments: dict[str, tuple[int, int]]) -> dict[str, Any]:
+    """Pre/post finite-filter row counts per segment so silent drops are visible."""
+    rows = {}
+    for name, (before, after) in segments.items():
+        if after > before or before < 0 or after < 0:
+            raise ValueError(f"invalid finite-row accounting for {name}: {before} -> {after}")
+        rows[name] = {
+            "pre_filter_rows": int(before),
+            "post_filter_rows": int(after),
+            "dropped_rows": int(before - after),
+            "dropped_fraction": (before - after) / before if before else 0.0,
+        }
+    return {
+        "policy": "drop_rows_with_nonfinite_or_null_feature_or_target",
+        "segments": rows,
+        "total_dropped_rows": sum(item["dropped_rows"] for item in rows.values()),
+    }
+
+
 def _finite(table: pa.Table, columns: tuple[str, ...], target: str) -> pa.Table:
     names = columns + (target,)
     mask: pa.Array | pa.ChunkedArray = pc.is_finite(table.column(names[0]))
@@ -1077,7 +1096,8 @@ def _run_one(
     emit_event("TEST_EVAL_START", fold_id=fold.plan.fold_id, spec=spec.name)
     test_started = time.monotonic()
     telemetry("TEST", "START", started=test_started)
-    test = _finite(fold.release_test(frozen_identity=frozen_identity), feature_columns, target)
+    raw_test = fold.release_test(frozen_identity=frozen_identity)
+    test = _finite(raw_test, feature_columns, target)
     test_model, test_covered = model.predict(test)
     calibrated = np.full(test.num_rows, np.nan)
     calibrated[test_covered] = calibrator.apply(test_model[test_covered])
@@ -1121,6 +1141,15 @@ def _run_one(
         "core_eligible_symbols": fold.eligibility_manifest["core_eligible_symbols"],
         "expansion_eligible_symbols": fold.eligibility_manifest["expansion_eligible_symbols"],
         "same_row_feature_columns": list(feature_columns),
+        "finite_row_accounting": finite_row_accounting(
+            {
+                "train": (fold.train.num_rows, train.num_rows),
+                "validation": (fold.validation.num_rows, validation.num_rows),
+                "calibration_a": (fold.calibration_a.num_rows, calibration_a.num_rows),
+                "calibration_b": (fold.calibration_b.num_rows, calibration_b.num_rows),
+                "test": (raw_test.num_rows, test.num_rows),
+            }
+        ),
         "segment_rows": {
             "train": train.num_rows,
             "validation": validation.num_rows,
