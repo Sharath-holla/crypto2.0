@@ -8,13 +8,16 @@ exit_file="${state_root}/worker-exit-code"
 
 mkdir -p "${state_root}" "$(dirname "${run_log}")"
 cd "${repository}"
+# shellcheck source=scripts/lib/phase7_portable.sh
+source "${repository}/scripts/lib/phase7_portable.sh"
+uv_bin="$(phase7_resolve_uv)" || exit 78
 
 # Bound log growth: rotate a large historical log before the worker starts
 # (single writer; never blocks worker startup).
 bash "${repository}/scripts/rotate_phase7_run_log.sh" "${run_log}" || true
 
 set +e
-/home/nssharath123/.local/bin/uv run crypto-ai phase7-research \
+"${uv_bin}" run crypto-ai phase7-research \
   --config configs/phase7/research_v1.toml \
   --resume 2>&1 | tee -a "${run_log}"
 pipeline_status=("${PIPESTATUS[@]}")

@@ -9,10 +9,16 @@ config="configs/phase7/research_core20_primary_v1.toml"
 
 mkdir -p "${state_root}" "$(dirname "${run_log}")"
 cd "${repository}"
+# shellcheck source=scripts/lib/phase7_portable.sh
+source "${repository}/scripts/lib/phase7_portable.sh"
+uv_bin="$(phase7_resolve_uv)" || exit 78
 bash "${repository}/scripts/rotate_phase7_run_log.sh" "${run_log}" || true
 
+# Empty when GNU time is unavailable (e.g. macOS); resource usage is then not recorded.
+time_prefix="$(phase7_gnu_time_prefix "${state_root}/fold1-resource-usage.txt")"
+
 run_stage() {
-  /home/nssharath123/.local/bin/uv run python scripts/run_phase7a_pipeline.py \
+  "${uv_bin}" run python scripts/run_phase7a_pipeline.py \
     --config "${config}" --stage "$1" --resume
 }
 
@@ -22,10 +28,10 @@ set +e
   run_stage universe &&
   run_stage data &&
   run_stage gold &&
-  /usr/bin/time -v -o "${state_root}/fold1-resource-usage.txt" \
-    /home/nssharath123/.local/bin/uv run python scripts/run_phase7a_pipeline.py \
+  ${time_prefix} \
+    "${uv_bin}" run python scripts/run_phase7a_pipeline.py \
     --config "${config}" --stage train --resume --canary &&
-  /home/nssharath123/.local/bin/uv run python scripts/phase7a_feasibility_gate.py \
+  "${uv_bin}" run python scripts/phase7a_feasibility_gate.py \
     --summary local_artifacts/phase7/phase7a-core20-primary-93f987736b1a79d26b773957/canary_summary.json \
     --launch "${state_root}/runtime-authority.json" \
     --output "${state_root}/feasibility-gate.json" &&

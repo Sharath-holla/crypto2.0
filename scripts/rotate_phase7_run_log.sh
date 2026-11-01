@@ -26,7 +26,9 @@ if pgrep -f '[c]rypto-ai phase7-research' >/dev/null 2>&1; then
   exit 0
 fi
 
-size_bytes="$(stat -c %s "${log_path}" 2>/dev/null || echo 0)"
+# shellcheck source=scripts/lib/phase7_portable.sh
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib/phase7_portable.sh"
+size_bytes="$(phase7_file_size "${log_path}")"
 threshold_bytes=$((rotate_mb * 1024 * 1024))
 if [[ "${size_bytes}" -lt "${threshold_bytes}" ]]; then
   exit 0
