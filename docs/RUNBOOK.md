@@ -13,7 +13,7 @@ uv run ruff check src tests
 The checked-in configuration defaults to the primary Binance USD-M futures dataset:
 
 ```powershell
-uv run crypto-ai download --config configs/data/binance.toml --start 2026-08-01T00:00:00Z --end 2026-08-01T01:00:00Z
+uv run crypto-ai download --config configs/data/binance.toml --start 2026-06-30T23:00:00Z --end 2026-07-01T00:00:00Z
 ```
 
 Expected output is one JSON line containing an absolute manifest path, status, and row count. Structured operational logs are written to stderr. A fully populated one-hour `5m` range normally has 12 rows.
@@ -21,13 +21,13 @@ Expected output is one JSON line containing an absolute manifest path, status, a
 For primary USD-M 1-minute data:
 
 ```powershell
-uv run crypto-ai download --config configs/data/binance.toml --interval 1m --start 2026-08-01T00:00:00Z --end 2026-08-01T01:00:00Z
+uv run crypto-ai download --config configs/data/binance.toml --interval 1m --start 2026-06-30T23:00:00Z --end 2026-07-01T00:00:00Z
 ```
 
 For the secondary Spot dataset, select the market explicitly:
 
 ```powershell
-uv run crypto-ai download --config configs/data/binance.toml --market spot --start 2026-08-01T00:00:00Z --end 2026-08-01T01:00:00Z
+uv run crypto-ai download --config configs/data/binance.toml --market spot --start 2026-06-30T23:00:00Z --end 2026-07-01T00:00:00Z
 ```
 
 ## Validate and inspect
@@ -149,7 +149,7 @@ Download a public derivatives dataset without an API key:
 
 ```powershell
 uv run crypto-ai download-market-data --kind funding `
-  --start 2026-07-01T00:00:00Z --end 2026-08-01T00:00:00Z
+  --start 2026-06-01T00:00:00Z --end 2026-07-01T00:00:00Z
 ```
 
 Supported kinds are `funding`, `mark_kline`, `index_kline`, `premium_kline`,

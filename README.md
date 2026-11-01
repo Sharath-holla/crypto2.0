@@ -125,10 +125,12 @@ V2 trades; this is a safe no-trade research result, not a deployment signal.
 Phase 4.1 preserves all Phase 3 and Phase 4 artifacts and adds the versioned
 `market_v2_1` research path. Official Binance public archives are the bulk
 source; REST is restricted to recent increments, metadata, and independently
-verified gap correction. The fixed research cutoff is `2026-08-01T00:00:00Z`.
+verified gap correction. The historical Phase 4.1 cutoff was `2026-08-01T00:00:00Z`; the Phase 7A research
+cutoff is `2026-07-01T00:00:00Z` (exclusive) and acquisition commands refuse any
+range that ends after it.
 
 ```powershell
-uv run crypto-ai download-archive --start 2020-01-01T00:00:00Z --end 2026-08-01T00:00:00Z --symbol BTCUSDT --interval 5m --market usdm
+uv run crypto-ai download-archive --start 2020-01-01T00:00:00Z --end 2026-07-01T00:00:00Z --symbol BTCUSDT --interval 5m --market usdm
 uv run crypto-ai promote-silver --manifest <bronze-manifest>
 uv run crypto-ai build-dataset-v2-1 --config configs/datasets/market_v2_1_core.toml
 uv run crypto-ai build-dataset-v2-1 --config configs/datasets/market_v2_1_derivatives.toml

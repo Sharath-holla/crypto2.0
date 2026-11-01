@@ -73,6 +73,10 @@ from crypto_ai.research.config import (
 )
 from crypto_ai.research.experiment import comparison_text, load_experiment, train_experiment
 from crypto_ai.research.gold import build_gold_dataset
+from crypto_ai.research_scope import (
+    GUARDED_ACQUISITION_COMMANDS,
+    assert_acquisition_in_research_scope,
+)
 
 
 def parse_datetime(value: str) -> datetime:
@@ -918,6 +922,10 @@ def _verify_hardened(args: argparse.Namespace) -> int:
 def main(argv: list[str] | None = None) -> int:
     args = _parser().parse_args(argv)
     configure_logging(args.log_level)
+    if args.command in GUARDED_ACQUISITION_COMMANDS:
+        assert_acquisition_in_research_scope(
+            getattr(args, "start", None), getattr(args, "end", None), command=args.command
+        )
     if args.command == "download":
         return _download(args)
     if args.command == "download-archive":
