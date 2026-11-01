@@ -132,8 +132,10 @@ def market_context(
         safe = np.where(has, counts, 1).astype(np.float64)
         mean = np.bincount(group, weights=values, minlength=group_count) / safe
         median, _ = _group_median(group, values, group_count)
-        positive = np.bincount(group, weights=(values > 0).astype(np.float64), minlength=group_count)
-        negative = np.bincount(group, weights=(values < 0).astype(np.float64), minlength=group_count)
+        is_positive = (values > 0).astype(np.float64)
+        is_negative = (values < 0).astype(np.float64)
+        positive = np.bincount(group, weights=is_positive, minlength=group_count)
+        negative = np.bincount(group, weights=is_negative, minlength=group_count)
         deviation = values - mean[group]
         variance = np.bincount(group, weights=deviation * deviation, minlength=group_count) / safe
         stats = {

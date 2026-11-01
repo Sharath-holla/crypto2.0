@@ -624,7 +624,9 @@ def attach_fold_context(table: pa.Table, context: pa.Table) -> pa.Table:
 
     symbols = np.asarray(table.column("symbol").combine_chunks().to_pylist(), dtype=object)
     feature_times = _times(table, "feature_time")
-    context_symbols = np.asarray(context.column("symbol").combine_chunks().to_pylist(), dtype=object)
+    context_symbols = np.asarray(
+        context.column("symbol").combine_chunks().to_pylist(), dtype=object
+    )
     context_times = _times(context, "feature_time")
     vocabulary = np.unique(np.concatenate([symbols.astype(str), context_symbols.astype(str)]))
     table_codes = np.searchsorted(vocabulary, symbols.astype(str)).astype(np.int64)

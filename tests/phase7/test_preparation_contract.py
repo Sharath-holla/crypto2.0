@@ -17,7 +17,9 @@ def _clean(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 @pytest.mark.parametrize("mode", ["auto", "rebuild"])
-def test_preparation_accepts_writable_cache_modes(monkeypatch: pytest.MonkeyPatch, mode: str) -> None:
+def test_preparation_accepts_writable_cache_modes(
+    monkeypatch: pytest.MonkeyPatch, mode: str
+) -> None:
     monkeypatch.setenv("PHASE7_MIN_FREE_RAM_GIB", "4")
     monkeypatch.setenv("PHASE7_CACHE_MODE", mode)
     require_preparation_runtime_contract()

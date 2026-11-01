@@ -93,7 +93,8 @@ def test_unprovable_liveness_fails_closed(tmp_path: Path, overrides: dict[str, o
     # A pid that is gone is dead whatever else is recorded, so use a dead pid only for
     # cases where the *other* evidence is what makes liveness unprovable. A live pid with
     # no recorded start time cannot be told apart from a reused pid: unprovable.
-    pid = os.getpid() if overrides.get("process_start_time", 0) is None else _dead_child_identity()[0]
+    live_without_start_time = overrides.get("process_start_time", 0) is None
+    pid = os.getpid() if live_without_start_time else _dead_child_identity()[0]
     lock = _write_lock(tmp_path, pid=pid, **overrides)
     before = lock.read_bytes()
     with pytest.raises(TimeoutError), _cache(tmp_path)._publication_lock(

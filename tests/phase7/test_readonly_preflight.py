@@ -9,7 +9,14 @@ import pytest
 
 from crypto_ai.phase7.runtime import RuntimePaths
 
-OUTPUTS = ("artifact_root", "cache_root", "checkpoint_root", "model_root", "report_root", "log_root")
+OUTPUTS = (
+    "artifact_root",
+    "cache_root",
+    "checkpoint_root",
+    "model_root",
+    "report_root",
+    "log_root",
+)
 
 
 def _paths(tmp_path: Path, **overrides: Path) -> RuntimePaths:
@@ -85,7 +92,8 @@ def test_output_input_overlap_is_rejected_without_touching_the_filesystem(
         "equal": protected_dir,
     }[relation]
     other = "gold_root" if protected == "data_root" else "data_root"
-    paths = _paths(tmp_path, **{protected: protected_dir, output: target, other: tmp_path / "other"})
+    mapping = {protected: protected_dir, output: target, other: tmp_path / "other"}
+    paths = _paths(tmp_path, **mapping)
     (tmp_path / "other").mkdir()
     before = _snapshot(tmp_path)
     errors = paths.validate(create_outputs=create_outputs)

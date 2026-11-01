@@ -51,7 +51,8 @@ def _rows(horizon: int, missing: set[tuple[str, int]]) -> pa.Table:
     placeholder = pa.array([np.nan] * table.num_rows)
     for name in CONTEXT_OUTPUTS:
         table = table.append_column(
-            name, pa.array([""] * table.num_rows) if name == "market_membership_hash" else placeholder
+            name,
+            pa.array([""] * table.num_rows) if name == "market_membership_hash" else placeholder,
         )
     return table
 
