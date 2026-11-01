@@ -43,6 +43,7 @@ from crypto_ai.phase7.economics import (
     select_cal_b_thresholds,
 )
 from crypto_ai.phase7.environment import scientific_environment_identity
+from crypto_ai.phase7.features import FOLD_CONTEXT_SOURCE_COLUMNS, FOLD_CONTEXT_VERSION
 from crypto_ai.phase7.folds import (
     IneligibleFoldError,
     MultiAssetFoldData,
@@ -118,6 +119,7 @@ TRAINING_CRITICAL_SOURCE_FILES = (
     "src/crypto_ai/phase7/acquisition.py",
     "src/crypto_ai/phase7/backend.py",
     "src/crypto_ai/phase7/config.py",
+    "src/crypto_ai/phase7/cross_section.py",
     "src/crypto_ai/phase7/economics.py",
     "src/crypto_ai/phase7/features.py",
     "src/crypto_ai/phase7/folds.py",
@@ -364,6 +366,7 @@ def _load_fold_rows(
     horizon_minutes: int,
     *,
     dataset: ds.Dataset | None = None,
+    columns: tuple[str, ...] | None = None,
 ) -> pa.Table:
     if dataset is None:
         paths = [record["path"] for record in manifest["partition_files"]]
@@ -383,9 +386,34 @@ def _load_fold_rows(
         condition = (
             (ds.field("year") >= plan.train_start.year) & (ds.field("year") <= end_year) & condition
         )
-    return dataset.to_table(filter=condition).sort_by(
-        [("feature_time", "ascending"), ("symbol", "ascending")]
-    )
+    return dataset.to_table(
+        filter=condition, **({"columns": list(columns)} if columns is not None else {})
+    ).sort_by([("feature_time", "ascending"), ("symbol", "ascending")])
+
+
+def _load_fold_context_source(
+    manifest: dict[str, Any],
+    plan: FoldPlan,
+    horizons_minutes: tuple[int, ...],
+    *,
+    dataset: ds.Dataset | None = None,
+) -> pa.Table:
+    """Feature-only rows for every horizon, the horizon-invariant source of fold context.
+
+    Cross-sectional context at time t must not depend on whether one horizon's label
+    exists (M-01), so it is computed from the union of all horizons' rows.
+    """
+    parts = [
+        _load_fold_rows(
+            manifest,
+            plan,
+            horizon,
+            columns=FOLD_CONTEXT_SOURCE_COLUMNS,
+            **({"dataset": dataset} if dataset is not None else {}),
+        )
+        for horizon in horizons_minutes
+    ]
+    return pa.concat_tables(parts)
 
 
 def _finite(table: pa.Table, columns: tuple[str, ...], target: str) -> pa.Table:
@@ -524,6 +552,7 @@ def _prepared_cache_identity(
         "matrix_dtype": "float64",
         "matrix_code_identity": source_identity["manifest_sha256"],
         "symbol_encoding_contract": "deferred_sorted_train_symbols_one_hot_v1",
+        "fold_context_version": FOLD_CONTEXT_VERSION,
         "scientific_environment": scientific_environment_identity(),
     }
 
@@ -1257,6 +1286,7 @@ def _run_phase7_training_owned(
         # Keep only the current horizon and prepared key. Durable entries remain
         # on disk; advancing a target/horizon releases prior Arrow/memmap payloads.
         sliced: dict[int, MultiAssetFoldData] = {}
+        fold_context: dict[str, pa.Table] = {}
         descriptor_identity = causal_descriptor_identity(descriptors, plan.train_end)
 
         def load_payload(
@@ -1265,6 +1295,7 @@ def _run_phase7_training_owned(
             *,
             cached: Any = cached,
             sliced: Any = sliced,
+            fold_context: Any = fold_context,
             plan: Any = plan,
             descriptor_identity: str = descriptor_identity,
         ) -> MultiAssetFoldData:
@@ -1326,6 +1357,13 @@ def _run_phase7_training_owned(
                     spec.horizon_minutes,
                     **({"dataset": gold_dataset} if gold_dataset is not None else {}),
                 )
+                if "source" not in fold_context:
+                    fold_context["source"] = _load_fold_context_source(
+                        manifest,
+                        plan,
+                        config.targets.horizons_minutes,
+                        **({"dataset": gold_dataset} if gold_dataset is not None else {}),
+                    )
                 sliced[spec.horizon_minutes] = slice_multiasset_fold(
                     table,
                     plan,
@@ -1340,6 +1378,7 @@ def _run_phase7_training_owned(
                     cluster_count=config.models.cluster_count,
                     seed=config.models.seed,
                     unusable_segments=unusable_segments,
+                    context_source=fold_context["source"],
                 )
                 emit_event(
                     "FOLD_LOAD_DONE",

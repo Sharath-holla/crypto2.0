@@ -189,6 +189,7 @@ def slice_multiasset_fold(
     cluster_count: int,
     seed: int,
     unusable_segments: tuple[CausalDataGap, ...] = (),
+    context_source: pa.Table | None = None,
 ) -> MultiAssetFoldData:
     policy = expansion_policy or build_expansion_policy(universe, universe_config)
     membership = select_fold_active_universe(
@@ -230,7 +231,16 @@ def slice_multiasset_fold(
             f"{plan.fold_id} has point-in-time eligible symbols but zero rows "
             "in the fold table; Gold coverage defect, not an INELIGIBLE outcome"
         )
-    eligible_table = bind_fold_cross_sectional_context(eligible_table)
+    # Cross-sectional context must be built from all horizons' feature rows (a
+    # horizon-invariant superset), never from the rows that happen to carry a valid
+    # label for this horizon; otherwise context at time t reveals future label
+    # availability (M-01). The source is restricted to the same eligible symbols.
+    eligible_context = (
+        _filter_symbols(context_source, eligible_symbols) if context_source is not None else None
+    )
+    eligible_table = bind_fold_cross_sectional_context(
+        eligible_table, context_source=eligible_context
+    )
     sliced: HardenedFoldData = slice_hardened_fold(
         eligible_table,
         plan,

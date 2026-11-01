@@ -11,6 +11,7 @@ import pyarrow as pa
 from crypto_ai.domain import interval_milliseconds
 from crypto_ai.phase6.features import _higher_timeframe_values
 from crypto_ai.phase7.config import FEATURE_VERSION, MARKET_CONTEXT_VERSION, FeatureConfig
+from crypto_ai.phase7.cross_section import cross_sectional_percentile, market_context
 from crypto_ai.phase7.registry import SymbolRegistry
 
 BASE_FEATURE_COLUMNS = (
@@ -479,15 +480,8 @@ def _anchor_array(
 def _cross_sectional_percentile(
     feature_times: np.ndarray, values: np.ndarray, active: np.ndarray
 ) -> np.ndarray:
-    result = np.full(len(values), np.nan)
-    for timestamp in np.unique(feature_times):
-        rows = np.flatnonzero((feature_times == timestamp) & active & np.isfinite(values))
-        if not len(rows):
-            continue
-        order = rows[np.argsort(values[rows], kind="mergesort")]
-        denominator = max(1, len(order) - 1)
-        result[order] = np.arange(len(order), dtype=np.float64) / denominator
-    return result
+    """Grouped percentile rank; see :mod:`crypto_ai.phase7.cross_section`."""
+    return cross_sectional_percentile(feature_times, values, active)
 
 
 def _market_context(
@@ -498,31 +492,12 @@ def _market_context(
     volatility: np.ndarray,
     taker_flow: np.ndarray,
 ) -> tuple[dict[str, np.ndarray], dict[int, tuple[str, ...]]]:
-    outputs = {name: np.full(len(symbols), np.nan) for name in MARKET_CONTEXT_COLUMNS}
-    membership: dict[int, tuple[str, ...]] = {}
-    for timestamp in np.unique(feature_times):
-        rows = np.flatnonzero((feature_times == timestamp) & active)
-        member_symbols = tuple(sorted(str(symbols[index]) for index in rows))
-        membership[int(timestamp)] = member_symbols
-        valid_return = rows[np.isfinite(returns[rows])]
-        valid_volatility = rows[np.isfinite(volatility[rows])]
-        valid_flow = rows[np.isfinite(taker_flow[rows])]
-        if len(valid_return):
-            values = returns[valid_return]
-            outputs["market_mean_return"][rows] = float(np.mean(values))
-            outputs["market_median_return"][rows] = float(np.median(values))
-            outputs["market_pct_positive"][rows] = float(np.mean(values > 0))
-            outputs["market_pct_negative"][rows] = float(np.mean(values < 0))
-            outputs["market_return_dispersion"][rows] = float(np.std(values, ddof=0))
-        if len(valid_volatility):
-            outputs["market_median_volatility"][rows] = float(
-                np.median(volatility[valid_volatility])
-            )
-        if len(valid_flow):
-            outputs["market_median_taker_flow_imbalance"][rows] = float(
-                np.median(taker_flow[valid_flow])
-            )
-        outputs["market_member_count"][rows] = len(rows)
+    """Grouped market context; see :mod:`crypto_ai.phase7.cross_section`."""
+    outputs, membership = market_context(
+        symbols, feature_times, active, returns, volatility, taker_flow
+    )
+    if tuple(outputs) != MARKET_CONTEXT_COLUMNS:
+        raise AssertionError("market context column contract drifted")
     return outputs, membership
 
 
@@ -536,67 +511,147 @@ def validate_multiasset_primary_key(table: pa.Table) -> None:
         raise ValueError("duplicate multi-asset primary key (symbol, feature_time)")
 
 
-def bind_fold_cross_sectional_context(table: pa.Table) -> pa.Table:
-    """Rebuild model-facing cross-sectional context from one frozen fold universe.
+FOLD_CONTEXT_VERSION = "fold_context_v3_label_independent"
+FOLD_CONTEXT_SOURCE_COLUMNS = (
+    "symbol",
+    "feature_time",
+    "return_5m",
+    "realized_volatility_1h",
+    "taker_flow_imbalance",
+    *CROSS_SECTIONAL_SOURCE_COLUMNS,
+)
+_FOLD_CONTEXT_OUTPUT_COLUMNS = (
+    "trailing_liquidity_percentile",
+    "trailing_volatility_percentile",
+    "trade_intensity_percentile",
+    *MARKET_CONTEXT_COLUMNS,
+    "market_membership_hash",
+)
 
-    The acquisition dataset can contain symbols admitted by later folds.  Its
-    preview context must therefore never be consumed by a model.  This binding
-    runs after fold eligibility filtering and replaces every universe-dependent
-    value using only rows from that fold's frozen active-symbol set.
+
+def _membership_hashes(
+    feature_times: np.ndarray, membership: dict[int, tuple[str, ...]]
+) -> list[str]:
+    """Hash each distinct membership once, then map to rows (not one SHA per row)."""
+    cache: dict[tuple[str, ...], str] = {}
+    unique_times, inverse = np.unique(feature_times, return_inverse=True)
+    per_time: list[str] = []
+    for timestamp in unique_times:
+        members = membership[int(timestamp)]
+        digest = cache.get(members)
+        if digest is None:
+            digest = hashlib.sha256("|".join(members).encode()).hexdigest()[:16]
+            cache[members] = digest
+        per_time.append(digest)
+    lookup = np.asarray(per_time, dtype=object)
+    return lookup[inverse.reshape(-1)].tolist()
+
+
+def build_fold_context_table(source: pa.Table) -> pa.Table:
+    """Cross-sectional context keyed by (symbol, feature_time), built from features only.
+
+    ``source`` may carry the same (symbol, feature_time) once per target horizon
+    (Gold is long-format).  Duplicates must agree exactly on every source value;
+    they are collapsed so context at a timestamp is a function of the feature rows
+    present at that timestamp and never of which horizon is being modelled.
+    Label availability for any single horizon therefore cannot change the context
+    seen by another horizon (M-01).
     """
 
-    required = {
-        "symbol",
-        "feature_time",
-        "return_5m",
-        "realized_volatility_1h",
-        "taker_flow_imbalance",
-        *CROSS_SECTIONAL_SOURCE_COLUMNS,
-        *MARKET_CONTEXT_COLUMNS,
-        "trailing_liquidity_percentile",
-        "trailing_volatility_percentile",
-        "trade_intensity_percentile",
-        "market_membership_hash",
-    }
-    missing = required - set(table.column_names)
+    missing = set(FOLD_CONTEXT_SOURCE_COLUMNS) - set(source.column_names)
     if missing:
-        raise ValueError(f"fold context binding missing columns: {sorted(missing)}")
+        raise ValueError(f"fold context source missing columns: {sorted(missing)}")
+    source = source.select(list(FOLD_CONTEXT_SOURCE_COLUMNS))
+    symbols = np.asarray(source.column("symbol").combine_chunks().to_pylist(), dtype=object)
+    feature_times = _times(source, "feature_time")
+    arrays = {
+        name: _float_column(source, name)
+        for name in FOLD_CONTEXT_SOURCE_COLUMNS
+        if name not in {"symbol", "feature_time"}
+    }
+    _, codes = np.unique(symbols.astype(str), return_inverse=True)
+    codes = codes.reshape(-1)
+    order = np.lexsort((np.arange(len(codes)), feature_times, codes))
+    sorted_codes = codes[order]
+    sorted_times = feature_times[order]
+    first = np.ones(len(order), dtype=bool)
+    first[1:] = (sorted_codes[1:] != sorted_codes[:-1]) | (sorted_times[1:] != sorted_times[:-1])
+    representative = np.maximum.accumulate(np.where(first, np.arange(len(order)), 0))
+    for name, values in arrays.items():
+        ordered = values[order]
+        if not np.array_equal(ordered, ordered[representative], equal_nan=True):
+            raise ValueError(
+                f"fold context source disagrees across duplicate (symbol, feature_time) for {name}"
+            )
+    keep = order[first]
+    kept_symbols = symbols[keep]
+    kept_times = feature_times[keep]
+    active = np.ones(len(keep), dtype=bool)
+    columns: dict[str, Any] = {
+        "symbol": pa.array(kept_symbols.tolist(), type=pa.string()),
+        "feature_time": source.column("feature_time").combine_chunks().take(pa.array(keep)),
+    }
+    for name, source_name in zip(
+        (
+            "trailing_liquidity_percentile",
+            "trailing_volatility_percentile",
+            "trade_intensity_percentile",
+        ),
+        CROSS_SECTIONAL_SOURCE_COLUMNS,
+        strict=True,
+    ):
+        columns[name] = pa.array(
+            _cross_sectional_percentile(kept_times, arrays[source_name][keep], active)
+        )
+    market, membership = _market_context(
+        kept_symbols,
+        kept_times,
+        active,
+        arrays["return_5m"][keep],
+        arrays["realized_volatility_1h"][keep],
+        arrays["taker_flow_imbalance"][keep],
+    )
+    for name in MARKET_CONTEXT_COLUMNS:
+        columns[name] = pa.array(market[name])
+    columns["market_membership_hash"] = pa.array(
+        _membership_hashes(kept_times, membership), type=pa.string()
+    )
+    return pa.table(columns)
+
+
+def attach_fold_context(table: pa.Table, context: pa.Table) -> pa.Table:
+    """Replace universe-dependent columns of ``table`` from a horizon-invariant context."""
+
     symbols = np.asarray(table.column("symbol").combine_chunks().to_pylist(), dtype=object)
     feature_times = _times(table, "feature_time")
-    active = np.ones(table.num_rows, dtype=bool)
-    replacements: dict[str, np.ndarray | list[str]] = {
-        "trailing_liquidity_percentile": _cross_sectional_percentile(
-            feature_times,
-            _float_column(table, CROSS_SECTIONAL_SOURCE_COLUMNS[0]),
-            active,
-        ),
-        "trailing_volatility_percentile": _cross_sectional_percentile(
-            feature_times,
-            _float_column(table, CROSS_SECTIONAL_SOURCE_COLUMNS[1]),
-            active,
-        ),
-        "trade_intensity_percentile": _cross_sectional_percentile(
-            feature_times,
-            _float_column(table, CROSS_SECTIONAL_SOURCE_COLUMNS[2]),
-            active,
-        ),
-    }
-    market, membership = _market_context(
-        symbols,
-        feature_times,
-        active,
-        _float_column(table, "return_5m"),
-        _float_column(table, "realized_volatility_1h"),
-        _float_column(table, "taker_flow_imbalance"),
-    )
-    replacements.update(market)
-    replacements["market_membership_hash"] = [
-        hashlib.sha256("|".join(membership[int(timestamp)]).encode()).hexdigest()[:16]
-        for timestamp in feature_times
-    ]
+    context_symbols = np.asarray(context.column("symbol").combine_chunks().to_pylist(), dtype=object)
+    context_times = _times(context, "feature_time")
+    vocabulary = np.unique(np.concatenate([symbols.astype(str), context_symbols.astype(str)]))
+    table_codes = np.searchsorted(vocabulary, symbols.astype(str)).astype(np.int64)
+    context_codes = np.searchsorted(vocabulary, context_symbols.astype(str)).astype(np.int64)
+    lowest = int(min(feature_times.min(initial=0), context_times.min(initial=0)))
+    span = int(max(feature_times.max(initial=0), context_times.max(initial=0))) - lowest + 1
+    if span * (len(vocabulary) + 1) >= 2**62:
+        raise ValueError("fold context key space too large for exact integer join")
+    table_keys = table_codes * span + (feature_times - lowest)
+    context_keys = context_codes * span + (context_times - lowest)
+    order = np.argsort(context_keys, kind="mergesort")
+    sorted_keys = context_keys[order]
+    if len(sorted_keys) > 1 and np.any(sorted_keys[1:] == sorted_keys[:-1]):
+        raise ValueError("fold context has duplicate (symbol, feature_time) keys")
+    if len(table_keys) and not len(sorted_keys):
+        raise ValueError("fold context is empty but model rows exist")
+    position = np.minimum(np.searchsorted(sorted_keys, table_keys), max(len(sorted_keys) - 1, 0))
+    if len(table_keys) and not np.all(sorted_keys[position] == table_keys):
+        raise ValueError(
+            "fold context does not cover every model row; context must be built from a "
+            "superset of the rows being modelled"
+        )
+    take = pa.array(order[position])
     result = table
-    for name, values in replacements.items():
-        result = result.set_column(result.schema.get_field_index(name), name, pa.array(values))
+    for name in _FOLD_CONTEXT_OUTPUT_COLUMNS:
+        values = context.column(name).combine_chunks().take(take)
+        result = result.set_column(result.schema.get_field_index(name), name, values)
     scope = pa.array(["FOLD_ACTIVE_SYMBOLS"] * result.num_rows)
     if "cross_sectional_context_scope" in result.column_names:
         result = result.set_column(
@@ -608,6 +663,30 @@ def bind_fold_cross_sectional_context(table: pa.Table) -> pa.Table:
         result = result.append_column("cross_sectional_context_scope", scope)
     validate_multiasset_primary_key(result)
     return result
+
+
+def bind_fold_cross_sectional_context(
+    table: pa.Table, *, context_source: pa.Table | None = None
+) -> pa.Table:
+    """Rebuild model-facing cross-sectional context from one frozen fold universe.
+
+    The acquisition dataset can contain symbols admitted by later folds, so its
+    preview context must never be consumed by a model.  Context is rebuilt from
+    ``context_source`` (all horizons of the already universe-filtered fold rows)
+    when supplied, otherwise from ``table`` itself.  Production must supply the
+    all-horizon source: a single horizon's rows exist only where that horizon's
+    label is available, which would leak future availability into context (M-01).
+    """
+
+    required = {
+        *FOLD_CONTEXT_SOURCE_COLUMNS,
+        *_FOLD_CONTEXT_OUTPUT_COLUMNS,
+    }
+    missing = required - set(table.column_names)
+    if missing:
+        raise ValueError(f"fold context binding missing columns: {sorted(missing)}")
+    context = build_fold_context_table(context_source if context_source is not None else table)
+    return attach_fold_context(table, context)
 
 
 def generate_multiasset_features(
