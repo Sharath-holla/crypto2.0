@@ -17,6 +17,8 @@ from typing import Any
 
 import numpy as np
 
+from crypto_ai.research.metrics import directional_accuracy
+
 
 @dataclass(frozen=True)
 class TrainingMetricScope:
@@ -51,7 +53,10 @@ def display_metrics(actual: np.ndarray, predicted: np.ndarray) -> list[tuple[str
     return [
         ("mae", float(np.mean(np.abs(residual))), False),
         ("rmse", float(np.sqrt(np.mean(residual * residual))), False),
-        ("directional_accuracy", float(np.mean(np.sign(actual) == np.sign(predicted))), True),
+        # CHANGED BY CLAUDE (2026-11-02, finding L-01): zero actuals excluded from the denominator.
+        # OLD CODE (kept for reference):
+        # ("directional_accuracy", float(np.mean(np.sign(actual) == np.sign(predicted))), True),
+        ("directional_accuracy", directional_accuracy(actual, predicted), True),
     ]
 
 
