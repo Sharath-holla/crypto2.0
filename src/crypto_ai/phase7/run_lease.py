@@ -16,7 +16,7 @@ from typing import Any
 import psutil
 
 from crypto_ai.data.storage import file_sha256
-from crypto_ai.phase7.artifacts import atomic_json, fsync_directory
+from crypto_ai.phase7.artifacts import atomic_json, durable_fsync, fsync_directory
 
 
 class RunLeaseError(RuntimeError):
@@ -96,7 +96,8 @@ class RunLease:
         try:
             if os.fstat(descriptor).st_size == 0:
                 os.write(descriptor, b"0")
-                os.fsync(descriptor)
+                # CHANGED BY CLAUDE (L-06). OLD CODE: os.fsync(descriptor)
+                durable_fsync(descriptor)
             _lock(descriptor)
         except OSError as exc:
             os.close(descriptor)
@@ -124,7 +125,8 @@ class RunLease:
             ) from exc
         try:
             os.write(descriptor, payload)
-            os.fsync(descriptor)
+            # CHANGED BY CLAUDE (L-06). OLD CODE: os.fsync(descriptor)
+            durable_fsync(descriptor)
         finally:
             os.close(descriptor)
         fsync_directory(self.root)

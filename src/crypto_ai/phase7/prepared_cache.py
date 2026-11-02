@@ -22,6 +22,7 @@ import pyarrow.ipc as ipc
 
 from crypto_ai.data.storage import file_sha256
 from crypto_ai.phase5.folds import FoldPlan
+from crypto_ai.phase7.artifacts import durable_fsync
 from crypto_ai.phase7.config import stable_hash
 from crypto_ai.phase7.folds import MultiAssetFoldData
 from crypto_ai.phase7.models import PreparedArchitectureInputs
@@ -153,7 +154,8 @@ def _fsync_file(path: Path) -> None:
         # replace remains the portable local-development guarantee.
         return
     with path.open("rb") as stream:
-        os.fsync(stream.fileno())
+        # CHANGED BY CLAUDE (L-06). OLD CODE: os.fsync(stream.fileno())
+        durable_fsync(stream.fileno())
 
 
 def _fsync_directory(path: Path) -> None:
@@ -161,7 +163,8 @@ def _fsync_directory(path: Path) -> None:
         return
     descriptor = os.open(path, os.O_RDONLY)
     try:
-        os.fsync(descriptor)
+        # CHANGED BY CLAUDE (L-06). OLD CODE: os.fsync(descriptor)
+        durable_fsync(descriptor)
     finally:
         os.close(descriptor)
 
@@ -437,7 +440,8 @@ class PreparedDataCache:
                 time.sleep(0.05)
         try:
             os.write(descriptor, json.dumps(payload, sort_keys=True).encode("utf-8"))
-            os.fsync(descriptor)
+            # CHANGED BY CLAUDE (L-06). OLD CODE: os.fsync(descriptor)
+            durable_fsync(descriptor)
             yield
         finally:
             os.close(descriptor)

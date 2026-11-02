@@ -46,9 +46,25 @@ def checkpoint_metadata_compatible(actual: dict[str, Any], expected: dict[str, A
     return normalized == expected
 
 
+# CHANGED BY CLAUDE (2026-11-02, finding L-06): macOS os.fsync does not flush the drive cache;
+# F_FULLFSYNC does. One small helper picks the right call; every phase7 fsync now goes
+# through it. Non-macOS behaviour is exactly os.fsync, as before.
+def durable_fsync(descriptor: int) -> None:
+    if sys.platform == "darwin":
+        import fcntl
+
+        try:
+            fcntl.fcntl(descriptor, fcntl.F_FULLFSYNC)
+            return
+        except OSError:
+            pass  # a few filesystems reject F_FULLFSYNC; fall back to plain fsync
+    os.fsync(descriptor)
+
+
 def fsync_file(path: Path) -> None:
     with path.open("r+b") as stream:
-        os.fsync(stream.fileno())
+        # OLD CODE (kept for reference): os.fsync(stream.fileno())
+        durable_fsync(stream.fileno())
 
 
 def fsync_directory(path: Path) -> None:
@@ -56,7 +72,8 @@ def fsync_directory(path: Path) -> None:
         return
     descriptor = os.open(path, os.O_RDONLY)
     try:
-        os.fsync(descriptor)
+        # OLD CODE (kept for reference): os.fsync(descriptor)
+        durable_fsync(descriptor)
     finally:
         os.close(descriptor)
 
