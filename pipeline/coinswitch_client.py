@@ -1,3 +1,6 @@
+# LEGACY – NOT USED BY RESEARCH. Order-capable prototype; never import or run it from research,
+# training or evaluation code. (Header added by Claude, 2026-11-02, finding M-08; no other
+# change was made to this file. Proposal to move it to a separate repo: docs/phase7b_hardening_report.md)
 # DEPRECATED: Venue-specific legacy adapter retained only for audit. ADR-017
 # selects Binance as the sole future venue. Do not configure or call this client.
 """

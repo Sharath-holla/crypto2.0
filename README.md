@@ -4,6 +4,13 @@
 
 This project is currently **ON HOLD**.
 
+> **Current working branch (updated by Claude, 2026-11-02, finding L-09):** Phase 7A work continues on
+> `fix/phase7b-hardening-20261102`, which builds on
+> `fix/phase7a-scientific-reconciliation-20261101`. Read
+> [docs/PHASE7A_RECONCILIATION_2026_11_01.md](docs/PHASE7A_RECONCILIATION_2026_11_01.md) and
+> [docs/phase7b_hardening_report.md](docs/phase7b_hardening_report.md) for the current state and
+> the exact RunPod commands. The older notes below are kept as history.
+
 **Changing laptops:** start with [the 24 October 2026 migration guide](docs/LAPTOP_MIGRATION_2026_10_24.md).
 The latest local remediation is preserved on `codex/laptop-migration-20261024`, not merged into
 `main`. Clone that branch to restore this working state. GitHub does not contain the ignored
@@ -45,6 +52,13 @@ uv sync --extra dev
 ```powershell
 uv run pytest
 uv run ruff check src tests
+```
+
+The Linux-only verification gate (`verify_linux`) reports "Linux required" on a Mac or Windows
+machine; run it on the RunPod/Linux host (added by Claude, finding L-09):
+
+```bash
+uv run python -m crypto_ai.phase7.verify_linux --repository "$PWD" --output-root "$PWD/.pytest-linux-verification"
 ```
 
 ## Download a small BTC sample
@@ -91,6 +105,11 @@ uv run crypto-ai promote-silver `
 Failed datasets are referenced under `data/quarantine/`; Bronze files are never modified. See `docs/DATA_QUALITY.md` for the implemented checks and exact promotion rules.
 
 ## Build Gold and train Phase 3 baselines
+
+> **Historical (finding L-09).** This section and the Phase 4 section below document the original
+> July 2026 single-asset flow and datasets. They are kept for reproducibility, are not the current
+> Phase 7 flow, and must not be used to download or touch data after the
+> `2026-07-01T00:00:00Z` research cutoff. See "Phase 7 multi-asset research" for the current flow.
 
 ```powershell
 uv run crypto-ai build-dataset --config configs/datasets/btcusdt_5m_july_2026.toml
@@ -238,6 +257,20 @@ Do not run it locally. See `docs/PHASE7_UNIVERSE.md`,
 `docs/PHASE7_MULTI_ASSET_FEATURES.md`,
 `docs/PHASE7_MODEL_ARCHITECTURES.md`, and
 `docs/PHASE7_CLOUD_RUNBOOK.md`.
+
+### Phase 7A on RunPod (current flow; finding L-09)
+
+Preparation and training are run one model at a time, never the full grid first. The exact
+commands, environment variables (`PHASE7_CACHE_MODE`, `PHASE7_METRICS_EVERY`, ...) and the
+GPU/CPU readiness ladder are in `docs/PHASE7A_RECONCILIATION_2026_11_01.md`. Useful read-only
+checks before any paid run:
+
+```bash
+uv run python -m crypto_ai.phase7.readiness --config configs/phase7/research_v1.toml --run-root <run-root>
+```
+
+This prints the per-fold gap census (using Gold timestamps with a warning when Silver is absent).
+Never run the August holdout, and never run training without the owner's explicit approval.
 
 ## Training-disabled context foundation
 
