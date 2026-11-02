@@ -18,7 +18,7 @@ import pyarrow.dataset as ds
 
 from crypto_ai.data.ingestion.manifest import read_manifest
 from crypto_ai.data.storage import file_sha256
-from crypto_ai.phase5.calibration import fit_calibrator
+from crypto_ai.phase5.calibration import SELECTION_HOLDOUT_FRACTION, fit_calibrator
 from crypto_ai.phase5.folds import FoldPlan, plan_folds
 from crypto_ai.phase7.artifacts import (
     CheckpointStore,
@@ -58,6 +58,7 @@ from crypto_ai.phase7.metrics import (
     evaluate_predictions,
     time_concentration,
 )
+from crypto_ai.phase7.model_registry import register_model_hash
 from crypto_ai.phase7.models import (
     fit_architecture,
     load_model,
@@ -1093,6 +1094,9 @@ def _run_one(
         cal_a_predictions,
         np.asarray(cal_a_table.column(target).to_pylist(), dtype=np.float64),
         config.calibration,
+        # CHANGED BY CLAUDE (2026-11-02, finding L-03): choose identity vs linear on a held-out
+        # tail of Cal-A. OLD CODE: fit_calibrator(preds, actual, config.calibration)
+        selection_holdout_fraction=SELECTION_HOLDOUT_FRACTION,
     )
     emit_event("CAL_A_DONE", fold_id=fold.plan.fold_id, spec=spec.name)
     telemetry("CALIBRATE", "END", started=calibration_started)
@@ -1127,7 +1131,31 @@ def _run_one(
     emit_event("TEST_EVAL_START", fold_id=fold.plan.fold_id, spec=spec.name)
     test_started = time.monotonic()
     telemetry("TEST", "START", started=test_started)
-    raw_test = fold.release_test(frozen_identity=frozen_identity)
+    # CHANGED BY CLAUDE (2026-11-02, finding M-02): the "test_used_for_selection" flag is now
+    # measured from the fold's TEST access ledger, and the frozen identity is re-derived from
+    # the live model/calibrator/thresholds right before release (fails loudly on mismatch).
+    # OLD CODE (kept for reference):
+    # raw_test = fold.release_test(frozen_identity=frozen_identity)
+    test_consumer = f"{spec.name}|{target}"
+    test_used_for_selection = any(
+        item["frozen_identity"] != frozen_identity
+        for item in fold.test_access_summary(test_consumer)["releases"]
+    )
+    if test_used_for_selection:
+        raise RuntimeError(
+            f"{fold.plan.fold_id}/{spec.name}: TEST was read before its selection was frozen"
+        )
+    raw_test = fold.release_test(
+        frozen_identity=frozen_identity,
+        expected_identity=stable_hash(
+            _frozen_test_identity_components(
+                model_identity=model.metadata["model_identity"],
+                calibrator_identity=calibrator.identity_hash,
+                thresholds=threshold_payload,
+            )
+        ),
+        consumer=test_consumer,
+    )
     test = _finite(raw_test, feature_columns, target)
     test_model, test_covered = model.predict(test)
     calibrated = np.full(test.num_rows, np.nan)
@@ -1223,7 +1251,10 @@ def _run_one(
         "checkpoint_identity": checkpoint_identity,
         "prepared_cache_id": cache_id,
         "execution_context": execution_metadata or {},
-        "test_used_for_selection": False,
+        # CHANGED BY CLAUDE (2026-11-02, finding M-02): measured, no longer a literal.
+        # OLD CODE (kept for reference): "test_used_for_selection": False,
+        "test_used_for_selection": test_used_for_selection,
+        "test_access": fold.test_access_summary(test_consumer),
         "july_2026_used": False,
         **config.holdout_status_payload(),
     }
@@ -1249,6 +1280,8 @@ def _run_one(
     receipt_path = publish_model_receipt(model_path, checkpoint_identity, publication)
     telemetry("MODEL_PUBLISH", "END")
     report["model_artifact_sha256"] = file_sha256(model_path)
+    # CHANGED BY CLAUDE (2026-11-02, finding L-08): also record the hash outside the folder.
+    register_model_hash(model_path)
     report["model_receipt_sha256"] = file_sha256(receipt_path)
     report["artifact_mode"] = checkpoint_identity.get("artifact_mode", "PRODUCTION_RESEARCH")
     report["report_identity"] = stable_hash(report, length=64)

@@ -16,6 +16,7 @@ from crypto_ai.phase7.features import (
 )
 from crypto_ai.phase7.folds import (
     IneligibleFoldError,
+    PostTrainDataGapError,
     fit_train_only_clusters,
     fit_train_only_liquidity_tiers,
     slice_multiasset_fold,
@@ -239,3 +240,10 @@ def test_future_gap_does_not_change_actual_train_context_or_numpy_inputs(tmp_pat
     with pytest.raises(ValueError, match="post-TRAIN data-quality gaps") as caught:
         slice_multiasset_fold(table, plan, unusable_segments=(gap,), **arguments)
     assert not isinstance(caught.value, IneligibleFoldError)
+    # Added by Claude (2026-11-02, finding M-06): the error is typed and names fold/symbol/range.
+    assert isinstance(caught.value, PostTrainDataGapError)
+    assert caught.value.fold_id == plan.fold_id
+    assert caught.value.gaps and {"symbol", "interval", "partition", "start", "end"} <= set(
+        caught.value.gaps[0]
+    )
+    assert gap.symbol in str(caught.value)
