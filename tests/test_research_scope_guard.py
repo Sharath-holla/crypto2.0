@@ -24,7 +24,7 @@ def _utc(*parts: int) -> datetime:
 
 
 def test_cutoff_is_frozen_phase7a_value() -> None:
-    assert RESEARCH_CUTOFF_EXCLUSIVE == _utc(2026, 7, 1)
+    assert _utc(2026, 7, 1) == RESEARCH_CUTOFF_EXCLUSIVE
 
 
 @pytest.mark.parametrize(
@@ -84,12 +84,23 @@ def test_cli_refuses_forbidden_ranges_before_any_network_or_config_access(
 
 
 def test_all_acquisition_commands_are_guarded() -> None:
-    assert GUARDED_ACQUISITION_COMMANDS == {
+    assert {
         "download",
         "download-archive",
         "download-market-data",
         "download-market-archive",
-    }
+    } == GUARDED_ACQUISITION_COMMANDS
+
+
+@pytest.mark.parametrize("naive_end", [False, True])
+def test_naive_timestamps_are_rejected_instead_of_using_host_timezone(naive_end) -> None:
+    start, end = _utc(2021, 1, 1), _utc(2021, 1, 2)
+    if naive_end:
+        end = end.replace(tzinfo=None)
+    else:
+        start = start.replace(tzinfo=None)
+    with pytest.raises(ResearchScopeViolation, match="timezone-aware"):
+        assert_acquisition_in_research_scope(start, end, command="download")
 
 
 def test_documented_download_examples_stay_inside_the_research_window() -> None:

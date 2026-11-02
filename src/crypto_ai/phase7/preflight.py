@@ -72,7 +72,10 @@ def build_preflight_report(
     gold_validation_report: Path | None = None,
     run_backend_smoke: bool = True,
     verification_only: bool = False,
+    preparation_only: bool = False,
 ) -> dict[str, Any]:
+    if verification_only and preparation_only:
+        raise ValueError("software verification and preparation are distinct preflight modes")
     config = load_phase7_config(config_path)
     paths = RuntimePaths.resolve(config.paths)
     errors = paths.validate(require_gold=not verification_only, create_outputs=create_outputs)
@@ -86,7 +89,7 @@ def build_preflight_report(
         backend = None
         errors.append(str(exc))
     smoke: dict[str, Any] | None = None
-    if not run_backend_smoke and not verification_only:
+    if not run_backend_smoke and not verification_only and not preparation_only:
         errors.append("backend smoke was skipped; training readiness cannot be established")
     try:
         budget: dict[str, Any] | None = asdict(ComputeBudget.resolve(config.resources))
@@ -123,7 +126,9 @@ def build_preflight_report(
     except ValueError as exc:
         cache_mode = "INVALID"
         errors.append(str(exc))
-    if not verification_only and cache_mode != "read_only":
+    if preparation_only and cache_mode not in {"auto", "rebuild"}:
+        errors.append("preparation preflight requires PHASE7_CACHE_MODE=auto or rebuild")
+    elif not verification_only and not preparation_only and cache_mode != "read_only":
         errors.append(
             "training preflight requires PHASE7_CACHE_MODE=read_only; do not rebuild data"
         )
@@ -186,7 +191,7 @@ def build_preflight_report(
             cache = cache_size_report(paths.cache_root)
         except (OSError, ValueError) as exc:
             errors.append(f"unable to inspect prepared cache: {exc}")
-    if not verification_only and not errors and backend is not None:
+    if not verification_only and not preparation_only and not errors and backend is not None:
         try:
             smoke = smoke_test_backend(backend.name)
             if smoke.get("status") != "PASS" or smoke.get("fit_success") is False:
@@ -207,8 +212,9 @@ def build_preflight_report(
     report = {
         "status": "PASS" if not errors else "FAIL",
         "training_readiness": "READY"
-        if not errors and not verification_only and create_outputs
+        if not errors and not verification_only and not preparation_only and create_outputs
         else "NOT_READY",
+        "preparation_readiness": "READY" if preparation_only and not errors else "NOT_READY",
         "output_write_probe": (
             "NOT_RUN_READ_ONLY_INSPECTION"
             if not create_outputs
@@ -218,6 +224,8 @@ def build_preflight_report(
         ),
         "qualification_mode": "SOFTWARE_ENVIRONMENT_ONLY"
         if verification_only
+        else "PREPARATION_PREFLIGHT_NO_FIT"
+        if preparation_only
         else "TRAINING_PREFLIGHT",
         "blocking_errors": errors,
         "git_commit": git_commit(),

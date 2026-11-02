@@ -313,6 +313,7 @@ def test_one_spec_runner_cannot_complete_production_or_preload_other_keys(tmp_pa
         resume=False,
         benchmark_spec_id=spec.name,
         benchmark_fold_id="fold-000-test",
+        scope=training.PHASE7A_SCOPE,
     )
     assert len(calls) == 1
     assert result["status"] == "BENCHMARK_ONLY"

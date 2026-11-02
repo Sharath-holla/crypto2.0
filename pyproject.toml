@@ -42,6 +42,12 @@ testpaths = ["tests"]
 [tool.ruff]
 line-length = 100
 target-version = "py311"
+# Preserved, non-installable trading prototypes are outside the maintained
+# research lint surface. Keep their historical bytes unchanged.
+extend-exclude = [
+    "dashboard.py", "main_signal.py", "main_trader.py", "data/data_fetcher.py", "data/inference.py",
+    "extra", "phaseA", "pipeline",
+]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "SIM"]

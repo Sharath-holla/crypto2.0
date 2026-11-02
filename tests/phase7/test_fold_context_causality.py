@@ -168,4 +168,4 @@ def test_context_must_cover_every_modelled_row() -> None:
 
 
 def test_context_version_is_declared_for_cache_identity() -> None:
-    assert FOLD_CONTEXT_VERSION == "fold_context_v3_label_independent"
+    assert FOLD_CONTEXT_VERSION == "fold_context_v4_observable_coverage_checked"

@@ -29,7 +29,7 @@ from crypto_ai.phase7.run_lease import owner_liveness
 from crypto_ai.phase7.runtime import CacheMode, emit_event, memory_snapshot
 from crypto_ai.phase7.telemetry import instrument
 
-PREPARED_CACHE_SCHEMA = "phase7_prepared_matrix_cache_v1"
+PREPARED_CACHE_SCHEMA = "phase7_prepared_matrix_cache_v2"
 PREPROCESSING_VERSION = "phase7_train_finite_filter_v1"
 
 
@@ -68,6 +68,7 @@ class PreparedTrainingSegments:
     calibration_a: pa.Table
     calibration_b: pa.Table
     model_inputs: PreparedArchitectureInputs
+    pre_filter_rows: dict[str, int] | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -598,6 +599,12 @@ class PreparedDataCache:
                 raise PreparedCacheCorruptError(f"table schema mismatch: {name}")
 
         metadata = manifest["fold_metadata"]
+        pre_filter_rows = metadata.get("pre_filter_rows")
+        if not isinstance(pre_filter_rows, dict) or set(pre_filter_rows) != set(tables):
+            raise PreparedCacheCorruptError("pre-filter row accounting is absent or malformed")
+        for name, count in pre_filter_rows.items():
+            if type(count) is not int or count < tables[name].num_rows:
+                raise PreparedCacheCorruptError(f"invalid pre-filter row count: {name}")
         if metadata["fold_id"] != plan.fold_id:
             raise PreparedCacheIdentityError("fold plan identity mismatch")
         fold = MultiAssetFoldData(
@@ -629,6 +636,7 @@ class PreparedDataCache:
             validation=tables["validation"],
             calibration_a=tables["calibration_a"],
             calibration_b=tables["calibration_b"],
+            pre_filter_rows=pre_filter_rows,
             model_inputs=PreparedArchitectureInputs(
                 feature_columns=feature_columns,
                 target_column=target_column,
@@ -775,6 +783,14 @@ class PreparedDataCache:
                     "liquidity_tiers": fold.liquidity_tiers,
                     "age_buckets": fold.age_buckets,
                     "report": fold.report,
+                    "pre_filter_rows": prepared.pre_filter_rows
+                    or {
+                        "train": fold.train.num_rows,
+                        "validation": fold.validation.num_rows,
+                        "calibration_a": fold.calibration_a.num_rows,
+                        "calibration_b": fold.calibration_b.num_rows,
+                        "test": fold._test.num_rows,
+                    },
                 },
             }
             manifest_path = temporary / "manifest.json"

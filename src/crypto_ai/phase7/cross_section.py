@@ -95,9 +95,11 @@ def market_context(
     for position in range(group_count):
         membership[int(unique_times[position])] = ()
     if len(active_rows):
-        names = np.asarray([str(item) for item in symbols[active_rows]], dtype=object) if (
-            symbols.dtype != object
-        ) else symbols[active_rows]
+        names = (
+            np.asarray([str(item) for item in symbols[active_rows]], dtype=object)
+            if (symbols.dtype != object)
+            else symbols[active_rows]
+        )
         vocabulary, codes = np.unique(names.astype(str), return_inverse=True)
         codes = codes.reshape(-1)
         active_group = inverse[active_rows]

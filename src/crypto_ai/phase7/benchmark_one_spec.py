@@ -124,6 +124,8 @@ def main() -> int:
             preflight = build_preflight_report(
                 args.config,
                 gold_validation_report=(Path(validation_path) if validation_path else None),
+                preparation_only=args.prepare_only,
+                run_backend_smoke=not args.prepare_only,
             )
             if preflight["status"] != "PASS":
                 raise RuntimeError(

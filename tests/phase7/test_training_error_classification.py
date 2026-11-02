@@ -153,6 +153,8 @@ def _patch_harness(
     monkeypatch.setattr("crypto_ai.phase7.training.plan_folds", fake_plan_folds)
     monkeypatch.setattr("crypto_ai.phase7.training.phase7_experiment_specs", fake_specs)
     monkeypatch.setattr("crypto_ai.phase7.training._load_fold_rows", fake_load_rows)
+    # This harness tests orchestration/error ownership, not Gold/context production.
+    monkeypatch.setattr("crypto_ai.phase7.training._load_fold_context_source", fake_load_rows)
     monkeypatch.setattr("crypto_ai.phase7.training.slice_multiasset_fold", fake_slice)
     monkeypatch.setattr("crypto_ai.phase7.training.fit_architecture", fake_fit)
     return checkpoint_root, run_root, fit_calls

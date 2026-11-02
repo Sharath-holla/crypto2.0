@@ -7,6 +7,7 @@ from typing import Any
 
 import numpy as np
 import pyarrow as pa
+import pyarrow.compute as pc
 
 from crypto_ai.domain import interval_milliseconds
 from crypto_ai.phase6.features import _higher_timeframe_values
@@ -511,7 +512,7 @@ def validate_multiasset_primary_key(table: pa.Table) -> None:
         raise ValueError("duplicate multi-asset primary key (symbol, feature_time)")
 
 
-FOLD_CONTEXT_VERSION = "fold_context_v3_label_independent"
+FOLD_CONTEXT_VERSION = "fold_context_v4_observable_coverage_checked"
 FOLD_CONTEXT_SOURCE_COLUMNS = (
     "symbol",
     "feature_time",
@@ -547,7 +548,9 @@ def _membership_hashes(
     return lookup[inverse.reshape(-1)].tolist()
 
 
-def build_fold_context_table(source: pa.Table) -> pa.Table:
+def build_fold_context_table(
+    source: pa.Table, *, verify_observable_coverage: bool = False
+) -> pa.Table:
     """Cross-sectional context keyed by (symbol, feature_time), built from features only.
 
     ``source`` may carry the same (symbol, feature_time) once per target horizon
@@ -561,6 +564,22 @@ def build_fold_context_table(source: pa.Table) -> pa.Table:
     missing = set(FOLD_CONTEXT_SOURCE_COLUMNS) - set(source.column_names)
     if missing:
         raise ValueError(f"fold context source missing columns: {sorted(missing)}")
+    preview = None
+    if verify_observable_coverage:
+        # Original Gold preview metadata was computed BEFORE the label inner
+        # join. It independently witnesses which feature rows were observable.
+        required_preview = {
+            "market_member_count",
+            "market_membership_hash",
+            "cross_sectional_context_scope",
+        }
+        if not required_preview.issubset(source.column_names):
+            raise ValueError("M01_CONTEXT_COVERAGE_UNVERIFIED: original preview evidence required")
+        if pc.unique(source.column("cross_sectional_context_scope")).to_pylist() != [
+            "ACQUISITION_UNION_PREVIEW"
+        ]:
+            raise ValueError("M01_CONTEXT_COVERAGE_UNVERIFIED: original Gold preview required")
+        preview = source.select(["market_member_count", "market_membership_hash"])
     source = source.select(list(FOLD_CONTEXT_SOURCE_COLUMNS))
     symbols = np.asarray(source.column("symbol").combine_chunks().to_pylist(), dtype=object)
     feature_times = _times(source, "feature_time")
@@ -616,6 +635,19 @@ def build_fold_context_table(source: pa.Table) -> pa.Table:
     columns["market_membership_hash"] = pa.array(
         _membership_hashes(kept_times, membership), type=pa.string()
     )
+    if preview is not None:
+        for name in ("market_member_count", "market_membership_hash"):
+            witnessed = preview.column(name).take(pa.array(keep))
+            if pc.all(pc.fill_null(pc.equal(witnessed, columns[name]), False)).as_py() is not True:
+                raise ValueError(
+                    "M01_CONTEXT_SOURCE_INCOMPLETE: the all-horizon union omits observable "
+                    "feature rows; restore verified feature-only context before preparation"
+                )
+        # Retain one row per symbol/time, instead of all four copies. Fold-local
+        # eligibility may still shrink this source and must rebind its context.
+        for name in FOLD_CONTEXT_SOURCE_COLUMNS:
+            if name not in columns:
+                columns[name] = source.column(name).take(pa.array(keep))
     return pa.table(columns)
 
 

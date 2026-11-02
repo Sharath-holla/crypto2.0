@@ -55,8 +55,9 @@ def _dead_child_identity() -> tuple[int, float]:
 def test_live_owner_is_never_broken(tmp_path: Path) -> None:
     lock = _write_lock(tmp_path)
     before = lock.read_bytes()
-    with pytest.raises(TimeoutError), _cache(tmp_path)._publication_lock(
-        "publication", timeout_seconds=0.3
+    with (
+        pytest.raises(TimeoutError),
+        _cache(tmp_path)._publication_lock("publication", timeout_seconds=0.3),
     ):
         pass
     assert lock.read_bytes() == before
@@ -97,8 +98,9 @@ def test_unprovable_liveness_fails_closed(tmp_path: Path, overrides: dict[str, o
     pid = os.getpid() if live_without_start_time else _dead_child_identity()[0]
     lock = _write_lock(tmp_path, pid=pid, **overrides)
     before = lock.read_bytes()
-    with pytest.raises(TimeoutError), _cache(tmp_path)._publication_lock(
-        "publication", timeout_seconds=0.3
+    with (
+        pytest.raises(TimeoutError),
+        _cache(tmp_path)._publication_lock("publication", timeout_seconds=0.3),
     ):
         pass
     assert lock.read_bytes() == before
@@ -109,8 +111,9 @@ def test_unprovable_liveness_fails_closed(tmp_path: Path, overrides: dict[str, o
 def test_legacy_or_corrupt_lock_content_is_never_deleted(tmp_path: Path, content: bytes) -> None:
     lock = tmp_path / ".publication.lock"
     lock.write_bytes(content)
-    with pytest.raises(TimeoutError), _cache(tmp_path)._publication_lock(
-        "publication", timeout_seconds=0.3
+    with (
+        pytest.raises(TimeoutError),
+        _cache(tmp_path)._publication_lock("publication", timeout_seconds=0.3),
     ):
         pass
     assert lock.read_bytes() == content

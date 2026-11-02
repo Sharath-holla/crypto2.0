@@ -8,9 +8,7 @@ from crypto_ai.phase7.training import finite_row_accounting
 
 
 def test_counts_pre_post_and_drops_per_segment() -> None:
-    result = finite_row_accounting(
-        {"train": (100, 98), "validation": (50, 50), "test": (0, 0)}
-    )
+    result = finite_row_accounting({"train": (100, 98), "validation": (50, 50), "test": (0, 0)})
     assert result["segments"]["train"] == {
         "pre_filter_rows": 100,
         "post_filter_rows": 98,

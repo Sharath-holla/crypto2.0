@@ -43,7 +43,11 @@ from crypto_ai.phase7.economics import (
     select_cal_b_thresholds,
 )
 from crypto_ai.phase7.environment import scientific_environment_identity
-from crypto_ai.phase7.features import FOLD_CONTEXT_SOURCE_COLUMNS, FOLD_CONTEXT_VERSION
+from crypto_ai.phase7.features import (
+    FOLD_CONTEXT_SOURCE_COLUMNS,
+    FOLD_CONTEXT_VERSION,
+    build_fold_context_table,
+)
 from crypto_ai.phase7.folds import (
     IneligibleFoldError,
     MultiAssetFoldData,
@@ -131,6 +135,8 @@ def resolve_training_scope(
     from crypto_ai.phase7.phase7a import primary_specs
 
     return primary_specs(config), ("CORE",)
+
+
 SCIENTIFIC_SOURCE_IDENTITY_ALGORITHM = "phase7_scientific_source_manifest_v2"
 TRAINING_SOURCE_IDENTITY_ALGORITHM = SCIENTIFIC_SOURCE_IDENTITY_ALGORITHM
 TRAINING_CRITICAL_SOURCE_FILES = (
@@ -447,12 +453,17 @@ def _load_fold_context_source(
             manifest,
             plan,
             horizon,
-            columns=FOLD_CONTEXT_SOURCE_COLUMNS,
+            columns=(
+                *FOLD_CONTEXT_SOURCE_COLUMNS,
+                "market_member_count",
+                "market_membership_hash",
+                "cross_sectional_context_scope",
+            ),
             **({"dataset": dataset} if dataset is not None else {}),
         )
         for horizon in horizons_minutes
     ]
-    return pa.concat_tables(parts)
+    return build_fold_context_table(pa.concat_tables(parts), verify_observable_coverage=True)
 
 
 def finite_row_accounting(segments: dict[str, tuple[int, int]]) -> dict[str, Any]:
@@ -513,6 +524,13 @@ def _prepare_training_segments(
         validation=validation,
         calibration_a=calibration_a,
         calibration_b=calibration_b,
+        pre_filter_rows={
+            "train": fold.train.num_rows,
+            "validation": fold.validation.num_rows,
+            "calibration_a": fold.calibration_a.num_rows,
+            "calibration_b": fold.calibration_b.num_rows,
+            "test": fold._test.num_rows,
+        },
         model_inputs=prepare_architecture_inputs(
             train,
             validation,
@@ -1156,11 +1174,14 @@ def _run_one(
         "same_row_feature_columns": list(feature_columns),
         "finite_row_accounting": finite_row_accounting(
             {
-                "train": (fold.train.num_rows, train.num_rows),
-                "validation": (fold.validation.num_rows, validation.num_rows),
-                "calibration_a": (fold.calibration_a.num_rows, calibration_a.num_rows),
-                "calibration_b": (fold.calibration_b.num_rows, calibration_b.num_rows),
-                "test": (raw_test.num_rows, test.num_rows),
+                name: ((prepared.pre_filter_rows or {}).get(name, raw.num_rows), filtered.num_rows)
+                for name, raw, filtered in (
+                    ("train", fold.train, train),
+                    ("validation", fold.validation, validation),
+                    ("calibration_a", fold.calibration_a, calibration_a),
+                    ("calibration_b", fold.calibration_b, calibration_b),
+                    ("test", raw_test, test),
+                )
             }
         ),
         "segment_rows": {

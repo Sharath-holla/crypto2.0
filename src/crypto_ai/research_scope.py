@@ -31,6 +31,8 @@ def assert_acquisition_in_research_scope(
             f"{command}: acquisition requires explicit --start and --end inside the research "
             "window; an open-ended range could reach the locked holdout"
         )
+    if any(value.tzinfo is None or value.utcoffset() is None for value in (start, end)):
+        raise ResearchScopeViolation(f"{command}: acquisition timestamps must be timezone-aware")
     start = start.astimezone(UTC)
     end = end.astimezone(UTC)
     if end <= start:
