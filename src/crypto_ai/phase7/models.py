@@ -22,6 +22,7 @@ from crypto_ai.phase7.backend import (
 from crypto_ai.phase7.config import ModelConfig, stable_hash
 from crypto_ai.phase7.device_evidence import fit_with_device_evidence
 from crypto_ai.phase7.folds import IneligibleFoldError
+from crypto_ai.phase7.model_registry import verify_registered_model
 from crypto_ai.phase7.resources import resource_admission
 from crypto_ai.phase7.training_metrics import display_metrics, fit_observer
 
@@ -581,6 +582,17 @@ def fit_architecture(
         "compute_backend": backend.name,
     }
     metadata["model_identity"] = stable_hash(metadata)
+    # CHANGED BY CLAUDE (2026-11-02, finding L-04): DOCUMENTED, NOT FIXED. H0 symbol/cluster
+    # corrections are fit on the Validation rows that also drive early stopping, so H0 is not
+    # independent of its stopping set (no TEST rows are involved). A separate slice would need
+    # new fold structure, which this hardening pass does not change. Recorded after the model
+    # identity is computed so existing identities and caches are unaffected.
+    if architecture == "H0":
+        metadata["hybrid_correction_source"] = {
+            "status": "VALIDATION_EARLY_STOPPING_SET_NOT_INDEPENDENT",
+            "finding": "L-04",
+            "test_rows_used": False,
+        }
     metadata["execution_context"] = backend_metadata(backend)
     metadata["fit_execution"] = {
         "model_threads_per_estimator": model_threads,
@@ -626,6 +638,10 @@ def save_model(bundle: Phase7ModelBundle, path: Path) -> Path:
 
 
 def load_model(path: Path) -> Phase7ModelBundle:
+    # CHANGED BY CLAUDE (2026-11-02, finding L-08): verify the file against the hash registry
+    # that lives OUTSIDE the artifact folder before unpickling; mismatch raises and nothing loads.
+    # OLD CODE (kept for reference): payload = joblib.load(path) with no registry check.
+    verify_registered_model(path)
     payload = joblib.load(path)
     if not isinstance(payload, Phase7ModelBundle):
         raise ValueError(f"Unsupported Phase 7 model artifact: {path}")
