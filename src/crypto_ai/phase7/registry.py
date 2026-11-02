@@ -171,7 +171,10 @@ class SymbolRecord(_Frozen):
 
     def exists_at(self, timestamp: datetime) -> bool:
         value = _utc(timestamp)
-        assert value is not None
+        # CHANGED BY CLAUDE (2026-11-02, finding L-07): an explicit exception survives python -O.
+        # OLD CODE (kept for reference): assert value is not None
+        if value is None:
+            raise ValueError("timestamp is required")
         return self.causal_available_from <= value and (
             self.available_until is None or value < self.available_until
         )
@@ -199,7 +202,9 @@ class SymbolRecord(_Frozen):
         """Causal history duration at a timezone-aware point in time."""
 
         value = _utc(timestamp)
-        assert value is not None
+        # CHANGED BY CLAUDE (2026-11-02, finding L-07). OLD CODE: assert value is not None
+        if value is None:
+            raise ValueError("timestamp is required")
         return max(0.0, (value - self.causal_available_from).total_seconds() / 86_400)
 
     def archive_period_for(self, interval: str) -> IntervalArchivePeriod | None:
