@@ -37,6 +37,7 @@ from crypto_ai.phase7.config import (
 from crypto_ai.phase7.economics import (
     COST_POLICY_VERSION,
     ThresholdSet,
+    _threshold_key,
     adaptive_policy_cost_stress,
     build_oos_trades,
     fixed_policy_cost_stress,
@@ -52,6 +53,20 @@ from crypto_ai.phase7.folds import (
     IneligibleFoldError,
     MultiAssetFoldData,
     slice_multiasset_fold,
+)
+from crypto_ai.phase7.hardening import (
+    append_result_row,
+    apply_pilot_filter,
+    console_fields,
+    current_config,
+    decision_metrics,
+    fold_gate_failed,
+    results_row_from_report,
+    score_baselines,
+    silver_status,
+    stop_requested,
+    tier_cost_breakdown,
+    trading_metrics,
 )
 from crypto_ai.phase7.metrics import (
     asset_concentration,
@@ -1191,6 +1206,46 @@ def _run_one(
         }
     else:
         concentration = {"asset": None, "time": None}
+    # CHANGED BY CLAUDE (2026-11-02, Phase 3 items 2, 5, 6): additive diagnostics. Baselines use
+    # VALIDATION rows only; decision/trading metrics use the already-frozen Cal-B thresholds on
+    # TEST and are never fed back into any selection. Nothing above this line changed.
+    hardening_cfg = current_config()
+    validation_prediction, validation_covered = model.predict(validation)
+    baselines = score_baselines(
+        prepared.model_inputs.train_x,
+        prepared.model_inputs.train_y,
+        prepared.model_inputs.validation_x,
+        np.asarray(validation.column(target).to_pylist(), dtype=np.float64),
+        validation_prediction,
+        validation_covered,
+        config=hardening_cfg,
+    )
+    test_symbols = [str(item) for item in test.column("symbol").to_pylist()]
+    tier_costs = tier_cost_breakdown(config.costs)
+    cost_by_symbol = {
+        symbol: sum(tier_costs[fold.liquidity_tiers[symbol]].values())
+        for symbol in set(test_symbols)
+    }
+    threshold_by_symbol = {
+        symbol: thresholds.values_bps.get(
+            _threshold_key(symbol, thresholds.granularity, fold.cluster_mapping)
+        )
+        for symbol in set(test_symbols)
+    }
+    decision = decision_metrics(
+        test_symbols,
+        np.asarray(test.column("raw_future_return").to_pylist(), dtype=np.float64),
+        predicted_raw,
+        threshold_bps_by_symbol=threshold_by_symbol,
+        cost_bps_by_symbol=cost_by_symbol,
+    )
+    trading = trading_metrics(trades, tier_costs)
+    phase7b_block = {
+        "baselines": baselines,
+        "decision": decision,
+        "trading": trading,
+        "console_fields": console_fields(decision, trading),
+    }
     report = {
         "status": "COMPLETE",
         "spec": asdict(spec),
@@ -1255,6 +1310,7 @@ def _run_one(
         # OLD CODE (kept for reference): "test_used_for_selection": False,
         "test_used_for_selection": test_used_for_selection,
         "test_access": fold.test_access_summary(test_consumer),
+        "phase7b": phase7b_block,
         "july_2026_used": False,
         **config.holdout_status_payload(),
     }
@@ -1289,6 +1345,11 @@ def _run_one(
     telemetry("REPORT_PUBLISH", "START")
     report_path = atomic_json(output_root / "report.json", report)
     telemetry("REPORT_PUBLISH", "END")
+    # CHANGED BY CLAUDE (2026-11-02, Phase 3 item 7): one results table per run (CSV, appended).
+    append_result_row(
+        output_root.parents[2] if len(output_root.parents) > 2 else output_root,
+        results_row_from_report(report),
+    )
     if reporter is not None:
         reporter.fold_evaluation(
             report,
@@ -1374,6 +1435,10 @@ def _run_phase7_training_owned(
         config.schedule,
     )
     specs, research_views = resolve_training_scope(config, scope)
+    # CHANGED BY CLAUDE (2026-11-02, Phase 3 item 4): optional pilot mode (one horizon x one
+    # target type) from the hardening config; a no-op unless both pilot keys are set.
+    # OLD CODE: nothing here (the full scoped spec list was always used).
+    specs = apply_pilot_filter(specs)
     benchmark_only = benchmark_spec_id is not None
     if benchmark_only:
         from crypto_ai.phase7.benchmark_one_spec import benchmark_plan
@@ -1417,6 +1482,17 @@ def _run_phase7_training_owned(
         "python": platform.python_version(),
     }
     emit_event("COMPUTE_BUDGET_RESOLVED", **asdict(compute_budget))
+    # CHANGED BY CLAUDE (2026-11-02, Phase 3 item 9): training reads Gold only, so absent Silver
+    # is a warning, not an error. Gold rebuilds fail clearly in the pipeline gold stage instead.
+    silver = silver_status(runtime_paths.data_root)
+    if silver["status"] != "PRESENT":
+        print(
+            "[phase7:train] WARNING: Silver is absent; training proceeds from Gold only "
+            f"({silver['silver_root']}). Owner decision pending: restore Silver, or record that "
+            "Gold is the source of truth.",
+            flush=True,
+        )
+    stop_reason: str | None = None
     for fold_position, plan in enumerate(folds, start=1):
         cached: dict[tuple[str, int, str, str], CachedPreparedData] = {}
         # Keep only the current horizon and prepared key. Durable entries remain
@@ -1621,6 +1697,17 @@ def _run_phase7_training_owned(
             reusable_models: dict[tuple[Any, ...], Any] = {}
             unavailable_reusable_g0: set[tuple[Any, ...]] = set()
             for spec_position, spec in enumerate(specs, start=1):
+                # CHANGED BY CLAUDE (2026-11-02, Phase 3 item 3): safe stop. A stop file in the
+                # run directory is honoured BETWEEN specs, so the current fit always finishes
+                # cleanly and its report/checkpoint are written first. Off unless the file exists.
+                if stop_reason is None and stop_requested(run_root):
+                    stop_reason = "STOP_FILE_PRESENT"
+                    print(
+                        f"[phase7:train] stop file found in {run_root}; stopping cleanly.",
+                        flush=True,
+                    )
+                if stop_reason is not None:
+                    break
                 stage = f"models/{research_view.lower()}/{plan.fold_id}/{spec.name}"
                 relative_stage = Path(research_view.lower()) / plan.fold_id / spec.name
                 output = (
@@ -1962,6 +2049,28 @@ def _run_phase7_training_owned(
         prepared_cache = cached_bundle = fold_data = None
         if reporter is not None and not benchmark_only:
             reporter.fold_completed(fold_position, len(folds), plan.fold_id)
+        # CHANGED BY CLAUDE (2026-11-02, Phase 3 item 3): optional fold gate. After folds 1..N
+        # (config ``fold_gate_folds``, default 0 = off), stop if no completed spec of this fold
+        # beat the zero-return baseline on VALIDATION. TEST is not consulted.
+        if stop_reason is None and fold_gate_failed(
+            [item for item in reports if item.get("fold_id") == plan.fold_id], fold_position
+        ):
+            stop_reason = "FOLD_GATE_FAILED_NO_SPEC_BEAT_BASELINE_ON_VALIDATION"
+            print(f"[phase7:train] fold gate failed after fold {fold_position}.", flush=True)
+        if stop_reason is not None:
+            break
+    if stop_reason is not None and not benchmark_only:
+        stopped = {
+            "status": "STOPPED_EARLY",
+            "stop_reason": stop_reason,
+            "folds_planned": len(folds),
+            "completed_reports": sum(item["status"] == "COMPLETE" for item in reports),
+            "reports": reports,
+            "test_used_for_model_design": False,
+            **config.holdout_status_payload(),
+        }
+        atomic_json(run_root / "training_summary_partial.json", stopped)
+        return stopped
     if benchmark_only:
         summary = {
             "status": "BENCHMARK_ONLY",

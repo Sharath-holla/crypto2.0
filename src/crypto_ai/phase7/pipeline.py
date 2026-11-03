@@ -29,6 +29,7 @@ from crypto_ai.phase7.features import (
 )
 from crypto_ai.phase7.gold import build_multiasset_gold_chunks
 from crypto_ai.phase7.gold_validation import locate_gold_manifest
+from crypto_ai.phase7.hardening import require_silver
 from crypto_ai.phase7.progress import ProgressReporter
 from crypto_ai.phase7.quality import build_point_in_time_descriptors
 from crypto_ai.phase7.registry import (
@@ -591,6 +592,10 @@ def _gold_stage(
     reporter: ProgressReporter | None = None,
 ) -> tuple[dict[str, Any], list[Path]]:
     config.assert_cloud_execution_allowed()
+    # CHANGED BY CLAUDE (2026-11-02, Phase 3 item 9): a Gold REBUILD needs Silver; fail with a
+    # clear message instead of a bare FileNotFoundError deep in the stage. Training from existing
+    # Gold is unaffected. OLD CODE: no check here.
+    require_silver(config.paths.data_root, "Gold rebuild")
     boundaries: list[tuple[datetime, datetime]] = []
     cursor = config.data_start
     while cursor < config.research_cutoff:

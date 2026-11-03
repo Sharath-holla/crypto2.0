@@ -17,6 +17,14 @@ from typing import Any
 
 import numpy as np
 
+from crypto_ai.phase7.hardening import (
+    FitAbortedError,
+    console_line,
+    current_config,
+    fixed_threshold_precision_recall,
+    record_latest_fit,
+    trend_flag,
+)
 from crypto_ai.research.metrics import directional_accuracy
 
 
@@ -50,6 +58,20 @@ def training_metric_scope(directory: Path, **identity: Any) -> Iterator[None]:
 def display_metrics(actual: np.ndarray, predicted: np.ndarray) -> list[tuple[str, float, bool]]:
     """Read LightGBM's existing fit predictions; never call model.predict here."""
     residual = predicted - actual
+    # CHANGED BY CLAUDE (2026-11-02, Phase 3 item 5): fixed-threshold precision/recall are added
+    # AFTER the existing metrics (the first metric, L2, still drives early stopping). They are
+    # diagnostics on whatever rows LightGBM evaluates (TRAIN or VALIDATION), never TEST.
+    extra: list[tuple[str, float, bool]] = []
+    settings = current_config()
+    if settings.console_precision_recall:
+        scores = fixed_threshold_precision_recall(
+            actual, predicted, settings.fixed_threshold_bps, max_rows=settings.metric_max_rows
+        )
+        # 0.0 when a score is undefined (no signals / no real moves): LightGBM needs a number.
+        extra = [
+            ("fixed_precision", float(scores["precision"] or 0.0), True),
+            ("fixed_recall", float(scores["recall"] or 0.0), True),
+        ]
     return [
         ("mae", float(np.mean(np.abs(residual))), False),
         ("rmse", float(np.sqrt(np.mean(residual * residual))), False),
@@ -57,6 +79,7 @@ def display_metrics(actual: np.ndarray, predicted: np.ndarray) -> list[tuple[str
         # OLD CODE (kept for reference):
         # ("directional_accuracy", float(np.mean(np.sign(actual) == np.sign(predicted))), True),
         ("directional_accuracy", directional_accuracy(actual, predicted), True),
+        *extra,
     ]
 
 
@@ -68,9 +91,14 @@ class FitMetricObserver:
     before_iteration: bool = False
     started: float = field(default_factory=time.monotonic)
     last: dict[str, Any] | None = None
+    # CHANGED BY CLAUDE (2026-11-02, Phase 3 items 1 and 3): console trend + optional abort rule.
+    zero_baseline_rmse: float | None = None  # set by models._fit from VALIDATION targets only
+    previous_validation_rmse: float | None = None
+    worse_streak: int = 0
     path: Path = field(init=False)
 
     def __post_init__(self) -> None:
+        record_latest_fit({})  # CHANGED BY CLAUDE (2026-11-02): no stale metrics in the heartbeat
         self.scope.directory.mkdir(parents=True, exist_ok=True)
         self.path = self.scope.directory / f"fit-{uuid.uuid4().hex}.jsonl"
         self.emit("FIT_STARTED", estimator=self.estimator_key)
@@ -109,6 +137,55 @@ class FitMetricObserver:
         }
         if env.iteration == env.begin_iteration or (env.iteration + 1) % self.scope.period == 0:
             self.emit("FIT_METRICS", **self.last)
+            self._console_and_abort(env.iteration + 1, env.end_iteration, metrics)
+
+    def _console_and_abort(
+        self, iteration: int, round_limit: int, metrics: dict[str, dict[str, float]]
+    ) -> None:
+        """One readable console line per check (the JSON line above is unchanged) + abort rule."""
+
+        settings = current_config()
+        validation_rmse = metrics.get("validation", {}).get("rmse")
+        flag = trend_flag(self.previous_validation_rmse, validation_rmse or 0.0)
+        record_latest_fit(
+            {
+                "estimator": self.estimator_key,
+                "iteration": iteration,
+                "round_limit": round_limit,
+                "validation": dict(metrics.get("validation", {})),
+                "trend": flag,
+            }
+        )
+        if settings.console_table:
+            with _OUTPUT_LOCK:
+                print(
+                    console_line(
+                        f"{self.scope.identity.get('fold_id', '?')}/"
+                        f"{self.scope.identity.get('spec_id', '?')}/{self.estimator_key}",
+                        iteration,
+                        round_limit,
+                        metrics,
+                        flag,
+                    ),
+                    flush=True,
+                )
+        self.previous_validation_rmse = validation_rmse
+        if settings.abort_after_worse_checks and self.zero_baseline_rmse and validation_rmse:
+            self.worse_streak = (
+                self.worse_streak + 1 if validation_rmse > self.zero_baseline_rmse else 0
+            )
+            if self.worse_streak >= settings.abort_after_worse_checks:
+                self.emit(
+                    "FIT_ABORTED",
+                    reason="VALIDATION_RMSE_WORSE_THAN_ZERO_BASELINE",
+                    consecutive_checks=self.worse_streak,
+                    validation_rmse=validation_rmse,
+                    zero_baseline_rmse=self.zero_baseline_rmse,
+                )
+                raise FitAbortedError(
+                    f"validation RMSE worse than the zero-return baseline for "
+                    f"{self.worse_streak} consecutive checks"
+                )
 
     def finish(self, estimator: Any) -> None:
         # Early stopping may have ended between reporting intervals. Keep last-round

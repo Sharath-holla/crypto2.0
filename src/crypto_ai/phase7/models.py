@@ -172,6 +172,9 @@ def _fit(
             "eval_metric": display_metrics,
         }
         callbacks.append(observer)
+        # CHANGED BY CLAUDE (2026-11-02, Phase 3 item 3): the zero-return baseline for the optional
+        # abort rule comes from VALIDATION targets only.
+        observer.zero_baseline_rmse = float(np.sqrt(np.mean(np.square(validation_y))))
     try:
         fit_with_device_evidence(
             estimator,

@@ -1,0 +1,21 @@
+# Phase 7B hardening settings (written by Claude, 2026-11-02). These are the DEFAULTS built into
+# crypto_ai.phase7.hardening.HardeningConfig; point PHASE7_HARDENING_CONFIG at a copy to change
+# them. They live outside the frozen Phase 7 config on purpose: new keys there would change the
+# config hash (93f987736b1a79d26b773957) and invalidate every prepared cache.
+[hardening]
+console_table = true              # one readable line every PHASE7_METRICS_EVERY rounds
+console_precision_recall = true   # fixed-threshold precision/recall, TRAIN/VALIDATION rows only
+fixed_threshold_bps = 5.0         # |move| that counts as a signal and as a real move
+metric_max_rows = 1000000         # strided subsample cap for the live precision/recall
+baseline_ridge_alpha = 1.0
+baseline_max_rows = 500000
+abort_after_worse_checks = 0      # 0 = off; N = abort a fit after N checks worse than zero baseline
+stop_file_name = "STOP_PHASE7"    # create this file in the run directory to stop between specs
+fold_gate_folds = 0               # 0 = off; N = stop after folds 1..N if no spec beats baseline
+pilot_horizon_minutes = 0         # set BOTH pilot keys to run one horizon x one target type
+pilot_target_type = ""
+# Success criteria: PLACEHOLDERS. Confirm or change before training; do not edit after seeing results.
+success_min_net_positive_folds = 10
+success_min_beats_baseline_folds = 10
+success_alpha = 0.05
+multiple_testing_correction = "bonferroni"
