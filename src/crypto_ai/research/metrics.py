@@ -72,6 +72,12 @@ def regression_metrics(actual: np.ndarray, predicted: np.ndarray) -> dict[str, A
         # "directional_accuracy": float(np.mean(np.sign(actual) == np.sign(predicted))),
         "directional_accuracy": directional_accuracy(actual, predicted),
         "n_zero_actuals": int(np.count_nonzero(actual == 0.0)),
+        # CHANGED BY CLAUDE (2026-11-06, final hardening): explicit names requested by the owner.
+        # ``directional_accuracy_nonzero`` is the same number as ``directional_accuracy`` (zero
+        # actuals excluded); the old key is kept so existing readers do not break.
+        "directional_accuracy_nonzero": directional_accuracy(actual, predicted),
+        "zero_actual_count": int(np.count_nonzero(actual == 0.0)),
+        "zero_actual_fraction": float(np.count_nonzero(actual == 0.0) / len(actual)),
         "pearson_ic": pearson,
         "spearman_ic": spearman,
         "prediction_mean": float(np.mean(predicted)),

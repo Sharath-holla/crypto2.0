@@ -1,4 +1,4 @@
-"""CHANGED BY CLAUDE (2026-11-05, Phase 7C finding N-01): Ridge baseline must survive NaN features."""
+"""CHANGED BY CLAUDE (2026-11-05, Phase 7C N-01): Ridge baseline must survive NaN features."""
 
 from __future__ import annotations
 

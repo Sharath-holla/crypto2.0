@@ -155,14 +155,35 @@ def _short(value: Any) -> str:
     return f"{value:.2e}" if abs(value) < 1e-2 and value != 0 else f"{value:.4f}"
 
 
+def process_stats(path: str = ".") -> str:
+    """Peak process RSS and free disk for the console line (best effort, never raises)."""
+
+    # CHANGED BY CLAUDE (2026-11-06, final hardening): monitoring extras requested by the owner.
+    try:
+        import resource
+        import shutil
+        import sys
+
+        peak = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
+        # ru_maxrss is bytes on macOS and KiB on Linux.
+        rss_gib = peak / (1024**3 if sys.platform == "darwin" else 1024**2)
+        free_gib = shutil.disk_usage(path).free / 1024**3
+        return f"peak RSS {rss_gib:.1f} GiB | free disk {free_gib:.0f} GiB"
+    except Exception:  # monitoring must never break a fit
+        return "RSS/disk n/a"
+
+
 def console_line(
     label: str,
     iteration: int,
     round_limit: int,
     metrics: Mapping[str, Mapping[str, float]],
     flag: str,
+    extra: str = "",
 ) -> str:
     train, val = metrics.get("train", {}), metrics.get("validation", {})
+    # CHANGED BY CLAUDE (2026-11-06): optional ``extra`` suffix (best val RMSE, rounds since
+    # improvement, elapsed, RSS, disk). Old behaviour is unchanged when ``extra`` is empty.
     return (
         f"[fit {label}] round {iteration:>4}/{round_limit} | "
         f"train L2 {_short(train.get('l2'))} MAE {_short(train.get('mae'))} "
@@ -171,6 +192,7 @@ def console_line(
         f"RMSE {_short(val.get('rmse'))} dir {_short(val.get('directional_accuracy'))} "
         f"P {_short(val.get('fixed_precision'))} R {_short(val.get('fixed_recall'))} "
         f"(fixed-threshold, validation only) | val RMSE {flag}"
+        + (f" | {extra}" if extra else "")
     )
 
 
@@ -181,7 +203,8 @@ def _ridge_predict(
     step = _stride(len(train_y), max_rows)
     x = np.asarray(train_x[::step], dtype=np.float64)
     y = np.asarray(train_y[::step], dtype=np.float64)
-    # CHANGED BY CLAUDE (2026-11-05, Phase 7C finding N-01): the original used plain mean/std, so ONE NaN
+    # CHANGED BY CLAUDE (2026-11-05, Phase 7C finding N-01): the original used plain mean/std, so
+    # ONE NaN
     # feature made every weight NaN and the Ridge baseline score NaN. Missing values are now ignored
     # when standardising and then set to 0 (= the training mean). Clean data gives the same result.
     # OLD CODE (kept for the record):
@@ -204,6 +227,10 @@ def _ridge_predict(
     test = np.asarray(test_x, dtype=np.float64)
     test_z = np.where(np.isfinite(test), (test - mean) / scale, 0.0)
     return test_z @ weights + y_mean
+
+
+def _delta(left: float | None, right: float | None) -> float | None:
+    return None if left is None or right is None else float(left) - float(right)
 
 
 def _errors(actual: np.ndarray, predicted: np.ndarray) -> tuple[float, float]:
@@ -237,6 +264,21 @@ def score_baselines(
         "lightgbm_skill_vs_zero": (1.0 - model_rmse / zero_rmse) if zero_rmse > 0 else None,
         "lightgbm_beats_zero": bool(model_rmse < zero_rmse),
     }
+    # CHANGED BY CLAUDE (2026-11-06, final hardening): the same VALIDATION rows are also scored with
+    # directional accuracy (non-zero actuals), Pearson and Spearman for the model (and Ridge below),
+    # plus deltas vs each baseline. Cross-sectional IC needs timestamps and is NOT computed here.
+    from crypto_ai.research.metrics import regression_metrics
+
+    keep = ("mae", "rmse", "directional_accuracy_nonzero", "pearson_ic", "spearman_ic")
+    full_model = regression_metrics(y, model)
+    result["lightgbm"].update({name: full_model.get(name) for name in keep[2:]})
+    result["zero_return"]["directional_accuracy_nonzero"] = None  # a constant 0 has no direction
+    result["zero_return"]["pearson_ic"] = None
+    result["zero_return"]["spearman_ic"] = None
+    result["delta_vs_zero"] = {
+        "mae": model_mae - zero_mae,  # negative = model better
+        "rmse": model_rmse - zero_rmse,
+    }
     if len(validation_x) == len(validation_y) and len(train_x) == len(train_y) and len(train_y):
         ridge = _ridge_predict(
             train_x,
@@ -247,6 +289,19 @@ def score_baselines(
         )
         ridge_mae, ridge_rmse = _errors(y, ridge)
         result["ridge"] = {"mae": ridge_mae, "rmse": ridge_rmse, "alpha": cfg.baseline_ridge_alpha}
+        full_ridge = regression_metrics(y, ridge)
+        result["ridge"].update({name: full_ridge.get(name) for name in keep[2:]})
+        result["delta_vs_ridge"] = {
+            "mae": model_mae - ridge_mae,
+            "rmse": model_rmse - ridge_rmse,
+            "directional_accuracy_nonzero": _delta(
+                result["lightgbm"].get("directional_accuracy_nonzero"),
+                full_ridge.get("directional_accuracy_nonzero"),
+            ),
+            "spearman_ic": _delta(
+                result["lightgbm"].get("spearman_ic"), full_ridge.get("spearman_ic")
+            ),
+        }
         result["lightgbm_beats_ridge"] = bool(model_rmse < ridge_rmse)
     else:
         result["ridge"] = {"status": "SKIPPED_MISALIGNED_OR_EMPTY"}
@@ -470,6 +525,11 @@ RESULT_COLUMNS = (
     "trades", "win_rate", "net_return_sum", "expectancy", "profit_factor", "sharpe_per_trade",
     "max_drawdown", "fees_return_sum", "spread_return_sum", "slippage_return_sum", "funding",
     "test_used_for_selection",
+    # CHANGED BY CLAUDE (2026-11-06, final hardening): provenance + extra validation metrics.
+    "run_id", "status", "configuration_hash", "code_version", "gold_dataset_id",
+    "lightgbm_val_dir_acc_nonzero", "lightgbm_val_pearson", "lightgbm_val_spearman",
+    "delta_rmse_vs_zero", "delta_rmse_vs_ridge", "delta_dir_acc_vs_ridge",
+    "delta_spearman_vs_ridge",
 )  # fmt: skip
 
 
@@ -537,6 +597,23 @@ def results_row_from_report(report: Mapping[str, Any]) -> dict[str, Any]:
         "slippage_return_sum": trading.get("slippage_return_sum"),
         "funding": trading.get("funding"),
         "test_used_for_selection": report.get("test_used_for_selection"),
+        # CHANGED BY CLAUDE (2026-11-06, final hardening): provenance + extra validation metrics.
+        "run_id": (report.get("execution_context") or {}).get("run_identity"),
+        "status": report.get("status"),
+        "configuration_hash": (report.get("checkpoint_identity") or {}).get("configuration_hash"),
+        "code_version": (report.get("checkpoint_identity") or {}).get("code_version"),
+        "gold_dataset_id": (report.get("checkpoint_identity") or {}).get("gold_dataset_id"),
+        "lightgbm_val_dir_acc_nonzero": base.get("lightgbm", {}).get(
+            "directional_accuracy_nonzero"
+        ),
+        "lightgbm_val_pearson": base.get("lightgbm", {}).get("pearson_ic"),
+        "lightgbm_val_spearman": base.get("lightgbm", {}).get("spearman_ic"),
+        "delta_rmse_vs_zero": (base.get("delta_vs_zero") or {}).get("rmse"),
+        "delta_rmse_vs_ridge": (base.get("delta_vs_ridge") or {}).get("rmse"),
+        "delta_dir_acc_vs_ridge": (base.get("delta_vs_ridge") or {}).get(
+            "directional_accuracy_nonzero"
+        ),
+        "delta_spearman_vs_ridge": (base.get("delta_vs_ridge") or {}).get("spearman_ic"),
     }
 
 

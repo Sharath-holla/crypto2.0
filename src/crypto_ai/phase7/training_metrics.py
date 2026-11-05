@@ -22,6 +22,7 @@ from crypto_ai.phase7.hardening import (
     console_line,
     current_config,
     fixed_threshold_precision_recall,
+    process_stats,
     record_latest_fit,
     trend_flag,
 )
@@ -95,6 +96,10 @@ class FitMetricObserver:
     zero_baseline_rmse: float | None = None  # set by models._fit from VALIDATION targets only
     previous_validation_rmse: float | None = None
     worse_streak: int = 0
+    # CHANGED BY CLAUDE (2026-11-06, final hardening): console monitoring state (validation only).
+    best_validation_rmse: float | None = None
+    best_iteration: int = 0
+    started_at: float | None = None
     path: Path = field(init=False)
 
     def __post_init__(self) -> None:
@@ -156,6 +161,21 @@ class FitMetricObserver:
                 "trend": flag,
             }
         )
+        now = time.monotonic()
+        if self.started_at is None:
+            self.started_at = now
+        if validation_rmse is not None and (
+            self.best_validation_rmse is None or validation_rmse < self.best_validation_rmse
+        ):
+            self.best_validation_rmse, self.best_iteration = validation_rmse, iteration
+        best_text = (
+            "n/a" if self.best_validation_rmse is None else f"{self.best_validation_rmse:.4e}"
+        )
+        extra = (
+            f"best val RMSE {best_text} @ {self.best_iteration} "
+            f"(+{iteration - self.best_iteration} since) | "
+            f"elapsed {now - self.started_at:.0f}s | {process_stats()}"
+        )
         if settings.console_table:
             with _OUTPUT_LOCK:
                 print(
@@ -166,6 +186,7 @@ class FitMetricObserver:
                         round_limit,
                         metrics,
                         flag,
+                        extra,
                     ),
                     flush=True,
                 )

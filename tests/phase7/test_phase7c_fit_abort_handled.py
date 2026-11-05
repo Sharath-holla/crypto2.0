@@ -45,5 +45,5 @@ def test_partial_summary_names_the_aborted_spec() -> None:
 
 
 def test_report_records_the_hardening_settings_it_ran_under() -> None:
-    """N-03: pilot/gate/abort settings sit outside the frozen config hash, so reports record them."""
+    """N-03: pilot/gate/abort settings sit outside the frozen config hash; reports record them."""
     assert '"hardening_config": asdict(current_config())' in TRAINING.read_text()
