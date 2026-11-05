@@ -62,7 +62,7 @@ Other Phase 3 behaviour:
   empty: the model is a regressor.
 - **Funding is not modelled anywhere in the pipeline.** Fees, spread and slippage are applied
   inside `net_return`; funding is not. It is reported as `NOT_MODELLED`. No cost was invented.
-- **Results table:** `phase7b_results.csv`, one row per fold × spec, in the run's report root.
+- **Results table:** `phase7b_results.csv`, one row per fold × spec, written to `<report-root>/<run>/models/` (the `models` folder of the run).
   Specs restored from a checkpoint on resume do not re-append a row.
 - **End-of-run summary:** `python -m crypto_ai.phase7.hardening <phase7b_results.csv>` prints the
   corrected ranking and the pass/fail against the written criteria. It is not called automatically.
@@ -119,4 +119,4 @@ Pilot (one horizon × one target across all 16 folds; needs your approval): copy
 `export PHASE7_HARDENING_CONFIG=<copy>` before the multi-fold entry point
 (`scripts/run_phase7a_pipeline.py` / the worker script). Confirm that entry point's exact flags on
 RunPod before the first paid run. To stop cleanly: `touch "$RUN_ROOT/STOP_PHASE7"`. When the run
-ends: `uv run python -m crypto_ai.phase7.hardening <report-root>/phase7b_results.csv`.
+ends: `uv run python -m crypto_ai.phase7.hardening <report-root>/<run>/models/phase7b_results.csv`.

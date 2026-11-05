@@ -55,6 +55,7 @@ from crypto_ai.phase7.folds import (
     slice_multiasset_fold,
 )
 from crypto_ai.phase7.hardening import (
+    FitAbortedError,
     append_result_row,
     apply_pilot_filter,
     console_fields,
@@ -1245,6 +1246,11 @@ def _run_one(
         "decision": decision,
         "trading": trading,
         "console_fields": console_fields(decision, trading),
+        # CHANGED BY CLAUDE (2026-11-05, Phase 7C finding N-03): the Phase 7B settings (pilot filter,
+        # fold gate, abort rule, thresholds) change what a run does but live outside the frozen config
+        # hash, so each report now records the exact settings it ran under. Resuming a run with a
+        # different file can then be detected by comparing reports.
+        "hardening_config": asdict(current_config()),
     }
     report = {
         "status": "COMPLETE",
@@ -1493,6 +1499,7 @@ def _run_phase7_training_owned(
             flush=True,
         )
     stop_reason: str | None = None
+    aborted_fit_detail: dict[str, object] | None = None  # CHANGED BY CLAUDE (2026-11-05, N-02)
     for fold_position, plan in enumerate(folds, start=1):
         cached: dict[tuple[str, int, str, str], CachedPreparedData] = {}
         # Keep only the current horizon and prepared key. Durable entries remain
@@ -2021,6 +2028,21 @@ def _run_phase7_training_owned(
                         execution_metadata=execution_metadata,
                         model_path=model_path,
                     )
+                # CHANGED BY CLAUDE (2026-11-05, Phase 7C finding N-02): the optional
+                # ``abort_after_worse_checks`` rule raises FitAbortedError from inside the LightGBM
+                # callback. Nothing caught it, so an enabled rule crashed the whole run with a stack
+                # trace (and could leave a lease behind). It now stops the run cleanly like the stop
+                # file does: this spec gets NO report and NO checkpoint (so it is retried on resume),
+                # and the partial summary names the spec and the reason.
+                except FitAbortedError as exc:
+                    stop_reason = "FIT_ABORTED_WORSE_THAN_BASELINE_ON_VALIDATION"
+                    aborted_fit_detail = {
+                        "spec": spec.name,
+                        "fold_id": plan.fold_id,
+                        "message": str(exc),
+                    }
+                    print(f"[phase7:train] fit aborted: {exc}", flush=True)
+                    break
                 except IneligibleFoldError as exc:
                     report = {
                         "status": "INELIGIBLE",
@@ -2063,6 +2085,7 @@ def _run_phase7_training_owned(
         stopped = {
             "status": "STOPPED_EARLY",
             "stop_reason": stop_reason,
+            "aborted_fit": aborted_fit_detail,  # CHANGED BY CLAUDE (2026-11-05, N-02)
             "folds_planned": len(folds),
             "completed_reports": sum(item["status"] == "COMPLETE" for item in reports),
             "reports": reports,

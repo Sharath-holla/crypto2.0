@@ -181,13 +181,29 @@ def _ridge_predict(
     step = _stride(len(train_y), max_rows)
     x = np.asarray(train_x[::step], dtype=np.float64)
     y = np.asarray(train_y[::step], dtype=np.float64)
-    mean, scale = x.mean(axis=0), x.std(axis=0)
+    # CHANGED BY CLAUDE (2026-11-05, Phase 7C finding N-01): the original used plain mean/std, so ONE NaN
+    # feature made every weight NaN and the Ridge baseline score NaN. Missing values are now ignored
+    # when standardising and then set to 0 (= the training mean). Clean data gives the same result.
+    # OLD CODE (kept for the record):
+    #   mean, scale = x.mean(axis=0), x.std(axis=0)
+    #   scale[scale == 0] = 1.0
+    #   z = (x - mean) / scale
+    finite_x = np.isfinite(x)
+    counts = np.maximum(finite_x.sum(axis=0), 1)
+    safe_x = np.where(finite_x, x, 0.0)
+    mean = safe_x.sum(axis=0) / counts
+    variance = (np.where(finite_x, x - mean, 0.0) ** 2).sum(axis=0) / counts
+    scale = np.sqrt(variance)
     scale[scale == 0] = 1.0
-    z = (x - mean) / scale
+    z = np.where(finite_x, (x - mean) / scale, 0.0)
+    keep = np.isfinite(y)
+    z, y = z[keep], y[keep]
     y_mean = y.mean()
     gram = z.T @ z + alpha * np.eye(z.shape[1])
     weights = np.linalg.solve(gram, z.T @ (y - y_mean))
-    return ((np.asarray(test_x, dtype=np.float64) - mean) / scale) @ weights + y_mean
+    test = np.asarray(test_x, dtype=np.float64)
+    test_z = np.where(np.isfinite(test), (test - mean) / scale, 0.0)
+    return test_z @ weights + y_mean
 
 
 def _errors(actual: np.ndarray, predicted: np.ndarray) -> tuple[float, float]:
