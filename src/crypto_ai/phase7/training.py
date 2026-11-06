@@ -1139,6 +1139,17 @@ def _run_one(
         # CHANGED BY CLAUDE (2026-11-02, finding L-03): choose identity vs linear on a held-out
         # tail of Cal-A. OLD CODE: fit_calibrator(preds, actual, config.calibration)
         selection_holdout_fraction=SELECTION_HOLDOUT_FRACTION,
+        # CHANGED BY CLAUDE (2026-11-06, closure): purge the fit subset by the ACTUAL
+        # label_end_time (microseconds) plus the configured embargo; otherwise identity.
+        feature_times=cal_a_table.column("feature_time")
+        .combine_chunks()
+        .cast(pa.int64())
+        .to_numpy(),
+        label_end_times=cal_a_table.column("label_end_time")
+        .combine_chunks()
+        .cast(pa.int64())
+        .to_numpy(),
+        embargo=int(config.schedule.embargo_minutes) * 60 * 1_000_000,
     )
     emit_event("CAL_A_DONE", fold_id=fold.plan.fold_id, spec=spec.name)
     telemetry("CALIBRATE", "END", started=calibration_started)
