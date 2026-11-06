@@ -8,6 +8,7 @@ import time
 from contextlib import nullcontext
 from dataclasses import asdict, dataclass
 from datetime import timedelta
+from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
@@ -86,6 +87,7 @@ from crypto_ai.phase7.models import (
     prepare_architecture_inputs,
     save_model,
 )
+from crypto_ai.phase7.preparation_identity import preparation_source_identity
 from crypto_ai.phase7.prepared_cache import (
     PREPROCESSING_VERSION,
     CachedPreparedData,
@@ -605,6 +607,11 @@ def causal_descriptor_identity(descriptors: list[SymbolDescriptor], train_end: A
     )
 
 
+@lru_cache(maxsize=1)
+def _preparation_identity() -> dict[str, Any]:
+    return preparation_source_identity()
+
+
 def _prepared_cache_identity(
     *,
     config: Phase7Config,
@@ -621,6 +628,11 @@ def _prepared_cache_identity(
     descriptor_identity: str,
 ) -> dict[str, Any]:
     target = _prediction_target(spec)
+    # CHANGED BY CLAUDE (2026-11-06, closure): the cache key hashes only the code that can change
+    # prepared matrices (preparation_identity), not the whole training-critical file list. The
+    # ``source_identity`` argument is kept for call compatibility; it still drives resume/checkpoint
+    # identity elsewhere, where economics/selection/reporting edits MUST invalidate results.
+    preparation = _preparation_identity()
     partition_identity = [
         {
             "sha256": item.get("sha256"),
@@ -635,7 +647,9 @@ def _prepared_cache_identity(
         "gold_partition_manifest_sha256": stable_hash(partition_identity, length=64),
         "configuration_hash": config.configuration_hash,
         "gold_source_fingerprint": lineage.get("source_fingerprint"),
-        "scientific_source_identity": source_identity["manifest_sha256"],
+        # OLD CODE (kept for reference): "scientific_source_identity": source_identity[...],
+        "preparation_source_identity": preparation["manifest_sha256"],
+        "preparation_semantics_version": preparation["semantics_version"],
         "fold_id": fold_id,
         "research_view": research_view,
         "horizon_minutes": spec.horizon_minutes,
@@ -653,7 +667,8 @@ def _prepared_cache_identity(
         "feature_version": FEATURE_VERSION,
         "target_version": TARGET_VERSION,
         "matrix_dtype": "float64",
-        "matrix_code_identity": source_identity["manifest_sha256"],
+        # OLD CODE (kept for reference): "matrix_code_identity": source_identity[...],
+        "matrix_code_identity": preparation["manifest_sha256"],
         "symbol_encoding_contract": "deferred_sorted_train_symbols_one_hot_v1",
         "fold_context_version": FOLD_CONTEXT_VERSION,
         "scientific_environment": scientific_environment_identity(),

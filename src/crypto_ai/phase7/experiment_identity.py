@@ -31,6 +31,7 @@ EXPERIMENT_CONTROL_SOURCE_FILES = (
     "src/crypto_ai/phase7/result_integrity.py",
     "src/crypto_ai/phase7/selection_chronology.py",
     "src/crypto_ai/phase7/result_ledger.py",
+    "src/crypto_ai/phase7/result_publication.py",
     "src/crypto_ai/phase7/experiment_identity.py",
 )
 
