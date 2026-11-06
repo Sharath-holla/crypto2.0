@@ -54,6 +54,7 @@ from crypto_ai.phase7.folds import (
     MultiAssetFoldData,
     slice_multiasset_fold,
 )
+from crypto_ai.phase7.experiment_identity import experiment_control_identity
 from crypto_ai.phase7.hardening import (
     FitAbortedError,
     append_result_row,
@@ -1246,11 +1247,12 @@ def _run_one(
         "decision": decision,
         "trading": trading,
         "console_fields": console_fields(decision, trading),
-        # CHANGED BY CLAUDE (2026-11-05, Phase 7C finding N-03): the Phase 7B settings (pilot filter,
-        # fold gate, abort rule, thresholds) change what a run does but live outside the frozen config
-        # hash, so each report now records the exact settings it ran under. Resuming a run with a
-        # different file can then be detected by comparing reports.
+        # CHANGED BY CLAUDE (2026-11-05, Phase 7C finding N-03): the Phase 7B settings (pilot
+        # filter, fold gate, abort rule, thresholds) change what a run does but live outside the
+        # frozen config hash, so each report records the exact settings it ran under.
+        # CHANGED BY CLAUDE (2026-11-06, IA-04): and the control-plane identity (source + settings).
         "hardening_config": asdict(current_config()),
+        "experiment_control_identity": experiment_control_identity(asdict(current_config())),
     }
     report = {
         "status": "COMPLETE",
@@ -1800,6 +1802,12 @@ def _run_phase7_training_owned(
                     "cost_policy_version": COST_POLICY_VERSION,
                     "training_source_identity": source_identity,
                     "causal_descriptor_identity": descriptor_identity,
+                    # CHANGED BY CLAUDE (2026-11-06, IA-04): hardening/selection/ledger source and
+                    # the ACTIVE hardening settings now decide whether a completed stage may be
+                    # resumed. They are NOT part of the prepared-cache identity.
+                    "experiment_control_identity": experiment_control_identity(
+                        asdict(current_config())
+                    )["manifest_sha256"],
                     "fold_context_identity": stable_hash(
                         {
                             "clusters": fold_data.cluster_mapping,
@@ -2029,11 +2037,11 @@ def _run_phase7_training_owned(
                         model_path=model_path,
                     )
                 # CHANGED BY CLAUDE (2026-11-05, Phase 7C finding N-02): the optional
-                # ``abort_after_worse_checks`` rule raises FitAbortedError from inside the LightGBM
-                # callback. Nothing caught it, so an enabled rule crashed the whole run with a stack
-                # trace (and could leave a lease behind). It now stops the run cleanly like the stop
-                # file does: this spec gets NO report and NO checkpoint (so it is retried on resume),
-                # and the partial summary names the spec and the reason.
+                # ``abort_after_worse_checks`` rule raises FitAbortedError from inside the
+                # LightGBM callback. Nothing caught it, so an enabled rule crashed the whole run
+                # with a stack trace (and could leave a lease behind). It now stops the run
+                # cleanly like the stop file does: this spec gets NO report and NO checkpoint (so
+                # it is retried on resume), and the partial summary names the spec and the reason.
                 except FitAbortedError as exc:
                     stop_reason = "FIT_ABORTED_WORSE_THAN_BASELINE_ON_VALIDATION"
                     aborted_fit_detail = {
