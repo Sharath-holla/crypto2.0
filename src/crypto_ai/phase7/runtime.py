@@ -186,15 +186,35 @@ def git_commit(repository_root: Path | None = None) -> str | None:
     return result.stdout.strip() or None
 
 
+def _container_adjusted_memory(total: int, available: int) -> tuple[int, int]:
+    """CHANGED BY CLAUDE (2026-11-06, RunPod review): psutil reports HOST memory.
+
+    Inside a container (RunPod, Docker, Kubernetes) the cgroup limit is the real ceiling, so the
+    RAM floor, the preflight and the telemetry must use it. Without a readable cgroup limit (macOS,
+    bare metal) the psutil values are returned unchanged.
+    """
+
+    from crypto_ai.phase7.resource_estimate import cgroup_limits
+
+    limits = cgroup_limits()
+    limit = limits.get("cgroup_memory_limit_bytes")
+    if not limit or limit >= total:
+        return total, available
+    current = limits.get("cgroup_memory_current_bytes") or 0
+    return int(limit), int(min(available, max(int(limit) - int(current), 0)))
+
+
 def system_snapshot(path: Path) -> dict[str, Any]:
     usage = shutil.disk_usage(path)
     vm = psutil.virtual_memory()
+    # OLD CODE: "ram_total_bytes": int(vm.total), "ram_available_bytes": int(vm.available)
+    ram_total, ram_available = _container_adjusted_memory(int(vm.total), int(vm.available))
     return {
         "python": platform.python_version(),
         "os": platform.platform(),
         "cpu_count": os.cpu_count(),
-        "ram_total_bytes": int(vm.total),
-        "ram_available_bytes": int(vm.available),
+        "ram_total_bytes": ram_total,
+        "ram_available_bytes": ram_available,
         "disk_total_bytes": usage.total,
         "disk_free_bytes": usage.free,
     }
@@ -210,11 +230,14 @@ def memory_snapshot() -> dict[str, int]:
     rss = int(psutil.Process().memory_info().rss)
     _PEAK_RSS_BYTES = max(_PEAK_RSS_BYTES, rss)
     vm = psutil.virtual_memory()
+    # CHANGED BY CLAUDE (2026-11-06, RunPod review): container-aware RAM.
+    # OLD CODE: "ram_available_bytes": int(vm.available), "ram_total_bytes": int(vm.total)
+    ram_total, ram_available = _container_adjusted_memory(int(vm.total), int(vm.available))
     return {
         "process_rss_bytes": rss,
         "process_peak_rss_bytes": _PEAK_RSS_BYTES,
-        "ram_available_bytes": int(vm.available),
-        "ram_total_bytes": int(vm.total),
+        "ram_available_bytes": ram_available,
+        "ram_total_bytes": ram_total,
     }
 
 

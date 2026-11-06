@@ -72,3 +72,27 @@ def test_unlimited_or_missing_cgroup_does_not_invent_a_limit(tmp_path: Path) -> 
     assert unlimited["cgroup_cpu_quota_cpus"] is None and unlimited["observed"] is False
     assert cgroup_limits(tmp_path / "does-not-exist")["observed"] is False
     assert effective_ram_available({"ram_available_bytes": 5 * GIB}, unlimited) == 5 * GIB
+
+
+# --- CHANGED BY CLAUDE (2026-11-06, RunPod review): container-aware RAM ---
+def test_container_limit_caps_total_and_available_ram(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from crypto_ai.phase7 import resource_estimate, runtime
+
+    root = _fake_cgroup_v2(tmp_path / "cg", str(32 * GIB), "max 100000")
+    (root / "memory.current").write_text(str(10 * GIB) + "\n")
+    real = resource_estimate.cgroup_limits
+    monkeypatch.setattr(resource_estimate, "cgroup_limits", lambda *a, **k: real(root))
+    total, available = runtime._container_adjusted_memory(1000 * GIB, 900 * GIB)
+    assert total == 32 * GIB and available == 22 * GIB  # host says 900 GiB, the pod has 22
+
+
+def test_no_container_limit_leaves_psutil_values_unchanged(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from crypto_ai.phase7 import resource_estimate, runtime
+
+    empty = {"cgroup_memory_limit_bytes": None, "cgroup_memory_current_bytes": None}
+    monkeypatch.setattr(resource_estimate, "cgroup_limits", lambda *a, **k: empty)
+    assert runtime._container_adjusted_memory(16 * GIB, 5 * GIB) == (16 * GIB, 5 * GIB)

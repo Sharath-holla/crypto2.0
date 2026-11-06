@@ -89,6 +89,14 @@ def cgroup_limits(root: Path = Path("/sys/fs/cgroup")) -> dict[str, Any]:
         if raw and raw != "max" and raw.isdigit() and int(raw) < 1 << 60:
             memory = int(raw)
             break
+    # CHANGED BY CLAUDE (2026-11-06, RunPod review): also report the cgroup's CURRENT memory use so
+    # the runtime can compute what is really left inside a container.
+    memory_current: int | None = None
+    for name in ("memory.current", "memory/memory.usage_in_bytes"):
+        raw_current = _read(root / name)
+        if raw_current and raw_current.isdigit():
+            memory_current = int(raw_current)
+            break
     cpus: float | None = None
     raw = _read(root / "cpu.max")
     if raw:
@@ -102,6 +110,7 @@ def cgroup_limits(root: Path = Path("/sys/fs/cgroup")) -> dict[str, Any]:
             cpus = int(quota_raw) / int(period_raw)
     return {
         "cgroup_memory_limit_bytes": memory,
+        "cgroup_memory_current_bytes": memory_current,
         "cgroup_cpu_quota_cpus": cpus,
         "label": MEASURED,
         "observed": memory is not None or cpus is not None,
