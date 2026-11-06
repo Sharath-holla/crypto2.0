@@ -88,7 +88,7 @@ export PHASE7_CACHE_ROOT=$L/prepared_cache PHASE7_MODEL_ROOT=$L/models \
 export PHASE7_LEGACY_DATA_ROOT=/home/nssharath123/crypto2.0/data
 export PHASE7_LEGACY_GOLD_ROOT=/home/nssharath123/crypto2.0/data/gold/phase7a_core20_primary_v1
 export PHASE7_LEGACY_ARTIFACT_ROOT=/home/nssharath123/crypto2.0/local_artifacts/phase7
-export PHASE7_FEATURE_CONTEXT_SIDECAR=$P/../sidecar/feature_context_sidecar_v3/manifest.json
+export PHASE7_FEATURE_CONTEXT_SIDECAR=/workspace/sidecar/feature_context_sidecar_v3/manifest.json
 export PHASE7_LGBM_DEVICE=cpu PHASE7_MODEL_PARALLELISM=1 PHASE7_TOTAL_CPU_THREADS=$(nproc)
 export PHASE7_MIN_FREE_RAM_GIB=20 PHASE7_MIN_FREE_DISK_GIB=50 CRYPTO_AI_RESEARCH_MODE=1
 # 1 data: python3 scripts/closure/verify_gold_hashes_readonly.py --gold-dataset-dir <gold-phase7-...> --output $L/gold_hash.json
