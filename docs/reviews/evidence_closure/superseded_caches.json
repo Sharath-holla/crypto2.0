@@ -1,0 +1,41 @@
+{
+  "status": "SUPERSEDED_NOT_REUSABLE",
+  "written_by": "Claude (2026-11-06 closure)",
+  "policy": "Nothing was deleted or modified in the cache directory. This registry records that the cache below must not be reused for any new run.",
+  "caches": [
+    {
+      "cache_id": "f022133827272c166b734aa5d48dc2aa4e1ce574f802461c45e33218f5e4245a",
+      "path": "~/Crypto2Data/lightning-full/crypto2-persistent/phase7/prepared_cache/f0221...",
+      "size_on_disk": "6.0G",
+      "schema_version": "phase7_prepared_matrix_cache_v1",
+      "reason": "Built before PREPARATION_SEMANTICS_VERSION / preparation_source_identity existed. Its identity has no 'preparation_source_identity' or 'preparation_semantics_version', so the current _prepared_cache_identity cannot equal it and the loader rejects it (cache miss) by construction.",
+      "identity_keys_present": [
+        "causal_descriptor_identity",
+        "configuration_hash",
+        "embargo_minutes",
+        "feature_columns",
+        "feature_group",
+        "feature_version",
+        "fold_id",
+        "fold_membership_hash",
+        "gold_dataset_id",
+        "gold_manifest_sha256",
+        "gold_partition_manifest_sha256",
+        "gold_source_fingerprint",
+        "horizon_minutes",
+        "matrix_code_identity",
+        "matrix_dtype",
+        "preprocessing_version",
+        "purge",
+        "registry_hash",
+        "research_view",
+        "scientific_source_identity",
+        "symbol_encoding_contract",
+        "target_column",
+        "target_type",
+        "target_version",
+        "universe_hash"
+      ]
+    }
+  ]
+}

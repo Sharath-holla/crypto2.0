@@ -1,0 +1,37 @@
+{
+  "bytes_hashed": 9672256838,
+  "dataset_dir": "/sessions/rcw-01e7us4kjtj9fhpgkuyugatw/mnt/Crypto2Data/lightning-full/crypto2-persistent/data/gold/phase7a_core20_primary_v1/gold-phase7-0cbf2910e8d96c9d19826598",
+  "dataset_id": "gold-phase7-0cbf2910e8d96c9d19826598",
+  "duration_seconds": 12.9,
+  "errors": [],
+  "feature_count": 109,
+  "files_hashed": 138,
+  "manifest_sha256": "a142027722424ead5bbc508537e85bf743b3da68b38c3a99c9aabd3ef0e2e711",
+  "manifest_summary": {
+    "classification": "RETROSPECTIVE_MULTI_ASSET_RESEARCH",
+    "feature_version": "multiasset_features_v2",
+    "july_2026_used": false,
+    "partitioned_by": [
+      "symbol",
+      "year"
+    ],
+    "prospective_holdout_evaluation_authorized": false,
+    "prospective_holdout_start": "2026-08-01T00:00:00+00:00",
+    "prospective_holdout_status": "LOCKED_UNUSED",
+    "prospective_holdout_used": false,
+    "registry_hash": "b2c973f0050f205e58672558",
+    "research_cutoff": "2026-07-01T00:00:00+00:00",
+    "row_count": 50352548,
+    "storage_mode": "bounded_time_chunks",
+    "target_version": "multiasset_targets_v2",
+    "universe_hash": "94a9ce4759dd8d3303841f13"
+  },
+  "missing_files": [],
+  "mode": "READ_ONLY_STDLIB",
+  "not_checked_here": "Parquet schema, physical columns, per-file row counts (need pyarrow)",
+  "partitions_listed": 138,
+  "sha256_mismatches": [],
+  "unlisted_files": [],
+  "verdict": "GOLD_HASH_VERIFICATION_PASS",
+  "verifier": "scripts/closure/verify_gold_hashes_readonly.py"
+}

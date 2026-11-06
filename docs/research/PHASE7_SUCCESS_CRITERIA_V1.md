@@ -38,12 +38,37 @@ baseline on validation, mean/median/worst fold, fraction positive. Defaults
 (`configs/phase7/hardening_v1.toml`): at least 10 net-positive folds and 10 baseline-beating
 folds. These are *descriptive screening thresholds*, not evidence of an edge.
 
-## 5. Smoke run (one CPU fold, one spec)
+## 5. Smoke run (one CPU fold, one spec) - ENGINEERING criteria only
 
-`architecture-G0-A6-60m-raw`, Fold 1. Pass = the pipeline completes with a COMPLETE, identity-stamped
-result row, the result set validates (`result_integrity.validate_result_set`), no test access
-violation, no holdout access, and finite metrics. A smoke run carries **no** scientific conclusion:
-`PLUMBING_AND_SCIENCE_SMOKE_ONLY`.
+Amended 2026-11-06 (closure) BEFORE any model result exists; the amendment only separates
+engineering criteria from scientific ones. Purpose: `REGRESSION_PLUMBING_AND_PIPELINE_SMOKE`
+(never `EDGE_DISCOVERY` or `PROFITABILITY_CONFIRMATION`).
+
+Spec `architecture-G0-A6-60m-raw`, Fold 1 (fold index 0), CPU backend, one worker.
+
+The smoke SUCCEEDS if and only if all of these hold:
+
+1. inputs are verified (Gold hash/manifest verification PASS, cache identity matches, holdout
+   `LOCKED_UNUSED`, admission record `ADMITTED`);
+2. the prepared data are valid (row counts, finite masks, feature/target order, NumPy-vs-Arrow
+   agreement);
+3. the fit executes to completion on CPU;
+4. all predictions are finite;
+5. metrics compute without error;
+6. artifacts persist: model, report, ledger result record and receipt, CSV view that matches the
+   ledger, checkpoint COMPLETE;
+7. no invariant or leak-guard failure (no TEST use for any choice, no August/July access, no
+   duplicate or mixed-identity result).
+
+The smoke does NOT succeed or fail on profitability, IC, expectancy, or beating a baseline. A
+negative or zero result is a valid smoke. It supports no scientific or tradability claim
+(`economic_status = REGRESSION_PLUMBING_ONLY_NO_TRADABILITY_CLAIM`, funding `NOT_MODELLED`).
+
+### 5a. Later pilot criteria (separate, NOT part of the smoke)
+
+A pilot uses ONE spec precommitted in `configs/research/phase7_selection_chronology_v1.json`,
+development folds 1-10, evaluation folds 11-16, and is judged only by sections 2-4 above. Nothing
+in the smoke result may be used to choose that spec.
 
 ## 6. Non-claims
 
