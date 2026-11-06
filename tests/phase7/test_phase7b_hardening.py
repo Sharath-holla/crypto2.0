@@ -213,7 +213,9 @@ def test_results_table_appends_one_row_per_fold_and_spec(tmp_path: Path) -> None
     assert rows[0]["funding"] == "NOT_MODELLED" and rows[0]["long_precision"] == "0.5"
 
 
-def test_ranking_applies_bonferroni_and_success_criteria() -> None:
+def test_ranking_is_descriptive_and_success_is_not_independent_evidence() -> None:
+    # CHANGED BY CLAUDE (2026-11-06, IA-01/IA-02): the old test asserted Bonferroni p-values and a
+    # "significant" flag computed from validation rows. Those claims were invalid and were removed.
     rows = []
     for fold in range(12):
         rows.append(
@@ -234,16 +236,36 @@ def test_ranking_applies_bonferroni_and_success_criteria() -> None:
                 "net_return_sum": "-0.01" if fold % 2 else "0.01",
             }
         )
-    ranking = h.rank_specs_with_correction(rows)
+    ranking = h.descriptive_ranking(rows)
     assert ranking["specs_tried"] == 2 and ranking["spec_fold_pairs_tried"] == 24
-    assert ranking["ranking_basis"] == "VALIDATION_ONLY"
+    assert ranking["ranking_kind"] == "DESCRIPTIVE_RANKING"
+    assert ranking["metric_class"] == "DEVELOPMENT_METRIC"
+    assert ranking["inference_status"] == "NOT_INDEPENDENT"
+    assert ranking["p_values"] == "NOT_APPLICABLE"
     best = ranking["ranking"][0]
-    assert best["spec"] == "good" and best["p_bonferroni"] == pytest.approx(
-        min(1, best["p_one_sided"] * 2)
-    )
-    assert best["significant_after_correction"]
+    assert best["spec"] == "good" and best["worst_fold_skill"] > 0
+    assert not any(key.startswith("p_") or "significant" in key for key in best)
+    assert h.rank_specs_with_correction(rows)["inference_status"] == "NOT_INDEPENDENT"
     success = h.evaluate_success(rows)
-    assert success["specs"]["good"]["passes"] and not success["specs"]["noise"]["passes"]
+    assert success["specs"]["good"]["descriptive_criteria_met"]
+    assert not success["specs"]["noise"]["descriptive_criteria_met"]
+    assert success["status"] == "DESCRIPTIVE_ONLY"
+    assert success["qualifies_as_independent_evidence"] is False
+
+
+def test_duplicate_fold_rows_cannot_satisfy_success_or_ranking() -> None:
+    # IA-02 reproduction: ten copies of one fold used to pass "10 folds" with significant=true.
+    row = {
+        "fold_id": "f0",
+        "spec": "lucky",
+        "lightgbm_skill_vs_zero": 0.5,
+        "beats_zero": "True",
+        "net_return_sum": "0.01",
+    }
+    with pytest.raises(ValueError, match="DUPLICATE_RESULT"):
+        h.evaluate_success([dict(row) for _ in range(10)])
+    with pytest.raises(ValueError, match="DUPLICATE_RESULT"):
+        h.descriptive_ranking([dict(row) for _ in range(10)])
 
 
 def test_silver_check_warns_but_rebuild_fails_clearly(tmp_path: Path) -> None:

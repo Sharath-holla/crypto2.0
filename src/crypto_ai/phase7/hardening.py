@@ -20,6 +20,17 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
+from crypto_ai.phase7.result_integrity import (
+    DESCRIPTIVE_ONLY,
+    DEVELOPMENT_METRIC,
+    NOT_APPLICABLE,
+    NOT_INDEPENDENT,
+    SELECTION_METRIC,
+    reject_duplicates,
+    validate_result_set,
+)
+from crypto_ai.phase7.selection_chronology import DESCRIPTIVE_RANKING
+
 import numpy as np
 import pyarrow as pa
 
@@ -191,8 +202,7 @@ def console_line(
         f"val L2 {_short(val.get('l2'))} MAE {_short(val.get('mae'))} "
         f"RMSE {_short(val.get('rmse'))} dir {_short(val.get('directional_accuracy'))} "
         f"P {_short(val.get('fixed_precision'))} R {_short(val.get('fixed_recall'))} "
-        f"(fixed-threshold, validation only) | val RMSE {flag}"
-        + (f" | {extra}" if extra else "")
+        f"(fixed-threshold, validation only) | val RMSE {flag}" + (f" | {extra}" if extra else "")
     )
 
 
@@ -257,6 +267,11 @@ def score_baselines(
     zero_mae, zero_rmse = _errors(y, np.zeros_like(y))
     model_mae, model_rmse = _errors(y, model)
     result: dict[str, Any] = {
+        # CHANGED BY CLAUDE (2026-11-06, IA-16): contract = same eligible rows, same target, same
+        # fold, same validation role for model, zero and Ridge; Ridge sees TRAIN features only.
+        # Metric class: DEVELOPMENT_METRIC (descriptive baseline, not a selection baseline).
+        "baseline_contract_version": BASELINE_CONTRACT_VERSION,
+        "metric_class": DEVELOPMENT_METRIC,
         "scope": "VALIDATION_ONLY",
         "validation_rows_scored": int(mask.sum()),
         "zero_return": {"mae": zero_mae, "rmse": zero_rmse},
@@ -530,6 +545,8 @@ RESULT_COLUMNS = (
     "lightgbm_val_dir_acc_nonzero", "lightgbm_val_pearson", "lightgbm_val_spearman",
     "delta_rmse_vs_zero", "delta_rmse_vs_ridge", "delta_dir_acc_vs_ridge",
     "delta_spearman_vs_ridge",
+    "seed", "feature_set", "backend", "scientific_code_identity", "hardening_identity",
+    "baseline_contract_version",
 )  # fmt: skip
 
 
@@ -614,94 +631,170 @@ def results_row_from_report(report: Mapping[str, Any]) -> dict[str, Any]:
             "directional_accuracy_nonzero"
         ),
         "delta_spearman_vs_ridge": (base.get("delta_vs_ridge") or {}).get("spearman_ic"),
+        # CHANGED BY CLAUDE (2026-11-06, IA-02/IA-04): canonical identity fields.
+        "seed": (report.get("model") or {}).get("seed"),
+        "feature_set": spec.get("feature_group"),
+        "backend": (report.get("model") or {}).get("compute_backend"),
+        "scientific_code_identity": (
+            (report.get("checkpoint_identity") or {}).get("training_source_identity") or {}
+        ).get("manifest_sha256"),
+        "hardening_identity": (extra.get("experiment_control_identity") or {}).get(
+            "manifest_sha256"
+        ),
+        "baseline_contract_version": base.get("baseline_contract_version"),
     }
 
 
 # ---------------------------------------------------------------- success criteria
-def _one_sided_p(values: Sequence[float]) -> float | None:
-    """One-sided p-value that the mean validation skill is > 0 (t test)."""
-
-    n = len(values)
-    if n < 2:
-        return None
-    mean, sd = float(np.mean(values)), float(np.std(values, ddof=1))
-    if sd == 0:
-        return 0.0 if mean > 0 else 1.0
-    from scipy import stats
-
-    return float(stats.t.sf(mean / (sd / math.sqrt(n)), n - 1))
+BASELINE_CONTRACT_VERSION = "baseline_contract_v1_same_rows_same_target_fixed_ridge_validation"
 
 
-def rank_specs_with_correction(
-    rows: Sequence[Mapping[str, Any]], config: HardeningConfig | None = None
-) -> dict[str, Any]:
-    """Rank specs on VALIDATION skill only and Bonferroni-correct for the number of specs tried."""
-
-    cfg = config or current_config()
+def _per_spec_skill(rows: Sequence[Mapping[str, Any]]) -> dict[str, list[float]]:
     by_spec: dict[str, list[float]] = {}
-    folds: set[str] = set()
     for row in rows:
-        folds.add(str(row.get("fold_id")))
         skill = row.get("lightgbm_skill_vs_zero")
         if skill not in (None, ""):
             by_spec.setdefault(str(row["spec"]), []).append(float(skill))
-    trials = len(by_spec)
-    ranking = []
+    return by_spec
+
+
+def _descriptive_items(by_spec: Mapping[str, Sequence[float]]) -> list[dict[str, Any]]:
+    items = []
     for spec, skills in by_spec.items():
-        p = _one_sided_p(skills)
-        adjusted = None if p is None else min(1.0, p * max(1, trials))
-        ranking.append(
+        values = np.asarray(skills, dtype=np.float64)
+        items.append(
             {
                 "spec": spec,
-                "folds_scored": len(skills),
-                "mean_validation_skill_vs_zero": float(np.mean(skills)),
-                "p_one_sided": p,
-                "p_bonferroni": adjusted,
-                "significant_after_correction": adjusted is not None
-                and adjusted < cfg.success_alpha,
+                "folds_scored": int(len(values)),
+                "mean_validation_skill_vs_zero": float(values.mean()),
+                "median_validation_skill_vs_zero": float(np.median(values)),
+                "worst_fold_skill": float(values.min()),
+                "std_across_folds": float(values.std(ddof=1)) if len(values) > 1 else None,
+                "fraction_folds_positive": float((values > 0).mean()),
             }
         )
-    ranking.sort(key=lambda item: item["mean_validation_skill_vs_zero"], reverse=True)
+    items.sort(key=lambda item: item["mean_validation_skill_vs_zero"], reverse=True)
+    return items
+
+
+def descriptive_ranking(
+    rows: Sequence[Mapping[str, Any]], config: HardeningConfig | None = None
+) -> dict[str, Any]:
+    """DESCRIPTIVE ranking of specs by validation skill. It is NOT evidence of an edge.
+
+    CHANGED BY CLAUDE (2026-11-06, finding IA-01/IA-02). The old helper returned one-sided t-test
+    p-values and a Bonferroni "significant" flag computed from VALIDATION rows, the same rows that
+    stop each estimator early, and it counted duplicate CSV rows as extra folds. Both claims were
+    invalid, so: duplicates are rejected, no p-value is produced, and the output says why.
+    OLD CODE: ``rank_specs_with_correction`` (removed; see git history before this commit).
+    """
+
+    ordered = reject_duplicates(rows)
+    by_spec = _per_spec_skill(ordered)
     return {
+        "ranking_kind": DESCRIPTIVE_RANKING,
+        "metric_class": DEVELOPMENT_METRIC,
+        "inference_status": NOT_INDEPENDENT,
+        "p_values": NOT_APPLICABLE,
+        "reason": (
+            "Validation rows also stop each estimator early and rolling folds reuse earlier TEST "
+            "months as later validation, so no p-value or 'significant' flag is valid here."
+        ),
         "ranking_basis": "VALIDATION_ONLY",
-        "correction": cfg.multiple_testing_correction,
-        "specs_tried": trials,
-        "folds_seen": len(folds),
+        "specs_tried": len(by_spec),
         "spec_fold_pairs_tried": sum(len(v) for v in by_spec.values()),
-        "alpha": cfg.success_alpha,
-        "ranking": ranking,
+        "folds_seen": len({str(r.get("fold_id")) for r in ordered}),
+        "ranking": _descriptive_items(by_spec),
+    }
+
+
+# Backward-compatible name. It now returns the DESCRIPTIVE ranking only (no p-values).
+rank_specs_with_correction = descriptive_ranking
+
+
+def selection_eligible_ranking(
+    rows: Sequence[Mapping[str, Any]],
+    protocol: Mapping[str, Any],
+    *,
+    expected_fold_ids: Sequence[str],
+) -> dict[str, Any]:
+    """SELECTION_ELIGIBLE ranking: unique canonical results on DEVELOPMENT folds of a frozen
+    protocol only. It may choose a spec; it still cannot certify an edge (inference
+    NOT_INDEPENDENT).
+    """
+
+    from crypto_ai.phase7.selection_chronology import (
+        SELECTION_ELIGIBLE_RANKING,
+        assert_rows_selection_eligible,
+    )
+
+    validated = validate_result_set(rows, expected_fold_ids=expected_fold_ids)
+    assert_rows_selection_eligible(validated, protocol)
+    return {
+        "ranking_kind": SELECTION_ELIGIBLE_RANKING,
+        "metric_class": SELECTION_METRIC,
+        "inference_status": NOT_INDEPENDENT,
+        "protocol_sha256": protocol["protocol_sha256"],
+        "selection_policy_version": protocol["selection_policy_version"],
+        "ranking": _descriptive_items(_per_spec_skill(validated)),
+        "independent_evaluation": "REQUIRES the protocol's evaluation folds, run after selection",
     }
 
 
 def evaluate_success(
-    rows: Sequence[Mapping[str, Any]], config: HardeningConfig | None = None
+    rows: Sequence[Mapping[str, Any]],
+    config: HardeningConfig | None = None,
+    *,
+    expected_fold_ids: Sequence[str] | None = None,
 ) -> dict[str, Any]:
-    """Pass/fail per spec against criteria written down before training."""
+    """Count folds against the written criteria. DESCRIPTIVE only; duplicates are rejected.
+
+    CHANGED BY CLAUDE (2026-11-06, finding IA-02): the old version counted every row, so ten copies
+    of one fold satisfied "10 folds". It now validates the result set first and renames the verdict
+    ``descriptive_criteria_met`` so it cannot be quoted as a pass of the independent success
+    protocol.
+    """
 
     cfg = config or current_config()
+    if expected_fold_ids is not None:
+        ordered = validate_result_set(
+            rows, expected_fold_ids=expected_fold_ids, strict_identity=False
+        )
+    else:
+        ordered = reject_duplicates(rows)
     per_spec: dict[str, dict[str, int]] = {}
-    for row in rows:
+    for row in ordered:
         entry = per_spec.setdefault(str(row["spec"]), {"net_positive": 0, "beats": 0, "folds": 0})
         entry["folds"] += 1
         net = row.get("net_return_sum")
         entry["net_positive"] += int(net not in (None, "") and float(net) > 0)
-        beats = row.get("beats_zero")
-        entry["beats"] += int(str(beats) == "True")
+        entry["beats"] += int(str(row.get("beats_zero")) == "True")
     verdicts = {
         spec: {
             **counts,
-            "passes": counts["net_positive"] >= cfg.success_min_net_positive_folds
+            "descriptive_criteria_met": counts["net_positive"]
+            >= cfg.success_min_net_positive_folds
             and counts["beats"] >= cfg.success_min_beats_baseline_folds,
         }
         for spec, counts in sorted(per_spec.items())
     }
     return {
+        "status": DESCRIPTIVE_ONLY,
+        "inference_status": NOT_INDEPENDENT,
+        "qualifies_as_independent_evidence": False,
+        "why_not": (
+            "Validation 'beats_zero' is a development metric; fold TEST months are reused as later "
+            "validation; costs exclude funding. Use the frozen selection protocol and the "
+            "independent evaluation folds (docs/research/PHASE7_SUCCESS_CRITERIA_V1.md)."
+        ),
         "criteria": {
             "min_net_positive_folds": cfg.success_min_net_positive_folds,
             "min_beats_baseline_folds": cfg.success_min_beats_baseline_folds,
         },
         "specs": verdicts,
-        "any_spec_passes": any(item["passes"] for item in verdicts.values()),
+        "any_spec_meets_descriptive_criteria": any(
+            item["descriptive_criteria_met"] for item in verdicts.values()
+        ),
     }
 
 
@@ -748,7 +841,7 @@ def main() -> int:
     rows = read_results_table(args.results)
     report = {
         "config": asdict(current_config()),
-        "ranking": rank_specs_with_correction(rows),
+        "ranking": descriptive_ranking(rows),
         "success": evaluate_success(rows),
     }
     print(json.dumps(report, indent=2, sort_keys=True))
