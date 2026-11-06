@@ -42,6 +42,7 @@ Install:
 
 import json
 import logging
+import os
 import time
 import urllib.parse
 import uuid
@@ -154,6 +155,15 @@ class CoinSwitchClient:
     """
 
     def __init__(self, api_key: str, secret_key_hex: str, timeout: float = 10.0):
+        # CHANGED BY CLAUDE (2026-11-06, closure): order guard. Research processes set
+        # CRYPTO_AI_RESEARCH_MODE=1 (the phase 7 admission does); an order-capable client then
+        # refuses to exist. Behaviour is unchanged when the variable is unset. No credential is
+        # read or touched here.
+        if os.environ.get("CRYPTO_AI_RESEARCH_MODE") == "1":
+            raise RuntimeError(
+                "RESEARCH_MODE_ORDER_CLIENT_BLOCKED: CoinSwitchClient cannot be constructed "
+                "while CRYPTO_AI_RESEARCH_MODE=1"
+            )
         self._api_key        = api_key.strip()
         self._secret_key_hex = secret_key_hex.strip()
         self._timeout        = aiohttp.ClientTimeout(total=timeout)

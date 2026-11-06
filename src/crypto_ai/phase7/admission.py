@@ -141,6 +141,11 @@ def admit_official_training(
 
     control = experiment_control_identity(asdict(current_config()))["manifest_sha256"]
     protocol = selection_protocol_identity()
+    # CHANGED BY CLAUDE (2026-11-06, closure): from here on this process is a research process; the
+    # order-capable CoinSwitch client refuses to be constructed (see pipeline/coinswitch_client.py).
+    # Only the real process environment is touched, never an injected test mapping.
+    if environ is None:
+        os.environ["CRYPTO_AI_RESEARCH_MODE"] = "1"
     return {
         "status": "ADMITTED",
         "entrypoint": entrypoint,
