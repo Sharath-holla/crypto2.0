@@ -421,3 +421,43 @@ def test_cost_policy_refuses_missing_timing_instead_of_silent_nonoverlap_bypass(
             granularity="global",
             config=CostConfig(),
         )
+
+
+# CHANGED BY CLAUDE (2026-11-06, IA-12): NO_TRADE as an explicit Cal-B candidate.
+def test_cal_b_chooses_no_trade_when_every_threshold_has_negative_net_expectancy():
+    table = _signals(spacing=60)
+    # prediction says long, realised return is -2%: gross is a loss at every threshold
+    table = table.set_column(
+        table.schema.get_field_index("raw_future_return"),
+        "raw_future_return",
+        pa.array([-0.02] * table.num_rows),
+    )
+    thresholds, report = select_cal_b_thresholds(
+        table,
+        np.full(table.num_rows, 0.01),
+        target_column="raw_future_return",
+        liquidity_tiers={"BTCUSDT": "HIGH_LIQUIDITY"},
+        cluster_mapping={},
+        granularity="global",
+        config=CostConfig(),
+    )
+    group = report["groups"]["global"]
+    assert thresholds.values_bps == {"global": None}
+    assert group["decision"] == "NO_TRADE_NON_POSITIVE_CAL_B_NET_EXPECTANCY"
+    assert all(item["eligible"] for item in group["candidates"])
+    assert all(item["expectancy"] < 0 for item in group["candidates"])
+
+
+def test_cal_b_still_trades_when_a_threshold_is_net_positive():
+    table = _signals(spacing=60)
+    thresholds, report = select_cal_b_thresholds(
+        table,
+        np.full(table.num_rows, 0.01),
+        target_column="raw_future_return",
+        liquidity_tiers={"BTCUSDT": "HIGH_LIQUIDITY"},
+        cluster_mapping={},
+        granularity="global",
+        config=CostConfig(),
+    )
+    assert thresholds.values_bps["global"] is not None
+    assert report["groups"]["global"]["decision"] == "TRADE_POSITIVE_CAL_B_NET_EXPECTANCY"

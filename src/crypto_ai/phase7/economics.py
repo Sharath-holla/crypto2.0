@@ -178,15 +178,35 @@ def select_cal_b_thresholds(
                 }
             )
         eligible = [item for item in candidates if item["eligible"]]
+        # CHANGED BY CLAUDE (2026-11-06, IA-12): NO_TRADE is an explicit candidate. Before, the
+        # best of the eligible thresholds was always used, even when EVERY eligible threshold had
+        # a non-positive net expectancy on Cal-B, so a negative-expectancy policy was forced into
+        # TEST. Now the group trades only when the best Cal-B net expectancy is strictly positive.
+        # Old code, kept for reference:
+        #   if eligible:
+        #       winner = max(eligible, key=lambda item: (item["expectancy"], item["threshold_bps"]))
+        #       values[key] = float(winner["threshold_bps"])
+        #   else:
+        #       values[key] = None
+        decision = "NO_ELIGIBLE_THRESHOLD_NO_TRADE"
         if eligible:
             winner = max(
                 eligible,
                 key=lambda item: (item["expectancy"], item["threshold_bps"]),
             )
-            values[key] = float(winner["threshold_bps"])
+            if winner["expectancy"] > 0.0:
+                values[key] = float(winner["threshold_bps"])
+                decision = "TRADE_POSITIVE_CAL_B_NET_EXPECTANCY"
+            else:
+                values[key] = None
+                decision = "NO_TRADE_NON_POSITIVE_CAL_B_NET_EXPECTANCY"
         else:
             values[key] = None
-        diagnostics[key] = {"candidates": candidates, "selected_bps": values[key]}
+        diagnostics[key] = {
+            "candidates": candidates,
+            "selected_bps": values[key],
+            "decision": decision,
+        }
     return ThresholdSet(granularity=granularity, values_bps=values), {
         "selection_source": "CAL_B_ONLY",
         "policy_version": COST_POLICY_VERSION,
