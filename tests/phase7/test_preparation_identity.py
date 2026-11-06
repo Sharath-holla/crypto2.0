@@ -113,7 +113,9 @@ def test_real_identity_lists_the_matrix_functions_and_not_fitting_code() -> None
 
 
 # ---- the cache key itself ---------------------------------------------------------------------
-SPEC = training.ExperimentSpec("architecture-G0-A6-60m-raw", "G0", "A6", 60, "raw", True)
+SPEC = training.ExperimentSpec(
+    "architecture-G0-A6-60m-raw", "G0", "A6", 60, "raw", symbol_balanced=True
+)
 
 
 def _key(**overrides):
@@ -145,8 +147,8 @@ def test_matrix_affecting_changes_invalidate_the_cache() -> None:
     base = _id()
     assert _id(feature_columns=("return_5m",)) != base  # feature set / order
     assert _id(feature_columns=("range_pct", "return_5m")) != base  # feature ORDER
-    assert _id(spec=training.ExperimentSpec("x", "G0", "A6", 30, "raw", True)) != base  # horizon
-    assert _id(spec=training.ExperimentSpec("x", "G0", "A6", 60, "volnorm", True)) != base
+    assert _id(spec=training.ExperimentSpec("x", "G0", "A6", 30, "raw", symbol_balanced=True)) != base  # horizon
+    assert _id(spec=training.ExperimentSpec("x", "G0", "A6", 60, "volnorm", symbol_balanced=True)) != base
     assert _id(fold_membership_hash="other") != base  # fold / membership
     assert _id(universe_hash="other") != base
     assert _id(registry_hash="other") != base
