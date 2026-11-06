@@ -1282,6 +1282,11 @@ def _run_one(
         validation_prediction,
         validation_covered,
         config=hardening_cfg,
+        # CHANGED BY CLAUDE (2026-11-06, closure): timestamps enable the cross-sectional IC.
+        validation_times=validation.column("feature_time")
+        .combine_chunks()
+        .cast(pa.int64())
+        .to_numpy(),
     )
     test_symbols = [str(item) for item in test.column("symbol").to_pylist()]
     tier_costs = tier_cost_breakdown(config.costs)

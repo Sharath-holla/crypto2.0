@@ -248,6 +248,66 @@ def _errors(actual: np.ndarray, predicted: np.ndarray) -> tuple[float, float]:
     return float(np.mean(np.abs(residual))), float(np.sqrt(np.mean(residual * residual)))
 
 
+# CHANGED BY CLAUDE (2026-11-06, closure): cross-sectional IC and a no-information baseline.
+XS_IC_MIN_SYMBOLS = 5  # a per-timestamp rank correlation over fewer symbols is noise
+
+
+def _average_ranks(values: np.ndarray) -> np.ndarray:
+    order = np.argsort(values, kind="mergesort")
+    ranks = np.empty(len(values), dtype=np.float64)
+    sorted_values = values[order]
+    start = 0
+    while start < len(values):
+        stop = start
+        while stop + 1 < len(values) and sorted_values[stop + 1] == sorted_values[start]:
+            stop += 1
+        ranks[order[start : stop + 1]] = (start + stop) / 2.0 + 1.0
+        start = stop + 1
+    return ranks
+
+
+def cross_sectional_ic(
+    times: np.ndarray,
+    predicted: np.ndarray,
+    actual: np.ndarray,
+    *,
+    min_symbols: int = XS_IC_MIN_SYMBOLS,
+) -> dict[str, Any]:
+    """Mean per-timestamp Spearman IC between predictions and realised targets.
+
+    Each timestamp is ranked on its own (only rows sharing a timestamp are compared), so
+    time-series level or trend cannot contribute. Timestamps with fewer than ``min_symbols`` rows
+    or a constant side are skipped and counted.
+    """
+
+    t = np.asarray(times).astype(np.int64)
+    p = np.asarray(predicted, dtype=np.float64)
+    a = np.asarray(actual, dtype=np.float64)
+    if not (len(t) == len(p) == len(a)):
+        raise ValueError("cross-sectional IC inputs must be aligned")
+    order = np.argsort(t, kind="mergesort")
+    t, p, a = t[order], p[order], a[order]
+    boundaries = np.flatnonzero(np.diff(t)) + 1
+    values: list[float] = []
+    skipped = 0
+    for rows in np.split(np.arange(len(t)), boundaries):
+        if len(rows) < min_symbols:
+            skipped += 1
+            continue
+        rp, ra = _average_ranks(p[rows]), _average_ranks(a[rows])
+        if np.ptp(rp) == 0 or np.ptp(ra) == 0:
+            skipped += 1
+            continue
+        values.append(float(np.corrcoef(rp, ra)[0, 1]))
+    return {
+        "mean_xs_spearman_ic": float(np.mean(values)) if values else None,
+        "std_xs_spearman_ic": float(np.std(values, ddof=1)) if len(values) > 1 else None,
+        "timestamps_scored": len(values),
+        "timestamps_skipped": skipped,
+        "min_symbols": min_symbols,
+    }
+
+
 def score_baselines(
     train_x: np.ndarray,
     train_y: np.ndarray,
@@ -257,8 +317,12 @@ def score_baselines(
     covered: np.ndarray,
     *,
     config: HardeningConfig | None = None,
+    validation_times: np.ndarray | None = None,
 ) -> dict[str, Any]:
-    """Score zero-return, Ridge and the model on the SAME covered validation rows."""
+    """Score zero-return, TRAIN-mean, Ridge and the model on the SAME covered validation rows.
+
+    ``validation_times`` (aligned with ``validation_y``) enables the cross-sectional IC.
+    """
 
     cfg = config or current_config()
     mask = np.asarray(covered, dtype=bool)
@@ -294,6 +358,23 @@ def score_baselines(
         "mae": model_mae - zero_mae,  # negative = model better
         "rmse": model_rmse - zero_rmse,
     }
+    # CHANGED BY CLAUDE (2026-11-06, closure): no-information TRAIN-mean baseline (constant, same
+    # rows, TRAIN targets only - no information beyond what the model already receives).
+    finite_train = np.asarray(train_y, dtype=np.float64)
+    finite_train = finite_train[np.isfinite(finite_train)]
+    if len(finite_train):
+        mean_mae, mean_rmse = _errors(y, np.full_like(y, float(finite_train.mean())))
+        result["train_mean"] = {"mae": mean_mae, "rmse": mean_rmse}
+        result["lightgbm_beats_train_mean"] = bool(model_rmse < mean_rmse)
+    xs_times = None
+    if validation_times is not None:
+        xs_times = np.asarray(validation_times)
+        if len(xs_times) != len(validation_y):
+            raise ValueError("validation_times must align with validation_y")
+        xs_times = xs_times[mask]
+        result["lightgbm"]["cross_sectional_ic"] = cross_sectional_ic(xs_times, model, y)
+    else:
+        result["lightgbm"]["cross_sectional_ic"] = {"status": "NOT_COMPUTED_NO_TIMESTAMPS"}
     if len(validation_x) == len(validation_y) and len(train_x) == len(train_y) and len(train_y):
         ridge = _ridge_predict(
             train_x,
@@ -318,6 +399,8 @@ def score_baselines(
             ),
         }
         result["lightgbm_beats_ridge"] = bool(model_rmse < ridge_rmse)
+        if xs_times is not None:
+            result["ridge"]["cross_sectional_ic"] = cross_sectional_ic(xs_times, ridge, y)
     else:
         result["ridge"] = {"status": "SKIPPED_MISALIGNED_OR_EMPTY"}
         result["lightgbm_beats_ridge"] = None
@@ -688,7 +771,10 @@ def results_row_from_report(report: Mapping[str, Any]) -> dict[str, Any]:
 
 
 # ---------------------------------------------------------------- success criteria
-BASELINE_CONTRACT_VERSION = "baseline_contract_v1_same_rows_same_target_fixed_ridge_validation"
+# CHANGED BY CLAUDE (2026-11-06, closure): v2 adds the TRAIN-mean baseline and the cross-sectional
+# IC on the same rows; nothing else changes. OLD VALUE:
+# BASELINE_CONTRACT_VERSION = "baseline_contract_v1_same_rows_same_target_fixed_ridge_validation"
+BASELINE_CONTRACT_VERSION = "baseline_contract_v2_same_rows_same_target_fixed_ridge_xs_ic"
 
 
 def _per_spec_skill(rows: Sequence[Mapping[str, Any]]) -> dict[str, list[float]]:
