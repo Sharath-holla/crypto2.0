@@ -61,6 +61,7 @@ from crypto_ai.phase7.folds import (
 # append_result_row and results_row_from_report are no longer imported here (OLD CODE kept: they
 # were used by _run_one to append the CSV row).
 from crypto_ai.phase7.hardening import (
+    ECONOMIC_STATUS,
     RESULT_COLUMNS,
     RESULTS_FILENAME,
     FitAbortedError,
@@ -1316,6 +1317,8 @@ def _run_one(
         "test_coverage_keys_by_symbol": coverage_keys,
         "conditional_test_metrics": _conditional_metrics(test, predicted_raw, test_covered),
         "economic": {
+            # CHANGED BY CLAUDE (2026-11-06, closure): explicit economic-status contract.
+            **ECONOMIC_STATUS,
             "cost_assumption_classification": config.costs.assumption_classification,
             "trade_count": trades.num_rows,
             "no_trade": trades.num_rows == 0,
