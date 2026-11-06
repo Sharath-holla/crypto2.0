@@ -388,6 +388,33 @@ def decision_metrics(
     }
 
 
+# CHANGED BY CLAUDE (2026-11-06, closure): the economic-status contract. Nothing produced by the
+# current pipeline may be read as tradable profitability: funding is not modelled, costs are static
+# scenarios (not measured slippage), entries use a reference price, and no equity curve exists.
+ECONOMIC_STATUS: dict[str, str] = {
+    "metric_scope": "TRADE_LEVEL_PROXY_NOT_PORTFOLIO",
+    "portfolio_sharpe": "NOT_AVAILABLE",
+    "portfolio_max_drawdown": "NOT_AVAILABLE",
+    "portfolio_calmar": "NOT_AVAILABLE",
+    "funding_model_status": "NOT_MODELLED",
+    "cost_model_label": "STATIC_COST_STRESS",
+    "entry_price_label": "REFERENCE_EXECUTION_PRICE",
+    "economic_status": "REGRESSION_PLUMBING_ONLY_NO_TRADABILITY_CLAIM",
+}
+
+
+def require_no_tradability_claim(payload: Mapping[str, Any]) -> None:
+    """Fail qualification if a payload claims profitability while funding is NOT_MODELLED."""
+
+    claims = [
+        key
+        for key in ("tradable_profitability", "profitability_confirmed", "edge_confirmed")
+        if payload.get(key) not in (None, False, "NOT_CLAIMED")
+    ]
+    if claims and payload.get("funding_model_status", "NOT_MODELLED") == "NOT_MODELLED":
+        raise ValueError(f"TRADABILITY_CLAIM_WITHOUT_FUNDING_MODEL: {claims}")
+
+
 def trading_metrics(
     trades: pa.Table, tier_costs: Mapping[str, Mapping[str, float]]
 ) -> dict[str, Any]:
@@ -407,11 +434,14 @@ def trading_metrics(
         "expectancy": None,
         "profit_factor": None,
         "sharpe_per_trade": None,
-        "max_drawdown": None,
+        # CHANGED BY CLAUDE (2026-11-06, closure): was "max_drawdown". A drawdown of the
+        # cumulative sum of independent trade returns is NOT a portfolio drawdown.
+        "trade_drawdown_proxy": None,
         "fees_return_sum": 0.0,
         "spread_return_sum": 0.0,
         "slippage_return_sum": 0.0,
         "funding": "NOT_MODELLED",
+        **ECONOMIC_STATUS,
     }
     if trades.num_rows == 0:
         return empty
@@ -431,11 +461,12 @@ def trading_metrics(
         "expectancy": float(net.mean()),
         "profit_factor": (wins / losses) if losses > 0 else None,
         "sharpe_per_trade": float(np.mean(net) / spread) if spread > 0 else None,
-        "max_drawdown": drawdown,
+        "trade_drawdown_proxy": drawdown,  # OLD CODE (kept): "max_drawdown": drawdown,
         "fees_return_sum": float(sum(tier_costs[t]["fee_bps"] for t in tiers) / 10_000),
         "spread_return_sum": float(sum(tier_costs[t]["spread_bps"] for t in tiers) / 10_000),
         "slippage_return_sum": float(sum(tier_costs[t]["slippage_bps"] for t in tiers) / 10_000),
         "funding": "NOT_MODELLED",
+        **ECONOMIC_STATUS,
     }
 
 
@@ -477,7 +508,8 @@ def console_fields(decision: Mapping[str, Any], trading: Mapping[str, Any]) -> d
         "no_trade_signals": decision["no_trade_signals"],
         "profit_factor": trading.get("profit_factor"),
         "sharpe": trading.get("sharpe_per_trade"),
-        "max_drawdown": trading.get("max_drawdown"),
+        # OLD CODE (kept): "max_drawdown": trading.get("max_drawdown"),
+        "max_drawdown": trading.get("trade_drawdown_proxy"),  # shown as a PROXY label in the UI
         "fees": trading.get("fees_return_sum"),
         "slippage": trading.get("slippage_return_sum"),
         "funding": trading.get("funding"),
@@ -538,7 +570,8 @@ RESULT_COLUMNS = (
     "long_precision", "long_recall", "long_f1", "short_precision", "short_recall", "short_f1",
     "no_trade_signals",
     "trades", "win_rate", "net_return_sum", "expectancy", "profit_factor", "sharpe_per_trade",
-    "max_drawdown", "fees_return_sum", "spread_return_sum", "slippage_return_sum", "funding",
+    "trade_drawdown_proxy", "fees_return_sum", "spread_return_sum", "slippage_return_sum",
+    "funding",
     "test_used_for_selection",
     # CHANGED BY CLAUDE (2026-11-06, final hardening): provenance + extra validation metrics.
     "run_id", "status", "configuration_hash", "code_version", "gold_dataset_id",
@@ -547,6 +580,8 @@ RESULT_COLUMNS = (
     "delta_spearman_vs_ridge",
     "seed", "feature_set", "backend", "scientific_code_identity", "hardening_identity",
     "baseline_contract_version",
+    "portfolio_sharpe", "portfolio_max_drawdown", "funding_model_status", "cost_model_label",
+    "entry_price_label", "economic_status",
 )  # fmt: skip
 
 
@@ -608,11 +643,18 @@ def results_row_from_report(report: Mapping[str, Any]) -> dict[str, Any]:
         "expectancy": trading.get("expectancy"),
         "profit_factor": trading.get("profit_factor"),
         "sharpe_per_trade": trading.get("sharpe_per_trade"),
-        "max_drawdown": trading.get("max_drawdown"),
+        "trade_drawdown_proxy": trading.get("trade_drawdown_proxy"),
+        # OLD CODE (kept): "max_drawdown": trading.get("max_drawdown"),
         "fees_return_sum": trading.get("fees_return_sum"),
         "spread_return_sum": trading.get("spread_return_sum"),
         "slippage_return_sum": trading.get("slippage_return_sum"),
         "funding": trading.get("funding"),
+        "portfolio_sharpe": trading.get("portfolio_sharpe"),
+        "portfolio_max_drawdown": trading.get("portfolio_max_drawdown"),
+        "funding_model_status": trading.get("funding_model_status"),
+        "cost_model_label": trading.get("cost_model_label"),
+        "entry_price_label": trading.get("entry_price_label"),
+        "economic_status": trading.get("economic_status"),
         "test_used_for_selection": report.get("test_used_for_selection"),
         # CHANGED BY CLAUDE (2026-11-06, final hardening): provenance + extra validation metrics.
         "run_id": (report.get("execution_context") or {}).get("run_identity"),

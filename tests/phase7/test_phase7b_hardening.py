@@ -162,7 +162,7 @@ def test_trading_metrics_values_and_funding_is_not_modelled() -> None:
     tiers = {"HIGH_LIQUIDITY": {"fee_bps": 8.0, "spread_bps": 1.0, "slippage_bps": 2.0}}
     result = h.trading_metrics(_trades([0.01, -0.005, 0.02, -0.01]), tiers)
     assert result["profit_factor"] == pytest.approx(0.03 / 0.015)
-    assert result["max_drawdown"] == pytest.approx(0.01)
+    assert result["trade_drawdown_proxy"] == pytest.approx(0.01)
     assert result["win_rate"] == 0.5 and result["net_return_sum"] == pytest.approx(0.015)
     assert result["fees_return_sum"] == pytest.approx(4 * 8.0 / 10_000)
     assert result["funding"] == "NOT_MODELLED"
@@ -278,3 +278,31 @@ def test_silver_check_warns_but_rebuild_fails_clearly(tmp_path: Path) -> None:
     (silver / "p.parquet").write_bytes(b"x")
     assert h.silver_status(tmp_path)["status"] == "PRESENT"
     h.require_silver(tmp_path, "Gold rebuild")
+
+
+# CHANGED BY CLAUDE (2026-11-06, closure): trade-level metrics are never portfolio metrics, and
+# the economic-status contract blocks any tradability claim while funding is NOT_MODELLED.
+def test_trade_metrics_are_labelled_proxies_and_portfolio_metrics_are_not_available() -> None:
+    tiers = {"HIGH_LIQUIDITY": {"fee_bps": 8.0, "spread_bps": 1.0, "slippage_bps": 2.0}}
+    for trades in (_trades([0.01, -0.005, 0.02]), _trades([])):
+        result = h.trading_metrics(trades, tiers)
+        assert result["metric_scope"] == "TRADE_LEVEL_PROXY_NOT_PORTFOLIO"
+        assert result["portfolio_sharpe"] == "NOT_AVAILABLE"
+        assert result["portfolio_max_drawdown"] == "NOT_AVAILABLE"
+        assert result["portfolio_calmar"] == "NOT_AVAILABLE"
+        assert result["funding_model_status"] == "NOT_MODELLED"
+        assert result["cost_model_label"] == "STATIC_COST_STRESS"
+        assert result["entry_price_label"] == "REFERENCE_EXECUTION_PRICE"
+        assert "max_drawdown" not in result  # ambiguous legacy name removed
+    assert "trade_drawdown_proxy" in h.RESULT_COLUMNS and "max_drawdown" not in h.RESULT_COLUMNS
+
+
+def test_tradability_claim_fails_while_funding_is_not_modelled() -> None:
+    h.require_no_tradability_claim({"funding_model_status": "NOT_MODELLED"})
+    h.require_no_tradability_claim({"edge_confirmed": False})
+    with pytest.raises(ValueError, match="TRADABILITY_CLAIM_WITHOUT_FUNDING_MODEL"):
+        h.require_no_tradability_claim({"tradable_profitability": True})
+    with pytest.raises(ValueError, match="TRADABILITY_CLAIM_WITHOUT_FUNDING_MODEL"):
+        h.require_no_tradability_claim(
+            {"edge_confirmed": "YES", "funding_model_status": "NOT_MODELLED"}
+        )
