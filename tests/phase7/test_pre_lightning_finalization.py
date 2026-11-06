@@ -292,7 +292,24 @@ def test_one_spec_runner_cannot_complete_production_or_preload_other_keys(tmp_pa
 
     def run_one(selected, fold, features, config, output, identity, **kwargs):
         calls.append((selected.name, fold.plan.fold_id))
-        report = {"status": "COMPLETE", "artifact_mode": "BENCHMARK_ONLY"}
+        # CHANGED BY CLAUDE (2026-11-06, closure): a COMPLETE report must now carry the canonical
+        # identity because the loop publishes it to the result ledger before the checkpoint is
+        # COMPLETE. OLD CODE (kept for reference, an unidentified "COMPLETE" is now refused):
+        # report = {"status": "COMPLETE", "artifact_mode": "BENCHMARK_ONLY"}
+        report = {
+            "status": "COMPLETE",
+            "artifact_mode": "BENCHMARK_ONLY",
+            "test_used_for_selection": False,
+            "fold_id": fold.plan.fold_id,
+            "spec": asdict(selected),
+            "execution_context": kwargs["execution_metadata"],
+            "checkpoint_identity": identity,
+            "model": {"seed": 42, "compute_backend": "cpu"},
+            "phase7b": {
+                "experiment_control_identity": {"manifest_sha256": "c" * 64},
+                "baselines": {"baseline_contract_version": "baseline-fixture-v1"},
+            },
+        }
         return report, [atomic_json(output / "report.json", report)]
 
     monkeypatch.setattr(training, "_run_one", run_one)

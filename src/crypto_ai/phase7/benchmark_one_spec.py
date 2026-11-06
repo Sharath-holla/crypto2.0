@@ -94,16 +94,27 @@ def main() -> int:
         if args.prepare_only and not args.execute:
             parser.error("--prepare-only requires --execute")
         if args.execute:
-            config.assert_cloud_execution_allowed()
-            from crypto_ai.phase7.resources import (
-                require_preparation_runtime_contract,
-                require_training_runtime_contract,
-            )
+            # CHANGED BY CLAUDE (2026-11-06, closure): every official path uses the SAME
+            # admission function (CPU-only, one worker, isolated output, protocol, identity).
+            # OLD CODE (kept for reference):
+            # config.assert_cloud_execution_allowed()
+            # from crypto_ai.phase7.resources import (
+            #     require_preparation_runtime_contract,
+            #     require_training_runtime_contract,
+            # )
+            # if args.prepare_only:
+            #     require_preparation_runtime_contract()
+            # else:
+            #     require_training_runtime_contract()
+            from crypto_ai.phase7.admission import admit_official_training
 
-            if args.prepare_only:
-                require_preparation_runtime_contract()
-            else:
-                require_training_runtime_contract()
+            admit_official_training(
+                entrypoint="benchmark_one_spec",
+                config=config,
+                mode="prepare" if args.prepare_only else "train",
+                output_root=args.output_root,
+                smoke=True,
+            )
             runtime = RuntimePaths.resolve(config.paths)
             root = runtime.artifact_root / dispatcher.run_identity(config)
             store = CheckpointStore(

@@ -716,9 +716,19 @@ def main() -> int:
     config.assert_cloud_execution_allowed()
     if args.stage == "train":
         from crypto_ai.phase7.preflight import build_preflight_report
-        from crypto_ai.phase7.resources import require_training_runtime_contract
+        # CHANGED BY CLAUDE (2026-11-06, closure): the shared admission function. OLD CODE:
+        # from crypto_ai.phase7.resources import require_training_runtime_contract
+        # require_training_runtime_contract()
+        from crypto_ai.phase7.admission import admit_official_training
+        from crypto_ai.phase7.runtime import RuntimePaths
 
-        require_training_runtime_contract()
+        admit_official_training(
+            entrypoint="run_phase7a_pipeline",
+            config=config,
+            mode="train",
+            output_root=RuntimePaths.resolve(config.paths).artifact_root / "phase7a_run",
+            smoke=False,
+        )
         validation = os.environ.get("PHASE7_GOLD_VALIDATION_REPORT", "").strip()
         report = build_preflight_report(
             args.config, gold_validation_report=Path(validation) if validation else None

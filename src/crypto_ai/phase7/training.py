@@ -20,6 +20,7 @@ from crypto_ai.data.ingestion.manifest import read_manifest
 from crypto_ai.data.storage import file_sha256
 from crypto_ai.phase5.calibration import SELECTION_HOLDOUT_FRACTION, fit_calibrator
 from crypto_ai.phase5.folds import FoldPlan, plan_folds
+from crypto_ai.phase7.admission import assert_backend_admitted
 from crypto_ai.phase7.artifacts import (
     CheckpointStore,
     atomic_json,
@@ -1383,6 +1384,9 @@ def _run_one(
 def run_phase7_training(config: Phase7Config, **kwargs: Any) -> dict[str, Any]:
     """Every direct training call owns an isolated persistent filesystem lease."""
     config.assert_cloud_execution_allowed()
+    # CHANGED BY CLAUDE (2026-11-06, closure): a GPU backend needs a recorded approval even for
+    # direct calls; CPU is always admitted.
+    assert_backend_admitted(resolve_lightgbm_backend())
     resolve_training_scope(config, kwargs.get("scope"))  # fail before any lease/filesystem work
     root = kwargs["run_root"]
     mode = "benchmark" if kwargs.get("benchmark_spec_id") is not None else "production"

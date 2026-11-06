@@ -786,6 +786,13 @@ def run_phase7_cloud(
     """Run the non-interactive VM pipeline; the explicit environment guard is mandatory."""
 
     config.assert_cloud_execution_allowed()
+    # CHANGED BY CLAUDE (2026-11-06, closure): the generic phase7-research command is not an
+    # approved training entrypoint (stage None runs every stage, including train); it must not
+    # reach run_phase7_training with weaker admission than the canonical entrypoints.
+    if stage is None or stage == "train":
+        from crypto_ai.phase7.admission import reject_noncanonical
+
+        reject_noncanonical("crypto-ai phase7-research")
     resources = resource_snapshot(Path.cwd())
     if resources["ram_gb"] is not None and resources["ram_gb"] < config.resources.memory_guard_gb:
         raise RuntimeError(
