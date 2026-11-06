@@ -423,7 +423,7 @@ def test_cost_policy_refuses_missing_timing_instead_of_silent_nonoverlap_bypass(
         )
 
 
-# CHANGED BY CLAUDE (2026-11-06, IA-12): NO_TRADE as an explicit Cal-B candidate.
+# CHANGED BY CLAUDE (2026-11-06, IA-15): NO_TRADE as an explicit Cal-B candidate.
 def test_cal_b_chooses_no_trade_when_every_threshold_has_negative_net_expectancy():
     table = _signals(spacing=60)
     # prediction says long, realised return is -2%: gross is a loss at every threshold

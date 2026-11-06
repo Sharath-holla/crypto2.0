@@ -178,7 +178,7 @@ def select_cal_b_thresholds(
                 }
             )
         eligible = [item for item in candidates if item["eligible"]]
-        # CHANGED BY CLAUDE (2026-11-06, IA-12): NO_TRADE is an explicit candidate. Before, the
+        # CHANGED BY CLAUDE (2026-11-06, IA-15): NO_TRADE is an explicit candidate. Before, the
         # best of the eligible thresholds was always used, even when EVERY eligible threshold had
         # a non-positive net expectancy on Cal-B, so a negative-expectancy policy was forced into
         # TEST. Now the group trades only when the best Cal-B net expectancy is strictly positive.
