@@ -1,0 +1,30 @@
+# Written by Claude (2026-11-06, final architecture repair).
+# DECLARATIVE RECORD of the one authorised smoke run. It is NOT read by any code yet
+# (status: DECLARATIVE_NOT_YET_CONSUMED); the enforced values live in the CLI flags listed in
+# docs/reviews/phase7_final_repair_report_20261106.md. Do not treat this file as a gate.
+smoke:
+  name: phase7_primary_smoke_v1
+  purpose: PLUMBING_AND_SCIENCE_SMOKE_ONLY
+  spec_id: architecture-G0-A6-60m-raw
+  fold: 1                      # Fold 1 only (fold_id as planned by plan_folds)
+  seed: 42
+  device: cpu                  # GPU requires an explicit owner approval marker (not implemented)
+  logical_workers: 1
+  config: configs/phase7/research_core20_primary_v1.toml
+  config_hash: 93f987736b1a79d26b773957
+  output_root: <ISOLATED NEW DIRECTORY; never the production artifact root>
+  hardening:
+    pilot_horizon_minutes: 60
+    pilot_target_type: raw
+    fold_gate_folds: 0
+  holdout:
+    august: LOCKED_UNUSED
+    used: false
+    evaluation_authorized: false
+    july: UNUSED
+  forbidden:
+    - full 48 x 16 search
+    - GPU / RunPod
+    - any August or July access
+    - any live order
+success_criteria: docs/research/PHASE7_SUCCESS_CRITERIA_V1.md
