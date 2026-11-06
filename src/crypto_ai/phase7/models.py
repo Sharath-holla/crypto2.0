@@ -101,6 +101,78 @@ def prepare_architecture_inputs(
     return prepared
 
 
+# CHANGED BY CLAUDE (2026-11-06, closure, H0 data ownership). The H0 symbol/cluster residual
+# corrections used to be fit on the VALIDATION rows that also drive early stopping (finding
+# L-04, documented but not fixed). Ownership of rows is now:
+#   * base (global) fit ........ TRAIN
+#   * early stopping ........... VALIDATION
+#   * H0 residual correction ... first purged part of Cal-A ("Cal-A1")
+#   * calibrator (Cal-A) ....... the remaining later part of Cal-A ("Cal-A2") for H0
+#   * threshold selection ...... Cal-B
+#   * final evaluation ......... TEST (never used for any choice)
+# Cal-A1 rows whose label_end_time + embargo reaches the first Cal-A2 feature time are dropped.
+def split_calibration_a_for_h0(
+    calibration_a: pa.Table,
+    *,
+    embargo_us: int,
+    correction_fraction: float = 0.5,
+) -> tuple[pa.Table, pa.Table, dict[str, Any]]:
+    """Return (correction rows, calibrator rows, report) from Cal-A, purged by label_end_time."""
+
+    if not 0.0 < correction_fraction < 1.0:
+        raise ValueError("correction_fraction must be in (0, 1)")
+    if calibration_a.num_rows < 2:
+        raise IneligibleFoldError("H0 needs at least two Cal-A rows to split")
+    times = calibration_a.column("feature_time").combine_chunks().cast(pa.int64()).to_numpy()
+    ends = calibration_a.column("label_end_time").combine_chunks().cast(pa.int64()).to_numpy()
+    if np.any(np.diff(times) < 0):
+        raise ValueError("Cal-A rows must be sorted by feature_time")
+    boundary = int(times[min(int(len(times) * correction_fraction), len(times) - 1)])
+    correction_mask = (times < boundary) & (ends + int(embargo_us) < boundary)
+    calibrator_mask = times >= boundary
+    if not correction_mask.any() or not calibrator_mask.any():
+        raise IneligibleFoldError("H0 Cal-A split left no correction or calibrator rows")
+    report = {
+        "status": "CALIBRATION_A1_PURGED_INDEPENDENT_OF_EARLY_STOPPING",
+        "boundary_time": boundary,
+        "embargo": int(embargo_us),
+        "calibration_a_rows": int(len(times)),
+        "correction_rows": int(correction_mask.sum()),
+        "purged_rows": int(np.count_nonzero((times < boundary) & ~correction_mask)),
+        "calibrator_rows": int(calibrator_mask.sum()),
+        "ownership": {
+            "base_fit": "TRAIN",
+            "early_stopping": "VALIDATION",
+            "h0_residual_correction": "CALIBRATION_A1",
+            "calibrator": "CALIBRATION_A2",
+            "threshold": "CALIBRATION_B",
+            "final_evaluation": "TEST",
+        },
+    }
+    return (
+        calibration_a.filter(pa.array(correction_mask)),
+        calibration_a.filter(pa.array(calibrator_mask)),
+        report,
+    )
+
+
+def _assert_correction_rows_disjoint_from_early_stopping(
+    correction: pa.Table, validation: pa.Table
+) -> None:
+    """Fail closed if a (symbol, feature_time) key is in both correction and early-stop sets."""
+
+    def keys(table: pa.Table) -> set[tuple[str, int]]:
+        times = table.column("feature_time").combine_chunks().cast(pa.int64()).to_numpy()
+        symbols = _symbols(table)
+        return {(str(symbol), int(time)) for symbol, time in zip(symbols, times, strict=True)}
+
+    overlap = keys(correction) & keys(validation)
+    if overlap:
+        raise ValueError(
+            f"H0_CORRECTION_OVERLAPS_EARLY_STOPPING: {len(overlap)} (symbol, feature_time) keys"
+        )
+
+
 def symbol_balanced_weights(symbols: np.ndarray) -> np.ndarray:
     values = np.asarray(symbols, dtype=object)
     if values.ndim != 1:
@@ -516,6 +588,10 @@ def fit_architecture(
     cluster_corrections: dict[int, float] = {}
     hybrid_symbol_eligibility: dict[str, dict[str, Any]] = {}
     if architecture == "H0" and hybrid_calibration is not None:
+        if hybrid_calibration is not validation:
+            # CHANGED BY CLAUDE (2026-11-06, closure): the correction rows must not be the
+            # early-stopping rows.
+            _assert_correction_rows_disjoint_from_early_stopping(hybrid_calibration, validation)
         if hybrid_calibration is validation:
             calibration_x = prepared.validation_x
             calibration_symbols = prepared.validation_symbols
@@ -591,8 +667,18 @@ def fit_architecture(
     # new fold structure, which this hardening pass does not change. Recorded after the model
     # identity is computed so existing identities and caches are unaffected.
     if architecture == "H0":
+        # OLD CODE (kept for reference): always recorded as validation-sourced.
+        # metadata["hybrid_correction_source"] = {
+        #     "status": "VALIDATION_EARLY_STOPPING_SET_NOT_INDEPENDENT",
+        #     "finding": "L-04",
+        #     "test_rows_used": False,
+        # }
         metadata["hybrid_correction_source"] = {
-            "status": "VALIDATION_EARLY_STOPPING_SET_NOT_INDEPENDENT",
+            "status": (
+                "VALIDATION_EARLY_STOPPING_SET_NOT_INDEPENDENT"
+                if hybrid_calibration is validation
+                else "SEPARATE_ROWS_DISJOINT_FROM_EARLY_STOPPING"
+            ),
             "finding": "L-04",
             "test_rows_used": False,
         }

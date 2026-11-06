@@ -87,6 +87,7 @@ from crypto_ai.phase7.models import (
     load_model,
     prepare_architecture_inputs,
     save_model,
+    split_calibration_a_for_h0,
 )
 from crypto_ai.phase7.preparation_identity import preparation_source_identity
 from crypto_ai.phase7.prepared_cache import (
@@ -1053,6 +1054,16 @@ def _run_one(
         if reusable_models is not None and spec.architecture == "H0"
         else None
     )
+    # CHANGED BY CLAUDE (2026-11-06, closure): explicit H0 data ownership. Corrections use the
+    # purged first part of Cal-A; the calibrator uses the later part; Validation is early
+    # stopping only. Non-H0 architectures are unchanged.
+    h0_correction_rows: pa.Table | None = None
+    h0_calibrator_rows: pa.Table | None = None
+    h0_ownership: dict[str, Any] | None = None
+    if spec.architecture == "H0":
+        h0_correction_rows, h0_calibrator_rows, h0_ownership = split_calibration_a_for_h0(
+            calibration_a, embargo_us=int(config.schedule.embargo_minutes) * 60 * 1_000_000
+        )
     budget = compute_budget or ComputeBudget.resolve(config.resources)
     emit_event(
         "MODEL_START",
@@ -1105,11 +1116,21 @@ def _run_one(
             cluster_mapping=fold.cluster_mapping,
             explicit_symbol_id=spec.explicit_symbol_id,
             symbol_balanced=spec.symbol_balanced,
-            hybrid_calibration=validation if spec.architecture == "H0" else None,
+            # CHANGED BY CLAUDE (2026-11-06, closure): H0 corrections come from the purged first
+            # part of Cal-A, never from the early-stopping Validation rows.
+            # OLD CODE: hybrid_calibration=validation if spec.architecture == "H0" else None,
+            hybrid_calibration=h0_correction_rows,
             eligibility_calibration_a=calibration_a,
             prepared_inputs=prepared.model_inputs,
             reusable_global=reusable_global,
         )
+    if spec.architecture == "H0" and (
+        model.metadata.get("hybrid_correction_source", {}).get("status")
+        != "SEPARATE_ROWS_DISJOINT_FROM_EARLY_STOPPING"
+    ):
+        # CHANGED BY CLAUDE (2026-11-06, closure): an official H0 fit may not correct on the
+        # early-stopping rows (finding L-04).
+        raise ValueError("H0_CORRECTION_NOT_INDEPENDENT_OF_EARLY_STOPPING")
     model.metadata["scientific_input_identity"] = checkpoint_identity
     model.metadata["model_identity"] = stable_hash(
         {
@@ -1130,8 +1151,12 @@ def _run_one(
     emit_event("CAL_A_START", fold_id=fold.plan.fold_id, spec=spec.name)
     calibration_started = time.monotonic()
     telemetry("CALIBRATE", "START", started=calibration_started)
-    cal_a_raw, cal_a_covered = model.predict(calibration_a)
-    cal_a_table, cal_a_predictions = _subset_covered(calibration_a, cal_a_raw, cal_a_covered)
+    # CHANGED BY CLAUDE (2026-11-06, closure): H0 fits its calibrator on Cal-A2 only (see
+    # split_calibration_a_for_h0); every other architecture keeps all of Cal-A.
+    # OLD CODE: predict(calibration_a) / _subset_covered(calibration_a, ...) for every architecture.
+    calibrator_source = h0_calibrator_rows if h0_calibrator_rows is not None else calibration_a
+    cal_a_raw, cal_a_covered = model.predict(calibrator_source)
+    cal_a_table, cal_a_predictions = _subset_covered(calibrator_source, cal_a_raw, cal_a_covered)
     calibrator, calibration_report = fit_calibrator(
         cal_a_predictions,
         np.asarray(cal_a_table.column(target).to_pylist(), dtype=np.float64),
@@ -1320,6 +1345,7 @@ def _run_one(
         },
         "model": model.metadata,
         "calibration": calibration_report,
+        "h0_data_ownership": h0_ownership,
         "threshold_selection": threshold_report,
         "thresholds": threshold_payload,
         "calibrator_identity": calibrator.identity_hash,
