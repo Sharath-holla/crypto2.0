@@ -116,6 +116,7 @@ from crypto_ai.phase7.runtime import (
     memory_snapshot,
 )
 from crypto_ai.phase7.segments import CausalDataGap
+from crypto_ai.phase7.targets import effective_normalization_scale
 from crypto_ai.phase7.telemetry import instrument, telemetry
 from crypto_ai.phase7.training_metrics import training_metric_scope
 from crypto_ai.phase7.universe import (
@@ -682,6 +683,7 @@ def _to_raw_predictions(
     predictions: np.ndarray,
     *,
     target_type: str,
+    normalization_floor: float,
 ) -> np.ndarray:
     values = np.asarray(predictions, dtype=np.float64)
     if target_type == "raw":
@@ -690,7 +692,13 @@ def _to_raw_predictions(
         table.column("ex_ante_volatility_scale").combine_chunks().to_pylist(),
         dtype=np.float64,
     )
-    return values * scale
+    # CHANGED BY CLAUDE (2026-11-06, closure): invert with the SAME divisor the forward
+    # transform used, max(|scale|, floor). OLD CODE: return values * scale
+    divisor = np.asarray(
+        [effective_normalization_scale(item, normalization_floor) for item in scale],
+        dtype=np.float64,
+    )
+    return values * divisor
 
 
 def _subset_covered(
@@ -1187,6 +1195,7 @@ def _run_one(
         cal_b_table,
         calibrator.apply(cal_b_predictions),
         target_type=spec.target_type,
+        normalization_floor=config.targets.normalization_floor,
     )
     thresholds, threshold_report = select_cal_b_thresholds(
         cal_b_table,
@@ -1238,7 +1247,12 @@ def _run_one(
     test_model, test_covered = model.predict(test)
     calibrated = np.full(test.num_rows, np.nan)
     calibrated[test_covered] = calibrator.apply(test_model[test_covered])
-    predicted_raw = _to_raw_predictions(test, calibrated, target_type=spec.target_type)
+    predicted_raw = _to_raw_predictions(
+        test,
+        calibrated,
+        target_type=spec.target_type,
+        normalization_floor=config.targets.normalization_floor,
+    )
     metrics = evaluate_predictions(
         test,
         predicted_raw,
