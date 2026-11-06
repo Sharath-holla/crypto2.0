@@ -15,7 +15,7 @@ import csv
 import hashlib
 import json
 import os
-from collections.abc import Mapping, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -35,13 +35,24 @@ class LedgerError(RuntimeError):
     """The ledger is inconsistent: corrupt record, bad receipt, or illegal transition."""
 
 
+# CHANGED BY CLAUDE (2026-11-06, closure): crash-injection seam used only by tests.
+_fault_point: Callable[[str], None] | None = None
+
+
+def _fault(name: str) -> None:
+    if _fault_point is not None:
+        _fault_point(name)
+
+
 def _fsync_write(path: Path, data: bytes) -> None:
     temporary = path.with_name(path.name + ".tmp")
     with temporary.open("wb") as stream:
         stream.write(data)
         stream.flush()
         os.fsync(stream.fileno())
+    _fault(f"AFTER_TEMP_WRITE:{path.name}")
     os.replace(temporary, path)
+    _fault(f"AFTER_PUBLISH:{path.name}")
 
 
 def _dir(root: Path, run_id: str, spec_id: str, fold_id: str) -> Path:

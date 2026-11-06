@@ -44,6 +44,7 @@ from crypto_ai.phase7.economics import (
     select_cal_b_thresholds,
 )
 from crypto_ai.phase7.environment import scientific_environment_identity
+from crypto_ai.phase7.experiment_identity import experiment_control_identity
 from crypto_ai.phase7.features import (
     FOLD_CONTEXT_SOURCE_COLUMNS,
     FOLD_CONTEXT_VERSION,
@@ -54,16 +55,18 @@ from crypto_ai.phase7.folds import (
     MultiAssetFoldData,
     slice_multiasset_fold,
 )
-from crypto_ai.phase7.experiment_identity import experiment_control_identity
+# CHANGED BY CLAUDE (2026-11-06, closure): the CSV is a view of the ledger, not an authority, so
+# append_result_row and results_row_from_report are no longer imported here (OLD CODE kept: they
+# were used by _run_one to append the CSV row).
 from crypto_ai.phase7.hardening import (
+    RESULT_COLUMNS,
+    RESULTS_FILENAME,
     FitAbortedError,
-    append_result_row,
     apply_pilot_filter,
     console_fields,
     current_config,
     decision_metrics,
     fold_gate_failed,
-    results_row_from_report,
     score_baselines,
     silver_status,
     stop_requested,
@@ -92,6 +95,11 @@ from crypto_ai.phase7.prepared_cache import (
 )
 from crypto_ai.phase7.progress import ProgressReporter, oos_trade_summary
 from crypto_ai.phase7.registry import SymbolRegistry
+from crypto_ai.phase7.result_publication import (
+    LEDGER_DIRNAME,
+    publish_canonical_result,
+    refresh_results_view,
+)
 from crypto_ai.phase7.resources import resource_admission
 from crypto_ai.phase7.run_lease import owned_run
 from crypto_ai.phase7.runtime import (
@@ -1353,11 +1361,14 @@ def _run_one(
     telemetry("REPORT_PUBLISH", "START")
     report_path = atomic_json(output_root / "report.json", report)
     telemetry("REPORT_PUBLISH", "END")
-    # CHANGED BY CLAUDE (2026-11-02, Phase 3 item 7): one results table per run (CSV, appended).
-    append_result_row(
-        output_root.parents[2] if len(output_root.parents) > 2 else output_root,
-        results_row_from_report(report),
-    )
+    # CHANGED BY CLAUDE (2026-11-06, closure): the results CSV is no longer appended here. The
+    # canonical result record + receipt are published by the training loop (publish_canonical_
+    # result) BEFORE the checkpoint is marked COMPLETE, and the CSV is regenerated from that
+    # ledger. OLD CODE (kept for reference):
+    # append_result_row(
+    #     output_root.parents[2] if len(output_root.parents) > 2 else output_root,
+    #     results_row_from_report(report),
+    # )
     if reporter is not None:
         reporter.fold_evaluation(
             report,
@@ -1921,6 +1932,13 @@ def _run_phase7_training_owned(
                                 "Orphan report identity mismatch for "
                                 f"{research_view} {plan.fold_id} {spec.name}"
                             )
+                        # CHANGED BY CLAUDE (2026-11-06, closure): an adopted orphan (crash after
+                        # model+report, before checkpoint) must also be in the canonical ledger.
+                        if orphan_report.get("status") == "COMPLETE":
+                            orphan_files = [
+                                *orphan_files,
+                                *publish_canonical_result(run_root / LEDGER_DIRNAME, orphan_report),
+                            ]
                         checkpoint_store.complete(stage, orphan_files, checkpoint_identity)
                         if _is_reusable_g0(spec) and orphan_model is not None:
                             reuse_key = _reusable_model_key(
@@ -2070,13 +2088,36 @@ def _run_phase7_training_owned(
                     files = [atomic_json(report_path, report)]
                     if _is_reusable_g0(spec):
                         unavailable_reusable_g0.add(required_g0_key)
+                # CHANGED BY CLAUDE (2026-11-06, closure): a COMPLETE result must be published to
+                # the canonical ledger (identity-checked, hashed receipt) before the stage can be
+                # COMPLETE. Its two files are part of the checkpoint file list.
+                if report.get("status") == "COMPLETE":
+                    files = [
+                        *files,
+                        *publish_canonical_result(run_root / LEDGER_DIRNAME, report),
+                    ]
                 checkpoint_store.complete(stage, files, checkpoint_identity)
+                refresh_results_view(
+                    run_root / LEDGER_DIRNAME,
+                    run_root.name,
+                    run_root / "models" / RESULTS_FILENAME,
+                    RESULT_COLUMNS,
+                )
                 emit_event("CHECKPOINT_SAVED", stage=stage)
                 reports.append(report)
         cached.clear()
         sliced.clear()
         reusable_models.clear()
         prepared_cache = cached_bundle = fold_data = None
+        # CHANGED BY CLAUDE (2026-11-06, closure): always leave the CSV view equal to the ledger
+        # (covers resumed runs whose stages were all skipped as already COMPLETE).
+        if (run_root / LEDGER_DIRNAME).is_dir():
+            refresh_results_view(
+                run_root / LEDGER_DIRNAME,
+                run_root.name,
+                run_root / "models" / RESULTS_FILENAME,
+                RESULT_COLUMNS,
+            )
         if reporter is not None and not benchmark_only:
             reporter.fold_completed(fold_position, len(folds), plan.fold_id)
         # CHANGED BY CLAUDE (2026-11-02, Phase 3 item 3): optional fold gate. After folds 1..N
