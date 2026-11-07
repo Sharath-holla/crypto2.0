@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import hashlib
 import json
-import subprocess
 from pathlib import Path
 
 from crypto_ai.contracts.baseline import PHASE7_APPROVED_BASELINE
@@ -15,6 +14,7 @@ from crypto_ai.phase7 import (
 )
 from crypto_ai.phase7_2 import Phase72Config
 from crypto_ai.phase7_2.config import load_phase7_2_config
+from tests.historical_source import historical_blob
 
 ROOT = Path(__file__).resolve().parents[2]
 BASELINE_MANIFEST = ROOT / "configs/contracts" / f"{PHASE7_APPROVED_BASELINE.baseline_id}.json"
@@ -50,12 +50,7 @@ def test_phase7_scientific_files_remain_byte_frozen_and_do_not_import_phase7_2()
     manifest = json.loads(BASELINE_MANIFEST.read_text(encoding="utf-8"))
     source_freeze = manifest["source_freeze"]
     for relative_path, expected_sha256 in source_freeze.items():
-        source = subprocess.run(
-            ["git", "show", f"{FROZEN_SOURCE_COMMIT}:{relative_path}"],
-            cwd=ROOT,
-            check=True,
-            capture_output=True,
-        ).stdout
+        source = historical_blob(ROOT, FROZEN_SOURCE_COMMIT, relative_path)
         assert hashlib.sha256(source).hexdigest() == expected_sha256
         if relative_path.startswith("src/crypto_ai/phase7/"):
             assert b"crypto_ai.phase7_2" not in source

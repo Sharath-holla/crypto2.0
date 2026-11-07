@@ -98,6 +98,16 @@ class Crypto2Adapter:
             self.paths.repo / "aiventra/data/pytest-temp"
         ):
             raise ValueError("Demo mode requires an explicitly isolated browser fixture root")
+        if (self.paths.repo / ".git").exists():
+            branch = git(self.paths.repo, "branch", "--show-current")
+            commit = git(self.paths.repo, "rev-parse", "HEAD")
+        else:
+            # Read-only identity works in a verified export. Job authorization
+            # still requires a real approved Git branch via require_branch.
+            from crypto_ai.phase7.source_freeze import verify_source_freeze
+
+            export = verify_source_freeze(self.paths.repo, self.paths.repo / "source-freeze.json")
+            branch, commit = "EXPORTED_SOURCE_NO_BRANCH", export["commit"]
         return {
             "name": "Crypto 2.0",
             "phase": "7A",
@@ -107,8 +117,8 @@ class Crypto2Adapter:
             "control_plane": "AIVENTRA_OS",
             "run_identity": RUN_ID,
             "configuration_hash": config.configuration_hash,
-            "branch": git(self.paths.repo, "branch", "--show-current"),
-            "git_commit": git(self.paths.repo, "rev-parse", "HEAD"),
+            "branch": branch,
+            "git_commit": commit,
             "scientific_source_identity": scientific_source_identity(self.paths.repo),
             "operation_source_identity": hashlib.sha256(
                 b"".join(

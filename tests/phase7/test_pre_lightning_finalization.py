@@ -33,6 +33,7 @@ from crypto_ai.phase7.prepared_cache import (
     PreparedDataCache,
     capacity_projection,
 )
+from tests.historical_source import historical_blob
 from tests.phase7.test_gold_validation import _gold_fixture
 from tests.phase7.test_prepared_cache import _fixture
 from tests.phase7.test_training_error_classification import (
@@ -50,12 +51,7 @@ HISTORICAL_CONTRACT_SHA256 = "03f74723105f3f4a389fabd0a0140bdccefa5f8e1ea9449ee7
 
 
 def _historical_contract_blob():
-    return subprocess.run(
-        ["git", "show", f"{HISTORICAL_CONTRACT_COMMIT}:{HISTORICAL_CONTRACT_PATH}"],
-        cwd=ROOT,
-        check=True,
-        capture_output=True,
-    ).stdout
+    return historical_blob(ROOT, HISTORICAL_CONTRACT_COMMIT, HISTORICAL_CONTRACT_PATH)
 
 
 def _assert_historical_checkout(content):

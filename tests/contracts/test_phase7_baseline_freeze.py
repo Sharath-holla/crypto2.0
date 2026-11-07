@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import hashlib
 import json
-import subprocess
 from pathlib import Path
 
 from crypto_ai.contracts.baseline import PHASE7_APPROVED_BASELINE
@@ -16,6 +15,7 @@ from crypto_ai.phase7 import (
     test_phase7_universe as run_universe_test,
 )
 from crypto_ai.phase7.training import training_source_identity
+from tests.historical_source import historical_blob, historical_phase7_paths
 
 ROOT = Path(__file__).resolve().parents[2]
 MANIFEST_PATH = ROOT / "configs" / "contracts" / f"{PHASE7_APPROVED_BASELINE.baseline_id}.json"
@@ -44,21 +44,7 @@ def test_phase7_scientific_source_and_config_are_byte_frozen() -> None:
     manifest = _manifest()
     source_freeze = manifest["source_freeze"]
     assert isinstance(source_freeze, dict)
-    phase7_paths = subprocess.run(
-        [
-            "git",
-            "ls-tree",
-            "-r",
-            "--name-only",
-            FROZEN_SOURCE_COMMIT,
-            "--",
-            "src/crypto_ai/phase7",
-        ],
-        cwd=ROOT,
-        check=True,
-        capture_output=True,
-        text=True,
-    ).stdout.splitlines()
+    phase7_paths = historical_phase7_paths(ROOT, FROZEN_SOURCE_COMMIT)
     expected_paths = {path for path in phase7_paths if path.endswith(".py")}
     expected_paths.update(
         {
@@ -79,12 +65,7 @@ def test_phase7_scientific_source_and_config_are_byte_frozen() -> None:
     )
     assert set(source_freeze) == expected_paths
     for relative_path, expected_sha256 in source_freeze.items():
-        source = subprocess.run(
-            ["git", "show", f"{FROZEN_SOURCE_COMMIT}:{relative_path}"],
-            cwd=ROOT,
-            check=True,
-            capture_output=True,
-        ).stdout
+        source = historical_blob(ROOT, FROZEN_SOURCE_COMMIT, relative_path)
         actual = hashlib.sha256(source).hexdigest()
         assert actual == expected_sha256, f"scientific baseline drift: {relative_path}"
 
