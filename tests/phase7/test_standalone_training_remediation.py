@@ -11,6 +11,7 @@ import pytest
 
 from crypto_ai.phase5.folds import plan_folds
 from crypto_ai.phase7 import environment, models, pipeline, preflight, training
+from crypto_ai.phase7.admission import AdmissionError
 from crypto_ai.phase7.config import CostConfig, ModelConfig, load_phase7_config
 from crypto_ai.phase7.economics import (
     COST_POLICY_VERSION,
@@ -291,13 +292,14 @@ def test_direct_training_cli_cannot_bypass_preflight_or_prepare_data(monkeypatch
         "build_preflight_report",
         lambda *_a, **_k: calls.append(1) or {"status": "FAIL", "blocking_errors": ["fixture"]},
     )
-    with pytest.raises(ValueError, match="explicit positive"):
+    with pytest.raises(AdmissionError, match="RUNTIME_CONTRACT:.*explicit positive"):
         dispatcher.main()
     assert not calls
     monkeypatch.setenv("PHASE7_MIN_FREE_RAM_GIB", "8")
-    with pytest.raises(RuntimeError, match="training preflight failed"):
+    monkeypatch.setenv("PHASE7_MIN_FREE_DISK_GIB", "1")
+    with pytest.raises(AdmissionError, match="FULL_GRID_NOT_AUTHORIZED"):
         dispatcher.main()
-    assert calls == [1]
+    assert not calls
 
 
 def test_benchmark_rejects_missing_budget_before_gold_or_checkpoint_work(tmp_path, monkeypatch):
@@ -325,7 +327,7 @@ def test_benchmark_rejects_missing_budget_before_gold_or_checkpoint_work(tmp_pat
             "--execute",
         ],
     )
-    with pytest.raises(ValueError, match="explicit positive"):
+    with pytest.raises(AdmissionError, match="RUNTIME_CONTRACT:.*explicit positive"):
         benchmark_one_spec.main()
     assert not output.exists()
 

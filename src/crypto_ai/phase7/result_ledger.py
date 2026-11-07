@@ -88,9 +88,10 @@ def read_result(folder: Path) -> dict[str, Any]:
     result, receipt = folder / "result.json", folder / "receipt.json"
     if not result.is_file() or not receipt.is_file():
         raise LedgerError(f"INCOMPLETE_RESULT: {folder}")
-    if hashlib.sha256(result.read_bytes()).hexdigest() != json.loads(receipt.read_text())[
-        "result_sha256"
-    ]:
+    if (
+        hashlib.sha256(result.read_bytes()).hexdigest()
+        != json.loads(receipt.read_text())["result_sha256"]
+    ):
         raise LedgerError(f"RESULT_HASH_MISMATCH: {folder}")
     return json.loads(result.read_text())
 

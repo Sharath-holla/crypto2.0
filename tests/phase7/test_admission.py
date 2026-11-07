@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import pytest
@@ -22,7 +23,7 @@ CONFIG = ROOT / "configs/phase7/research_core20_primary_v1.toml"
 
 
 @pytest.fixture
-def smoke_env(monkeypatch: pytest.MonkeyPatch) -> pytest.MonkeyPatch:
+def smoke_env(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> pytest.MonkeyPatch:
     monkeypatch.setenv("PHASE7_ALLOW_CLOUD_RESEARCH", "1")
     monkeypatch.setenv("PHASE7_MIN_FREE_RAM_GIB", "1")
     monkeypatch.setenv("PHASE7_MIN_FREE_DISK_GIB", "1")
@@ -30,6 +31,36 @@ def smoke_env(monkeypatch: pytest.MonkeyPatch) -> pytest.MonkeyPatch:
     monkeypatch.setenv("PHASE7_LGBM_DEVICE", "cpu")
     monkeypatch.setenv("PHASE7_MODEL_PARALLELISM", "1")
     monkeypatch.setenv("PHASE7_TOTAL_CPU_THREADS", "1")
+    from crypto_ai.phase7 import run_contract, runtime
+
+    monkeypatch.setattr(
+        runtime,
+        "system_snapshot",
+        lambda _: {
+            "ram_total_bytes": 64 * 1024**3,
+            "cpu_count": 8,
+            "disk_total_bytes": 150_000_000_000,
+        },
+    )
+
+    # Synthetic owner contract for admission unit tests only, never a real-run approval.
+    monkeypatch.setattr(run_contract, "approval_binding", lambda *args: {"fixture": "one-smoke"})
+    approval = tmp_path / "test-only-approval.json"
+    approval.write_text(
+        json.dumps(
+            {
+                "schema": "phase7_owner_smoke_approval_v1",
+                "status": "APPROVED",
+                "owner": "unit test fixture",
+                "binding": {"fixture": "one-smoke"},
+                "mode": "train",
+                "stop_deadline_utc": (datetime.now(UTC) + timedelta(hours=1)).isoformat(),
+                "cost_ceiling": 1,
+                "cost_currency": "USD",
+            }
+        )
+    )
+    monkeypatch.setenv("PHASE7_OWNER_APPROVAL_FILE", str(approval))
     return monkeypatch
 
 
@@ -49,7 +80,7 @@ def _admit(tmp_path: Path, **kwargs):
 def test_generic_phase7_research_is_not_a_training_entrypoint() -> None:
     with pytest.raises(AdmissionError, match="NON_CANONICAL_RESEARCH_ENTRYPOINT"):
         reject_noncanonical("crypto-ai phase7-research")
-    assert CANONICAL_ENTRYPOINTS == {"benchmark_one_spec", "run_phase7a_pipeline"}
+    assert {"benchmark_one_spec", "run_phase7a_pipeline"} == CANONICAL_ENTRYPOINTS
 
 
 @pytest.mark.parametrize("stage", ["train", None])
@@ -74,6 +105,10 @@ def test_cpu_smoke_is_admitted_with_a_full_record(tmp_path, smoke_env) -> None:
     assert record["holdout"]["prospective_holdout_used"] is False
     assert record["selection_protocol_version"] == "phase7_selection_chronology_v1"
     assert len(record["experiment_control_identity"]) == 64
+    assert record["resolved_configuration"] == load_phase7_config(CONFIG).model_dump(mode="json")
+    assert record["hardening_settings"]
+    assert record["resource_floors_gib"] == {"available_ram": 1, "free_disk": 1}
+    assert record["runtime_paths"] and record["compute_budget"] and record["owner_approval"]
 
 
 @pytest.mark.parametrize("device", ["gpu", "cuda"])
@@ -117,6 +152,12 @@ def test_preparation_mode_needs_a_writable_cache_mode(tmp_path, smoke_env) -> No
     with pytest.raises(AdmissionError, match="RUNTIME_CONTRACT"):
         _admit(tmp_path, mode="prepare")  # cache is read_only
     smoke_env.setenv("PHASE7_CACHE_MODE", "auto")
+    import os
+
+    path = Path(os.environ["PHASE7_OWNER_APPROVAL_FILE"])
+    approval = json.loads(path.read_text())
+    approval["mode"] = "prepare"
+    path.write_text(json.dumps(approval))
     assert _admit(tmp_path, mode="prepare")["mode"] == "prepare"
 
 
@@ -158,3 +199,18 @@ def test_every_official_entrypoint_uses_the_shared_admission_function() -> None:
         assert "admit_official_training" in (ROOT / relative).read_text(), relative
     training = (ROOT / "src/crypto_ai/phase7/training.py").read_text()
     assert "assert_backend_admitted(resolve_lightgbm_backend())" in training
+
+
+def test_missing_owner_contract_refuses_real_execution(tmp_path, smoke_env):
+    smoke_env.delenv("PHASE7_OWNER_APPROVAL_FILE")
+    with pytest.raises(AdmissionError, match="OWNER_APPROVAL_REQUIRED"):
+        _admit(tmp_path)
+
+
+def test_unknown_environment_and_full_grid_are_refused(tmp_path, smoke_env):
+    smoke_env.setenv("PHASE7_CAHCE_MODE", "read_only")
+    with pytest.raises(AdmissionError, match="UNKNOWN_PHASE7_ENVIRONMENT"):
+        _admit(tmp_path)
+    smoke_env.delenv("PHASE7_CAHCE_MODE")
+    with pytest.raises(AdmissionError, match="FULL_GRID_NOT_AUTHORIZED"):
+        _admit(tmp_path, smoke=False)

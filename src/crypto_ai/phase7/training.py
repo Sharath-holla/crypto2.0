@@ -36,6 +36,12 @@ from crypto_ai.phase7.config import (
     Phase7Config,
     stable_hash,
 )
+from crypto_ai.phase7.context_sidecar import (
+    SIDECAR_ENV,
+    load_sidecar_source,
+    read_sidecar,
+    sidecar_cache_identity,
+)
 from crypto_ai.phase7.economics import (
     COST_POLICY_VERSION,
     ThresholdSet,
@@ -57,6 +63,7 @@ from crypto_ai.phase7.folds import (
     MultiAssetFoldData,
     slice_multiasset_fold,
 )
+
 # CHANGED BY CLAUDE (2026-11-06, closure): the CSV is a view of the ledger, not an authority, so
 # append_result_row and results_row_from_report are no longer imported here (OLD CODE kept: they
 # were used by _run_one to append the CSV row).
@@ -100,12 +107,12 @@ from crypto_ai.phase7.prepared_cache import (
 )
 from crypto_ai.phase7.progress import ProgressReporter, oos_trade_summary
 from crypto_ai.phase7.registry import SymbolRegistry
+from crypto_ai.phase7.resources import resource_admission
 from crypto_ai.phase7.result_publication import (
     LEDGER_DIRNAME,
     publish_canonical_result,
     refresh_results_view,
 )
-from crypto_ai.phase7.resources import resource_admission
 from crypto_ai.phase7.run_lease import owned_run
 from crypto_ai.phase7.runtime import (
     ComputeBudget,
@@ -197,6 +204,7 @@ TRAINING_CRITICAL_SOURCE_FILES = (
     "src/crypto_ai/phase7/backend.py",
     "src/crypto_ai/phase7/config.py",
     "src/crypto_ai/phase7/cross_section.py",
+    "src/crypto_ai/phase7/context_sidecar.py",
     "src/crypto_ai/phase7/economics.py",
     "src/crypto_ai/phase7/features.py",
     "src/crypto_ai/phase7/folds.py",
@@ -269,11 +277,20 @@ def scientific_source_identity(repository_root: Path | None = None) -> dict[str,
     documentation, runtime paths, and machine metadata. Missing files fail closed.
     """
 
-    return _content_source_identity(
+    identity = _content_source_identity(
         SCIENTIFIC_SOURCE_IDENTITY_ALGORITHM,
         TRAINING_CRITICAL_SOURCE_FILES,
         repository_root,
     )
+    if sidecar := os.environ.get(SIDECAR_ENV, "").strip():
+        # A changed feature-only input also invalidates completed model/stage reuse
+        # and the canonical ledger's scientific identity, not only matrix caches.
+        read_sidecar(Path(sidecar))
+        identity["feature_context_sidecar_sha256"] = file_sha256(Path(sidecar))
+        identity["manifest_sha256"] = stable_hash(
+            {k: v for k, v in identity.items() if k != "manifest_sha256"}, length=64
+        )
+    return identity
 
 
 def training_source_identity(repository_root: Path | None = None) -> dict[str, Any]:
@@ -468,18 +485,41 @@ def _load_fold_rows(
     ).sort_by([("feature_time", "ascending"), ("symbol", "ascending")])
 
 
+def _context_sidecar_path(manifest: dict[str, Any]) -> Path | None:
+    value = os.environ.get(SIDECAR_ENV, "").strip()
+    if value:
+        return Path(value)
+    # No dataset implicitly qualifies for label-dependent Gold context. New datasets
+    # require a verified feature-only sidecar too; approval is bound at admission.
+    raise ValueError("M01_FEATURE_CONTEXT_SIDECAR_REQUIRED: no approved feature-only context")
+
+
 def _load_fold_context_source(
     manifest: dict[str, Any],
     plan: FoldPlan,
     horizons_minutes: tuple[int, ...],
     *,
     dataset: ds.Dataset | None = None,
+    gold_manifest_sha256: str | None = None,
+    configuration_hash: str | None = None,
 ) -> pa.Table:
     """Feature-only rows for every horizon, the horizon-invariant source of fold context.
 
     Cross-sectional context at time t must not depend on whether one horizon's label
     exists (M-01), so it is computed from the union of all horizons' rows.
     """
+    if sidecar := _context_sidecar_path(manifest):
+        if gold_manifest_sha256 is None or configuration_hash is None:
+            raise ValueError("sidecar requires the verified Gold manifest identity")
+        sidecar_cache_identity(
+            Path(sidecar),
+            gold_manifest_sha256=gold_manifest_sha256,
+            registry_hash=manifest["registry_hash"],
+            universe_hash=manifest["lineage"]["core_universe_hash"],
+            configuration_hash=configuration_hash,
+        )
+        # Read feature rows only; all future targets still come exclusively from Gold.
+        return load_sidecar_source(Path(sidecar), plan.train_start, plan.test_end)
     parts = [
         _load_fold_rows(
             manifest,
@@ -674,6 +714,17 @@ def _prepared_cache_identity(
         "matrix_code_identity": preparation["manifest_sha256"],
         "symbol_encoding_contract": "deferred_sorted_train_symbols_one_hot_v1",
         "fold_context_version": FOLD_CONTEXT_VERSION,
+        "fold_context_source": (
+            sidecar_cache_identity(
+                Path(sidecar),
+                gold_manifest_sha256=gold_manifest_sha256,
+                registry_hash=registry_hash,
+                universe_hash=universe_hash,
+                configuration_hash=config.configuration_hash,
+            )
+            if (sidecar := _context_sidecar_path(manifest))
+            else {"source": "GOLD_HORIZON_UNION"}
+        ),
         "scientific_environment": scientific_environment_identity(),
     }
 
@@ -1336,6 +1387,7 @@ def _run_one(
     }
     report = {
         "status": "COMPLETE",
+        "result_publication_contract": "CANONICAL_LEDGER_V1",
         "spec": asdict(spec),
         "fold_id": fold.plan.fold_id,
         "research_view": fold.research_view,
@@ -1484,6 +1536,17 @@ def run_phase7_training(config: Phase7Config, **kwargs: Any) -> dict[str, Any]:
             raise ValueError("benchmark requires isolated checkpoints and first canonical fold")
     elif kwargs.get("benchmark_fold_id") is not None:
         raise ValueError("benchmark fold selector requires exactly one canonical spec")
+    from crypto_ai.phase7.admission import admit_official_training
+
+    kwargs["admission_record"] = admit_official_training(
+        entrypoint="benchmark_one_spec" if mode == "benchmark" else "run_phase7a_pipeline",
+        config=config,
+        mode="prepare" if kwargs.get("prepare_only") else "train",
+        output_root=root.parent,
+        smoke=mode == "benchmark",
+        spec_id=kwargs.get("benchmark_spec_id", "architecture-G0-A6-60m-raw"),
+        fold_id=kwargs.get("benchmark_fold_id"),
+    )
     with owned_run(root, root.name, training_source_identity(), mode=mode):
         try:
             return _run_phase7_training_owned(config, **kwargs)
@@ -1515,6 +1578,7 @@ def _run_phase7_training_owned(
     benchmark_fold_id: str | None = None,
     scope: str | None = None,
     prepare_only: bool = False,
+    admission_record: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     config.assert_cloud_execution_allowed()
     if prepare_only and benchmark_spec_id is None:
@@ -1575,9 +1639,15 @@ def _run_phase7_training_owned(
         "backend": backend_metadata(selected_backend),
         "compute_budget": asdict(compute_budget),
         "runtime_paths": runtime_paths.payload(),
+        "resolved_configuration": config.model_dump(mode="json"),
+        "admission": admission_record,
         "os": platform.platform(),
         "python": platform.python_version(),
     }
+    atomic_json(
+        run_root / "execution_manifests" / f"{stable_hash(execution_metadata, length=64)}.json",
+        execution_metadata,
+    )
     emit_event("COMPUTE_BUDGET_RESOLVED", **asdict(compute_budget))
     # CHANGED BY CLAUDE (2026-11-02, Phase 3 item 9): training reads Gold only, so absent Silver
     # is a warning, not an error. Gold rebuilds fail clearly in the pipeline gold stage instead.
@@ -1672,6 +1742,8 @@ def _run_phase7_training_owned(
                         manifest,
                         plan,
                         config.targets.horizons_minutes,
+                        gold_manifest_sha256=gold_manifest_checksum,
+                        configuration_hash=config.configuration_hash,
                         **({"dataset": gold_dataset} if gold_dataset is not None else {}),
                     )
                 sliced[spec.horizon_minutes] = slice_multiasset_fold(

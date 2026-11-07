@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import platform
 import subprocess
 import sys
 import uuid
@@ -18,8 +19,8 @@ from crypto_ai.phase7.runtime import RuntimePaths
 
 
 def verify_linux(repository: Path, output_root: Path) -> dict[str, Any]:
-    if sys.platform != "linux":
-        return {"status": "FAIL", "linux_validation": "NOT RUN", "reason": "Linux required"}
+    if sys.platform != "linux" or platform.machine().lower() not in {"x86_64", "amd64"}:
+        return {"status": "FAIL", "linux_validation": "NOT RUN", "reason": "Linux/x86_64 required"}
     runtime = RuntimePaths.resolve(PathConfig())
     output = output_root.resolve()
     for protected in (
@@ -52,7 +53,19 @@ def verify_linux(repository: Path, output_root: Path) -> dict[str, Any]:
         ["uv", "run", "ruff", "format", "--check", "src/crypto_ai", "scripts", "tests"],
         ["uv", "lock", "--check"],
         ["uv", "run", "python", "-m", "compileall", "-q", "src/crypto_ai", "scripts", "tests"],
-        ["git", "diff", "--check"],
+        (
+            ["git", "diff", "--check"]
+            if (repository / ".git").exists()
+            else [
+                "uv",
+                "run",
+                "python",
+                "-m",
+                "crypto_ai.phase7.source_freeze",
+                "--repository",
+                str(repository),
+            ]
+        ),
     ]
     environment = dict(os.environ)
     environment.pop("PHASE7_ALLOW_CLOUD_RESEARCH", None)

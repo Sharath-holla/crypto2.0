@@ -78,6 +78,8 @@ def admit_official_training(
     output_root: Path | None,
     smoke: bool = True,
     environ: Mapping[str, str] | None = None,
+    spec_id: str = "architecture-G0-A6-60m-raw",
+    fold_id: str | None = None,
 ) -> dict[str, Any]:
     """Run every admission check; return the record of what was verified or raise.
 
@@ -88,6 +90,16 @@ def admit_official_training(
     if mode not in {"train", "prepare"}:
         raise AdmissionError(f"BAD_ADMISSION_MODE: {mode!r}")
     reject_noncanonical(entrypoint)
+    from crypto_ai.phase7.run_contract import (
+        require_owner_contract,
+        smoke_resource_errors,
+        validate_environment,
+    )
+
+    try:
+        environment_names = validate_environment(env)
+    except ValueError as exc:
+        raise AdmissionError(str(exc)) from exc
     config.assert_cloud_execution_allowed()
     if config.configuration_hash not in APPROVED_CONFIGURATION_HASHES:
         raise AdmissionError(f"CONFIG_NOT_APPROVED: {config.configuration_hash}")
@@ -139,6 +151,25 @@ def admit_official_training(
     from crypto_ai.phase7.hardening import current_config
     from crypto_ai.phase7.result_publication import selection_protocol_identity
 
+    if not smoke:
+        raise AdmissionError(
+            "FULL_GRID_NOT_AUTHORIZED: current admission permits one CPU smoke only"
+        )
+    from crypto_ai.phase7.resources import existing_ancestor
+    from crypto_ai.phase7.runtime import system_snapshot
+
+    machine = system_snapshot(existing_ancestor(runtime.cache_root))
+    if errors := smoke_resource_errors(machine):
+        raise AdmissionError("SMOKE_RESOURCES_REQUIRED: " + "; ".join(errors))
+    from crypto_ai.phase5.folds import plan_folds
+
+    first = plan_folds(
+        config.data_start, config.research_cutoff, config.prospective_holdout_start, config.schedule
+    )[0]
+    try:
+        approval = require_owner_contract(config, mode, spec_id, fold_id or first.fold_id)
+    except (OSError, ValueError) as exc:
+        raise AdmissionError(str(exc)) from exc
     control = experiment_control_identity(asdict(current_config()))["manifest_sha256"]
     protocol = selection_protocol_identity()
     # CHANGED BY CLAUDE (2026-11-06, closure): from here on this process is a research process; the
@@ -148,6 +179,19 @@ def admit_official_training(
         os.environ["CRYPTO_AI_RESEARCH_MODE"] = "1"
     return {
         "status": "ADMITTED",
+        "owner_approval": approval,
+        "environment_names": environment_names,
+        "resolved_configuration": config.model_dump(mode="json"),
+        "hardening_settings": asdict(current_config()),
+        "resource_floors_gib": {
+            "available_ram": configured_floor(
+                "PHASE7_MIN_FREE_RAM_GIB", "PHASE7_MIN_AVAILABLE_RAM_GB"
+            ),
+            "free_disk": configured_floor("PHASE7_MIN_FREE_DISK_GIB", "PHASE7_MIN_FREE_DISK_GB"),
+        },
+        "runtime_paths": runtime.payload(),
+        "compute_budget": asdict(budget),
+        "machine": machine,
         "entrypoint": entrypoint,
         "mode": mode,
         "smoke": smoke,
@@ -169,5 +213,7 @@ def admit_official_training(
             "OUTPUT_ROOT_ISOLATED",
             "EXPERIMENT_IDENTITY",
             "SELECTION_PROTOCOL",
+            "KNOWN_ENVIRONMENT",
+            "OWNER_COST_DEADLINE_AND_IDENTITY",
         ],
     }

@@ -155,6 +155,12 @@ def _patch_harness(
     monkeypatch.setattr("crypto_ai.phase7.training._load_fold_rows", fake_load_rows)
     # This harness tests orchestration/error ownership, not Gold/context production.
     monkeypatch.setattr("crypto_ai.phase7.training._load_fold_context_source", fake_load_rows)
+    monkeypatch.setattr("crypto_ai.phase7.training._context_sidecar_path", lambda _: None)
+    # Synthetic orchestration harness: admission itself is tested separately with
+    # a real contract parser; never use this stub outside isolated tmp_path tests.
+    monkeypatch.setattr(
+        "crypto_ai.phase7.admission.admit_official_training", lambda **_: {"test_fixture": True}
+    )
     monkeypatch.setattr("crypto_ai.phase7.training.slice_multiasset_fold", fake_slice)
     monkeypatch.setattr("crypto_ai.phase7.training.fit_architecture", fake_fit)
     return checkpoint_root, run_root, fit_calls

@@ -20,6 +20,9 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
+import numpy as np
+import pyarrow as pa
+
 from crypto_ai.phase7.result_integrity import (
     DESCRIPTIVE_ONLY,
     DEVELOPMENT_METRIC,
@@ -30,9 +33,6 @@ from crypto_ai.phase7.result_integrity import (
     validate_result_set,
 )
 from crypto_ai.phase7.selection_chronology import DESCRIPTIVE_RANKING
-
-import numpy as np
-import pyarrow as pa
 
 CONFIG_ENV = "PHASE7_HARDENING_CONFIG"
 RESULTS_FILENAME = "phase7b_results.csv"
@@ -900,8 +900,7 @@ def evaluate_success(
     verdicts = {
         spec: {
             **counts,
-            "descriptive_criteria_met": counts["net_positive"]
-            >= cfg.success_min_net_positive_folds
+            "descriptive_criteria_met": counts["net_positive"] >= cfg.success_min_net_positive_folds
             and counts["beats"] >= cfg.success_min_beats_baseline_folds,
         }
         for spec, counts in sorted(per_spec.items())

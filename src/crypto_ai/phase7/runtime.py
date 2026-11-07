@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import math
 import os
 import platform
 import shutil
@@ -148,9 +149,11 @@ class ComputeBudget:
 
     @classmethod
     def resolve(cls, resources: ResourceConfig) -> ComputeBudget:
-        available = os.cpu_count() or 1
+        available = effective_cpu_count()
         total = int(os.environ.get("PHASE7_TOTAL_CPU_THREADS", available))
-        parallelism = int(os.environ.get("PHASE7_MODEL_PARALLELISM", resources.max_workers))
+        parallelism = int(
+            os.environ.get("PHASE7_MODEL_PARALLELISM", min(resources.max_workers, total))
+        )
         requested_threads = int(
             os.environ.get("PHASE7_LIGHTGBM_THREADS_PER_MODEL", resources.model_threads)
         )
@@ -158,7 +161,8 @@ class ComputeBudget:
             raise ValueError("Phase 7 compute budget values must be positive")
         if total > available:
             raise ValueError(
-                f"PHASE7_TOTAL_CPU_THREADS={total} exceeds detected logical CPUs={available}"
+                f"PHASE7_TOTAL_CPU_THREADS={total} exceeds detected logical CPUs={available} "
+                "(effective affinity/cgroup ceiling)"
             )
         if total < parallelism:
             raise ValueError(
@@ -186,6 +190,33 @@ def git_commit(repository_root: Path | None = None) -> str | None:
     return result.stdout.strip() or None
 
 
+def cpu_availability() -> dict[str, Any]:
+    """Conservative whole-thread budget, including affinity and fractional cgroup quotas."""
+    from crypto_ai.phase7.resource_estimate import cgroup_limits
+
+    host = os.cpu_count() or 1
+    try:
+        affinity = len(os.sched_getaffinity(0))
+    except (AttributeError, OSError):
+        affinity = None
+    quota = cgroup_limits().get("cgroup_cpu_quota_cpus")
+    ceilings = [host]
+    if affinity is not None:
+        ceilings.append(max(1, affinity))
+    if quota is not None:
+        ceilings.append(max(1, math.floor(quota)))
+    return {
+        "host_cpu_count": host,
+        "affinity_cpu_count": affinity,
+        "cgroup_cpu_quota_cpus": quota,
+        "effective_cpu_count": min(ceilings),
+    }
+
+
+def effective_cpu_count() -> int:
+    return int(cpu_availability()["effective_cpu_count"])
+
+
 def _container_adjusted_memory(total: int, available: int) -> tuple[int, int]:
     """CHANGED BY CLAUDE (2026-11-06, RunPod review): psutil reports HOST memory.
 
@@ -198,10 +229,13 @@ def _container_adjusted_memory(total: int, available: int) -> tuple[int, int]:
 
     limits = cgroup_limits()
     limit = limits.get("cgroup_memory_limit_bytes")
-    if not limit or limit >= total:
+    if not limit:
         return total, available
-    current = limits.get("cgroup_memory_current_bytes") or 0
-    return int(limit), int(min(available, max(int(limit) - int(current), 0)))
+    current = limits.get("cgroup_memory_current_bytes")
+    # A finite ceiling without usage telemetry cannot prove available container memory.
+    remaining = 0 if current is None else max(int(limit) - int(current), 0)
+    remaining = min(remaining, limits.get("cgroup_memory_available_bytes", remaining))
+    return min(total, int(limit)), min(available, remaining)
 
 
 def system_snapshot(path: Path) -> dict[str, Any]:
@@ -212,7 +246,9 @@ def system_snapshot(path: Path) -> dict[str, Any]:
     return {
         "python": platform.python_version(),
         "os": platform.platform(),
-        "cpu_count": os.cpu_count(),
+        "cpu_count": effective_cpu_count(),
+        **cpu_availability(),
+        "host_ram_total_bytes": int(vm.total),
         "ram_total_bytes": ram_total,
         "ram_available_bytes": ram_available,
         "disk_total_bytes": usage.total,

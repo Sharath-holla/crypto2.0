@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from datetime import UTC, datetime, timedelta
 
 import numpy as np
@@ -22,6 +23,77 @@ def test_no_loss_when_gold_matches_features():
     keys = _keys("ABCDEF", 50)
     result = fc.census_keys(keys, keys)
     assert result["verdict"] == "NO_LOSS" and result["lost_keys"] == 0
+
+
+def test_completely_empty_gold_cannot_hide_all_peer_loss():
+    features = _keys("ABCDEF", 100)
+    result = fc.census_keys(features, {})
+    assert result["lost_keys"] == 600
+    assert result["timestamps_with_all_peers_lost"] == 100
+    assert result["verdict"] == "MATERIAL_LOSS_SIDECAR_REQUIRED"
+
+
+def test_empty_independent_source_cannot_clear_m01():
+    with pytest.raises(ValueError, match="DATA_INSUFFICIENT"):
+        fc.census_keys({}, {})
+
+
+def test_streamed_key_reader_deduplicates_horizons_and_files(tmp_path):
+    import pyarrow.parquet as pq
+
+    table = _source("ABCDEF", 15)
+    for index in range(2):
+        pq.write_table(pa.concat_tables([table, table]), tmp_path / f"part-{index}.parquet")
+    (tmp_path / "manifest.json").write_text(
+        json.dumps({"partitions": [{"path": f"part-{index}.parquet"} for index in range(2)]})
+    )
+    # Neither a preserved partial nor a tempting unreferenced .parquet may be opened.
+    (tmp_path / ".dataset.parquet.forensic.partial").write_bytes(b"must not be scanned")
+    (tmp_path / "unreferenced.parquet").write_bytes(b"must not be scanned")
+    keys = fc._keys_from_parquet(tmp_path)
+    assert set(keys) == set("ABCDEF")
+    assert all(len(times) == 15 for times in keys.values())
+
+
+def test_unmanifested_directory_is_not_scientific_discovery(tmp_path):
+    with pytest.raises(ValueError, match="canonical manifest required"):
+        fc.canonical_parquet_paths(tmp_path)
+
+
+def test_manifest_cannot_promote_a_forensic_partial(tmp_path):
+    path = tmp_path / ".dataset.parquet.forensic.partial"
+    path.write_bytes(b"preserved")
+    (tmp_path / "manifest.json").write_text(json.dumps({"partitions": [{"path": path.name}]}))
+    with pytest.raises(ValueError, match="partial/forensic"):
+        fc.canonical_parquet_paths(tmp_path)
+
+
+def test_silver_candle_key_projection_matches_actual_feature_producer():
+    from crypto_ai.phase7.config import FeatureConfig
+    from crypto_ai.phase7.features import generate_multiasset_features
+    from crypto_ai.phase7.fixtures import synthetic_candles, synthetic_registry
+
+    candles = synthetic_candles(rows_per_symbol=60)
+    # Missing candles stay missing; feature generation preserves every remaining input key.
+    candles = candles.take(pa.array([i for i in range(candles.num_rows) if i % 13]))
+    result = generate_multiasset_features(
+        candles, registry=synthetic_registry(), config=FeatureConfig()
+    )
+    projected = {
+        (s, t + timedelta(minutes=5))
+        for s, t in zip(
+            candles["symbol"].to_pylist(), candles["open_time"].to_pylist(), strict=True
+        )
+    }
+    actual = set(
+        zip(
+            result.table["symbol"].to_pylist(),
+            result.table["feature_time"].to_pylist(),
+            strict=True,
+        )
+    )
+    assert actual == projected
+    assert len(actual) == candles.num_rows == result.table.num_rows
 
 
 def test_terminal_edge_loss_is_classified_terminal_and_immaterial():

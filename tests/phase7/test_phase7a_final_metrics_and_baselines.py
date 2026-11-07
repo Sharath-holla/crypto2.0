@@ -30,7 +30,12 @@ def test_baselines_report_deltas_and_extra_metrics() -> None:
     y = x[:, 0] * 2e-3 + rng.normal(scale=1e-4, size=600)
     model = y + rng.normal(scale=5e-5, size=600)  # a good "model"
     out = score_baselines(
-        x[:400], y[:400], x[400:], y[400:], model[400:], np.ones(200, dtype=bool),
+        x[:400],
+        y[:400],
+        x[400:],
+        y[400:],
+        model[400:],
+        np.ones(200, dtype=bool),
         config=HardeningConfig(),
     )
     assert out["delta_vs_zero"]["rmse"] < 0  # model beats zero
@@ -41,8 +46,15 @@ def test_baselines_report_deltas_and_extra_metrics() -> None:
 
 
 def test_results_table_has_provenance_columns() -> None:
-    for name in ("run_id", "configuration_hash", "code_version", "gold_dataset_id", "status",
-                 "delta_rmse_vs_zero", "delta_rmse_vs_ridge"):
+    for name in (
+        "run_id",
+        "configuration_hash",
+        "code_version",
+        "gold_dataset_id",
+        "status",
+        "delta_rmse_vs_zero",
+        "delta_rmse_vs_ridge",
+    ):
         assert name in RESULT_COLUMNS
     assert len(RESULT_COLUMNS) == len(set(RESULT_COLUMNS))
 

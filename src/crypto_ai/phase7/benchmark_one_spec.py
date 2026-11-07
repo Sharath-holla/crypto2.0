@@ -114,6 +114,8 @@ def main() -> int:
                 mode="prepare" if args.prepare_only else "train",
                 output_root=args.output_root,
                 smoke=True,
+                spec_id=args.spec_id,
+                fold_id=result["fold_id"],
             )
             runtime = RuntimePaths.resolve(config.paths)
             root = runtime.artifact_root / dispatcher.run_identity(config)

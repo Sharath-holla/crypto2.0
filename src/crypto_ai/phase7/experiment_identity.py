@@ -28,6 +28,8 @@ from typing import Any
 EXPERIMENT_CONTROL_ALGORITHM = "phase7_experiment_control_manifest_v1"
 EXPERIMENT_CONTROL_SOURCE_FILES = (
     "src/crypto_ai/phase7/hardening.py",
+    "src/crypto_ai/phase7/admission.py",
+    "src/crypto_ai/phase7/run_contract.py",
     "src/crypto_ai/phase7/result_integrity.py",
     "src/crypto_ai/phase7/selection_chronology.py",
     "src/crypto_ai/phase7/result_ledger.py",

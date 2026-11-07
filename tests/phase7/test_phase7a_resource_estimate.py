@@ -54,6 +54,7 @@ def test_no_estimate_is_called_an_upper_bound() -> None:
 def _fake_cgroup_v2(root: Path, memory: str, cpu: str) -> Path:
     root.mkdir(parents=True, exist_ok=True)
     (root / "memory.max").write_text(memory + "\n")
+    (root / "memory.current").write_text("0\n")
     (root / "cpu.max").write_text(cpu + "\n")
     return root
 

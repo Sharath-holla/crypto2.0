@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import ast
 import importlib
+import sys
 from pathlib import Path
 
 import pytest
@@ -107,12 +108,10 @@ def test_the_scan_would_catch_a_planted_live_import(tmp_path: Path) -> None:
 
 
 def test_order_client_refuses_to_exist_in_research_mode(monkeypatch: pytest.MonkeyPatch) -> None:
-    pytest.importorskip("aiohttp")
-    pytest.importorskip("cryptography")
     monkeypatch.setenv("CRYPTO_AI_RESEARCH_MODE", "1")
-    try:
-        module = importlib.import_module("pipeline.coinswitch_client")
-    except Exception as error:  # pipeline config may need live settings; never touch them
-        pytest.skip(f"order client not importable without live configuration: {error!r}")
+    before = set(sys.modules)
     with pytest.raises(RuntimeError, match="RESEARCH_MODE_ORDER_CLIENT_BLOCKED"):
-        module.CoinSwitchClient("not-a-real-key", "00")
+        importlib.import_module("pipeline.coinswitch_client")
+    loaded = set(sys.modules) - before
+    assert not loaded & {"aiohttp", "cryptography", "pipeline.config_trader"}
+    assert "pipeline.coinswitch_client" not in sys.modules

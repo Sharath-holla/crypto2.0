@@ -191,15 +191,43 @@ def inspect_spec_artifacts(
                 "INCONSISTENT", "PRESERVE_AND_INVESTIGATE", "checkpoint identity mismatch"
             )
         files = {checkpoint_store._resolve_file_record(stage, item) for item in payload["files"]}
-        if files != {model_path.resolve(), report_path.resolve(), receipt_path.resolve()}:
+        model_files = {model_path.resolve(), report_path.resolve(), receipt_path.resolve()}
+        extras = files - model_files
+        ledger_required = report.get("result_publication_contract") == "CANONICAL_LEDGER_V1"
+        if not model_files <= files or (ledger_required and not extras):
             return result(
                 "INCONSISTENT", "PRESERVE_AND_INVESTIGATE", "checkpoint inventory mismatch"
             )
+        if extras:
+            from crypto_ai.phase7.result_ledger import RESULT_SCHEMA, read_result
+            from crypto_ai.phase7.result_publication import (
+                build_canonical_record,
+                selection_protocol_identity,
+            )
+
+            records = [path for path in extras if path.name == "result.json"]
+            if len(records) != 1 or extras != {records[0], records[0].with_name("receipt.json")}:
+                return result(
+                    "INCONSISTENT", "PRESERVE_AND_INVESTIGATE", "ledger inventory mismatch"
+                )
+            if any(path.is_symlink() for path in extras):
+                return result("INCONSISTENT", "PRESERVE_AND_INVESTIGATE", "aliased ledger artifact")
+            read_result(records[0].parent)
+            expected = build_canonical_record(
+                report, protocol_identity=selection_protocol_identity()
+            )
+            expected_bytes = json.dumps(
+                {"schema": RESULT_SCHEMA, **expected}, sort_keys=True, default=str
+            ).encode()
+            if records[0].read_bytes() != expected_bytes:
+                return result("INCONSISTENT", "PRESERVE_AND_INVESTIGATE", "ledger/report mismatch")
         if not checkpoint_store.is_complete(stage, expected_metadata=expected_identity):
             return result("CORRUPT", "PRESERVE_AND_INVESTIGATE", "checkpoint integrity failure")
     except Exception:
         return result("CORRUPT", "PRESERVE_AND_INVESTIGATE", "unreadable checkpoint")
-    return result("COMPLETE", "REUSE_VERIFIED_CHECKPOINT")
+    complete = result("COMPLETE", "REUSE_VERIFIED_CHECKPOINT")
+    complete["canonical_ledger_verified"] = bool(extras)
+    return complete
 
 
 def reconcile_spec_checkpoint(*, run_root: Path, mode: str, **arguments: Any) -> dict[str, Any]:
@@ -216,11 +244,28 @@ def reconcile_spec_checkpoint(*, run_root: Path, mode: str, **arguments: Any) ->
         if state["state"] != "MODEL_REPORT":
             raise ValueError(f"cannot reconcile artifact state {state['state']}: {state['reason']}")
         model = arguments["model_path"]
+        report = json.loads(arguments["report_path"].read_text(encoding="utf-8"))
+        files = [model, arguments["report_path"], model_receipt_path(model)]
+        canonical = report.get("result_publication_contract") == "CANONICAL_LEDGER_V1"
+        if canonical:
+            from crypto_ai.phase7.result_publication import LEDGER_DIRNAME, publish_canonical_result
+
+            files.extend(publish_canonical_result(run_root / LEDGER_DIRNAME, report))
         store.complete(
             arguments["stage"],
-            [model, arguments["report_path"], model_receipt_path(model)],
+            files,
             expected,
         )
+        if canonical:
+            from crypto_ai.phase7.hardening import RESULT_COLUMNS, RESULTS_FILENAME
+            from crypto_ai.phase7.result_publication import refresh_results_view
+
+            refresh_results_view(
+                run_root / LEDGER_DIRNAME,
+                store.run_identity,
+                run_root / RESULTS_FILENAME,
+                RESULT_COLUMNS,
+            )
         return inspect_spec_artifacts(**arguments)
 
 

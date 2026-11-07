@@ -715,11 +715,11 @@ def main() -> int:
     config = load_phase7_config(args.config)
     config.assert_cloud_execution_allowed()
     if args.stage == "train":
-        from crypto_ai.phase7.preflight import build_preflight_report
         # CHANGED BY CLAUDE (2026-11-06, closure): the shared admission function. OLD CODE:
         # from crypto_ai.phase7.resources import require_training_runtime_contract
         # require_training_runtime_contract()
         from crypto_ai.phase7.admission import admit_official_training
+        from crypto_ai.phase7.preflight import build_preflight_report
         from crypto_ai.phase7.runtime import RuntimePaths
 
         admit_official_training(

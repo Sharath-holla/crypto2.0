@@ -43,6 +43,14 @@ Install:
 import json
 import logging
 import os
+
+# Fail before optional trading dependencies or credential-bearing live configuration load.
+# The research package never imports this adapter; this also blocks accidental direct imports.
+if os.environ.get("CRYPTO_AI_RESEARCH_MODE") == "1":
+    raise RuntimeError(
+        "RESEARCH_MODE_ORDER_CLIENT_BLOCKED: legacy order module cannot be imported in research mode"
+    )
+
 import time
 import urllib.parse
 import uuid

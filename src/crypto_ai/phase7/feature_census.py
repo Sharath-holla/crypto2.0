@@ -65,15 +65,20 @@ def census_keys(
     feature_all = {s: np.asarray(feature_keys.get(s, []), dtype=np.int64) for s in symbols}
     gold_all = {s: np.asarray(gold_keys.get(s, []), dtype=np.int64) for s in symbols}
     feature_enc, codes = _encode(feature_all)
+    if not len(feature_enc):
+        raise ValueError("DATA_INSUFFICIENT: independent feature-key domain is empty")
     gold_enc, _ = _encode(gold_all)
     lost = feature_enc[~np.isin(feature_enc, gold_enc)]
     extra = gold_enc[~np.isin(gold_enc, feature_enc)]
     f_times, f_counts = _members(feature_enc)
     g_times, g_counts = _members(gold_enc)
     gold_at = np.zeros(len(f_times), dtype=np.int64)
-    position = np.searchsorted(g_times, f_times)
-    hit = (position < len(g_times)) & (g_times[np.minimum(position, len(g_times) - 1)] == f_times)
-    gold_at[hit] = g_counts[position[hit]]
+    if len(g_times):
+        position = np.searchsorted(g_times, f_times)
+        hit = (position < len(g_times)) & (
+            g_times[np.minimum(position, len(g_times) - 1)] == f_times
+        )
+        gold_at[hit] = g_counts[position[hit]]
     lost_peers = f_counts - gold_at
     whole = (gold_at == 0) & (f_counts > 0)
     partial = (lost_peers > 0) & ~whole
@@ -129,6 +134,8 @@ def census_keys(
         "timestamps": int(len(f_times)),
         "timestamps_with_peer_loss": int((lost_peers > 0).sum()),
         "timestamps_with_partial_peer_loss": int(partial.sum()),
+        "timestamps_with_one_peer_lost": int((lost_peers == 1).sum()),
+        "timestamps_with_multiple_peers_lost": int((lost_peers >= 2).sum()),
         "timestamps_with_all_peers_lost": int(whole.sum()),
         "timestamps_with_material_peer_loss": int(big.sum()),
         "timestamp_loss_fraction": timestamp_fraction,
@@ -143,21 +150,76 @@ def census_keys(
     }
 
 
+def canonical_parquet_paths(path: Path) -> tuple[Path, ...]:
+    """Select explicit manifest references only; never discover data by walking a tree.
+
+    Accept a manifest JSON, a dataset root with manifest.json, the Gold dataset/
+    child of such a root, or one explicitly supplied Parquet file. Unreferenced
+    files (including forensic recovery extras) are never candidates.
+    """
+    path = path.expanduser().resolve()
+    if path.is_file() and path.suffix == ".parquet":
+        records = [{"path": str(path)}]
+        root = path.parent
+    else:
+        if path.is_dir():
+            manifest = path / "manifest.json"
+            if not manifest.is_file() and path.name == "dataset":
+                manifest = path.parent / "manifest.json"
+        else:
+            manifest = path
+        if not manifest.is_file() or manifest.suffix != ".json":
+            raise ValueError(f"DATA_INSUFFICIENT: canonical manifest required at {path}")
+        payload = json.loads(manifest.read_text(encoding="utf-8"))
+        records = payload.get("partition_files", payload.get("partitions"))
+        if not isinstance(records, list) or not records:
+            raise ValueError(f"DATA_INSUFFICIENT: no canonical partitions in {manifest}")
+        root = manifest.parent.resolve()
+    selected = []
+    for record in records:
+        reference = Path(record["path"])
+        resolved = reference.resolve() if reference.is_absolute() else (root / reference).resolve()
+        if not reference.is_absolute() and not resolved.is_relative_to(root):
+            raise ValueError("canonical partition escapes manifest root")
+        if resolved.suffix != ".parquet" or resolved.name.startswith("."):
+            raise ValueError(f"partial/forensic path cannot be a scientific partition: {reference}")
+        if not resolved.is_file():
+            raise ValueError(f"DATA_INSUFFICIENT: missing canonical partition {resolved}")
+        selected.append(resolved)
+    if len(selected) != len(set(selected)):
+        raise ValueError("duplicate canonical partition references")
+    return tuple(selected)
+
+
 def _keys_from_parquet(path: Path) -> dict[str, np.ndarray]:
     import pyarrow as pa
     import pyarrow.dataset as ds
 
-    table = ds.dataset(str(path), format="parquet").to_table(columns=["symbol", "feature_time"])
-    times = table.column("feature_time").cast(pa.timestamp("ms", tz="UTC")).cast(pa.int64())
-    symbols = np.asarray(table.column("symbol").to_pylist(), dtype=object)
-    values = np.asarray(times.to_numpy(zero_copy_only=False), dtype=np.int64)
-    return {str(s): values[symbols == s] for s in sorted(set(symbols.tolist()))}
+    parts: dict[str, list[np.ndarray]] = {}
+    files = canonical_parquet_paths(path)
+    scanner = ds.dataset([str(p) for p in files], format="parquet").scanner(
+        columns=["symbol", "feature_time"], batch_size=65_536, use_threads=False
+    )
+    for batch in scanner.to_batches():
+        times = batch.column("feature_time").cast(pa.timestamp("ms", tz="UTC")).cast(pa.int64())
+        symbols = np.asarray(batch.column("symbol").to_pylist(), dtype=object)
+        values = np.asarray(times.to_numpy(zero_copy_only=False), dtype=np.int64)
+        for symbol in np.unique(symbols):
+            parts.setdefault(str(symbol), []).append(np.unique(values[symbols == symbol]))
+    return {symbol: np.unique(np.concatenate(chunks)) for symbol, chunks in parts.items()}
 
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("--features-path", type=Path, required=True)
-    parser.add_argument("--gold-path", type=Path, required=True)
+    parser.add_argument(
+        "--features-path", type=Path, required=True, help="Canonical key manifest or dataset root"
+    )
+    parser.add_argument(
+        "--gold-path",
+        type=Path,
+        required=True,
+        help="Canonical Gold/context manifest or dataset root",
+    )
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args(argv)
     if args.output.exists():

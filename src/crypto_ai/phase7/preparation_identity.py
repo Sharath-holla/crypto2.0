@@ -33,7 +33,7 @@ from collections.abc import Mapping, Sequence
 from pathlib import Path
 from typing import Any
 
-PREPARATION_SEMANTICS_VERSION = "phase7_preparation_semantics_v1"
+PREPARATION_SEMANTICS_VERSION = "phase7_preparation_semantics_v2_feature_context_sidecar"
 ALGORITHM = "phase7_preparation_source_manifest_v1"
 
 PREPARATION_SOURCE_FILES: tuple[str, ...] = (
@@ -59,6 +59,7 @@ PREPARATION_SOURCE_FILES: tuple[str, ...] = (
     "src/crypto_ai/phase7/acquisition.py",
     "src/crypto_ai/phase7/config.py",
     "src/crypto_ai/phase7/cross_section.py",
+    "src/crypto_ai/phase7/context_sidecar.py",
     "src/crypto_ai/phase7/features.py",
     "src/crypto_ai/phase7/folds.py",
     "src/crypto_ai/phase7/gold.py",

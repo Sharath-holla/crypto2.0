@@ -151,15 +151,21 @@ def test_protocol_requires_evaluation_strictly_after_development() -> None:
     calendar = fold_calendar(_plans())
     with pytest.raises(ChronologyError, match="EVALUATION_NOT_AFTER_DEVELOPMENT"):
         build_selection_protocol(  # an evaluation fold whose TEST precedes development data
-            calendar, development_fold_ids=FOLDS[3:8], evaluation_fold_ids=[FOLDS[1]],
+            calendar,
+            development_fold_ids=FOLDS[3:8],
+            evaluation_fold_ids=[FOLDS[1]],
             selection_policy_version="v1",
         )
     protocol = build_selection_protocol(
-        calendar, development_fold_ids=FOLDS[:4], evaluation_fold_ids=FOLDS[10:],
+        calendar,
+        development_fold_ids=FOLDS[:4],
+        evaluation_fold_ids=FOLDS[10:],
         selection_policy_version="v1",
     )
     assert protocol["holdout"] == {
-        "status": "LOCKED_UNUSED", "used": False, "evaluation_authorized": False,
+        "status": "LOCKED_UNUSED",
+        "used": False,
+        "evaluation_authorized": False,
     }
 
 
@@ -167,12 +173,16 @@ def test_protocol_roles_cannot_be_conflicting_or_unknown() -> None:
     calendar = fold_calendar(_plans())
     with pytest.raises(ChronologyError):
         build_selection_protocol(
-            calendar, development_fold_ids=FOLDS[:4], evaluation_fold_ids=[FOLDS[3]],
+            calendar,
+            development_fold_ids=FOLDS[:4],
+            evaluation_fold_ids=[FOLDS[3]],
             selection_policy_version="v1",
         )
     with pytest.raises(ChronologyError):
         build_selection_protocol(
-            calendar, development_fold_ids=["nope"], evaluation_fold_ids=FOLDS[10:],
+            calendar,
+            development_fold_ids=["nope"],
+            evaluation_fold_ids=FOLDS[10:],
             selection_policy_version="v1",
         )
 
@@ -180,11 +190,15 @@ def test_protocol_roles_cannot_be_conflicting_or_unknown() -> None:
 def test_protocol_is_immutable_and_tamper_evident(tmp_path) -> None:
     calendar = fold_calendar(_plans())
     first = build_selection_protocol(
-        calendar, development_fold_ids=FOLDS[:4], evaluation_fold_ids=FOLDS[10:],
+        calendar,
+        development_fold_ids=FOLDS[:4],
+        evaluation_fold_ids=FOLDS[10:],
         selection_policy_version="v1",
     )
     other = build_selection_protocol(
-        calendar, development_fold_ids=FOLDS[:5], evaluation_fold_ids=FOLDS[10:],
+        calendar,
+        development_fold_ids=FOLDS[:5],
+        evaluation_fold_ids=FOLDS[10:],
         selection_policy_version="v1",
     )
     path = write_protocol(tmp_path / "selection_chronology.json", first)
@@ -202,7 +216,9 @@ def test_protocol_is_immutable_and_tamper_evident(tmp_path) -> None:
 def test_selector_rejects_evaluation_and_unregistered_folds() -> None:
     calendar = fold_calendar(_plans())
     protocol = build_selection_protocol(
-        calendar, development_fold_ids=FOLDS[:4], evaluation_fold_ids=FOLDS[10:],
+        calendar,
+        development_fold_ids=FOLDS[:4],
+        evaluation_fold_ids=FOLDS[10:],
         selection_policy_version="v1",
     )
     assert_rows_selection_eligible([_row(FOLDS[0]), _row(FOLDS[3])], protocol)
@@ -217,9 +233,10 @@ def test_control_identity_binds_active_settings_and_source() -> None:
     a = experiment_control_identity({"abort_after_worse_checks": 0})
     b = experiment_control_identity({"abort_after_worse_checks": 3})
     assert a["manifest_sha256"] != b["manifest_sha256"]
-    assert a["manifest_sha256"] == experiment_control_identity(
-        {"abort_after_worse_checks": 0}
-    )["manifest_sha256"]
+    assert (
+        a["manifest_sha256"]
+        == experiment_control_identity({"abort_after_worse_checks": 0})["manifest_sha256"]
+    )
     assert any(item["path"].endswith("hardening.py") for item in a["files"])
 
 

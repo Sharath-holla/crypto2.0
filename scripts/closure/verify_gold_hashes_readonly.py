@@ -133,10 +133,7 @@ def main(argv: list[str] | None = None) -> int:
         "unlisted_files": unlisted,
         "missing_files": missing,
         "sha256_mismatches": mismatches,
-        "manifest_summary": {
-            key: manifest.get(key)
-            for key in SUMMARY_KEYS
-        },
+        "manifest_summary": {key: manifest.get(key) for key in SUMMARY_KEYS},
         "feature_count": len(manifest.get("feature_columns", [])),
         "errors": errors,
         "verdict": "GOLD_HASH_VERIFICATION_PASS" if not errors else "GOLD_HASH_VERIFICATION_FAIL",

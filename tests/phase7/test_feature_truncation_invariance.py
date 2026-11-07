@@ -40,8 +40,7 @@ def _drop(candles: pa.Table, symbol: str, first_bar: int, count: int) -> pa.Tabl
     symbols = candles.column("symbol").to_pylist()
     opens = candles.column("open_time").to_pylist()
     keep = [
-        not (s == symbol and gap_start <= o < gap_end)
-        for s, o in zip(symbols, opens, strict=True)
+        not (s == symbol and gap_start <= o < gap_end) for s, o in zip(symbols, opens, strict=True)
     ]
     return candles.filter(pa.array(keep))
 
@@ -96,13 +95,23 @@ def _by_key(result, name: str) -> dict[tuple[str, datetime], object]:
 def _assert_invariant(full, truncated, cutoff: datetime) -> None:
     assert full.feature_columns == truncated.feature_columns
     columns = (*full.feature_columns, "market_membership_hash")
+
+    # Convert invariant row keys once, preserving the same per-key scalar assertions.
+    # Repeating Arrow timestamp conversion for every feature is needlessly expensive.
+    def keys(table):
+        return list(
+            zip(table["symbol"].to_pylist(), table["feature_time"].to_pylist(), strict=True)
+        )
+
+    full_keys, truncated_keys = keys(full.table), keys(truncated.table)
     compared = 0
     for name in columns:
-        left, right = _by_key(full, name), _by_key(truncated, name)
-        keys = [key for key in right if key[1] <= cutoff]
-        assert keys, "the truncated run must contain rows at or before the cutoff"
-        assert all(key in left for key in keys)
-        for key in keys:
+        left = dict(zip(full_keys, full.table[name].to_pylist(), strict=True))
+        right = dict(zip(truncated_keys, truncated.table[name].to_pylist(), strict=True))
+        selected_keys = [key for key in right if key[1] <= cutoff]
+        assert selected_keys, "the truncated run must contain rows at or before the cutoff"
+        assert all(key in left for key in selected_keys)
+        for key in selected_keys:
             a, b = left[key], right[key]
             if isinstance(a, float) or isinstance(b, float) or a is None or b is None:
                 a_nan = a is None or (isinstance(a, float) and np.isnan(a))

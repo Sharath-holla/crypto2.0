@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+import os
 from pathlib import Path
 from types import SimpleNamespace
+from unittest.mock import patch
 
 import pytest
 
@@ -136,6 +138,14 @@ def _key(**overrides):
         "descriptor_identity": "descriptors",
     }
     arguments.update(overrides)
+    # This unit fixture isolates the cache-key transformation from production
+    # context admission. Real sidecar binding and missing-context rejection have
+    # separate integration tests, including the real Gold identity.
+    if arguments["manifest"].get("dataset_id") == "gold-1" and not os.environ.get(
+        training.SIDECAR_ENV
+    ):
+        with patch.object(training, "_context_sidecar_path", return_value=None):
+            return training._prepared_cache_identity(**arguments)
     return training._prepared_cache_identity(**arguments)
 
 
@@ -191,3 +201,32 @@ def test_control_plane_and_economics_changes_do_not_invalidate_matrices() -> Non
     assert _id(source_identity={"manifest_sha256": "e" * 64}) == base  # e.g. economics.py edited
     assert "experiment_control_identity" not in _key()
     assert "scientific_source_identity" not in _key()  # replaced by the preparation identity
+
+
+@pytest.mark.parametrize(
+    "relative",
+    [
+        "src/crypto_ai/phase7/features.py",
+        "src/crypto_ai/phase7/targets.py",
+        "src/crypto_ai/phase7/folds.py",
+        "src/crypto_ai/phase7/universe.py",
+        "src/crypto_ai/phase7/cross_section.py",
+        "src/crypto_ai/phase7/context_sidecar.py",
+        "src/crypto_ai/phase7/prepared_cache.py",
+    ],
+)
+def test_each_real_matrix_source_is_bound_to_preparation_identity(tmp_path, relative):
+    assert relative in prep.PREPARATION_SOURCE_FILES
+    path = tmp_path / relative
+    path.parent.mkdir(parents=True)
+    path.write_bytes((ROOT / relative).read_bytes())
+    before = prep.preparation_source_identity(tmp_path, files=[relative], functions=[])
+    path.write_bytes(path.read_bytes() + b"\nPREPARATION_TEST_SENTINEL = 1\n")
+    after = prep.preparation_source_identity(tmp_path, files=[relative], functions=[])
+    assert before["manifest_sha256"] != after["manifest_sha256"]
+
+
+def test_matrix_transformation_version_changes_invalidate(monkeypatch):
+    before = _id()
+    monkeypatch.setattr(training, "PREPROCESSING_VERSION", "changed-matrix-dtype-or-transform")
+    assert _id() != before

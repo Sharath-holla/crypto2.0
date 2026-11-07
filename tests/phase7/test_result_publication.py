@@ -251,7 +251,8 @@ def test_training_loop_publishes_before_complete_and_run_one_no_longer_writes_cs
     }
     assert "append_result_row" not in called
     publishing = [
-        n for n in ast.walk(tree)
+        n
+        for n in ast.walk(tree)
         if isinstance(n, ast.Call) and getattr(n.func, "id", "") == "publish_canonical_result"
     ]
     assert len(publishing) >= 2  # fresh path and adopted-orphan path

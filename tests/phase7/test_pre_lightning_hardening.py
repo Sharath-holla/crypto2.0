@@ -530,6 +530,7 @@ def test_linux_gate_rejects_windows_without_running_commands(tmp_path, monkeypat
 @pytest.mark.parametrize("skip_bash", [False, True])
 def test_linux_gate_plan_requires_five_executed_bash_tests(tmp_path, monkeypatch, skip_bash):
     monkeypatch.setattr(verify_linux.sys, "platform", "linux")
+    monkeypatch.setattr(verify_linux.platform, "machine", lambda: "x86_64")
     monkeypatch.setenv("PHASE7_ALLOW_CLOUD_RESEARCH", "1")
     commands = []
 

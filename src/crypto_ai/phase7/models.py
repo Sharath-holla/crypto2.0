@@ -424,7 +424,10 @@ def fit_architecture(
         raise ValueError(f"unknown Phase 7 architecture: {architecture}")
     if model_threads < 1 or estimator_workers < 1:
         raise ValueError("Phase 7 model thread and worker counts must be positive")
-    logical_cpus = os.cpu_count() or model_threads
+    from crypto_ai.phase7.runtime import effective_cpu_count
+
+    logical_cpus = effective_cpu_count()
+    model_threads = min(model_threads, logical_cpus)
     pooled_model_threads = min(logical_cpus, model_threads * estimator_workers)
     partition_workers = max(
         1,
