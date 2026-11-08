@@ -1,0 +1,23 @@
+{
+  "LOCAL_CODE": "READY_FOR_RUNPOD_VERIFICATION",
+  "MAC_COMMITTED_EXPORT_TESTS": "PASS",
+  "RUFF": "PASS",
+  "SOURCE_FREEZE": "PASS",
+  "LOCAL_SIX_IDENTITIES": "PASS",
+  "CROSS_HOST_IDENTITIES": "NOT_RUN",
+  "LINUX": "NOT_RUN",
+  "TARGET_FILESYSTEM": "NOT_QUALIFIED",
+  "REAL_CACHE": "NOT_QUALIFIED",
+  "REAL_MODEL": "NOT_RUN",
+  "PIPELINE": "NOT_READY_FOR_SMOKE",
+  "TRADABILITY": "NOT_ESTABLISHED",
+  "FULL_GRID": "NOT_AUTHORIZED",
+  "AUGUST": "LOCKED_UNUSED",
+  "prospective_holdout_used": false,
+  "prospective_holdout_evaluation_authorized": false,
+  "source_commit": "7a64ee0da53961940932dacaddb5022be7b299bb",
+  "cloud_resources_changed": false,
+  "remote_transfer": "NOT_RUN",
+  "pending_ridge_guard": "APPLIED_AND_TESTED",
+  "unrelated_work_preserved": true
+}

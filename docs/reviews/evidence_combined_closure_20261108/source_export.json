@@ -1,0 +1,21 @@
+{
+  "source_commit": "7a64ee0da53961940932dacaddb5022be7b299bb",
+  "source_root": "/Users/cortex/Crypto2Data/reports/combined-local-closure-20261108T073250Z/crypto2-source-7a64ee0da539",
+  "package": "/Users/cortex/Crypto2Data/reports/combined-local-closure-20261108T073250Z/crypto2-source-7a64ee0da539.tar.gz",
+  "package_sha256": "b60eaffb1d4272aed053cc48c5c3b2b47537b1ac33513b02862db936910851d8",
+  "package_bytes": 5557587,
+  "committed_file_count": 1194,
+  "committed_file_bytes": 23325047,
+  "files_sha256": "a89c7c6a739639a51a22bf7e0be4cf462dec1f9b06435e5474f891a6990b004e",
+  "includes_source_freeze": true,
+  "git_directory_transferred": false,
+  "status": "PASS",
+  "post_test_source_inventory": "PASS",
+  "committed_export_pytest": {
+    "tests": 1471,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "local_six_identity_equality": "PASS"
+}

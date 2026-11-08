@@ -1,0 +1,30 @@
+ M PROJECT_CONTEXT.md
+ M configs/phase7/hardening_v1.toml
+ M docs/reviews/crypto2_architecture_scorecard_20261106.md
+ M docs/reviews/crypto2_exhaustive_research_audit_20261106.md
+ M docs/reviews/crypto2_literature_comparison_20261106.md
+ M docs/reviews/crypto2_loophole_register_20261106.md
+ M docs/reviews/crypto2_training_code_audit_20261106.md
+ M src/crypto_ai/phase7/experiment_identity.py
+ M src/crypto_ai/phase7/hardening.py
+ M src/crypto_ai/phase7/models.py
+ M src/crypto_ai/phase7/training.py
+ M src/crypto_ai/phase7/training_metrics.py
+ M tests/phase7/test_phase7a_final_metrics_and_baselines.py
+ M tests/phase7/test_phase7b_hardening.py
+ M tests/phase7/test_training_error_classification.py
+?? "Claude outputs/"
+?? docs/research/PHASE7_FUNDING_AND_EXECUTION_ARCHITECTURE.md
+?? docs/research/PHASE7_TRAINING_OBSERVER_METRICS.md
+?? docs/reviews/CLAUDE_PRE_RUNPOD_CODE_AND_ARCHITECTURE_REVIEW_20261108.md
+?? docs/reviews/CRYPTO2_LOCAL_REVIEW_20261108.md
+?? docs/reviews/evidence_crypto2_20261106/
+?? docs/reviews/evidence_local_review_20261108/
+?? docs/reviews/phase7_all_gates_final_20261106.md
+?? docs/reviews/phase7_final_execution_gates_20261106.md
+?? src/crypto_ai/phase7/action_metrics.py
+?? src/crypto_ai/phase7/fit_boundary.py
+?? src/crypto_ai/phase7/regression_diagnostics.py
+?? src/crypto_ai/phase7/training_observer.py
+?? tests/phase7/test_local_review_diagnostics.py
+?? tests/phase7/test_training_observer_diagnostics.py

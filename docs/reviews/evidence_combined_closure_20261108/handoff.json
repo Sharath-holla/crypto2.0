@@ -1,0 +1,40 @@
+{
+  "schema": "phase7_local_handoff_v1",
+  "status": "READY_FOR_RUNPOD_VERIFICATION_ONLY",
+  "source_package": {
+    "source_commit": "7a64ee0da53961940932dacaddb5022be7b299bb",
+    "source_root": "/Users/cortex/Crypto2Data/reports/combined-local-closure-20261108T073250Z/crypto2-source-7a64ee0da539",
+    "package": "/Users/cortex/Crypto2Data/reports/combined-local-closure-20261108T073250Z/crypto2-source-7a64ee0da539.tar.gz",
+    "package_sha256": "b60eaffb1d4272aed053cc48c5c3b2b47537b1ac33513b02862db936910851d8",
+    "package_bytes": 5557587,
+    "committed_file_count": 1194,
+    "committed_file_bytes": 23325047,
+    "files_sha256": "a89c7c6a739639a51a22bf7e0be4cf462dec1f9b06435e5474f891a6990b004e",
+    "includes_source_freeze": true,
+    "git_directory_transferred": false,
+    "status": "PASS",
+    "post_test_source_inventory": "PASS",
+    "committed_export_pytest": {
+      "tests": 1471,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "local_six_identity_equality": "PASS"
+  },
+  "identity_expected": {
+    "EXPERIMENT_CONTROL_DIGEST": "2022b988a5cb05d85f8ff659870896615ac22ca4dd00a4a342dabb38c7a75a3a",
+    "GOLD_MANIFEST_SHA": "a142027722424ead5bbc508537e85bf743b3da68b38c3a99c9aabd3ef0e2e711",
+    "PREPARATION_DIGEST": "07b510b1ebacdf80e22ad142861318b1052387973260605cdea509d2a9b31581",
+    "SCIENTIFIC_SOURCE_DIGEST": "978a97e8b62869c9246fe4797a26c1ff04ec8deab2cf86dc7996a3c56bf483bf",
+    "SELECTION_PROTOCOL_DIGEST": "562dbf8203f476e446cd9968d336fa74b022924c01e5b1c34f3167c065c73826",
+    "SIDECAR_SHA": "ea5f25a2a7c009c79a9ecbbe795960234b67074d36d2db7c21424724fabc2048"
+  },
+  "data_only_manifest": "/Users/cortex/Crypto2Data/reports/combined-local-closure-20261108T073250Z/runpod_data_only_manifest.json",
+  "data_only_file_list": "/Users/cortex/Crypto2Data/reports/combined-local-closure-20261108T073250Z/runpod_data_only_files.txt",
+  "data_inventory_verification": "Fresh existence/size only; reuse original expected checksums; verify content at actual transfer",
+  "do_not_use_old_source_export": "99cf12f lacks the combined November 8 diagnostics/baseline changes",
+  "remote_transfer_performed": false,
+  "training_authorized": false,
+  "owner_contract_supplied": false
+}

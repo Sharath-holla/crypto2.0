@@ -1,10 +1,12 @@
 # Crypto 2.0 local review — 2026-11-08
 
 Integration update: Claude has now finished and applied the proposed Ridge block-size guard,
-with regression coverage in `test_training_observer_diagnostics.py`. Its final report records
-1,471 passing tests. The concurrent-snapshot results below are preserved as historical evidence;
-the combined source is now being frozen for an independent export verification. External gates
-remain deferred and this update does not authorize training.
+with regression coverage in `test_training_observer_diagnostics.py`. The combined source was
+committed as `7a64ee0` and independently verified on its Git-free export: **1,471 passed**,
+Ruff passed, and six identities matched. See the
+[combined closure](CRYPTO2_COMBINED_LOCAL_CLOSURE_20261108.md). The concurrent-snapshot results
+below are preserved as historical evidence. External gates remain deferred and this update
+does not authorize training.
 
 **Phase 7A CORE20 PRIMARY; NOT_READY_FOR_SMOKE.** This is a focused follow-up to the
 [master report](CRYPTO2_FINAL_MASTER_READINESS_REPORT_20261106.md), not a replacement for its

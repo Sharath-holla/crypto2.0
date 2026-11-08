@@ -12,11 +12,13 @@ BEFORE MODIFYING OR RUNNING THIS PROJECT.
 
 Read `docs/reviews/CRYPTO2_FINAL_MASTER_READINESS_REPORT_20261106.md` for the measured November
 baseline and `docs/reviews/CRYPTO2_LOCAL_REVIEW_20261108.md` for the subsequent local review.
-The master report was committed as `3ec73e3`; its verified source export is `99cf12f`, with
-1,394 passing tests and passing Ruff checks. Claude's subsequent local development has finished:
-see `docs/reviews/CLAUDE_PRE_RUNPOD_CODE_AND_ARCHITECTURE_REVIEW_20261108.md` (reported 1,471 passing
-tests). The combined diagnostic/fit-boundary/baseline changes are being frozen and independently
-verified as one source export; the earlier export does not qualify those newer changes.
+The latest combined closure is `docs/reviews/CRYPTO2_COMBINED_LOCAL_CLOSURE_20261108.md`:
+source commit `7a64ee0da53961940932dacaddb5022be7b299bb`, **1,471 passing tests with zero
+failures/errors/skips on the committed Git-free export**, passing Ruff, and all six portable
+identities matching between repository and export. Claude's diagnostic/fit-boundary/baseline work
+and the independent review fixes are integrated, including the Ridge block-size guard.
+Use this new verified source package for future RunPod verification; the earlier `99cf12f` export
+does not contain these changes. The preparation digest remains unchanged at `07b510b1…31581`.
 
 Recovery, Silver/Gold validation, feature-only context sidecar qualification, local admission
 guards, CPU accounting, publication/recovery tests and an exact local transfer set were completed.
@@ -29,13 +31,13 @@ cache with measured resource use and equivalent read-only reload, and a fresh ow
 contract. The conservative admission floor is 64 GiB effective RAM, 8 effective CPUs and 150 GB
 local disk. No real prepared cache or real-data model was built by the November closure.
 The owner will arrange the RunPod/Linux setup later; this is not authorization to provision
-compute or start training. After concurrent edits finish, freeze and test a new source export
-before transfer; do not substitute the older export for the newer working tree.
+compute or start training. Local code is **READY_FOR_RUNPOD_VERIFICATION** only. Any further source
+edit requires a new verified source freeze before transfer.
 
 ## Laptop migration and later local remediation
 
-For the latest laptop snapshot and restoration instructions, read
-`docs/LAPTOP_MIGRATION_2026_10_24.md`. Restore branch `codex/laptop-migration-20261024`;
+For the historical October laptop snapshot and restoration instructions, read
+`docs/LAPTOP_MIGRATION_2026_10_24.md`. That snapshot uses branch `codex/laptop-migration-20261024`;
 do not assume cloning `main` restores the latest local fixes. That branch preserves the existing
 integration tree without launching it; standalone research still installs from the root package.
 
@@ -98,8 +100,8 @@ not Phase 7A direct dependencies.
 
 ## First future action
 
-**DO NOT START TRAINING.** Finish the local review, reconcile concurrent edits, and freeze a new
-verified source export. On a subsequently owner-authorized Linux host, verify the transferred
+**DO NOT START TRAINING.** Use the verified combined source package above. On a subsequently
+owner-authorized Linux host, verify the transferred
 checkpoints/identities and run the full software/filesystem gate. Then separately authorize one
 prepare-only run, measure its resource use and prove cached/uncached and read-only reload
 equivalence. Only after all smoke-critical gates pass and a fresh owner cost/deadline contract is
