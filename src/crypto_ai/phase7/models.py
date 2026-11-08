@@ -21,6 +21,7 @@ from crypto_ai.phase7.backend import (
 )
 from crypto_ai.phase7.config import ModelConfig, stable_hash
 from crypto_ai.phase7.device_evidence import fit_with_device_evidence
+from crypto_ai.phase7.fit_boundary import assert_fit_matrices
 from crypto_ai.phase7.folds import IneligibleFoldError
 from crypto_ai.phase7.model_registry import verify_registered_model
 from crypto_ai.phase7.resources import resource_admission
@@ -221,11 +222,15 @@ def _fit(
     model_threads: int,
     sample_weight: np.ndarray | None,
     estimator_key: str = "global",
+    validation_rows: np.ndarray | None = None,
 ) -> Any:
     import lightgbm as lgb
 
     if not len(train_y) or not len(validation_y):
         raise IneligibleFoldError("LightGBM requires non-empty train and validation rows")
+    # CHANGED BY CLAUDE (2026-11-08): read-only invariants on the exact arrays LightGBM receives
+    # (matrices may come back from the prepared cache). Nothing is reordered or repaired.
+    assert_fit_matrices(train_x, train_y, validation_x, validation_y, sample_weight)
     resource_admission("ESTIMATOR_FIT")
     estimator = _estimator(config, model_threads=model_threads)
     backend = resolve_lightgbm_backend()
@@ -247,6 +252,19 @@ def _fit(
         # CHANGED BY CLAUDE (2026-11-02, Phase 3 item 3): the zero-return baseline for the optional
         # abort rule comes from VALIDATION targets only.
         observer.zero_baseline_rmse = float(np.sqrt(np.mean(np.square(validation_y))))
+        # CHANGED BY CLAUDE (2026-11-08): run facts + the Validation-only in-fit diagnostics.
+        # ``validation_rows`` maps a partitioned (C0/P0) estimator's rows back to the fold's
+        # Validation table. Monitoring only: never changes the fit, the metrics or stopping.
+        observer.bind_validation(
+            validation_x,
+            validation_y,
+            rows=validation_rows,
+            train_rows=len(train_y),
+            feature_count=int(train_x.shape[1]),
+            model_threads=model_threads,
+            backend_name=backend.name,
+            learning_rate=config.learning_rate,
+        )
     try:
         fit_with_device_evidence(
             estimator,
@@ -315,6 +333,7 @@ def _fit_partitioned_estimators(
             model_threads=model_threads,
             sample_weight=sample_weight,
             estimator_key=key,
+            validation_rows=validation_mask,
         )
 
     if estimator_workers == 1 or len(jobs) <= 1:

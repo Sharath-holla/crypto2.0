@@ -1,0 +1,24 @@
+import importlib.util,sys,json
+from pathlib import Path
+import numpy as np
+base=Path(__file__).resolve().parent
+out={}
+for kind in ('current','proposed'):
+    name='independent_ridge_'+kind
+    spec=importlib.util.spec_from_file_location(name,base/('matched_ridge_'+kind+'.py'))
+    module=importlib.util.module_from_spec(spec);sys.modules[name]=module;spec.loader.exec_module(module)
+    cases={}
+    x=np.arange(12,dtype=float).reshape(6,2);y=np.arange(6,dtype=float)
+    for limit in (0,-1,1.5,True):
+        try:
+            module.matched_ridge_predict(x,y,x,alpha=1.0,block_rows=limit)
+        except ValueError:
+            status='REJECTED_VALUE_ERROR'
+        except Exception as exc:
+            status=type(exc).__name__
+        else:
+            status='ACCEPTED_INVALID_VALUE'
+        cases[repr(limit)]=status
+    out[kind]=cases
+print(json.dumps(out,indent=2))
+assert all(value=='REJECTED_VALUE_ERROR' for value in out['proposed'].values())

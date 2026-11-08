@@ -22,8 +22,8 @@ from crypto_ai.phase7.training import ExperimentSpec, run_phase7_training
 _US = 1_000_000
 
 
-def _fold_table(rows: int = 3) -> pa.Table:
-    base = datetime(2022, 1, 1, tzinfo=UTC)
+def _fold_table(rows: int = 3, base: datetime | None = None) -> pa.Table:
+    base = base or datetime(2022, 1, 1, tzinfo=UTC)
     return pa.table(
         {
             "symbol": ["BTCUSDT"] * rows,
@@ -67,9 +67,11 @@ def _fold_data(tmp_path: Path) -> MultiAssetFoldData:
         test_end=datetime(2022, 10, 1, tzinfo=UTC),
     )
     table = _fold_table()
+    # CHANGED BY CLAUDE (2026-11-08): TRAIN labels must end before the VALIDATION start (purge,
+    # now asserted at the fit boundary), so the TRAIN rows sit one day earlier.
     return MultiAssetFoldData(
         plan=plan,
-        train=table,
+        train=_fold_table(base=datetime(2021, 12, 31, tzinfo=UTC)),
         validation=table,
         calibration_a=table,
         calibration_b=table,

@@ -64,6 +64,99 @@ class HardeningConfig:
     success_min_beats_baseline_folds: int = 10
     success_alpha: float = 0.05
     multiple_testing_correction: str = "bonferroni"
+    # CHANGED BY CLAUDE (2026-11-08, pre-RunPod hardening): live action diagnostics and monitoring.
+    # The two thresholds DEFINE the descriptive LONG / SHORT event diagnostics (RAW return, bps).
+    # They are fixed here BEFORE any Validation result is seen and are never optimised; the 5 bps
+    # default carries over the previously predeclared ``fixed_threshold_bps`` default.
+    training_diagnostic_event_threshold_bps: float = 5.0  # actual_raw >= +x / <= -x is an event
+    training_diagnostic_prediction_threshold_bps: float = 5.0  # pred_raw >= +x / <= -x is an action
+    # Monitoring-only knobs (they never touch a fit, a prediction or a stopping decision).
+    monitor_max_rows: int = 250_000  # Validation rows predicted at each in-fit diagnostic check
+    monitor_diagnostics_every_checks: int = 1  # run the diagnostics every N console checks
+    monitor_xs_ic_every_checks: int = 4  # the (costlier) cross-sectional IC every N checks
+    monitor_xs_ic_min_symbols: int = 5  # a rank IC over fewer symbols per timestamp is noise
+    # Heuristic health thresholds (descriptive labels only; not tuned, not tests of significance).
+    health_gap_ratio_warn: float = 0.25  # (val RMSE - train RMSE) / train RMSE
+    health_gap_ratio_severe: float = 1.0
+    health_variance_collapse_ratio: float = 0.01  # prediction std / target std
+    health_plateau_rounds: int = 30  # rounds without a new best validation RMSE
+    health_improvement_rel_tol: float = 0.001  # relative change that counts as an improvement
+    health_min_iterations: int = 50  # gap / collapse flags are suppressed before this round
+    health_min_available_ram_gib: float = 1.0
+    health_min_free_disk_gib: float = 5.0
+
+    def __post_init__(self) -> None:
+        # CHANGED BY CLAUDE (2026-11-08): validate the new fields (thresholds must be usable units).
+        for name in (
+            "training_diagnostic_event_threshold_bps",
+            "training_diagnostic_prediction_threshold_bps",
+            "health_gap_ratio_warn",
+            "health_gap_ratio_severe",
+            "health_variance_collapse_ratio",
+            "health_improvement_rel_tol",
+        ):
+            value = getattr(self, name)
+            if isinstance(value, bool) or not isinstance(value, int | float):
+                raise ValueError(f"{name} must be a number")
+            if not math.isfinite(value) or value <= 0:
+                raise ValueError(f"{name} must be finite and strictly positive (got {value!r})")
+        for name, minimum in (
+            ("monitor_max_rows", 1_000),
+            ("monitor_diagnostics_every_checks", 1),
+            ("monitor_xs_ic_every_checks", 1),
+            ("monitor_xs_ic_min_symbols", 2),
+            ("health_plateau_rounds", 1),
+            ("health_min_iterations", 0),
+        ):
+            value = getattr(self, name)
+            if isinstance(value, bool) or not isinstance(value, int) or value < minimum:
+                raise ValueError(f"{name} must be an integer >= {minimum} (got {value!r})")
+        for name in ("health_min_available_ram_gib", "health_min_free_disk_gib"):
+            value = getattr(self, name)
+            numeric = isinstance(value, int | float) and not isinstance(value, bool)
+            if not numeric or not math.isfinite(value) or value < 0:
+                raise ValueError(f"{name} must be finite and non-negative (got {value!r})")
+
+
+# CHANGED BY CLAUDE (2026-11-08): every setting has exactly one class. MONITORING / LEGACY
+# settings change what is displayed or logged only, so they are excluded from the experiment-
+# control identity (``experiment_identity.MONITORING_ONLY_SETTINGS`` must list the same names; a
+# test enforces it). DIAGNOSTIC_DEFINITION settings change what a report diagnostic MEANS and stay
+# in the identity. None of these settings is part of the prepared-matrix or model-fit identity.
+SETTING_CLASSES: dict[str, str] = {
+    "console_table": "MONITORING",
+    "console_precision_recall": "MONITORING",
+    "fixed_threshold_bps": "LEGACY",
+    "metric_max_rows": "LEGACY",
+    "baseline_ridge_alpha": "BASELINE",
+    "baseline_max_rows": "BASELINE",
+    "abort_after_worse_checks": "OPERATIONAL",
+    "stop_file_name": "OPERATIONAL",
+    "fold_gate_folds": "OPERATIONAL",
+    "pilot_horizon_minutes": "OPERATIONAL",
+    "pilot_target_type": "OPERATIONAL",
+    "success_min_net_positive_folds": "SUCCESS_CRITERIA",
+    "success_min_beats_baseline_folds": "SUCCESS_CRITERIA",
+    "success_alpha": "SUCCESS_CRITERIA",
+    "multiple_testing_correction": "SUCCESS_CRITERIA",
+    "training_diagnostic_event_threshold_bps": "DIAGNOSTIC_DEFINITION",
+    "training_diagnostic_prediction_threshold_bps": "DIAGNOSTIC_DEFINITION",
+    "monitor_max_rows": "MONITORING",
+    "monitor_diagnostics_every_checks": "MONITORING",
+    "monitor_xs_ic_every_checks": "MONITORING",
+    "monitor_xs_ic_min_symbols": "MONITORING",
+    "health_gap_ratio_warn": "MONITORING",
+    "health_gap_ratio_severe": "MONITORING",
+    "health_variance_collapse_ratio": "MONITORING",
+    "health_plateau_rounds": "MONITORING",
+    "health_improvement_rel_tol": "MONITORING",
+    "health_min_iterations": "MONITORING",
+    "health_min_available_ram_gib": "MONITORING",
+    "health_min_free_disk_gib": "MONITORING",
+}
+MONITORING_ONLY_SETTINGS = frozenset(
+    name for name, kind in SETTING_CLASSES.items() if kind in {"MONITORING", "LEGACY"}
+)
 
 
 def load_hardening_config(path: Path | None = None) -> HardeningConfig:
@@ -104,6 +197,12 @@ def fixed_threshold_precision_recall(
 
     A *signal* is |prediction| >= threshold; a *real move* is |actual| >= threshold. A signal is a
     true positive when the predicted sign matches the actual sign on a real move.
+
+    CHANGED BY CLAUDE (2026-11-08): LEGACY - no longer used by the live training observer. It
+    pools LONG and SHORT, uses one threshold for signals and for moves, and (when fed a
+    volatility-normalised target) compares NORMALISED values against a threshold labelled in raw
+    bps. The live path now uses ``action_metrics.action_diagnostics`` on RAW returns. Kept only so
+    historical callers and tests keep working; do not use it for new diagnostics.
     """
 
     step = _stride(len(actual), max_rows)
@@ -201,8 +300,14 @@ def console_line(
         f"RMSE {_short(train.get('rmse'))} | "
         f"val L2 {_short(val.get('l2'))} MAE {_short(val.get('mae'))} "
         f"RMSE {_short(val.get('rmse'))} dir {_short(val.get('directional_accuracy'))} "
-        f"P {_short(val.get('fixed_precision'))} R {_short(val.get('fixed_recall'))} "
-        f"(fixed-threshold, validation only) | val RMSE {flag}" + (f" | {extra}" if extra else "")
+        # CHANGED BY CLAUDE (2026-11-08): the pooled "P ... R ..." pair that used to be printed
+        # here came from ``fixed_threshold_precision_recall`` on whatever units the target had
+        # (normalised units mislabelled as bps) with undefined values shown as 0. Separate LONG /
+        # SHORT raw-unit diagnostics are now printed on their own line by training_observer.
+        # OLD CODE (kept for reference):
+        # f"P {_short(val.get('fixed_precision'))} R {_short(val.get('fixed_recall'))} "
+        # f"(fixed-threshold, validation only) | val RMSE {flag}" + ...
+        f"(validation only) | val RMSE {flag}" + (f" | {extra}" if extra else "")
     )
 
 
@@ -237,6 +342,84 @@ def _ridge_predict(
     test = np.asarray(test_x, dtype=np.float64)
     test_z = np.where(np.isfinite(test), (test - mean) / scale, 0.0)
     return test_z @ weights + y_mean
+
+
+# CHANGED BY CLAUDE (2026-11-08, MR-26 baseline fairness): MATCHED_RIDGE_BASELINE_V3.
+# The v2 Ridge saw a strided <= 500k-row, UNWEIGHTED TRAIN sample while G0 fits every TRAIN row with
+# symbol-balanced weights, so "LightGBM beats Ridge" compared two different objectives. Ridge has a
+# p x p normal-equation system (p = 109), so the EXACT weighted solution on ALL TRAIN rows is cheap:
+# it is accumulated in row blocks (bounded memory) instead of sampling. Same rows, same target, same
+# TRAIN-only standardisation, same weights as the LightGBM fit. Alpha is the predeclared
+# ``baseline_ridge_alpha`` (never tuned). Missing-value policy is unchanged from v2 (z = 0).
+MATCHED_RIDGE_VERSION = "MATCHED_RIDGE_BASELINE_V3_full_train_fit_weights_exact_normal_equations"
+_RIDGE_BLOCK_ROWS = 131_072
+
+
+def matched_ridge_predict(
+    train_x: np.ndarray,
+    train_y: np.ndarray,
+    predict_x: np.ndarray,
+    *,
+    alpha: float,
+    sample_weight: np.ndarray | None = None,
+    block_rows: int = _RIDGE_BLOCK_ROWS,
+) -> np.ndarray:
+    """Exact weighted Ridge over every TRAIN row (no subsample), streamed in row blocks.
+
+    Minimises sum_i w_i (y_i - b - z_i . beta)^2 + alpha |beta|^2 with z the TRAIN-standardised
+    features (weighted mean / std over finite entries; non-finite entries become z = 0) and b the
+    weighted TRAIN mean of y. ``sample_weight=None`` means unit weights.
+    """
+
+    # Guard proposed by the concurrent local review (pending_matched_ridge_block_guard.patch):
+    # 0 / True / 2.5 used to be silently coerced by max(1, int(...)).
+    if isinstance(block_rows, bool) or not isinstance(block_rows, int) or block_rows < 1:
+        raise ValueError("Ridge block_rows must be a positive integer")
+    n, p = train_x.shape
+    y_all = np.asarray(train_y, dtype=np.float64)
+    w_all = np.ones(n) if sample_weight is None else np.asarray(sample_weight, dtype=np.float64)
+    if len(y_all) != n or len(w_all) != n:
+        raise ValueError("Ridge TRAIN rows, targets and weights must align")
+    w_all = np.where(np.isfinite(y_all), w_all, 0.0)  # rows without a target do not count
+    if not np.all(np.isfinite(w_all)) or np.any(w_all < 0) or w_all.sum() <= 0:
+        raise ValueError("Ridge weights must be finite, non-negative and not all zero")
+    blocks = range(0, n, max(1, int(block_rows)))
+
+    def block(start: int) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+        x = np.asarray(train_x[start : start + block_rows], dtype=np.float64)
+        finite = np.isfinite(x)
+        return x, finite, y_all[start : start + block_rows], w_all[start : start + block_rows]
+
+    weight_sum = np.zeros(p)
+    weighted_x = np.zeros(p)
+    for start in blocks:
+        x, finite, _y, w = block(start)
+        weight_sum += (finite * w[:, None]).sum(axis=0)
+        weighted_x += (np.where(finite, x, 0.0) * w[:, None]).sum(axis=0)
+    mean = weighted_x / np.maximum(weight_sum, np.finfo(np.float64).tiny)
+    weighted_var = np.zeros(p)
+    for start in blocks:
+        x, finite, _y, w = block(start)
+        weighted_var += (np.where(finite, x - mean, 0.0) ** 2 * w[:, None]).sum(axis=0)
+    scale = np.sqrt(weighted_var / np.maximum(weight_sum, np.finfo(np.float64).tiny))
+    scale[~(scale > 0)] = 1.0
+    finite_y = np.isfinite(y_all)
+    y_mean = float(np.sum(w_all[finite_y] * y_all[finite_y]) / w_all.sum())
+    gram = alpha * np.eye(p)
+    moment = np.zeros(p)
+    for start in blocks:
+        x, finite, y, w = block(start)
+        z = np.where(finite, (x - mean) / scale, 0.0)
+        wz = z * w[:, None]
+        gram += z.T @ wz
+        moment += wz.T @ np.where(np.isfinite(y), y - y_mean, 0.0)
+    beta = np.linalg.solve(gram, moment)
+    out = np.empty(len(predict_x), dtype=np.float64)
+    for start in range(0, len(predict_x), max(1, int(block_rows))):
+        x = np.asarray(predict_x[start : start + block_rows], dtype=np.float64)
+        z = np.where(np.isfinite(x), (x - mean) / scale, 0.0)
+        out[start : start + block_rows] = z @ beta + y_mean
+    return out
 
 
 def _delta(left: float | None, right: float | None) -> float | None:
@@ -318,10 +501,14 @@ def score_baselines(
     *,
     config: HardeningConfig | None = None,
     validation_times: np.ndarray | None = None,
+    train_weight: np.ndarray | None = None,
+    weight_policy: str = "UNWEIGHTED",
 ) -> dict[str, Any]:
     """Score zero-return, TRAIN-mean, Ridge and the model on the SAME covered validation rows.
 
     ``validation_times`` (aligned with ``validation_y``) enables the cross-sectional IC.
+    ``train_weight`` are the TRAIN sample weights the LightGBM fit used (None = unweighted); the
+    matched Ridge (``ridge``) and the TRAIN-mean baseline use the same weights.
     """
 
     cfg = config or current_config()
@@ -360,10 +547,19 @@ def score_baselines(
     }
     # CHANGED BY CLAUDE (2026-11-06, closure): no-information TRAIN-mean baseline (constant, same
     # rows, TRAIN targets only - no information beyond what the model already receives).
-    finite_train = np.asarray(train_y, dtype=np.float64)
-    finite_train = finite_train[np.isfinite(finite_train)]
+    # CHANGED BY CLAUDE (2026-11-08, v3): the constant is the fit-weighted TRAIN mean (identical
+    # to the plain mean when the fit is unweighted). OLD CODE: finite_train.mean().
+    all_train = np.asarray(train_y, dtype=np.float64)
+    finite_mask = np.isfinite(all_train)
+    finite_train = all_train[finite_mask]
     if len(finite_train):
-        mean_mae, mean_rmse = _errors(y, np.full_like(y, float(finite_train.mean())))
+        train_weights = (
+            np.ones(len(finite_train))
+            if train_weight is None
+            else np.asarray(train_weight, dtype=np.float64)[finite_mask]
+        )
+        train_mean = float(np.sum(train_weights * finite_train) / np.sum(train_weights))
+        mean_mae, mean_rmse = _errors(y, np.full_like(y, train_mean))
         result["train_mean"] = {"mae": mean_mae, "rmse": mean_rmse}
         result["lightgbm_beats_train_mean"] = bool(model_rmse < mean_rmse)
     xs_times = None
@@ -376,15 +572,42 @@ def score_baselines(
     else:
         result["lightgbm"]["cross_sectional_ic"] = {"status": "NOT_COMPUTED_NO_TIMESTAMPS"}
     if len(validation_x) == len(validation_y) and len(train_x) == len(train_y) and len(train_y):
-        ridge = _ridge_predict(
+        # CHANGED BY CLAUDE (2026-11-08, v3): ``ridge`` is now the matched full-TRAIN weighted
+        # Ridge; the v2 strided/unweighted Ridge is kept, explicitly named APPROXIMATE, for audit
+        # continuity only (never used for "beats Ridge").
+        # OLD CODE (kept for reference): ridge = _ridge_predict(train_x, train_y,
+        #     np.asarray(validation_x)[mask], alpha=..., max_rows=cfg.baseline_max_rows)
+        scored_x = np.asarray(validation_x)[mask]
+        ridge = matched_ridge_predict(
             train_x,
             train_y,
-            np.asarray(validation_x)[mask],
+            scored_x,
+            alpha=cfg.baseline_ridge_alpha,
+            sample_weight=train_weight,
+        )
+        legacy = _ridge_predict(
+            train_x,
+            train_y,
+            scored_x,
             alpha=cfg.baseline_ridge_alpha,
             max_rows=cfg.baseline_max_rows,
         )
+        legacy_mae, legacy_rmse = _errors(y, legacy)
+        result["ridge_approximate_v2_strided_unweighted"] = {
+            "status": "APPROXIMATE_NOT_MATCHED_AUDIT_ONLY",
+            "mae": legacy_mae,
+            "rmse": legacy_rmse,
+            "train_rows_used": int(len(train_y[:: _stride(len(train_y), cfg.baseline_max_rows)])),
+        }
         ridge_mae, ridge_rmse = _errors(y, ridge)
-        result["ridge"] = {"mae": ridge_mae, "rmse": ridge_rmse, "alpha": cfg.baseline_ridge_alpha}
+        result["ridge"] = {
+            "mae": ridge_mae,
+            "rmse": ridge_rmse,
+            "alpha": cfg.baseline_ridge_alpha,
+            "version": MATCHED_RIDGE_VERSION,
+            "train_rows_used": int(len(train_y)),
+            "weight_policy": weight_policy,
+        }
         full_ridge = regression_metrics(y, ridge)
         result["ridge"].update({name: full_ridge.get(name) for name in keep[2:]})
         result["delta_vs_ridge"] = {
@@ -404,6 +627,18 @@ def score_baselines(
     else:
         result["ridge"] = {"status": "SKIPPED_MISALIGNED_OR_EMPTY"}
         result["lightgbm_beats_ridge"] = None
+    result["baseline_fairness"] = {
+        "same_validation_rows": True,
+        "same_target_units": True,
+        "same_fold_and_train_rows": True,
+        "train_weighting": weight_policy,
+        "ridge_features": "PRODUCTION_FEATURES_ONLY (no symbol one-hot)",
+        "pooled_ridge_for_partitioned_architectures": "C0/P0 compare per-partition fits to one "
+        "pooled Ridge: a reference, not an identical model family",
+        "independent_evidence": False,
+        "note": "Validation also drives LightGBM early stopping, so these deltas are DEVELOPMENT "
+        "metrics; superiority requires the registered paired OOS comparison.",
+    }
     return result
 
 
@@ -774,7 +1009,8 @@ def results_row_from_report(report: Mapping[str, Any]) -> dict[str, Any]:
 # CHANGED BY CLAUDE (2026-11-06, closure): v2 adds the TRAIN-mean baseline and the cross-sectional
 # IC on the same rows; nothing else changes. OLD VALUE:
 # BASELINE_CONTRACT_VERSION = "baseline_contract_v1_same_rows_same_target_fixed_ridge_validation"
-BASELINE_CONTRACT_VERSION = "baseline_contract_v2_same_rows_same_target_fixed_ridge_xs_ic"
+# OLD (2026-11-06): "baseline_contract_v2_same_rows_same_target_fixed_ridge_xs_ic"
+BASELINE_CONTRACT_VERSION = "baseline_contract_v3_matched_full_train_fit_weighted_ridge"
 
 
 def _per_spec_skill(rows: Sequence[Mapping[str, Any]]) -> dict[str, list[float]]:

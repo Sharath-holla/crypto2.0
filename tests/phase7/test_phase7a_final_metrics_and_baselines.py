@@ -97,7 +97,8 @@ def test_score_baselines_reports_train_mean_and_xs_ic_on_the_same_rows() -> None
     out = score_baselines(
         train_x, train_y, val_x, val_y, val_y.copy(), covered, validation_times=times
     )
-    assert out["baseline_contract_version"].startswith("baseline_contract_v2")
+    # CHANGED BY CLAUDE (2026-11-08): v3 = matched full-TRAIN fit-weighted Ridge.
+    assert out["baseline_contract_version"].startswith("baseline_contract_v3")
     assert out["validation_rows_scored"] == int(covered.sum())
     assert out["train_mean"]["rmse"] > 0
     assert out["lightgbm"]["cross_sectional_ic"]["mean_xs_spearman_ic"] > 0.99

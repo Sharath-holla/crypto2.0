@@ -1,0 +1,37 @@
+{
+  "overall_status": "NOT_READY_FOR_SMOKE",
+  "reviewed_full_suite": {
+    "passed": 1465,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "source_manifest": "latest_snapshot_manifest.json"
+  },
+  "later_targeted_diagnostics_tests": {
+    "passed": 72,
+    "failures": 0
+  },
+  "independent_regression_tests_passed": 14,
+  "synthetic_active_observer_equivalence_cases_passed": 4,
+  "ruff_snapshot": "PASS",
+  "ruff_shared_tree_lint": "PASS",
+  "ruff_shared_tree_format": "PASS (747 files)",
+  "tracked_diff_check": "PASS",
+  "unrelated_review_documents_preserved": {
+    "docs/reviews/crypto2_architecture_scorecard_20261106.md": true,
+    "docs/reviews/crypto2_exhaustive_research_audit_20261106.md": true,
+    "docs/reviews/crypto2_literature_comparison_20261106.md": true,
+    "docs/reviews/crypto2_loophole_register_20261106.md": true,
+    "docs/reviews/crypto2_training_code_audit_20261106.md": true
+  },
+  "source_commit_not_created": "Concurrent editor is still working; no combined source freeze or push performed",
+  "pending_proposal": "pending_matched_ridge_block_guard.patch",
+  "cloud_changes": false,
+  "real_data_training": false,
+  "real_prepared_cache_built": false,
+  "prospective_holdout_status": "LOCKED_UNUSED",
+  "prospective_holdout_used": false,
+  "prospective_holdout_evaluation_authorized": false,
+  "full_grid_authorized": false,
+  "final_freeze_required_after_concurrent_edits": true
+}

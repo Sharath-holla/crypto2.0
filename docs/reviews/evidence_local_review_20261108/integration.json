@@ -1,0 +1,22 @@
+{
+  "status": "APPLIED",
+  "scope": "Only independent diagnostic fixes and eleven synthetic regression tests; other editor files preserved",
+  "files": [
+    {
+      "path": "src/crypto_ai/phase7/action_metrics.py",
+      "before_sha256": "06d82c3fbd04e75187bced97ba1f8d6c5a0e5316a69dcaa66006063c45e07a81",
+      "after_sha256": "254741fc022312f419c1189a7e45b4fc4636dd4c4cf717bb4bc47085877f2c6e"
+    },
+    {
+      "path": "src/crypto_ai/phase7/training_observer.py",
+      "before_sha256": "47c0088551c4111bf72a3780d98f33c0c01a6e663362264b3f2be479bd3f2fd9",
+      "after_sha256": "a8190389544e3de6e96c8b1bddb4d6d96344b101a2bebde1148d2570d8d1b913"
+    },
+    {
+      "path": "src/crypto_ai/phase7/regression_diagnostics.py",
+      "before_sha256": "118d72a9f09b31d33657b27eab5d11069f4abcbe1795eeb7004c507b96173adc",
+      "after_sha256": "9e71895a2b3a47f2a9828bc766728eeb7a8c427f5a126e6eaac346c84a0ff308"
+    }
+  ],
+  "test_file": "tests/phase7/test_local_review_diagnostics.py"
+}

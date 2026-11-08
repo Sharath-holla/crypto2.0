@@ -8,6 +8,30 @@ BEFORE MODIFYING OR RUNNING THIS PROJECT.
 - Status: **PROJECT HOLD**
 - Current phase: **Phase 7A CORE20 PRIMARY**
 
+## Latest local readiness — 2026-11-08
+
+Read `docs/reviews/CRYPTO2_FINAL_MASTER_READINESS_REPORT_20261106.md` for the measured November
+baseline and `docs/reviews/CRYPTO2_LOCAL_REVIEW_20261108.md` for the subsequent local review.
+The master report was committed as `3ec73e3`; its verified source export is `99cf12f`, with
+1,394 passing tests and passing Ruff checks. Claude's subsequent local development has finished:
+see `docs/reviews/CLAUDE_PRE_RUNPOD_CODE_AND_ARCHITECTURE_REVIEW_20261108.md` (reported 1,471 passing
+tests). The combined diagnostic/fit-boundary/baseline changes are being frozen and independently
+verified as one source export; the earlier export does not qualify those newer changes.
+
+Recovery, Silver/Gold validation, feature-only context sidecar qualification, local admission
+guards, CPU accounting, publication/recovery tests and an exact local transfer set were completed.
+The recovered canonical data root is `/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent`;
+Gold is no longer known only from the historical VM disk. Reuse the verified data and sidecar.
+
+The project remains **NOT_READY_FOR_SMOKE**. Required external gates are actual Linux/x86_64
+verification, target filesystem qualification, cross-host identity equality, one real prepared
+cache with measured resource use and equivalent read-only reload, and a fresh owner cost/deadline
+contract. The conservative admission floor is 64 GiB effective RAM, 8 effective CPUs and 150 GB
+local disk. No real prepared cache or real-data model was built by the November closure.
+The owner will arrange the RunPod/Linux setup later; this is not authorization to provision
+compute or start training. After concurrent edits finish, freeze and test a new source export
+before transfer; do not substitute the older export for the newer working tree.
+
 ## Laptop migration and later local remediation
 
 For the latest laptop snapshot and restoration instructions, read
@@ -28,21 +52,26 @@ point-in-time universe construction, chronological models, calibration, cost-awa
 research economics, and future risk/execution. It is not a profitability guarantee and has no
 current paper/live/order path.
 
-## Exact frozen state
+## Historical remote freeze and continuing scientific state
+
+The following cloud resource facts come from the September handoff; they are not a fresh remote
+resource inspection. The November local recovery/readiness evidence above supersedes the older
+claim that Gold exists only on that VM disk.
 
 - VM `crypto-phase7` in `asia-south1-a`: **TERMINATED**, auto restart false. Keep it stopped.
 - Discovery: 507/507; acquisition complete; data checkpoint valid; 60 candle checkpoints validated.
 - Gold: 7/7, 138 partitions, 50,352,548 rows, dataset
-  `gold-phase7-0cbf2910e8d96c9d19826598`, stored only on the VM boot disk.
+  `gold-phase7-0cbf2910e8d96c9d19826598`; the recovered local copy has been validated.
 - Fold 1: `STARTED_NOT_COMPLETE`, 0/48 reports, zero models. Folds complete: 0/16. Fold 2 never
   started. Qualified model: none; quality is not yet evaluable.
 - July 2026 unused. August begins 2026-08-01 and is permanently `LOCKED_UNUSED`, `used=false`,
   `evaluation_authorized=false`.
 - Phase 8, paper trading, risk automation, account access, and live trading have not started.
-- Open blocker: `FOLD1_MATRIX_PREPARATION_AND_CHECKPOINTING`.
+- Original blocker: `FOLD1_MATRIX_PREPARATION_AND_CHECKPOINTING`. The cache implementation now
+  exists; real-data preparation/reload equivalence and external qualification remain incomplete.
 
-The persistent disk is 250 GB `pd-balanced`, `READY`, and `autoDelete=true`; deleting the VM would
-delete the only current Gold copy. GCS bucket: `gs://crypto-ai-data-83921`. Project:
+The historical persistent disk was 250 GB `pd-balanced`, `READY`, and `autoDelete=true`; deleting
+the VM would delete its boot-disk copy. Preserve it. GCS bucket: `gs://crypto-ai-data-83921`. Project:
 `crypto-ai-trading-506300`. VM repo: `/home/nssharath123/crypto2.0`.
 
 ## Frozen science
@@ -69,11 +98,13 @@ not Phase 7A direct dependencies.
 
 ## First future action
 
-**DO NOT START TRAINING.** Verify Git/tag/cloud/disk/checkpoints and holdout first. Profile Gold scan,
-fold filtering/context, purge/slicing, finite filtering, and Arrow→NumPy preparation. Add an atomic,
-content-addressed prepared-matrix checkpoint bound to every scientific identity and prove cached/
-uncached equivalence. Then, only with a fresh owner-approved cost/deadline, run one Fold 1 and
-measure it before deciding on folds 2–16.
+**DO NOT START TRAINING.** Finish the local review, reconcile concurrent edits, and freeze a new
+verified source export. On a subsequently owner-authorized Linux host, verify the transferred
+checkpoints/identities and run the full software/filesystem gate. Then separately authorize one
+prepare-only run, measure its resource use and prove cached/uncached and read-only reload
+equivalence. Only after all smoke-critical gates pass and a fresh owner cost/deadline contract is
+in place may one CPU training smoke run proceed. A smoke is not approval for all 48 specifications
+or all 16 folds.
 
 Detailed entry: `docs/PROJECT_HANDOFF/00_START_HERE.md`. Resume procedure:
 `docs/PROJECT_HANDOFF/29_ONE_YEAR_RESUME_RUNBOOK.md`. Exact state:

@@ -1,0 +1,50 @@
+{
+  "source_head": "3ec73e37d2a308eb4f03fc40cfeec6366acc2b34",
+  "snapshot_utc": "20261108T061002Z",
+  "root": "/Users/cortex/Projects/crypto2.0",
+  "worktree": "/Users/cortex/Crypto2Data/reports/local-review-20261108T061002Z/worktree",
+  "files": [
+    {
+      "path": "configs/phase7/hardening_v1.toml",
+      "sha256": "dac58176438ba11c0dbd179a6aa920f5ff327e90fe115d8871293b0f680cefea",
+      "bytes": 2651,
+      "untracked": false
+    },
+    {
+      "path": "src/crypto_ai/phase7/experiment_identity.py",
+      "sha256": "6af4c1518be07c69f63eb847ccbab53fea556a29405d9384b32ec6e27ae35f30",
+      "bytes": 4168,
+      "untracked": false
+    },
+    {
+      "path": "src/crypto_ai/phase7/hardening.py",
+      "sha256": "03d4c696c92d24bc6ab92d87c6d4d056714ad3c167660352cb7ef37fd156d7b3",
+      "bytes": 48539,
+      "untracked": false
+    },
+    {
+      "path": "src/crypto_ai/phase7/training_metrics.py",
+      "sha256": "4cf7be40bfa42e7b2730a05d5b3fdc9cc746e2a46d7f3f41e841f42b6fb7a7e1",
+      "bytes": 27330,
+      "untracked": false
+    },
+    {
+      "path": "src/crypto_ai/phase7/action_metrics.py",
+      "sha256": "06d82c3fbd04e75187bced97ba1f8d6c5a0e5316a69dcaa66006063c45e07a81",
+      "bytes": 13095,
+      "untracked": true
+    },
+    {
+      "path": "src/crypto_ai/phase7/regression_diagnostics.py",
+      "sha256": "14cc35dfc03e2acb1a42796ce477f269170b37439708e5a390abba86b799077d",
+      "bytes": 9811,
+      "untracked": true
+    },
+    {
+      "path": "src/crypto_ai/phase7/training_observer.py",
+      "sha256": "f9b8a6e60ff31077f568cc239b7ffe5f73a30e45a444bd1b13bb3f18adbb7f81",
+      "bytes": 30067,
+      "untracked": true
+    }
+  ]
+}

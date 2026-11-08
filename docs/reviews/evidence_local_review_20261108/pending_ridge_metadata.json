@@ -1,0 +1,7 @@
+{
+  "status": "PROPOSED_ONLY_NOT_APPLIED",
+  "reason": "Owner confirmed Claude is actively editing training diagnostics; preserve concurrent work",
+  "path": "src/crypto_ai/phase7/hardening.py",
+  "reviewed_sha256": "1670fbe131fa1572f0f15c27fc1b8e3882c71a1fe866be424227ea37df89adb8",
+  "issue": "block_rows <= 0 can leave prediction np.empty buffer unwritten; malformed sizes must fail before allocation"
+}

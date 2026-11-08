@@ -1,0 +1,138 @@
+FF..F.FFFFFFF.                                                           [100%]
+=================================== FAILURES ===================================
+_____ test_unrepresentable_raw_threshold_is_rejected[event_threshold_bps] ______
+
+field = 'event_threshold_bps'
+
+    @pytest.mark.parametrize("field", ["event_threshold_bps", "prediction_threshold_bps"])
+    def test_unrepresentable_raw_threshold_is_rejected(field: str) -> None:
+        values = {"event_threshold_bps": 5.0, "prediction_threshold_bps": 5.0, field: 1e-323}
+>       with pytest.raises(ValueError, match="raw-return units"):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE ValueError
+
+test_local_review_diagnostics.py:17: Failed
+___ test_unrepresentable_raw_threshold_is_rejected[prediction_threshold_bps] ___
+
+field = 'prediction_threshold_bps'
+
+    @pytest.mark.parametrize("field", ["event_threshold_bps", "prediction_threshold_bps"])
+    def test_unrepresentable_raw_threshold_is_rejected(field: str) -> None:
+        values = {"event_threshold_bps": 5.0, "prediction_threshold_bps": 5.0, field: 1e-323}
+>       with pytest.raises(ValueError, match="raw-return units"):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE ValueError
+
+test_local_review_diagnostics.py:17: Failed
+_________ test_monitor_limit_preserves_whole_uneven_cross_sections[25] _________
+
+seed = 25
+
+    @pytest.mark.parametrize("seed", [0, 25, 20261108])
+    def test_monitor_limit_preserves_whole_uneven_cross_sections(seed: int) -> None:
+        times = np.repeat(np.arange(101), [9900] + [1] * 100)
+        selected = monitor_indices(len(times), 1000, times, seed=seed)
+>       assert selected is not None and 0 < len(selected) <= 1000
+E       assert (array([   0,    1,    2, ..., 9952, 9979, 9999], shape=(9909,)) is not None and 9909 <= 1000)
+E        +  where 9909 = len(array([   0,    1,    2, ..., 9952, 9979, 9999], shape=(9909,)))
+
+test_local_review_diagnostics.py:33: AssertionError
+_ test_oversized_cross_section_disables_diagnostics_instead_of_exceeding_limit _
+
+    def test_oversized_cross_section_disables_diagnostics_instead_of_exceeding_limit() -> None:
+>       with pytest.raises(ValueError, match="MONITOR_CROSS_SECTION_EXCEEDS_ROW_LIMIT"):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE ValueError
+
+test_local_review_diagnostics.py:40: Failed
+________ test_monitor_rejects_timestamp_length_mismatch_before_sampling ________
+
+    def test_monitor_rejects_timestamp_length_mismatch_before_sampling() -> None:
+>       with pytest.raises(ValueError, match="ROW_MISALIGNMENT"):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE ValueError
+
+test_local_review_diagnostics.py:45: Failed
+____ test_prediction_distribution_includes_predictions_with_missing_actuals ____
+
+    def test_prediction_distribution_includes_predictions_with_missing_actuals() -> None:
+        result = regression_snapshot(np.array([1.0, np.nan]), np.array([1.0, 100.0]))
+        assert result["rows_valid"] == 1
+        assert result["rmse"] == 0.0
+>       assert result["prediction_mean"] == 50.5
+E       assert 1.0 == 50.5
+
+test_local_review_diagnostics.py:53: AssertionError
+_______ test_prediction_distribution_available_when_no_actual_is_finite ________
+
+    def test_prediction_distribution_available_when_no_actual_is_finite() -> None:
+        result = regression_snapshot(np.array([np.nan, np.nan]), np.array([1.0, 3.0]))
+        assert result["rows_valid"] == 0
+        assert result["rmse"] is None
+>       assert result["prediction_mean"] == 2.0
+E       assert None == 2.0
+
+test_local_review_diagnostics.py:62: AssertionError
+______________ test_variance_ratio_compares_the_same_finite_pairs ______________
+
+    def test_variance_ratio_compares_the_same_finite_pairs() -> None:
+        result = regression_snapshot(np.array([1.0, 3.0, np.nan]), np.array([1.0, 3.0, 100.0]))
+>       assert result["prediction_std"] > 1.0
+E       assert 1.0 > 1.0
+
+test_local_review_diagnostics.py:68: AssertionError
+___ test_fit_boundary_source_changes_invalidate_experiment_control_identity ____
+
+tmp_path = PosixPath('/private/var/folders/2x/g9vjz2091f3g7g3vz9l0rg3c0000gn/T/pytest-of-cortex/pytest-17/test_fit_boundary_source_chang0')
+
+    def test_fit_boundary_source_changes_invalidate_experiment_control_identity(tmp_path) -> None:
+        for relative in experiment_identity.EXPERIMENT_CONTROL_SOURCE_FILES:
+            path = tmp_path / relative
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text("# synthetic source identity fixture\n")
+        before = experiment_identity.experiment_control_identity({}, tmp_path)
+        guard = tmp_path / "src/crypto_ai/phase7/fit_boundary.py"
+        guard.write_text("# changed fit acceptance rule\n")
+        after = experiment_identity.experiment_control_identity({}, tmp_path)
+>       assert before["manifest_sha256"] != after["manifest_sha256"]
+E       AssertionError: assert '19b699491ab5007e37659171ddcadd603d429debd418d88dcbef1b53ff017c7f' != '19b699491ab5007e37659171ddcadd603d429debd418d88dcbef1b53ff017c7f'
+
+test_local_review_diagnostics.py:81: AssertionError
+________________ test_missing_fit_boundary_source_fails_closed _________________
+
+tmp_path = PosixPath('/private/var/folders/2x/g9vjz2091f3g7g3vz9l0rg3c0000gn/T/pytest-of-cortex/pytest-17/test_missing_fit_boundary_sour0')
+
+    def test_missing_fit_boundary_source_fails_closed(tmp_path) -> None:
+        for relative in experiment_identity.EXPERIMENT_CONTROL_SOURCE_FILES:
+            if relative.endswith("/fit_boundary.py"):
+                continue
+            path = tmp_path / relative
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text("# synthetic source identity fixture\n")
+>       with pytest.raises(RuntimeError, match="fit_boundary.py"):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE RuntimeError
+
+test_local_review_diagnostics.py:91: Failed
+=============================== warnings summary ===============================
+../../../../Projects/crypto2.0/.venv/lib/python3.12/site-packages/_pytest/cacheprovider.py:469
+  /Users/cortex/Projects/crypto2.0/.venv/lib/python3.12/site-packages/_pytest/cacheprovider.py:469: PytestCacheWarning: could not create cache path /dev/.pytest_cache/v/cache/nodeids: [Errno 1] Operation not permitted: '/dev/pytest-cache-files-dijmm1dt'
+    config.cache.set("cache/nodeids", sorted(self.cached_nodeids))
+
+../../../../Projects/crypto2.0/.venv/lib/python3.12/site-packages/_pytest/cacheprovider.py:423
+  /Users/cortex/Projects/crypto2.0/.venv/lib/python3.12/site-packages/_pytest/cacheprovider.py:423: PytestCacheWarning: could not create cache path /dev/.pytest_cache/v/cache/lastfailed: [Errno 1] Operation not permitted: '/dev/pytest-cache-files-ep6pbf0w'
+    config.cache.set("cache/lastfailed", self.lastfailed)
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED ../../../../../../dev::test_unrepresentable_raw_threshold_is_rejected[event_threshold_bps]
+FAILED ../../../../../../dev::test_unrepresentable_raw_threshold_is_rejected[prediction_threshold_bps]
+FAILED ../../../../../../dev::test_monitor_limit_preserves_whole_uneven_cross_sections[25]
+FAILED ../../../../../../dev::test_oversized_cross_section_disables_diagnostics_instead_of_exceeding_limit
+FAILED ../../../../../../dev::test_monitor_rejects_timestamp_length_mismatch_before_sampling
+FAILED ../../../../../../dev::test_prediction_distribution_includes_predictions_with_missing_actuals
+FAILED ../../../../../../dev::test_prediction_distribution_available_when_no_actual_is_finite
+FAILED ../../../../../../dev::test_variance_ratio_compares_the_same_finite_pairs
+FAILED ../../../../../../dev::test_fit_boundary_source_changes_invalidate_experiment_control_identity
+FAILED ../../../../../../dev::test_missing_fit_boundary_source_fails_closed
+10 failed, 4 passed, 2 warnings in 1.40s

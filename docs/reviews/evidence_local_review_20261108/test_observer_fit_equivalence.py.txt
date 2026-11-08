@@ -1,0 +1,39 @@
+"""Tiny synthetic CPU fixtures only; no real market data or real training cache."""
+from __future__ import annotations
+import json
+import numpy as np
+import pytest
+from crypto_ai.phase7 import models, training_metrics
+from crypto_ai.phase7.action_metrics import ActionThresholds
+from crypto_ai.phase7.config import ModelConfig
+from crypto_ai.phase7.hardening import HardeningConfig
+from crypto_ai.phase7.training_metrics import training_metric_scope
+from crypto_ai.phase7.training_observer import ValidationDiagnosticContext, TARGET_UNITS_RAW, TARGET_UNITS_NORMALIZED
+
+@pytest.mark.parametrize("normalized", [False, True])
+@pytest.mark.parametrize("weighted", [False, True])
+def test_active_diagnostics_preserve_fit_and_stopping(tmp_path, monkeypatch, normalized, weighted):
+    monkeypatch.setenv("PHASE7_LGBM_DEVICE", "cpu")
+    monkeypatch.setenv("PHASE7_METRICS_EVERY", "3")
+    # This bypass applies only to tiny synthetic private-estimator unit fixtures.
+    monkeypatch.setattr(models, "resource_admission", lambda *args, **kwargs: None)
+    monkeypatch.setattr(training_metrics, "current_config", lambda: HardeningConfig(console_table=False))
+    rng=np.random.default_rng(42)
+    x=rng.normal(size=(240,3))
+    y=x[:,0]*.01+rng.normal(scale=.001,size=240)
+    y[180:]=-y[180:]
+    config=ModelConfig(n_estimators=20,early_stopping_rounds=5,min_child_samples=5)
+    weights=np.linspace(.2,2.,180) if weighted else None
+    args=dict(config=config,model_threads=1,sample_weight=weights)
+    reference=models._fit(x[:180],y[:180],x[180:],y[180:],**args)
+    divisor=np.linspace(.001,.02,60) if normalized else None
+    raw=y[180:] if divisor is None else y[180:]*divisor
+    context=ValidationDiagnosticContext(raw,divisor,np.repeat(np.arange(12),5),ActionThresholds(5.,5.),TARGET_UNITS_NORMALIZED if normalized else TARGET_UNITS_RAW)
+    with training_metric_scope(tmp_path,diagnostics=context,fold_id="synthetic",target_type="volatility_normalized" if normalized else "raw") as scope:
+        observed=models._fit(x[:180],y[:180],x[180:],y[180:],**args)
+    assert reference.best_iteration_==observed.best_iteration_
+    np.testing.assert_array_equal(reference.predict(x),observed.predict(x))
+    records=[json.loads(line) for p in tmp_path.glob("fit-*.jsonl") for line in p.read_text().splitlines()]
+    assert any(r["event"]=="VALIDATION_DIAGNOSTICS" for r in records)
+    assert scope.summaries["global"]["diagnostics_status"]=="ACTIVE"
+    assert all(r["test_access"]=="NOT_RELEASED_DURING_FIT" for r in records)

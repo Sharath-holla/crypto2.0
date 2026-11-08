@@ -37,11 +37,15 @@ def test_fixed_threshold_precision_recall() -> None:
     assert h.fixed_threshold_precision_recall(np.zeros(3), np.zeros(3), 5.0)["precision"] is None
 
 
-def test_display_metrics_now_include_precision_and_recall() -> None:
+def test_display_metrics_no_longer_emit_pooled_precision_recall() -> None:
+    # CHANGED BY CLAUDE (2026-11-08, MR-28): the pooled fixed_precision / fixed_recall pair was
+    # computed in TARGET units (normalised units mislabelled as bps) and coerced undefined values to
+    # 0.0. LONG / SHORT raw-unit diagnostics now live in action_metrics (see
+    # test_training_observer_diagnostics.py). LightGBM's default L2 stays the first metric.
     names = [
         name for name, _value, _flag in display_metrics(np.ones(4) * 0.001, np.ones(4) * 0.001)
     ]
-    assert names == ["mae", "rmse", "directional_accuracy", "fixed_precision", "fixed_recall"]
+    assert names == ["mae", "rmse", "directional_accuracy"]
 
 
 def test_trend_flag() -> None:
@@ -76,7 +80,7 @@ def test_observer_prints_a_readable_line_and_aborts_after_n_worse_checks(
 
     observer(env(0, 0.02))  # worse than the 0.01 zero baseline: streak 1
     out = capsys.readouterr().out
-    assert "[fit f1/s1/global] round    1/10" in out and "fixed-threshold, validation only" in out
+    assert "[fit f1/s1/global] round    1/10" in out and "(validation only)" in out
     with pytest.raises(h.FitAbortedError):
         observer(env(1, 0.03))  # streak 2 -> abort
     assert "FIT_ABORTED" in capsys.readouterr().out

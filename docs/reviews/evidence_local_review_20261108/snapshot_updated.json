@@ -1,0 +1,61 @@
+{
+  "root": "/Users/cortex/Projects/crypto2.0",
+  "worktree": "/Users/cortex/Crypto2Data/reports/local-review-20261108T061002Z/worktree",
+  "files": [
+    {
+      "path": "configs/phase7/hardening_v1.toml",
+      "sha256": "dac58176438ba11c0dbd179a6aa920f5ff327e90fe115d8871293b0f680cefea",
+      "bytes": 2651
+    },
+    {
+      "path": "src/crypto_ai/phase7/experiment_identity.py",
+      "sha256": "6af4c1518be07c69f63eb847ccbab53fea556a29405d9384b32ec6e27ae35f30",
+      "bytes": 4168
+    },
+    {
+      "path": "src/crypto_ai/phase7/hardening.py",
+      "sha256": "03d4c696c92d24bc6ab92d87c6d4d056714ad3c167660352cb7ef37fd156d7b3",
+      "bytes": 48539
+    },
+    {
+      "path": "src/crypto_ai/phase7/models.py",
+      "sha256": "430ac640cb6a9ec3b4d888de640824013d5673eb930e58d3abf9ff944920ab1b",
+      "bytes": 32797
+    },
+    {
+      "path": "src/crypto_ai/phase7/training.py",
+      "sha256": "bd7697b4373c98045c2c93b385003e32b891a6585892b062eb5da749f38dc9ac",
+      "bytes": 107396
+    },
+    {
+      "path": "src/crypto_ai/phase7/training_metrics.py",
+      "sha256": "4cf7be40bfa42e7b2730a05d5b3fdc9cc746e2a46d7f3f41e841f42b6fb7a7e1",
+      "bytes": 27330
+    },
+    {
+      "path": "tests/phase7/test_phase7b_hardening.py",
+      "sha256": "27431be4da2dbab10bf7efa40f04e5c8aa42109b8ce96861690e83799de011ab",
+      "bytes": 13876
+    },
+    {
+      "path": "src/crypto_ai/phase7/action_metrics.py",
+      "sha256": "06d82c3fbd04e75187bced97ba1f8d6c5a0e5316a69dcaa66006063c45e07a81",
+      "bytes": 13095
+    },
+    {
+      "path": "src/crypto_ai/phase7/fit_boundary.py",
+      "sha256": "dbc282cb01011065b3cd1f603ac7738cf070c7c497762b92b2c2e03f5b171875",
+      "bytes": 8541
+    },
+    {
+      "path": "src/crypto_ai/phase7/regression_diagnostics.py",
+      "sha256": "118d72a9f09b31d33657b27eab5d11069f4abcbe1795eeb7004c507b96173adc",
+      "bytes": 9866
+    },
+    {
+      "path": "src/crypto_ai/phase7/training_observer.py",
+      "sha256": "47c0088551c4111bf72a3780d98f33c0c01a6e663362264b3f2be479bd3f2fd9",
+      "bytes": 31134
+    }
+  ]
+}

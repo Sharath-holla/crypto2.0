@@ -58,6 +58,11 @@ from crypto_ai.phase7.features import (
     FOLD_CONTEXT_VERSION,
     build_fold_context_table,
 )
+from crypto_ai.phase7.fit_boundary import (
+    assert_fit_segments,
+    prediction_health,
+    sample_weight_summary,
+)
 from crypto_ai.phase7.folds import (
     IneligibleFoldError,
     MultiAssetFoldData,
@@ -95,6 +100,7 @@ from crypto_ai.phase7.models import (
     prepare_architecture_inputs,
     save_model,
     split_calibration_a_for_h0,
+    symbol_balanced_weights,
 )
 from crypto_ai.phase7.preparation_identity import preparation_source_identity
 from crypto_ai.phase7.prepared_cache import (
@@ -126,6 +132,11 @@ from crypto_ai.phase7.segments import CausalDataGap
 from crypto_ai.phase7.targets import effective_normalization_scale
 from crypto_ai.phase7.telemetry import instrument, telemetry
 from crypto_ai.phase7.training_metrics import training_metric_scope
+from crypto_ai.phase7.training_observer import (
+    report_view,
+    resolved_monitor_manifest,
+    try_build_validation_context,
+)
 from crypto_ai.phase7.universe import (
     ExpansionUniversePolicy,
     FrozenUniverse,
@@ -1146,10 +1157,29 @@ def _run_one(
     )
     if execution_metadata is None:
         log_directory = output_root / "training-metrics"
+    # CHANGED BY CLAUDE (2026-11-08, pre-RunPod hardening): read-only Train/Validation invariants
+    # (row identity, symbol order, purge) right before the fit, and the VALIDATION-only context
+    # for the descriptive in-fit diagnostics (raw-return units, predeclared thresholds). Neither
+    # changes a matrix, the fit, early stopping or any TEST-facing step.
+    fit_boundary_summary = assert_fit_segments(
+        train,
+        validation,
+        model_inputs=prepared.model_inputs,
+        feature_columns=feature_columns,
+        target_column=target,
+        validation_start_us=int(fold.plan.validation_start.timestamp() * 1_000_000),
+    )
+    diagnostic_context, diagnostic_context_status = try_build_validation_context(
+        validation,
+        target_type=spec.target_type,
+        normalization_floor=config.targets.normalization_floor,
+        config=current_config(),
+    )
     with (
         fit_context,
         training_metric_scope(
             log_directory,
+            diagnostics=diagnostic_context,
             run_identity=log_identity,
             fold_id=fold.plan.fold_id,
             spec_id=spec.name,
@@ -1161,7 +1191,7 @@ def _run_one(
             feature_count=len(feature_columns),
             round_limit=config.models.n_estimators,
             symbol_balanced=spec.symbol_balanced,
-        ),
+        ) as metric_scope,
     ):
         model = fit_architecture(
             spec.architecture,  # type: ignore[arg-type]
@@ -1339,6 +1369,13 @@ def _run_one(
     # TEST and are never fed back into any selection. Nothing above this line changed.
     hardening_cfg = current_config()
     validation_prediction, validation_covered = model.predict(validation)
+    # CHANGED BY CLAUDE (2026-11-08, baseline contract v3): the baselines use the SAME TRAIN weights
+    # the global LightGBM fit used (symbol-balanced, from TRAIN symbol row counts only).
+    baseline_weights = (
+        symbol_balanced_weights(prepared.model_inputs.train_symbols)
+        if spec.symbol_balanced
+        else None
+    )
     baselines = score_baselines(
         prepared.model_inputs.train_x,
         prepared.model_inputs.train_y,
@@ -1352,6 +1389,12 @@ def _run_one(
         .combine_chunks()
         .cast(pa.int64())
         .to_numpy(),
+        train_weight=baseline_weights,
+        weight_policy=(
+            "SYMBOL_BALANCED_SAME_AS_GLOBAL_FIT"
+            if spec.symbol_balanced
+            else "UNWEIGHTED_SAME_AS_FIT"
+        ),
     )
     test_symbols = [str(item) for item in test.column("symbol").to_pylist()]
     tier_costs = tier_cost_breakdown(config.costs)
@@ -1384,6 +1427,28 @@ def _run_one(
         # CHANGED BY CLAUDE (2026-11-06, IA-04): and the control-plane identity (source + settings).
         "hardening_config": asdict(current_config()),
         "experiment_control_identity": experiment_control_identity(asdict(current_config())),
+        # CHANGED BY CLAUDE (2026-11-08): descriptive training observability. Validation-only,
+        # metric class DESCRIPTIVE_VALIDATION_DIAGNOSTIC / DEVELOPMENT_METRIC, never selection,
+        # never evidence; the canonical ledger stays authoritative.
+        "training_observer": {
+            "diagnostic_context_status": diagnostic_context_status,
+            "estimator_summaries": {
+                key: report_view(value) for key, value in sorted(metric_scope.summaries.items())
+            },
+            "fit_boundary": fit_boundary_summary,
+            # Global (G0/H0) weights only; C0 balances inside each cluster, P0 is unweighted.
+            "sample_weights": (
+                sample_weight_summary(baseline_weights, prepared.model_inputs.train_symbols)
+                if spec.architecture in {"G0", "H0"}
+                else {"status": f"PARTITIONED_{spec.architecture}_NOT_SUMMARISED"}
+            ),
+            "validation_prediction_health": prediction_health(
+                validation_prediction, validation_covered, rows=validation.num_rows
+            ),
+            "resolved_monitor_settings": resolved_monitor_manifest(),
+            "selection_eligible": False,
+            "independent_evidence": False,
+        },
     }
     report = {
         "status": "COMPLETE",
