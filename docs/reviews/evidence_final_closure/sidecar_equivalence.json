@@ -1,0 +1,1613 @@
+{
+  "identity": {
+    "source": "FEATURE_CONTEXT_SIDECAR",
+    "manifest_sha256": "7e397e5151dec513ab2cb0ef19dfb9d3e5df0ea90330e5422f1b55166e23783a"
+  },
+  "partitions": [
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v1/part-0000.parquet",
+      "rows": 105407,
+      "gold_rows_compared": 421628,
+      "failures": [
+        {
+          "column": "realized_volatility_1h",
+          "mismatches": 88,
+          "max_abs": 6.071532165918825e-18
+        },
+        {
+          "column": "cross_sectional_volatility_source",
+          "mismatches": 32,
+          "max_abs": 8.673617379884035e-19
+        }
+      ]
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v1/part-0001.parquet",
+      "rows": 105120,
+      "gold_rows_compared": 420480,
+      "failures": [
+        {
+          "column": "realized_volatility_1h",
+          "mismatches": 96,
+          "max_abs": 6.071532165918825e-18
+        },
+        {
+          "column": "cross_sectional_volatility_source",
+          "mismatches": 4,
+          "max_abs": 4.336808689942018e-19
+        }
+      ]
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v1/part-0002.parquet",
+      "rows": 105120,
+      "gold_rows_compared": 420480,
+      "failures": [
+        {
+          "column": "realized_volatility_1h",
+          "mismatches": 256,
+          "max_abs": 1.0408340855860843e-17
+        },
+        {
+          "column": "cross_sectional_volatility_source",
+          "mismatches": 40,
+          "max_abs": 8.673617379884035e-19
+        }
+      ]
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v1/part-0003.parquet",
+      "rows": 105120,
+      "gold_rows_compared": 420480,
+      "failures": []
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v1/part-0004.parquet",
+      "rows": 105408,
+      "gold_rows_compared": 421632,
+      "failures": [
+        {
+          "column": "realized_volatility_1h",
+          "mismatches": 68,
+          "max_abs": 8.673617379884035e-18
+        }
+      ]
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v1/part-0005.parquet",
+      "rows": 105120,
+      "gold_rows_compared": 420480,
+      "failures": [
+        {
+          "column": "realized_volatility_1h",
+          "mismatches": 48,
+          "max_abs": 8.673617379884035e-19
+        },
+        {
+          "column": "cross_sectional_volatility_source",
+          "mismatches": 4,
+          "max_abs": 4.336808689942018e-19
+        }
+      ]
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v1/part-0006.parquet",
+      "rows": 52128,
+      "gold_rows_compared": 208463,
+      "failures": []
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v1/part-0007.parquet",
+      "rows": 30443,
+      "gold_rows_compared": 121772,
+      "failures": []
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v1/part-0008.parquet",
+      "rows": 105120,
+      "gold_rows_compared": 420480,
+      "failures": [
+        {
+          "column": "realized_volatility_1h",
+          "mismatches": 216,
+          "max_abs": 1.9949319973733282e-17
+        },
+        {
+          "column": "cross_sectional_volatility_source",
+          "mismatches": 8,
+          "max_abs": 1.734723475976807e-18
+        }
+      ]
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v1/part-0009.parquet",
+      "rows": 105120,
+      "gold_rows_compared": 420480,
+      "failures": [
+        {
+          "column": "realized_volatility_1h",
+          "mismatches": 180,
+          "max_abs": 1.214306433183765e-17
+        },
+        {
+          "column": "cross_sectional_volatility_source",
+          "mismatches": 76,
+          "max_abs": 1.734723475976807e-18
+        }
+      ]
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v1/part-0010.parquet",
+      "rows": 105120,
+      "gold_rows_compared": 420480,
+      "failures": []
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v1/part-0011.parquet",
+      "rows": 105408,
+      "gold_rows_compared": 421632,
+      "failures": [
+        {
+          "column": "realized_volatility_1h",
+          "mismatches": 4,
+          "max_abs": 8.673617379884035e-19
+        }
+      ]
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v1/part-0012.parquet",
+      "rows": 105120,
+      "gold_rows_compared": 420480,
+      "failures": []
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v1/part-0013.parquet",
+      "rows": 52128,
+      "gold_rows_compared": 208463,
+      "failures": []
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v1/part-0014.parquet",
+      "rows": 105407,
+      "gold_rows_compared": 421628,
+      "failures": [
+        {
+          "column": "realized_volatility_1h",
+          "mismatches": 92,
+          "max_abs": 8.673617379884035e-19
+        }
+      ]
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v1/part-0015.parquet",
+      "rows": 105120,
+      "gold_rows_compared": 420480,
+      "failures": []
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v1/part-0016.parquet",
+      "rows": 105120,
+      "gold_rows_compared": 420480,
+      "failures": []
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v1/part-0017.parquet",
+      "rows": 105120,
+      "gold_rows_compared": 420480,
+      "failures": []
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v1/part-0018.parquet",
+      "rows": 105408,
+      "gold_rows_compared": 421632,
+      "failures": [
+        {
+          "column": "realized_volatility_1h",
+          "mismatches": 20,
+          "max_abs": 2.168404344971009e-19
+        }
+      ]
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v1/part-0019.parquet",
+      "rows": 105120,
+      "gold_rows_compared": 420480,
+      "failures": [
+        {
+          "column": "realized_volatility_1h",
+          "mismatches": 28,
+          "max_abs": 8.673617379884035e-19
+        }
+      ]
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v1/part-0020.parquet",
+      "rows": 52128,
+      "gold_rows_compared": 208463,
+      "failures": []
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v1/part-0021.parquet",
+      "rows": 53171,
+      "gold_rows_compared": 212684,
+      "failures": [
+        {
+          "column": "realized_volatility_1h",
+          "mismatches": 56,
+          "max_abs": 3.0357660829594124e-18
+        }
+      ]
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v1/part-0022.parquet",
+      "rows": 105120,
+      "gold_rows_compared": 420480,
+      "failures": [
+        {
+          "column": "realized_volatility_1h",
+          "mismatches": 152,
+          "max_abs": 1.3877787807814457e-17
+        },
+        {
+          "column": "cross_sectional_volatility_source",
+          "mismatches": 8,
+          "max_abs": 8.673617379884035e-19
+        }
+      ]
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v1/part-0023.parquet",
+      "rows": 105120,
+      "gold_rows_compared": 420480,
+      "failures": []
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v1/part-0024.parquet",
+      "rows": 105120,
+      "gold_rows_compared": 420480,
+      "failures": [
+        {
+          "column": "realized_volatility_1h",
+          "mismatches": 92,
+          "max_abs": 3.0357660829594124e-18
+        },
+        {
+          "column": "cross_sectional_volatility_source",
+          "mismatches": 4,
+          "max_abs": 4.336808689942018e-19
+        }
+      ]
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v1/part-0025.parquet",
+      "rows": 105408,
+      "gold_rows_compared": 421632,
+      "failures": [
+        {
+          "column": "realized_volatility_1h",
+          "mismatches": 148,
+          "max_abs": 2.6020852139652106e-18
+        },
+        {
+          "column": "cross_sectional_volatility_source",
+          "mismatches": 8,
+          "max_abs": 8.673617379884035e-19
+        }
+      ]
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v1/part-0026.parquet",
+      "rows": 105120,
+      "gold_rows_compared": 420480,
+      "failures": []
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v1/part-0027.parquet",
+      "rows": 52128,
+      "gold_rows_compared": 208463,
+      "failures": []
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v1/part-0028.parquet",
+      "rows": 50291,
+      "gold_rows_compared": 201164,
+      "failures": [
+        {
+          "column": "realized_volatility_1h",
+          "mismatches": 12,
+          "max_abs": 1.734723475976807e-18
+        }
+      ]
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v1/part-0029.parquet",
+      "rows": 105120,
+      "gold_rows_compared": 420480,
+      "failures": [
+        {
+          "column": "realized_volatility_1h",
+          "mismatches": 116,
+          "max_abs": 4.85722573273506e-17
+        },
+        {
+          "column": "cross_sectional_volatility_source",
+          "mismatches": 104,
+          "max_abs": 3.469446951953614e-18
+        }
+      ]
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v1/part-0030.parquet",
+      "rows": 105120,
+      "gold_rows_compared": 420480,
+      "failures": []
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v1/part-0031.parquet",
+      "rows": 105120,
+      "gold_rows_compared": 420480,
+      "failures": [
+        {
+          "column": "realized_volatility_1h",
+          "mismatches": 52,
+          "max_abs": 1.734723475976807e-18
+        }
+      ]
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v1/part-0032.parquet",
+      "rows": 105408,
+      "gold_rows_compared": 421632,
+      "failures": [
+        {
+          "column": "realized_volatility_1h",
+          "mismatches": 92,
+          "max_abs": 1.3010426069826053e-18
+        }
+      ]
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v1/part-0033.parquet",
+      "rows": 105120,
+      "gold_rows_compared": 420480,
+      "failures": [
+        {
+          "column": "realized_volatility_1h",
+          "mismatches": 100,
+          "max_abs": 8.326672684688674e-17
+        },
+        {
+          "column": "cross_sectional_volatility_source",
+          "mismatches": 8064,
+          "max_abs": 5.204170427930421e-18
+        }
+      ]
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v1/part-0034.parquet",
+      "rows": 52128,
+      "gold_rows_compared": 208463,
+      "failures": [
+        {
+          "column": "realized_volatility_1h",
+          "mismatches": 192,
+          "max_abs": 1.734723475976807e-18
+        },
+        {
+          "column": "cross_sectional_volatility_source",
+          "mismatches": 8,
+          "max_abs": 8.673617379884035e-19
+        }
+      ]
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v1/part-0035.parquet",
+      "rows": 105407,
+      "gold_rows_compared": 421628,
+      "failures": [
+        {
+          "column": "realized_volatility_1h",
+          "mismatches": 68,
+          "max_abs": 3.469446951953614e-18
+        }
+      ]
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v1/part-0036.parquet",
+      "rows": 105120,
+      "gold_rows_compared": 420480,
+      "failures": []
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v1/part-0037.parquet",
+      "rows": 105120,
+      "gold_rows_compared": 420480,
+      "failures": [
+        {
+          "column": "realized_volatility_1h",
+          "mismatches": 96,
+          "max_abs": 6.071532165918825e-18
+        },
+        {
+          "column": "cross_sectional_volatility_source",
+          "mismatches": 192,
+          "max_abs": 4.336808689942018e-19
+        }
+      ]
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v1/part-0038.parquet",
+      "rows": 105120,
+      "gold_rows_compared": 420480,
+      "failures": [
+        {
+          "column": "realized_volatility_1h",
+          "mismatches": 4,
+          "max_abs": 1.0842021724855044e-19
+        }
+      ]
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v1/part-0039.parquet",
+      "rows": 105408,
+      "gold_rows_compared": 421632,
+      "failures": [
+        {
+          "column": "realized_volatility_1h",
+          "mismatches": 80,
+          "max_abs": 1.3010426069826053e-18
+        },
+        {
+          "column": "cross_sectional_volatility_source",
+          "mismatches": 24,
+          "max_abs": 2.168404344971009e-19
+        }
+      ]
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v1/part-0040.parquet",
+      "rows": 105120,
+      "gold_rows_compared": 420480,
+      "failures": [
+        {
+          "column": "realized_volatility_1h",
+          "mismatches": 100,
+          "max_abs": 1.3010426069826053e-18
+        },
+        {
+          "column": "cross_sectional_volatility_source",
+          "mismatches": 4,
+          "max_abs": 4.336808689942018e-19
+        }
+      ]
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v1/part-0041.parquet",
+      "rows": 52128,
+      "gold_rows_compared": 208463,
+      "failures": []
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v1/part-0042.parquet",
+      "rows": 22103,
+      "gold_rows_compared": 88412,
+      "failures": [
+        {
+          "column": "realized_volatility_1h",
+          "mismatches": 80,
+          "max_abs": 5.204170427930421e-18
+        },
+        {
+          "column": "cross_sectional_volatility_source",
+          "mismatches": 4,
+          "max_abs": 1.734723475976807e-18
+        }
+      ]
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v1/part-0043.parquet",
+      "rows": 105120,
+      "gold_rows_compared": 420480,
+      "failures": [
+        {
+          "column": "realized_volatility_1h",
+          "mismatches": 184,
+          "max_abs": 1.5612511283791264e-17
+        },
+        {
+          "column": "cross_sectional_volatility_source",
+          "mismatches": 8,
+          "max_abs": 8.673617379884035e-19
+        }
+      ]
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v1/part-0044.parquet",
+      "rows": 105120,
+      "gold_rows_compared": 420480,
+      "failures": []
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v1/part-0045.parquet",
+      "rows": 105120,
+      "gold_rows_compared": 420480,
+      "failures": [
+        {
+          "column": "realized_volatility_1h",
+          "mismatches": 132,
+          "max_abs": 6.938893903907228e-18
+        },
+        {
+          "column": "cross_sectional_volatility_source",
+          "mismatches": 32,
+          "max_abs": 8.673617379884035e-19
+        }
+      ]
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v1/part-0046.parquet",
+      "rows": 105408,
+      "gold_rows_compared": 421632,
+      "failures": [
+        {
+          "column": "realized_volatility_1h",
+          "mismatches": 144,
+          "max_abs": 1.734723475976807e-18
+        },
+        {
+          "column": "cross_sectional_volatility_source",
+          "mismatches": 8,
+          "max_abs": 8.673617379884035e-19
+        }
+      ]
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v1/part-0047.parquet",
+      "rows": 105120,
+      "gold_rows_compared": 420480,
+      "failures": []
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v1/part-0048.parquet",
+      "rows": 52128,
+      "gold_rows_compared": 208463,
+      "failures": []
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v1/part-0049.parquet",
+      "rows": 26987,
+      "gold_rows_compared": 107948,
+      "failures": []
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v1/part-0050.parquet",
+      "rows": 105120,
+      "gold_rows_compared": 420480,
+      "failures": [
+        {
+          "column": "realized_volatility_1h",
+          "mismatches": 12,
+          "max_abs": 1.734723475976807e-18
+        }
+      ]
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v1/part-0051.parquet",
+      "rows": 105120,
+      "gold_rows_compared": 420480,
+      "failures": [
+        {
+          "column": "realized_volatility_1h",
+          "mismatches": 116,
+          "max_abs": 1.5265566588595902e-16
+        },
+        {
+          "column": "cross_sectional_volatility_source",
+          "mismatches": 200,
+          "max_abs": 3.469446951953614e-18
+        }
+      ]
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v1/part-0052.parquet",
+      "rows": 105120,
+      "gold_rows_compared": 420480,
+      "failures": [
+        {
+          "column": "realized_volatility_1h",
+          "mismatches": 56,
+          "max_abs": 6.938893903907228e-18
+        },
+        {
+          "column": "cross_sectional_volatility_source",
+          "mismatches": 8,
+          "max_abs": 1.734723475976807e-18
+        }
+      ]
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v1/part-0053.parquet",
+      "rows": 105408,
+      "gold_rows_compared": 421632,
+      "failures": [
+        {
+          "column": "realized_volatility_1h",
+          "mismatches": 184,
+          "max_abs": 3.469446951953614e-18
+        },
+        {
+          "column": "cross_sectional_volatility_source",
+          "mismatches": 24,
+          "max_abs": 8.673617379884035e-19
+        }
+      ]
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v1/part-0054.parquet",
+      "rows": 105120,
+      "gold_rows_compared": 420480,
+      "failures": [
+        {
+          "column": "realized_volatility_1h",
+          "mismatches": 8,
+          "max_abs": 1.734723475976807e-18
+        }
+      ]
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v1/part-0055.parquet",
+      "rows": 52128,
+      "gold_rows_compared": 208463,
+      "failures": []
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v1/part-0056.parquet",
+      "rows": 27275,
+      "gold_rows_compared": 109100,
+      "failures": [
+        {
+          "column": "realized_volatility_1h",
+          "mismatches": 48,
+          "max_abs": 1.734723475976807e-18
+        }
+      ]
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v1/part-0057.parquet",
+      "rows": 105120,
+      "gold_rows_compared": 420480,
+      "failures": [
+        {
+          "column": "realized_volatility_1h",
+          "mismatches": 124,
+          "max_abs": 1.214306433183765e-17
+        }
+      ]
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v1/part-0058.parquet",
+      "rows": 105120,
+      "gold_rows_compared": 420480,
+      "failures": [
+        {
+          "column": "realized_volatility_1h",
+          "mismatches": 116,
+          "max_abs": 5.204170427930421e-18
+        },
+        {
+          "column": "cross_sectional_volatility_source",
+          "mismatches": 24,
+          "max_abs": 8.673617379884035e-19
+        }
+      ]
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v1/part-0059.parquet",
+      "rows": 105120,
+      "gold_rows_compared": 420480,
+      "failures": []
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v1/part-0060.parquet",
+      "rows": 42712,
+      "gold_rows_compared": 170795,
+      "failures": []
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v1/part-0061.parquet",
+      "rows": 93215,
+      "gold_rows_compared": 372860,
+      "failures": [
+        {
+          "column": "realized_volatility_1h",
+          "mismatches": 172,
+          "max_abs": 8.673617379884035e-18
+        },
+        {
+          "column": "cross_sectional_volatility_source",
+          "mismatches": 16,
+          "max_abs": 8.673617379884035e-19
+        }
+      ]
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v1/part-0062.parquet",
+      "rows": 105120,
+      "gold_rows_compared": 420480,
+      "failures": [
+        {
+          "column": "realized_volatility_1h",
+          "mismatches": 208,
+          "max_abs": 1.951563910473908e-17
+        },
+        {
+          "column": "cross_sectional_volatility_source",
+          "mismatches": 52,
+          "max_abs": 4.336808689942018e-19
+        }
+      ]
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v1/part-0063.parquet",
+      "rows": 105120,
+      "gold_rows_compared": 420480,
+      "failures": []
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v1/part-0064.parquet",
+      "rows": 105120,
+      "gold_rows_compared": 420480,
+      "failures": [
+        {
+          "column": "realized_volatility_1h",
+          "mismatches": 52,
+          "max_abs": 1.734723475976807e-18
+        },
+        {
+          "column": "cross_sectional_volatility_source",
+          "mismatches": 12,
+          "max_abs": 4.336808689942018e-19
+        }
+      ]
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v1/part-0065.parquet",
+      "rows": 105408,
+      "gold_rows_compared": 421632,
+      "failures": [
+        {
+          "column": "realized_volatility_1h",
+          "mismatches": 212,
+          "max_abs": 4.7704895589362195e-18
+        },
+        {
+          "column": "cross_sectional_volatility_source",
+          "mismatches": 32,
+          "max_abs": 4.336808689942018e-19
+        }
+      ]
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v1/part-0066.parquet",
+      "rows": 105120,
+      "gold_rows_compared": 420480,
+      "failures": [
+        {
+          "column": "realized_volatility_1h",
+          "mismatches": 4,
+          "max_abs": 8.673617379884035e-19
+        }
+      ]
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v1/part-0067.parquet",
+      "rows": 52128,
+      "gold_rows_compared": 208463,
+      "failures": []
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v1/part-0068.parquet",
+      "rows": 55477,
+      "gold_rows_compared": 221908,
+      "failures": [
+        {
+          "column": "realized_volatility_1h",
+          "mismatches": 112,
+          "max_abs": 2.6020852139652106e-18
+        }
+      ]
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v1/part-0069.parquet",
+      "rows": 105120,
+      "gold_rows_compared": 420480,
+      "failures": [
+        {
+          "column": "realized_volatility_1h",
+          "mismatches": 92,
+          "max_abs": 5.204170427930421e-18
+        },
+        {
+          "column": "cross_sectional_volatility_source",
+          "mismatches": 12,
+          "max_abs": 8.673617379884035e-19
+        }
+      ]
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v1/part-0070.parquet",
+      "rows": 105120,
+      "gold_rows_compared": 420480,
+      "failures": [
+        {
+          "column": "realized_volatility_1h",
+          "mismatches": 88,
+          "max_abs": 6.938893903907228e-18
+        },
+        {
+          "column": "cross_sectional_volatility_source",
+          "mismatches": 4,
+          "max_abs": 4.336808689942018e-19
+        }
+      ]
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v1/part-0071.parquet",
+      "rows": 105120,
+      "gold_rows_compared": 420480,
+      "failures": [
+        {
+          "column": "realized_volatility_1h",
+          "mismatches": 72,
+          "max_abs": 3.469446951953614e-18
+        }
+      ]
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v1/part-0072.parquet",
+      "rows": 105408,
+      "gold_rows_compared": 421632,
+      "failures": [
+        {
+          "column": "realized_volatility_1h",
+          "mismatches": 68,
+          "max_abs": 6.505213034913027e-19
+        },
+        {
+          "column": "cross_sectional_volatility_source",
+          "mismatches": 4,
+          "max_abs": 4.336808689942018e-19
+        }
+      ]
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v1/part-0073.parquet",
+      "rows": 105120,
+      "gold_rows_compared": 420480,
+      "failures": []
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v1/part-0074.parquet",
+      "rows": 52128,
+      "gold_rows_compared": 208463,
+      "failures": []
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v1/part-0075.parquet",
+      "rows": 22667,
+      "gold_rows_compared": 90668,
+      "failures": []
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v1/part-0076.parquet",
+      "rows": 105120,
+      "gold_rows_compared": 420480,
+      "failures": []
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v1/part-0077.parquet",
+      "rows": 105120,
+      "gold_rows_compared": 420480,
+      "failures": []
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v1/part-0078.parquet",
+      "rows": 105120,
+      "gold_rows_compared": 420480,
+      "failures": []
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v1/part-0079.parquet",
+      "rows": 105408,
+      "gold_rows_compared": 421632,
+      "failures": [
+        {
+          "column": "realized_volatility_1h",
+          "mismatches": 68,
+          "max_abs": 8.673617379884035e-19
+        }
+      ]
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v1/part-0080.parquet",
+      "rows": 105120,
+      "gold_rows_compared": 420480,
+      "failures": []
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v1/part-0081.parquet",
+      "rows": 52128,
+      "gold_rows_compared": 208463,
+      "failures": [
+        {
+          "column": "realized_volatility_1h",
+          "mismatches": 88,
+          "max_abs": 8.673617379884035e-19
+        }
+      ]
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v1/part-0082.parquet",
+      "rows": 91766,
+      "gold_rows_compared": 367064,
+      "failures": []
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v1/part-0083.parquet",
+      "rows": 105120,
+      "gold_rows_compared": 420480,
+      "failures": []
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v1/part-0084.parquet",
+      "rows": 105120,
+      "gold_rows_compared": 420480,
+      "failures": [
+        {
+          "column": "realized_volatility_1h",
+          "mismatches": 116,
+          "max_abs": 2.168404344971009e-18
+        },
+        {
+          "column": "cross_sectional_volatility_source",
+          "mismatches": 24,
+          "max_abs": 8.673617379884035e-19
+        }
+      ]
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v1/part-0085.parquet",
+      "rows": 105120,
+      "gold_rows_compared": 420480,
+      "failures": [
+        {
+          "column": "realized_volatility_1h",
+          "mismatches": 4,
+          "max_abs": 1.734723475976807e-18
+        }
+      ]
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v1/part-0086.parquet",
+      "rows": 105408,
+      "gold_rows_compared": 421632,
+      "failures": [
+        {
+          "column": "realized_volatility_1h",
+          "mismatches": 200,
+          "max_abs": 1.0408340855860843e-17
+        },
+        {
+          "column": "cross_sectional_volatility_source",
+          "mismatches": 12,
+          "max_abs": 4.336808689942018e-19
+        }
+      ]
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v1/part-0087.parquet",
+      "rows": 105120,
+      "gold_rows_compared": 420480,
+      "failures": [
+        {
+          "column": "realized_volatility_1h",
+          "mismatches": 128,
+          "max_abs": 9.540979117872439e-18
+        },
+        {
+          "column": "cross_sectional_volatility_source",
+          "mismatches": 4,
+          "max_abs": 4.336808689942018e-19
+        }
+      ]
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v1/part-0088.parquet",
+      "rows": 52128,
+      "gold_rows_compared": 208463,
+      "failures": [
+        {
+          "column": "realized_volatility_1h",
+          "mismatches": 84,
+          "max_abs": 8.673617379884035e-19
+        }
+      ]
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v1/part-0089.parquet",
+      "rows": 52595,
+      "gold_rows_compared": 210380,
+      "failures": [
+        {
+          "column": "realized_volatility_1h",
+          "mismatches": 136,
+          "max_abs": 1.0408340855860843e-17
+        },
+        {
+          "column": "cross_sectional_volatility_source",
+          "mismatches": 36,
+          "max_abs": 8.673617379884035e-19
+        }
+      ]
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v1/part-0090.parquet",
+      "rows": 105120,
+      "gold_rows_compared": 420480,
+      "failures": [
+        {
+          "column": "realized_volatility_1h",
+          "mismatches": 240,
+          "max_abs": 5.204170427930421e-18
+        },
+        {
+          "column": "cross_sectional_volatility_source",
+          "mismatches": 32,
+          "max_abs": 8.673617379884035e-19
+        }
+      ]
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v1/part-0091.parquet",
+      "rows": 105120,
+      "gold_rows_compared": 420480,
+      "failures": []
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v1/part-0092.parquet",
+      "rows": 105120,
+      "gold_rows_compared": 420480,
+      "failures": []
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v1/part-0093.parquet",
+      "rows": 105408,
+      "gold_rows_compared": 421632,
+      "failures": [
+        {
+          "column": "realized_volatility_1h",
+          "mismatches": 60,
+          "max_abs": 8.673617379884035e-19
+        },
+        {
+          "column": "cross_sectional_volatility_source",
+          "mismatches": 4,
+          "max_abs": 4.336808689942018e-19
+        }
+      ]
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v1/part-0094.parquet",
+      "rows": 105120,
+      "gold_rows_compared": 420480,
+      "failures": []
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v1/part-0095.parquet",
+      "rows": 52128,
+      "gold_rows_compared": 208463,
+      "failures": []
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v1/part-0096.parquet",
+      "rows": 93502,
+      "gold_rows_compared": 374008,
+      "failures": [
+        {
+          "column": "realized_volatility_1h",
+          "mismatches": 196,
+          "max_abs": 1.734723475976807e-18
+        },
+        {
+          "column": "cross_sectional_volatility_source",
+          "mismatches": 20,
+          "max_abs": 8.673617379884035e-19
+        }
+      ]
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v1/part-0097.parquet",
+      "rows": 105120,
+      "gold_rows_compared": 420480,
+      "failures": [
+        {
+          "column": "realized_volatility_1h",
+          "mismatches": 72,
+          "max_abs": 5.204170427930421e-18
+        }
+      ]
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v1/part-0098.parquet",
+      "rows": 105120,
+      "gold_rows_compared": 420480,
+      "failures": [
+        {
+          "column": "realized_volatility_1h",
+          "mismatches": 84,
+          "max_abs": 4.336808689942018e-18
+        },
+        {
+          "column": "cross_sectional_volatility_source",
+          "mismatches": 20,
+          "max_abs": 4.336808689942018e-19
+        }
+      ]
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v1/part-0099.parquet",
+      "rows": 105120,
+      "gold_rows_compared": 420480,
+      "failures": []
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v1/part-0100.parquet",
+      "rows": 105408,
+      "gold_rows_compared": 421632,
+      "failures": []
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v1/part-0101.parquet",
+      "rows": 105120,
+      "gold_rows_compared": 420480,
+      "failures": [
+        {
+          "column": "realized_volatility_1h",
+          "mismatches": 168,
+          "max_abs": 6.938893903907228e-18
+        },
+        {
+          "column": "cross_sectional_volatility_source",
+          "mismatches": 4,
+          "max_abs": 8.673617379884035e-19
+        }
+      ]
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v1/part-0102.parquet",
+      "rows": 52128,
+      "gold_rows_compared": 208463,
+      "failures": [
+        {
+          "column": "realized_volatility_1h",
+          "mismatches": 68,
+          "max_abs": 1.734723475976807e-18
+        }
+      ]
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v1/part-0103.parquet",
+      "rows": 30731,
+      "gold_rows_compared": 122924,
+      "failures": []
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v1/part-0104.parquet",
+      "rows": 105120,
+      "gold_rows_compared": 420480,
+      "failures": [
+        {
+          "column": "realized_volatility_1h",
+          "mismatches": 20,
+          "max_abs": 3.469446951953614e-18
+        }
+      ]
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v1/part-0105.parquet",
+      "rows": 105120,
+      "gold_rows_compared": 420480,
+      "failures": []
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v1/part-0106.parquet",
+      "rows": 105120,
+      "gold_rows_compared": 420480,
+      "failures": [
+        {
+          "column": "realized_volatility_1h",
+          "mismatches": 56,
+          "max_abs": 1.734723475976807e-18
+        }
+      ]
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v1/part-0107.parquet",
+      "rows": 105408,
+      "gold_rows_compared": 421632,
+      "failures": [
+        {
+          "column": "realized_volatility_1h",
+          "mismatches": 288,
+          "max_abs": 6.938893903907228e-18
+        },
+        {
+          "column": "cross_sectional_volatility_source",
+          "mismatches": 40,
+          "max_abs": 8.673617379884035e-19
+        }
+      ]
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v1/part-0108.parquet",
+      "rows": 105120,
+      "gold_rows_compared": 420480,
+      "failures": [
+        {
+          "column": "realized_volatility_1h",
+          "mismatches": 264,
+          "max_abs": 3.968179951296946e-16
+        },
+        {
+          "column": "cross_sectional_volatility_source",
+          "mismatches": 8284,
+          "max_abs": 3.469446951953614e-18
+        }
+      ]
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v1/part-0109.parquet",
+      "rows": 52128,
+      "gold_rows_compared": 208463,
+      "failures": [
+        {
+          "column": "realized_volatility_1h",
+          "mismatches": 4,
+          "max_abs": 4.336808689942018e-19
+        }
+      ]
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v1/part-0110.parquet",
+      "rows": 101278,
+      "gold_rows_compared": 405112,
+      "failures": [
+        {
+          "column": "realized_volatility_1h",
+          "mismatches": 96,
+          "max_abs": 5.204170427930421e-18
+        },
+        {
+          "column": "cross_sectional_volatility_source",
+          "mismatches": 12,
+          "max_abs": 8.673617379884035e-19
+        }
+      ]
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v1/part-0111.parquet",
+      "rows": 105120,
+      "gold_rows_compared": 420480,
+      "failures": [
+        {
+          "column": "realized_volatility_1h",
+          "mismatches": 16,
+          "max_abs": 8.673617379884035e-19
+        }
+      ]
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v1/part-0112.parquet",
+      "rows": 105120,
+      "gold_rows_compared": 420480,
+      "failures": [
+        {
+          "column": "realized_volatility_1h",
+          "mismatches": 4,
+          "max_abs": 4.336808689942018e-19
+        }
+      ]
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v1/part-0113.parquet",
+      "rows": 105120,
+      "gold_rows_compared": 420480,
+      "failures": [
+        {
+          "column": "realized_volatility_1h",
+          "mismatches": 96,
+          "max_abs": 1.6263032587282567e-18
+        },
+        {
+          "column": "cross_sectional_volatility_source",
+          "mismatches": 12,
+          "max_abs": 4.336808689942018e-19
+        }
+      ]
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v1/part-0114.parquet",
+      "rows": 105408,
+      "gold_rows_compared": 421632,
+      "failures": []
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v1/part-0115.parquet",
+      "rows": 105120,
+      "gold_rows_compared": 420480,
+      "failures": []
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v1/part-0116.parquet",
+      "rows": 52128,
+      "gold_rows_compared": 208463,
+      "failures": [
+        {
+          "column": "realized_volatility_1h",
+          "mismatches": 112,
+          "max_abs": 7.589415207398531e-19
+        },
+        {
+          "column": "cross_sectional_volatility_source",
+          "mismatches": 12,
+          "max_abs": 1.0842021724855044e-19
+        }
+      ]
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v1/part-0117.parquet",
+      "rows": 30155,
+      "gold_rows_compared": 120620,
+      "failures": []
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v1/part-0118.parquet",
+      "rows": 105120,
+      "gold_rows_compared": 420480,
+      "failures": []
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v1/part-0119.parquet",
+      "rows": 105120,
+      "gold_rows_compared": 420480,
+      "failures": []
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v1/part-0120.parquet",
+      "rows": 105120,
+      "gold_rows_compared": 420480,
+      "failures": [
+        {
+          "column": "cross_sectional_volatility_source",
+          "mismatches": 124,
+          "max_abs": 2.168404344971009e-19
+        }
+      ]
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v1/part-0121.parquet",
+      "rows": 105408,
+      "gold_rows_compared": 421632,
+      "failures": []
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v1/part-0122.parquet",
+      "rows": 105120,
+      "gold_rows_compared": 420480,
+      "failures": []
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v1/part-0123.parquet",
+      "rows": 52128,
+      "gold_rows_compared": 208463,
+      "failures": []
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v1/part-0124.parquet",
+      "rows": 95231,
+      "gold_rows_compared": 380924,
+      "failures": [
+        {
+          "column": "realized_volatility_1h",
+          "mismatches": 196,
+          "max_abs": 1.249000902703301e-16
+        },
+        {
+          "column": "cross_sectional_volatility_source",
+          "mismatches": 2216,
+          "max_abs": 2.6020852139652106e-18
+        }
+      ]
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v1/part-0125.parquet",
+      "rows": 105120,
+      "gold_rows_compared": 420480,
+      "failures": [
+        {
+          "column": "realized_volatility_1h",
+          "mismatches": 56,
+          "max_abs": 1.3877787807814457e-17
+        }
+      ]
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v1/part-0126.parquet",
+      "rows": 105120,
+      "gold_rows_compared": 420480,
+      "failures": [
+        {
+          "column": "realized_volatility_1h",
+          "mismatches": 4,
+          "max_abs": 4.336808689942018e-19
+        }
+      ]
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v1/part-0127.parquet",
+      "rows": 105120,
+      "gold_rows_compared": 420480,
+      "failures": []
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v1/part-0128.parquet",
+      "rows": 105408,
+      "gold_rows_compared": 421632,
+      "failures": [
+        {
+          "column": "realized_volatility_1h",
+          "mismatches": 328,
+          "max_abs": 3.469446951953614e-18
+        },
+        {
+          "column": "cross_sectional_volatility_source",
+          "mismatches": 32,
+          "max_abs": 8.673617379884035e-19
+        }
+      ]
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v1/part-0129.parquet",
+      "rows": 105120,
+      "gold_rows_compared": 420480,
+      "failures": [
+        {
+          "column": "realized_volatility_1h",
+          "mismatches": 176,
+          "max_abs": 6.071532165918825e-18
+        }
+      ]
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v1/part-0130.parquet",
+      "rows": 52128,
+      "gold_rows_compared": 208463,
+      "failures": [
+        {
+          "column": "realized_volatility_1h",
+          "mismatches": 60,
+          "max_abs": 1.734723475976807e-18
+        },
+        {
+          "column": "cross_sectional_volatility_source",
+          "mismatches": 4,
+          "max_abs": 8.673617379884035e-19
+        }
+      ]
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v1/part-0131.parquet",
+      "rows": 54899,
+      "gold_rows_compared": 219596,
+      "failures": [
+        {
+          "column": "realized_volatility_1h",
+          "mismatches": 124,
+          "max_abs": 2.6020852139652106e-18
+        },
+        {
+          "column": "cross_sectional_volatility_source",
+          "mismatches": 4,
+          "max_abs": 8.673617379884035e-19
+        }
+      ]
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v1/part-0132.parquet",
+      "rows": 105120,
+      "gold_rows_compared": 420480,
+      "failures": [
+        {
+          "column": "realized_volatility_1h",
+          "mismatches": 48,
+          "max_abs": 4.336808689942018e-18
+        }
+      ]
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v1/part-0133.parquet",
+      "rows": 105120,
+      "gold_rows_compared": 420480,
+      "failures": [
+        {
+          "column": "realized_volatility_1h",
+          "mismatches": 44,
+          "max_abs": 3.469446951953614e-18
+        }
+      ]
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v1/part-0134.parquet",
+      "rows": 105120,
+      "gold_rows_compared": 420480,
+      "failures": []
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v1/part-0135.parquet",
+      "rows": 105408,
+      "gold_rows_compared": 421632,
+      "failures": [
+        {
+          "column": "realized_volatility_1h",
+          "mismatches": 344,
+          "max_abs": 6.938893903907228e-18
+        },
+        {
+          "column": "cross_sectional_volatility_source",
+          "mismatches": 52,
+          "max_abs": 8.673617379884035e-19
+        }
+      ]
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v1/part-0136.parquet",
+      "rows": 105120,
+      "gold_rows_compared": 420480,
+      "failures": [
+        {
+          "column": "realized_volatility_1h",
+          "mismatches": 152,
+          "max_abs": 6.938893903907228e-18
+        },
+        {
+          "column": "cross_sectional_volatility_source",
+          "mismatches": 8,
+          "max_abs": 8.673617379884035e-19
+        }
+      ]
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v1/part-0137.parquet",
+      "rows": 52128,
+      "gold_rows_compared": 208463,
+      "failures": [
+        {
+          "column": "realized_volatility_1h",
+          "mismatches": 56,
+          "max_abs": 4.336808689942018e-19
+        }
+      ]
+    }
+  ],
+  "status": "FAIL",
+  "rows_compared": 50352548,
+  "columns_compared": [
+    "return_5m",
+    "realized_volatility_1h",
+    "taker_flow_imbalance",
+    "cross_sectional_trailing_liquidity_source",
+    "cross_sectional_volatility_source",
+    "cross_sectional_trade_intensity_source"
+  ],
+  "comparison": "exact float64, NaNs equal; all retained Gold rows including repeated horizons"
+}

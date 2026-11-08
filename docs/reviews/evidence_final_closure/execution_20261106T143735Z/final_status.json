@@ -1,0 +1,57 @@
+{
+  "HEAD": "c892cc0298669620778585b3a7330b04a6092de2",
+  "branch": "fix/phase7-final-architecture-repair-20261106",
+  "gates": {
+    "RECOVERY": "PASS",
+    "MAC_ENV": "PASS",
+    "PYTEST": "PASS",
+    "RUFF_CHECK": "PASS",
+    "RUFF_FORMAT": "PASS",
+    "GOLD": "PASS",
+    "SILVER": "PASS",
+    "M01": "PASS",
+    "TRUNCATION": "PASS",
+    "UNIVERSE": "PASS",
+    "LEDGER": "PASS",
+    "SELECTION_PROTOCOL": "PASS",
+    "ADMISSION": "PASS",
+    "CPU_SMOKE_ENFORCEMENT": "PASS",
+    "LIVE_ORDER_ISOLATION": "PASS",
+    "RESOURCE_PREFLIGHT": "FAIL",
+    "CACHE": "NOT_QUALIFIED",
+    "LINUX": "EXTERNAL_RUNTIME_REQUIRED",
+    "AUGUST": "LOCKED_UNUSED",
+    "PIPELINE": "NOT_READY_FOR_SMOKE",
+    "TRADABILITY": "NOT_ESTABLISHED",
+    "FULL_GRID": "NOT_AUTHORIZED"
+  },
+  "pytest": {
+    "tests": 1374,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 1374
+  },
+  "PIPELINE_VALIDATED": false,
+  "TRADABILITY_VALIDATED": false,
+  "M01_DECISION": "NO_MATERIAL_LOSS",
+  "M01_decision_scope": "Qualified feature/context sidecar. Original Gold target join still loses 81 feature keys and is not used to infer feature availability.",
+  "august": {
+    "status": "LOCKED_UNUSED",
+    "used": false,
+    "evaluation_authorized": false
+  },
+  "july_used": false,
+  "real_data_training_run": false,
+  "cache_preparation_run": false,
+  "cloud_resources_changed": false,
+  "credentials_read": false,
+  "orders_sent": false,
+  "initial_state": "initial_state.json",
+  "source_changes_this_execution": [
+    "src/crypto_ai/phase7/feature_census.py",
+    "tests/phase7/test_feature_census.py",
+    "pipeline/coinswitch_client.py",
+    "tests/phase7/test_research_import_boundary.py"
+  ]
+}

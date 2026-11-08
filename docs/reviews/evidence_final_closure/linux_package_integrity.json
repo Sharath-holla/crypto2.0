@@ -1,0 +1,10 @@
+{
+  "status": "PASS",
+  "archive_sha256_verified": true,
+  "all_source_files_verified": 932,
+  "source_still_matches_tested_working_files": true,
+  "extracted_git_head": "ada0478c393b212ebefd85e6fb457c8c908e2ff8",
+  "extracted_diff_check": "PASS",
+  "linux_execution": "NOT_RUN",
+  "scope": "Mac package integrity inspection only; no Linux result claimed"
+}

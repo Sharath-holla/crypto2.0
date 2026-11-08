@@ -1,0 +1,12 @@
+usage: resource_estimate.py [-h] --manifest MANIFEST [--path PATH]
+                            [--dtype-bytes {4,8}] [--json]
+
+Read-only RAM / disk estimate for ONE spec (default:
+architecture-G0-A6-60m-raw).
+
+options:
+  -h, --help           show this help message and exit
+  --manifest MANIFEST
+  --path PATH          where the cache will live
+  --dtype-bytes {4,8}
+  --json               machine-readable output only

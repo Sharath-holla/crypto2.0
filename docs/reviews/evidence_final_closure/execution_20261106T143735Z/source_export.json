@@ -1,0 +1,15 @@
+{
+  "commit": "930cfe9f2335628e09709f054593ba89d8a2337b",
+  "source_root": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/runpod-transfer-20261107/crypto2-source",
+  "archive": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/runpod-transfer-20261107/crypto2-source-930cfe9f2335.tar",
+  "file_count": 925,
+  "bytes": 9395106,
+  "files_sha256": "303a7a1cccc4ed4765df1a068b688745fbbfd8beef4a35ea025b424906a74274",
+  "excluded": [
+    ".git",
+    ".venv",
+    "Claude outputs",
+    "._*",
+    ".DS_Store"
+  ]
+}

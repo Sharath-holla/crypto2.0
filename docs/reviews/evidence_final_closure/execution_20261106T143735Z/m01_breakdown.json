@@ -1,0 +1,1663 @@
+{
+  "schema": "phase7_m01_breakdown_v1",
+  "lost_fraction": 6.434503939068267e-06,
+  "by_horizon": {
+    "15": {
+      "feature_keys": 12588383,
+      "gold_keys": 12588302,
+      "retained_keys": 12588302,
+      "lost_keys": 81,
+      "by_symbol": {
+        "BCHUSDT": {
+          "lost_keys": 4,
+          "first_ms": 1782862800000,
+          "last_ms": 1782863700000
+        },
+        "BLZUSDT": {
+          "lost_keys": 4,
+          "first_ms": 1782862800000,
+          "last_ms": 1782863700000
+        },
+        "BTCUSDT": {
+          "lost_keys": 4,
+          "first_ms": 1782862800000,
+          "last_ms": 1782863700000
+        },
+        "COMPUSDT": {
+          "lost_keys": 4,
+          "first_ms": 1782862800000,
+          "last_ms": 1782863700000
+        },
+        "DOGEUSDT": {
+          "lost_keys": 4,
+          "first_ms": 1782862800000,
+          "last_ms": 1782863700000
+        },
+        "ETHUSDT": {
+          "lost_keys": 4,
+          "first_ms": 1782862800000,
+          "last_ms": 1782863700000
+        },
+        "FILUSDT": {
+          "lost_keys": 4,
+          "first_ms": 1782862800000,
+          "last_ms": 1782863700000
+        },
+        "FLMUSDT": {
+          "lost_keys": 4,
+          "first_ms": 1782862800000,
+          "last_ms": 1782863700000
+        },
+        "HNTUSDT": {
+          "lost_keys": 5,
+          "first_ms": 1716879300000,
+          "last_ms": 1716880500000
+        },
+        "IOTAUSDT": {
+          "lost_keys": 4,
+          "first_ms": 1782862800000,
+          "last_ms": 1782863700000
+        },
+        "KNCUSDT": {
+          "lost_keys": 4,
+          "first_ms": 1782862800000,
+          "last_ms": 1782863700000
+        },
+        "KSMUSDT": {
+          "lost_keys": 4,
+          "first_ms": 1782862800000,
+          "last_ms": 1782863700000
+        },
+        "NEOUSDT": {
+          "lost_keys": 4,
+          "first_ms": 1782862800000,
+          "last_ms": 1782863700000
+        },
+        "OMGUSDT": {
+          "lost_keys": 4,
+          "first_ms": 1782862800000,
+          "last_ms": 1782863700000
+        },
+        "ONTUSDT": {
+          "lost_keys": 4,
+          "first_ms": 1782862800000,
+          "last_ms": 1782863700000
+        },
+        "STORJUSDT": {
+          "lost_keys": 4,
+          "first_ms": 1782862800000,
+          "last_ms": 1782863700000
+        },
+        "TRXUSDT": {
+          "lost_keys": 4,
+          "first_ms": 1782862800000,
+          "last_ms": 1782863700000
+        },
+        "UNIUSDT": {
+          "lost_keys": 4,
+          "first_ms": 1782862800000,
+          "last_ms": 1782863700000
+        },
+        "ZECUSDT": {
+          "lost_keys": 4,
+          "first_ms": 1782862800000,
+          "last_ms": 1782863700000
+        },
+        "ZRXUSDT": {
+          "lost_keys": 4,
+          "first_ms": 1782862800000,
+          "last_ms": 1782863700000
+        }
+      },
+      "reason_counts": {
+        "CUTOFF_RELATED": 76,
+        "UNKNOWN_TERMINAL_SOURCE_BOUNDARY": 5
+      }
+    },
+    "30": {
+      "feature_keys": 12588383,
+      "gold_keys": 12588242,
+      "retained_keys": 12588242,
+      "lost_keys": 141,
+      "by_symbol": {
+        "BCHUSDT": {
+          "lost_keys": 7,
+          "first_ms": 1782861900000,
+          "last_ms": 1782863700000
+        },
+        "BLZUSDT": {
+          "lost_keys": 7,
+          "first_ms": 1782861900000,
+          "last_ms": 1782863700000
+        },
+        "BTCUSDT": {
+          "lost_keys": 7,
+          "first_ms": 1782861900000,
+          "last_ms": 1782863700000
+        },
+        "COMPUSDT": {
+          "lost_keys": 7,
+          "first_ms": 1782861900000,
+          "last_ms": 1782863700000
+        },
+        "DOGEUSDT": {
+          "lost_keys": 7,
+          "first_ms": 1782861900000,
+          "last_ms": 1782863700000
+        },
+        "ETHUSDT": {
+          "lost_keys": 7,
+          "first_ms": 1782861900000,
+          "last_ms": 1782863700000
+        },
+        "FILUSDT": {
+          "lost_keys": 7,
+          "first_ms": 1782861900000,
+          "last_ms": 1782863700000
+        },
+        "FLMUSDT": {
+          "lost_keys": 7,
+          "first_ms": 1782861900000,
+          "last_ms": 1782863700000
+        },
+        "HNTUSDT": {
+          "lost_keys": 8,
+          "first_ms": 1716878400000,
+          "last_ms": 1716880500000
+        },
+        "IOTAUSDT": {
+          "lost_keys": 7,
+          "first_ms": 1782861900000,
+          "last_ms": 1782863700000
+        },
+        "KNCUSDT": {
+          "lost_keys": 7,
+          "first_ms": 1782861900000,
+          "last_ms": 1782863700000
+        },
+        "KSMUSDT": {
+          "lost_keys": 7,
+          "first_ms": 1782861900000,
+          "last_ms": 1782863700000
+        },
+        "NEOUSDT": {
+          "lost_keys": 7,
+          "first_ms": 1782861900000,
+          "last_ms": 1782863700000
+        },
+        "OMGUSDT": {
+          "lost_keys": 7,
+          "first_ms": 1782861900000,
+          "last_ms": 1782863700000
+        },
+        "ONTUSDT": {
+          "lost_keys": 7,
+          "first_ms": 1782861900000,
+          "last_ms": 1782863700000
+        },
+        "STORJUSDT": {
+          "lost_keys": 7,
+          "first_ms": 1782861900000,
+          "last_ms": 1782863700000
+        },
+        "TRXUSDT": {
+          "lost_keys": 7,
+          "first_ms": 1782861900000,
+          "last_ms": 1782863700000
+        },
+        "UNIUSDT": {
+          "lost_keys": 7,
+          "first_ms": 1782861900000,
+          "last_ms": 1782863700000
+        },
+        "ZECUSDT": {
+          "lost_keys": 7,
+          "first_ms": 1782861900000,
+          "last_ms": 1782863700000
+        },
+        "ZRXUSDT": {
+          "lost_keys": 7,
+          "first_ms": 1782861900000,
+          "last_ms": 1782863700000
+        }
+      },
+      "reason_counts": {
+        "CUTOFF_RELATED": 133,
+        "UNKNOWN_TERMINAL_SOURCE_BOUNDARY": 8
+      }
+    },
+    "60": {
+      "feature_keys": 12588383,
+      "gold_keys": 12588122,
+      "retained_keys": 12588122,
+      "lost_keys": 261,
+      "by_symbol": {
+        "BCHUSDT": {
+          "lost_keys": 13,
+          "first_ms": 1782860100000,
+          "last_ms": 1782863700000
+        },
+        "BLZUSDT": {
+          "lost_keys": 13,
+          "first_ms": 1782860100000,
+          "last_ms": 1782863700000
+        },
+        "BTCUSDT": {
+          "lost_keys": 13,
+          "first_ms": 1782860100000,
+          "last_ms": 1782863700000
+        },
+        "COMPUSDT": {
+          "lost_keys": 13,
+          "first_ms": 1782860100000,
+          "last_ms": 1782863700000
+        },
+        "DOGEUSDT": {
+          "lost_keys": 13,
+          "first_ms": 1782860100000,
+          "last_ms": 1782863700000
+        },
+        "ETHUSDT": {
+          "lost_keys": 13,
+          "first_ms": 1782860100000,
+          "last_ms": 1782863700000
+        },
+        "FILUSDT": {
+          "lost_keys": 13,
+          "first_ms": 1782860100000,
+          "last_ms": 1782863700000
+        },
+        "FLMUSDT": {
+          "lost_keys": 13,
+          "first_ms": 1782860100000,
+          "last_ms": 1782863700000
+        },
+        "HNTUSDT": {
+          "lost_keys": 14,
+          "first_ms": 1716876600000,
+          "last_ms": 1716880500000
+        },
+        "IOTAUSDT": {
+          "lost_keys": 13,
+          "first_ms": 1782860100000,
+          "last_ms": 1782863700000
+        },
+        "KNCUSDT": {
+          "lost_keys": 13,
+          "first_ms": 1782860100000,
+          "last_ms": 1782863700000
+        },
+        "KSMUSDT": {
+          "lost_keys": 13,
+          "first_ms": 1782860100000,
+          "last_ms": 1782863700000
+        },
+        "NEOUSDT": {
+          "lost_keys": 13,
+          "first_ms": 1782860100000,
+          "last_ms": 1782863700000
+        },
+        "OMGUSDT": {
+          "lost_keys": 13,
+          "first_ms": 1782860100000,
+          "last_ms": 1782863700000
+        },
+        "ONTUSDT": {
+          "lost_keys": 13,
+          "first_ms": 1782860100000,
+          "last_ms": 1782863700000
+        },
+        "STORJUSDT": {
+          "lost_keys": 13,
+          "first_ms": 1782860100000,
+          "last_ms": 1782863700000
+        },
+        "TRXUSDT": {
+          "lost_keys": 13,
+          "first_ms": 1782860100000,
+          "last_ms": 1782863700000
+        },
+        "UNIUSDT": {
+          "lost_keys": 13,
+          "first_ms": 1782860100000,
+          "last_ms": 1782863700000
+        },
+        "ZECUSDT": {
+          "lost_keys": 13,
+          "first_ms": 1782860100000,
+          "last_ms": 1782863700000
+        },
+        "ZRXUSDT": {
+          "lost_keys": 13,
+          "first_ms": 1782860100000,
+          "last_ms": 1782863700000
+        }
+      },
+      "reason_counts": {
+        "CUTOFF_RELATED": 247,
+        "UNKNOWN_TERMINAL_SOURCE_BOUNDARY": 14
+      }
+    },
+    "120": {
+      "feature_keys": 12588383,
+      "gold_keys": 12587882,
+      "retained_keys": 12587882,
+      "lost_keys": 501,
+      "by_symbol": {
+        "BCHUSDT": {
+          "lost_keys": 25,
+          "first_ms": 1782856500000,
+          "last_ms": 1782863700000
+        },
+        "BLZUSDT": {
+          "lost_keys": 25,
+          "first_ms": 1782856500000,
+          "last_ms": 1782863700000
+        },
+        "BTCUSDT": {
+          "lost_keys": 25,
+          "first_ms": 1782856500000,
+          "last_ms": 1782863700000
+        },
+        "COMPUSDT": {
+          "lost_keys": 25,
+          "first_ms": 1782856500000,
+          "last_ms": 1782863700000
+        },
+        "DOGEUSDT": {
+          "lost_keys": 25,
+          "first_ms": 1782856500000,
+          "last_ms": 1782863700000
+        },
+        "ETHUSDT": {
+          "lost_keys": 25,
+          "first_ms": 1782856500000,
+          "last_ms": 1782863700000
+        },
+        "FILUSDT": {
+          "lost_keys": 25,
+          "first_ms": 1782856500000,
+          "last_ms": 1782863700000
+        },
+        "FLMUSDT": {
+          "lost_keys": 25,
+          "first_ms": 1782856500000,
+          "last_ms": 1782863700000
+        },
+        "HNTUSDT": {
+          "lost_keys": 26,
+          "first_ms": 1716873000000,
+          "last_ms": 1716880500000
+        },
+        "IOTAUSDT": {
+          "lost_keys": 25,
+          "first_ms": 1782856500000,
+          "last_ms": 1782863700000
+        },
+        "KNCUSDT": {
+          "lost_keys": 25,
+          "first_ms": 1782856500000,
+          "last_ms": 1782863700000
+        },
+        "KSMUSDT": {
+          "lost_keys": 25,
+          "first_ms": 1782856500000,
+          "last_ms": 1782863700000
+        },
+        "NEOUSDT": {
+          "lost_keys": 25,
+          "first_ms": 1782856500000,
+          "last_ms": 1782863700000
+        },
+        "OMGUSDT": {
+          "lost_keys": 25,
+          "first_ms": 1782856500000,
+          "last_ms": 1782863700000
+        },
+        "ONTUSDT": {
+          "lost_keys": 25,
+          "first_ms": 1782856500000,
+          "last_ms": 1782863700000
+        },
+        "STORJUSDT": {
+          "lost_keys": 25,
+          "first_ms": 1782856500000,
+          "last_ms": 1782863700000
+        },
+        "TRXUSDT": {
+          "lost_keys": 25,
+          "first_ms": 1782856500000,
+          "last_ms": 1782863700000
+        },
+        "UNIUSDT": {
+          "lost_keys": 25,
+          "first_ms": 1782856500000,
+          "last_ms": 1782863700000
+        },
+        "ZECUSDT": {
+          "lost_keys": 25,
+          "first_ms": 1782856500000,
+          "last_ms": 1782863700000
+        },
+        "ZRXUSDT": {
+          "lost_keys": 25,
+          "first_ms": 1782856500000,
+          "last_ms": 1782863700000
+        }
+      },
+      "reason_counts": {
+        "CUTOFF_RELATED": 475,
+        "UNKNOWN_TERMINAL_SOURCE_BOUNDARY": 26
+      }
+    }
+  },
+  "by_fold_split": {
+    "fold-000-a0e9a4f72689/calibration_a": {
+      "feature_keys": 262080,
+      "gold_unique_keys": 262080,
+      "lost_union_keys": 0,
+      "loss_by_horizon": {
+        "15": 0,
+        "30": 0,
+        "60": 0,
+        "120": 0
+      }
+    },
+    "fold-000-a0e9a4f72689/calibration_b": {
+      "feature_keys": 262080,
+      "gold_unique_keys": 262080,
+      "lost_union_keys": 0,
+      "loss_by_horizon": {
+        "15": 0,
+        "30": 0,
+        "60": 0,
+        "120": 0
+      }
+    },
+    "fold-000-a0e9a4f72689/test": {
+      "feature_keys": 529920,
+      "gold_unique_keys": 529920,
+      "lost_union_keys": 0,
+      "loss_by_horizon": {
+        "15": 0,
+        "30": 0,
+        "60": 0,
+        "120": 0
+      }
+    },
+    "fold-000-a0e9a4f72689/train": {
+      "feature_keys": 3350407,
+      "gold_unique_keys": 3350407,
+      "lost_union_keys": 0,
+      "loss_by_horizon": {
+        "15": 0,
+        "30": 0,
+        "60": 0,
+        "120": 0
+      }
+    },
+    "fold-000-a0e9a4f72689/validation": {
+      "feature_keys": 518400,
+      "gold_unique_keys": 518400,
+      "lost_union_keys": 0,
+      "loss_by_horizon": {
+        "15": 0,
+        "30": 0,
+        "60": 0,
+        "120": 0
+      }
+    },
+    "fold-001-805307169256/calibration_a": {
+      "feature_keys": 264960,
+      "gold_unique_keys": 264960,
+      "lost_union_keys": 0,
+      "loss_by_horizon": {
+        "15": 0,
+        "30": 0,
+        "60": 0,
+        "120": 0
+      }
+    },
+    "fold-001-805307169256/calibration_b": {
+      "feature_keys": 264960,
+      "gold_unique_keys": 264960,
+      "lost_union_keys": 0,
+      "loss_by_horizon": {
+        "15": 0,
+        "30": 0,
+        "60": 0,
+        "120": 0
+      }
+    },
+    "fold-001-805307169256/test": {
+      "feature_keys": 529920,
+      "gold_unique_keys": 529920,
+      "lost_union_keys": 0,
+      "loss_by_horizon": {
+        "15": 0,
+        "30": 0,
+        "60": 0,
+        "120": 0
+      }
+    },
+    "fold-001-805307169256/train": {
+      "feature_keys": 3711194,
+      "gold_unique_keys": 3711194,
+      "lost_union_keys": 0,
+      "loss_by_horizon": {
+        "15": 0,
+        "30": 0,
+        "60": 0,
+        "120": 0
+      }
+    },
+    "fold-001-805307169256/validation": {
+      "feature_keys": 524160,
+      "gold_unique_keys": 524160,
+      "lost_union_keys": 0,
+      "loss_by_horizon": {
+        "15": 0,
+        "30": 0,
+        "60": 0,
+        "120": 0
+      }
+    },
+    "fold-002-a2dead26c257/calibration_a": {
+      "feature_keys": 264960,
+      "gold_unique_keys": 264960,
+      "lost_union_keys": 0,
+      "loss_by_horizon": {
+        "15": 0,
+        "30": 0,
+        "60": 0,
+        "120": 0
+      }
+    },
+    "fold-002-a2dead26c257/calibration_b": {
+      "feature_keys": 264960,
+      "gold_unique_keys": 264960,
+      "lost_union_keys": 0,
+      "loss_by_horizon": {
+        "15": 0,
+        "30": 0,
+        "60": 0,
+        "120": 0
+      }
+    },
+    "fold-002-a2dead26c257/test": {
+      "feature_keys": 518400,
+      "gold_unique_keys": 518400,
+      "lost_union_keys": 0,
+      "loss_by_horizon": {
+        "15": 0,
+        "30": 0,
+        "60": 0,
+        "120": 0
+      }
+    },
+    "fold-002-a2dead26c257/train": {
+      "feature_keys": 4021119,
+      "gold_unique_keys": 4021119,
+      "lost_union_keys": 0,
+      "loss_by_horizon": {
+        "15": 0,
+        "30": 0,
+        "60": 0,
+        "120": 0
+      }
+    },
+    "fold-002-a2dead26c257/validation": {
+      "feature_keys": 529920,
+      "gold_unique_keys": 529920,
+      "lost_union_keys": 0,
+      "loss_by_horizon": {
+        "15": 0,
+        "30": 0,
+        "60": 0,
+        "120": 0
+      }
+    },
+    "fold-003-a4ba910e38c1/calibration_a": {
+      "feature_keys": 259200,
+      "gold_unique_keys": 259200,
+      "lost_union_keys": 0,
+      "loss_by_horizon": {
+        "15": 0,
+        "30": 0,
+        "60": 0,
+        "120": 0
+      }
+    },
+    "fold-003-a4ba910e38c1/calibration_b": {
+      "feature_keys": 259200,
+      "gold_unique_keys": 259200,
+      "lost_union_keys": 0,
+      "loss_by_horizon": {
+        "15": 0,
+        "30": 0,
+        "60": 0,
+        "120": 0
+      }
+    },
+    "fold-003-a4ba910e38c1/test": {
+      "feature_keys": 524160,
+      "gold_unique_keys": 524160,
+      "lost_union_keys": 0,
+      "loss_by_horizon": {
+        "15": 0,
+        "30": 0,
+        "60": 0,
+        "120": 0
+      }
+    },
+    "fold-003-a4ba910e38c1/train": {
+      "feature_keys": 4196578,
+      "gold_unique_keys": 4196578,
+      "lost_union_keys": 0,
+      "loss_by_horizon": {
+        "15": 0,
+        "30": 0,
+        "60": 0,
+        "120": 0
+      }
+    },
+    "fold-003-a4ba910e38c1/validation": {
+      "feature_keys": 529920,
+      "gold_unique_keys": 529920,
+      "lost_union_keys": 0,
+      "loss_by_horizon": {
+        "15": 0,
+        "30": 0,
+        "60": 0,
+        "120": 0
+      }
+    },
+    "fold-004-4b03b69d638d/calibration_a": {
+      "feature_keys": 262080,
+      "gold_unique_keys": 262080,
+      "lost_union_keys": 0,
+      "loss_by_horizon": {
+        "15": 0,
+        "30": 0,
+        "60": 0,
+        "120": 0
+      }
+    },
+    "fold-004-4b03b69d638d/calibration_b": {
+      "feature_keys": 262080,
+      "gold_unique_keys": 262080,
+      "lost_union_keys": 0,
+      "loss_by_horizon": {
+        "15": 0,
+        "30": 0,
+        "60": 0,
+        "120": 0
+      }
+    },
+    "fold-004-4b03b69d638d/test": {
+      "feature_keys": 529920,
+      "gold_unique_keys": 529920,
+      "lost_union_keys": 0,
+      "loss_by_horizon": {
+        "15": 0,
+        "30": 0,
+        "60": 0,
+        "120": 0
+      }
+    },
+    "fold-004-4b03b69d638d/train": {
+      "feature_keys": 4204800,
+      "gold_unique_keys": 4204800,
+      "lost_union_keys": 0,
+      "loss_by_horizon": {
+        "15": 0,
+        "30": 0,
+        "60": 0,
+        "120": 0
+      }
+    },
+    "fold-004-4b03b69d638d/validation": {
+      "feature_keys": 518400,
+      "gold_unique_keys": 518400,
+      "lost_union_keys": 0,
+      "loss_by_horizon": {
+        "15": 0,
+        "30": 0,
+        "60": 0,
+        "120": 0
+      }
+    },
+    "fold-005-2cf830b9f251/calibration_a": {
+      "feature_keys": 264960,
+      "gold_unique_keys": 264960,
+      "lost_union_keys": 0,
+      "loss_by_horizon": {
+        "15": 0,
+        "30": 0,
+        "60": 0,
+        "120": 0
+      }
+    },
+    "fold-005-2cf830b9f251/calibration_b": {
+      "feature_keys": 264960,
+      "gold_unique_keys": 264960,
+      "lost_union_keys": 0,
+      "loss_by_horizon": {
+        "15": 0,
+        "30": 0,
+        "60": 0,
+        "120": 0
+      }
+    },
+    "fold-005-2cf830b9f251/test": {
+      "feature_keys": 529920,
+      "gold_unique_keys": 529920,
+      "lost_union_keys": 0,
+      "loss_by_horizon": {
+        "15": 0,
+        "30": 0,
+        "60": 0,
+        "120": 0
+      }
+    },
+    "fold-005-2cf830b9f251/train": {
+      "feature_keys": 4204800,
+      "gold_unique_keys": 4204800,
+      "lost_union_keys": 0,
+      "loss_by_horizon": {
+        "15": 0,
+        "30": 0,
+        "60": 0,
+        "120": 0
+      }
+    },
+    "fold-005-2cf830b9f251/validation": {
+      "feature_keys": 524160,
+      "gold_unique_keys": 524160,
+      "lost_union_keys": 0,
+      "loss_by_horizon": {
+        "15": 0,
+        "30": 0,
+        "60": 0,
+        "120": 0
+      }
+    },
+    "fold-006-d3b9e1c10821/calibration_a": {
+      "feature_keys": 264960,
+      "gold_unique_keys": 264960,
+      "lost_union_keys": 0,
+      "loss_by_horizon": {
+        "15": 0,
+        "30": 0,
+        "60": 0,
+        "120": 0
+      }
+    },
+    "fold-006-d3b9e1c10821/calibration_b": {
+      "feature_keys": 264960,
+      "gold_unique_keys": 264960,
+      "lost_union_keys": 0,
+      "loss_by_horizon": {
+        "15": 0,
+        "30": 0,
+        "60": 0,
+        "120": 0
+      }
+    },
+    "fold-006-d3b9e1c10821/test": {
+      "feature_keys": 524160,
+      "gold_unique_keys": 524160,
+      "lost_union_keys": 0,
+      "loss_by_horizon": {
+        "15": 0,
+        "30": 0,
+        "60": 0,
+        "120": 0
+      }
+    },
+    "fold-006-d3b9e1c10821/train": {
+      "feature_keys": 4204800,
+      "gold_unique_keys": 4204800,
+      "lost_union_keys": 0,
+      "loss_by_horizon": {
+        "15": 0,
+        "30": 0,
+        "60": 0,
+        "120": 0
+      }
+    },
+    "fold-006-d3b9e1c10821/validation": {
+      "feature_keys": 529920,
+      "gold_unique_keys": 529920,
+      "lost_union_keys": 0,
+      "loss_by_horizon": {
+        "15": 0,
+        "30": 0,
+        "60": 0,
+        "120": 0
+      }
+    },
+    "fold-007-b137dd293bcc/calibration_a": {
+      "feature_keys": 262080,
+      "gold_unique_keys": 262080,
+      "lost_union_keys": 0,
+      "loss_by_horizon": {
+        "15": 0,
+        "30": 0,
+        "60": 0,
+        "120": 0
+      }
+    },
+    "fold-007-b137dd293bcc/calibration_b": {
+      "feature_keys": 262080,
+      "gold_unique_keys": 262080,
+      "lost_union_keys": 0,
+      "loss_by_horizon": {
+        "15": 0,
+        "30": 0,
+        "60": 0,
+        "120": 0
+      }
+    },
+    "fold-007-b137dd293bcc/test": {
+      "feature_keys": 514456,
+      "gold_unique_keys": 514451,
+      "lost_union_keys": 5,
+      "loss_by_horizon": {
+        "15": 5,
+        "30": 8,
+        "60": 14,
+        "120": 26
+      }
+    },
+    "fold-007-b137dd293bcc/train": {
+      "feature_keys": 4204800,
+      "gold_unique_keys": 4204800,
+      "lost_union_keys": 0,
+      "loss_by_horizon": {
+        "15": 0,
+        "30": 0,
+        "60": 0,
+        "120": 0
+      }
+    },
+    "fold-007-b137dd293bcc/validation": {
+      "feature_keys": 529920,
+      "gold_unique_keys": 529920,
+      "lost_union_keys": 0,
+      "loss_by_horizon": {
+        "15": 0,
+        "30": 0,
+        "60": 0,
+        "120": 0
+      }
+    },
+    "fold-008-b22af5bba459/calibration_a": {
+      "feature_keys": 262080,
+      "gold_unique_keys": 262080,
+      "lost_union_keys": 0,
+      "loss_by_horizon": {
+        "15": 0,
+        "30": 0,
+        "60": 0,
+        "120": 0
+      }
+    },
+    "fold-008-b22af5bba459/calibration_b": {
+      "feature_keys": 252376,
+      "gold_unique_keys": 252371,
+      "lost_union_keys": 5,
+      "loss_by_horizon": {
+        "15": 5,
+        "30": 8,
+        "60": 14,
+        "120": 26
+      }
+    },
+    "fold-008-b22af5bba459/test": {
+      "feature_keys": 503424,
+      "gold_unique_keys": 503424,
+      "lost_union_keys": 0,
+      "loss_by_horizon": {
+        "15": 0,
+        "30": 0,
+        "60": 0,
+        "120": 0
+      }
+    },
+    "fold-008-b22af5bba459/train": {
+      "feature_keys": 4204800,
+      "gold_unique_keys": 4204800,
+      "lost_union_keys": 0,
+      "loss_by_horizon": {
+        "15": 0,
+        "30": 0,
+        "60": 0,
+        "120": 0
+      }
+    },
+    "fold-008-b22af5bba459/validation": {
+      "feature_keys": 524160,
+      "gold_unique_keys": 524160,
+      "lost_union_keys": 0,
+      "loss_by_horizon": {
+        "15": 0,
+        "30": 0,
+        "60": 0,
+        "120": 0
+      }
+    },
+    "fold-009-840bf1d34764/calibration_a": {
+      "feature_keys": 251712,
+      "gold_unique_keys": 251712,
+      "lost_union_keys": 0,
+      "loss_by_horizon": {
+        "15": 0,
+        "30": 0,
+        "60": 0,
+        "120": 0
+      }
+    },
+    "fold-009-840bf1d34764/calibration_b": {
+      "feature_keys": 251712,
+      "gold_unique_keys": 251712,
+      "lost_union_keys": 0,
+      "loss_by_horizon": {
+        "15": 0,
+        "30": 0,
+        "60": 0,
+        "120": 0
+      }
+    },
+    "fold-009-840bf1d34764/test": {
+      "feature_keys": 503424,
+      "gold_unique_keys": 503424,
+      "lost_union_keys": 0,
+      "loss_by_horizon": {
+        "15": 0,
+        "30": 0,
+        "60": 0,
+        "120": 0
+      }
+    },
+    "fold-009-840bf1d34764/train": {
+      "feature_keys": 4210560,
+      "gold_unique_keys": 4210560,
+      "lost_union_keys": 0,
+      "loss_by_horizon": {
+        "15": 0,
+        "30": 0,
+        "60": 0,
+        "120": 0
+      }
+    },
+    "fold-009-840bf1d34764/validation": {
+      "feature_keys": 514456,
+      "gold_unique_keys": 514451,
+      "lost_union_keys": 5,
+      "loss_by_horizon": {
+        "15": 5,
+        "30": 8,
+        "60": 14,
+        "120": 26
+      }
+    },
+    "fold-010-01be2e390a0b/calibration_a": {
+      "feature_keys": 251712,
+      "gold_unique_keys": 251712,
+      "lost_union_keys": 0,
+      "loss_by_horizon": {
+        "15": 0,
+        "30": 0,
+        "60": 0,
+        "120": 0
+      }
+    },
+    "fold-010-01be2e390a0b/calibration_b": {
+      "feature_keys": 251712,
+      "gold_unique_keys": 251712,
+      "lost_union_keys": 0,
+      "loss_by_horizon": {
+        "15": 0,
+        "30": 0,
+        "60": 0,
+        "120": 0
+      }
+    },
+    "fold-010-01be2e390a0b/test": {
+      "feature_keys": 492480,
+      "gold_unique_keys": 492480,
+      "lost_union_keys": 0,
+      "loss_by_horizon": {
+        "15": 0,
+        "30": 0,
+        "60": 0,
+        "120": 0
+      }
+    },
+    "fold-010-01be2e390a0b/train": {
+      "feature_keys": 4200856,
+      "gold_unique_keys": 4200851,
+      "lost_union_keys": 5,
+      "loss_by_horizon": {
+        "15": 5,
+        "30": 8,
+        "60": 14,
+        "120": 26
+      }
+    },
+    "fold-010-01be2e390a0b/validation": {
+      "feature_keys": 503424,
+      "gold_unique_keys": 503424,
+      "lost_union_keys": 0,
+      "loss_by_horizon": {
+        "15": 0,
+        "30": 0,
+        "60": 0,
+        "120": 0
+      }
+    },
+    "fold-011-d89741db3cd2/calibration_a": {
+      "feature_keys": 246240,
+      "gold_unique_keys": 246240,
+      "lost_union_keys": 0,
+      "loss_by_horizon": {
+        "15": 0,
+        "30": 0,
+        "60": 0,
+        "120": 0
+      }
+    },
+    "fold-011-d89741db3cd2/calibration_b": {
+      "feature_keys": 246240,
+      "gold_unique_keys": 246240,
+      "lost_union_keys": 0,
+      "loss_by_horizon": {
+        "15": 0,
+        "30": 0,
+        "60": 0,
+        "120": 0
+      }
+    },
+    "fold-011-d89741db3cd2/test": {
+      "feature_keys": 497952,
+      "gold_unique_keys": 497952,
+      "lost_union_keys": 0,
+      "loss_by_horizon": {
+        "15": 0,
+        "30": 0,
+        "60": 0,
+        "120": 0
+      }
+    },
+    "fold-011-d89741db3cd2/train": {
+      "feature_keys": 4174360,
+      "gold_unique_keys": 4174355,
+      "lost_union_keys": 5,
+      "loss_by_horizon": {
+        "15": 5,
+        "30": 8,
+        "60": 14,
+        "120": 26
+      }
+    },
+    "fold-011-d89741db3cd2/validation": {
+      "feature_keys": 503424,
+      "gold_unique_keys": 503424,
+      "lost_union_keys": 0,
+      "loss_by_horizon": {
+        "15": 0,
+        "30": 0,
+        "60": 0,
+        "120": 0
+      }
+    },
+    "fold-012-7a680fd4ffbe/calibration_a": {
+      "feature_keys": 248976,
+      "gold_unique_keys": 248976,
+      "lost_union_keys": 0,
+      "loss_by_horizon": {
+        "15": 0,
+        "30": 0,
+        "60": 0,
+        "120": 0
+      }
+    },
+    "fold-012-7a680fd4ffbe/calibration_b": {
+      "feature_keys": 248976,
+      "gold_unique_keys": 248976,
+      "lost_union_keys": 0,
+      "loss_by_horizon": {
+        "15": 0,
+        "30": 0,
+        "60": 0,
+        "120": 0
+      }
+    },
+    "fold-012-7a680fd4ffbe/test": {
+      "feature_keys": 503424,
+      "gold_unique_keys": 503424,
+      "lost_union_keys": 0,
+      "loss_by_horizon": {
+        "15": 0,
+        "30": 0,
+        "60": 0,
+        "120": 0
+      }
+    },
+    "fold-012-7a680fd4ffbe/train": {
+      "feature_keys": 4147864,
+      "gold_unique_keys": 4147859,
+      "lost_union_keys": 5,
+      "loss_by_horizon": {
+        "15": 5,
+        "30": 8,
+        "60": 14,
+        "120": 26
+      }
+    },
+    "fold-012-7a680fd4ffbe/validation": {
+      "feature_keys": 492480,
+      "gold_unique_keys": 492480,
+      "lost_union_keys": 0,
+      "loss_by_horizon": {
+        "15": 0,
+        "30": 0,
+        "60": 0,
+        "120": 0
+      }
+    },
+    "fold-013-38fc22d70345/calibration_a": {
+      "feature_keys": 251712,
+      "gold_unique_keys": 251712,
+      "lost_union_keys": 0,
+      "loss_by_horizon": {
+        "15": 0,
+        "30": 0,
+        "60": 0,
+        "120": 0
+      }
+    },
+    "fold-013-38fc22d70345/calibration_b": {
+      "feature_keys": 251712,
+      "gold_unique_keys": 251712,
+      "lost_union_keys": 0,
+      "loss_by_horizon": {
+        "15": 0,
+        "30": 0,
+        "60": 0,
+        "120": 0
+      }
+    },
+    "fold-013-38fc22d70345/test": {
+      "feature_keys": 503424,
+      "gold_unique_keys": 503424,
+      "lost_union_keys": 0,
+      "loss_by_horizon": {
+        "15": 0,
+        "30": 0,
+        "60": 0,
+        "120": 0
+      }
+    },
+    "fold-013-38fc22d70345/train": {
+      "feature_keys": 4121944,
+      "gold_unique_keys": 4121939,
+      "lost_union_keys": 5,
+      "loss_by_horizon": {
+        "15": 5,
+        "30": 8,
+        "60": 14,
+        "120": 26
+      }
+    },
+    "fold-013-38fc22d70345/validation": {
+      "feature_keys": 497952,
+      "gold_unique_keys": 497952,
+      "lost_union_keys": 0,
+      "loss_by_horizon": {
+        "15": 0,
+        "30": 0,
+        "60": 0,
+        "120": 0
+      }
+    },
+    "fold-014-8b62ba7b825a/calibration_a": {
+      "feature_keys": 251712,
+      "gold_unique_keys": 251712,
+      "lost_union_keys": 0,
+      "loss_by_horizon": {
+        "15": 0,
+        "30": 0,
+        "60": 0,
+        "120": 0
+      }
+    },
+    "fold-014-8b62ba7b825a/calibration_b": {
+      "feature_keys": 251712,
+      "gold_unique_keys": 251712,
+      "lost_union_keys": 0,
+      "loss_by_horizon": {
+        "15": 0,
+        "30": 0,
+        "60": 0,
+        "120": 0
+      }
+    },
+    "fold-014-8b62ba7b825a/test": {
+      "feature_keys": 492480,
+      "gold_unique_keys": 492480,
+      "lost_union_keys": 0,
+      "loss_by_horizon": {
+        "15": 0,
+        "30": 0,
+        "60": 0,
+        "120": 0
+      }
+    },
+    "fold-014-8b62ba7b825a/train": {
+      "feature_keys": 4095736,
+      "gold_unique_keys": 4095731,
+      "lost_union_keys": 5,
+      "loss_by_horizon": {
+        "15": 5,
+        "30": 8,
+        "60": 14,
+        "120": 26
+      }
+    },
+    "fold-014-8b62ba7b825a/validation": {
+      "feature_keys": 503424,
+      "gold_unique_keys": 503424,
+      "lost_union_keys": 0,
+      "loss_by_horizon": {
+        "15": 0,
+        "30": 0,
+        "60": 0,
+        "120": 0
+      }
+    },
+    "fold-015-ed49f0aadaf7/calibration_a": {
+      "feature_keys": 246240,
+      "gold_unique_keys": 246240,
+      "lost_union_keys": 0,
+      "loss_by_horizon": {
+        "15": 0,
+        "30": 0,
+        "60": 0,
+        "120": 0
+      }
+    },
+    "fold-015-ed49f0aadaf7/calibration_b": {
+      "feature_keys": 246240,
+      "gold_unique_keys": 246240,
+      "lost_union_keys": 0,
+      "loss_by_horizon": {
+        "15": 0,
+        "30": 0,
+        "60": 0,
+        "120": 0
+      }
+    },
+    "fold-015-ed49f0aadaf7/test": {
+      "feature_keys": 497952,
+      "gold_unique_keys": 497876,
+      "lost_union_keys": 76,
+      "loss_by_horizon": {
+        "15": 76,
+        "30": 133,
+        "60": 247,
+        "120": 475
+      }
+    },
+    "fold-015-ed49f0aadaf7/train": {
+      "feature_keys": 4069240,
+      "gold_unique_keys": 4069235,
+      "lost_union_keys": 5,
+      "loss_by_horizon": {
+        "15": 5,
+        "30": 8,
+        "60": 14,
+        "120": 26
+      }
+    },
+    "fold-015-ed49f0aadaf7/validation": {
+      "feature_keys": 503424,
+      "gold_unique_keys": 503424,
+      "lost_union_keys": 0,
+      "loss_by_horizon": {
+        "15": 0,
+        "30": 0,
+        "60": 0,
+        "120": 0
+      }
+    }
+  },
+  "union_missing_events": [
+    {
+      "symbol": "BCHUSDT",
+      "feature_time_ms": 1782862800000
+    },
+    {
+      "symbol": "BCHUSDT",
+      "feature_time_ms": 1782863100000
+    },
+    {
+      "symbol": "BCHUSDT",
+      "feature_time_ms": 1782863400000
+    },
+    {
+      "symbol": "BCHUSDT",
+      "feature_time_ms": 1782863700000
+    },
+    {
+      "symbol": "BLZUSDT",
+      "feature_time_ms": 1782862800000
+    },
+    {
+      "symbol": "BLZUSDT",
+      "feature_time_ms": 1782863100000
+    },
+    {
+      "symbol": "BLZUSDT",
+      "feature_time_ms": 1782863400000
+    },
+    {
+      "symbol": "BLZUSDT",
+      "feature_time_ms": 1782863700000
+    },
+    {
+      "symbol": "BTCUSDT",
+      "feature_time_ms": 1782862800000
+    },
+    {
+      "symbol": "BTCUSDT",
+      "feature_time_ms": 1782863100000
+    },
+    {
+      "symbol": "BTCUSDT",
+      "feature_time_ms": 1782863400000
+    },
+    {
+      "symbol": "BTCUSDT",
+      "feature_time_ms": 1782863700000
+    },
+    {
+      "symbol": "COMPUSDT",
+      "feature_time_ms": 1782862800000
+    },
+    {
+      "symbol": "COMPUSDT",
+      "feature_time_ms": 1782863100000
+    },
+    {
+      "symbol": "COMPUSDT",
+      "feature_time_ms": 1782863400000
+    },
+    {
+      "symbol": "COMPUSDT",
+      "feature_time_ms": 1782863700000
+    },
+    {
+      "symbol": "DOGEUSDT",
+      "feature_time_ms": 1782862800000
+    },
+    {
+      "symbol": "DOGEUSDT",
+      "feature_time_ms": 1782863100000
+    },
+    {
+      "symbol": "DOGEUSDT",
+      "feature_time_ms": 1782863400000
+    },
+    {
+      "symbol": "DOGEUSDT",
+      "feature_time_ms": 1782863700000
+    },
+    {
+      "symbol": "ETHUSDT",
+      "feature_time_ms": 1782862800000
+    },
+    {
+      "symbol": "ETHUSDT",
+      "feature_time_ms": 1782863100000
+    },
+    {
+      "symbol": "ETHUSDT",
+      "feature_time_ms": 1782863400000
+    },
+    {
+      "symbol": "ETHUSDT",
+      "feature_time_ms": 1782863700000
+    },
+    {
+      "symbol": "FILUSDT",
+      "feature_time_ms": 1782862800000
+    },
+    {
+      "symbol": "FILUSDT",
+      "feature_time_ms": 1782863100000
+    },
+    {
+      "symbol": "FILUSDT",
+      "feature_time_ms": 1782863400000
+    },
+    {
+      "symbol": "FILUSDT",
+      "feature_time_ms": 1782863700000
+    },
+    {
+      "symbol": "FLMUSDT",
+      "feature_time_ms": 1782862800000
+    },
+    {
+      "symbol": "FLMUSDT",
+      "feature_time_ms": 1782863100000
+    },
+    {
+      "symbol": "FLMUSDT",
+      "feature_time_ms": 1782863400000
+    },
+    {
+      "symbol": "FLMUSDT",
+      "feature_time_ms": 1782863700000
+    },
+    {
+      "symbol": "HNTUSDT",
+      "feature_time_ms": 1716879300000
+    },
+    {
+      "symbol": "HNTUSDT",
+      "feature_time_ms": 1716879600000
+    },
+    {
+      "symbol": "HNTUSDT",
+      "feature_time_ms": 1716879900000
+    },
+    {
+      "symbol": "HNTUSDT",
+      "feature_time_ms": 1716880200000
+    },
+    {
+      "symbol": "HNTUSDT",
+      "feature_time_ms": 1716880500000
+    },
+    {
+      "symbol": "IOTAUSDT",
+      "feature_time_ms": 1782862800000
+    },
+    {
+      "symbol": "IOTAUSDT",
+      "feature_time_ms": 1782863100000
+    },
+    {
+      "symbol": "IOTAUSDT",
+      "feature_time_ms": 1782863400000
+    },
+    {
+      "symbol": "IOTAUSDT",
+      "feature_time_ms": 1782863700000
+    },
+    {
+      "symbol": "KNCUSDT",
+      "feature_time_ms": 1782862800000
+    },
+    {
+      "symbol": "KNCUSDT",
+      "feature_time_ms": 1782863100000
+    },
+    {
+      "symbol": "KNCUSDT",
+      "feature_time_ms": 1782863400000
+    },
+    {
+      "symbol": "KNCUSDT",
+      "feature_time_ms": 1782863700000
+    },
+    {
+      "symbol": "KSMUSDT",
+      "feature_time_ms": 1782862800000
+    },
+    {
+      "symbol": "KSMUSDT",
+      "feature_time_ms": 1782863100000
+    },
+    {
+      "symbol": "KSMUSDT",
+      "feature_time_ms": 1782863400000
+    },
+    {
+      "symbol": "KSMUSDT",
+      "feature_time_ms": 1782863700000
+    },
+    {
+      "symbol": "NEOUSDT",
+      "feature_time_ms": 1782862800000
+    },
+    {
+      "symbol": "NEOUSDT",
+      "feature_time_ms": 1782863100000
+    },
+    {
+      "symbol": "NEOUSDT",
+      "feature_time_ms": 1782863400000
+    },
+    {
+      "symbol": "NEOUSDT",
+      "feature_time_ms": 1782863700000
+    },
+    {
+      "symbol": "OMGUSDT",
+      "feature_time_ms": 1782862800000
+    },
+    {
+      "symbol": "OMGUSDT",
+      "feature_time_ms": 1782863100000
+    },
+    {
+      "symbol": "OMGUSDT",
+      "feature_time_ms": 1782863400000
+    },
+    {
+      "symbol": "OMGUSDT",
+      "feature_time_ms": 1782863700000
+    },
+    {
+      "symbol": "ONTUSDT",
+      "feature_time_ms": 1782862800000
+    },
+    {
+      "symbol": "ONTUSDT",
+      "feature_time_ms": 1782863100000
+    },
+    {
+      "symbol": "ONTUSDT",
+      "feature_time_ms": 1782863400000
+    },
+    {
+      "symbol": "ONTUSDT",
+      "feature_time_ms": 1782863700000
+    },
+    {
+      "symbol": "STORJUSDT",
+      "feature_time_ms": 1782862800000
+    },
+    {
+      "symbol": "STORJUSDT",
+      "feature_time_ms": 1782863100000
+    },
+    {
+      "symbol": "STORJUSDT",
+      "feature_time_ms": 1782863400000
+    },
+    {
+      "symbol": "STORJUSDT",
+      "feature_time_ms": 1782863700000
+    },
+    {
+      "symbol": "TRXUSDT",
+      "feature_time_ms": 1782862800000
+    },
+    {
+      "symbol": "TRXUSDT",
+      "feature_time_ms": 1782863100000
+    },
+    {
+      "symbol": "TRXUSDT",
+      "feature_time_ms": 1782863400000
+    },
+    {
+      "symbol": "TRXUSDT",
+      "feature_time_ms": 1782863700000
+    },
+    {
+      "symbol": "UNIUSDT",
+      "feature_time_ms": 1782862800000
+    },
+    {
+      "symbol": "UNIUSDT",
+      "feature_time_ms": 1782863100000
+    },
+    {
+      "symbol": "UNIUSDT",
+      "feature_time_ms": 1782863400000
+    },
+    {
+      "symbol": "UNIUSDT",
+      "feature_time_ms": 1782863700000
+    },
+    {
+      "symbol": "ZECUSDT",
+      "feature_time_ms": 1782862800000
+    },
+    {
+      "symbol": "ZECUSDT",
+      "feature_time_ms": 1782863100000
+    },
+    {
+      "symbol": "ZECUSDT",
+      "feature_time_ms": 1782863400000
+    },
+    {
+      "symbol": "ZECUSDT",
+      "feature_time_ms": 1782863700000
+    },
+    {
+      "symbol": "ZRXUSDT",
+      "feature_time_ms": 1782862800000
+    },
+    {
+      "symbol": "ZRXUSDT",
+      "feature_time_ms": 1782863100000
+    },
+    {
+      "symbol": "ZRXUSDT",
+      "feature_time_ms": 1782863400000
+    },
+    {
+      "symbol": "ZRXUSDT",
+      "feature_time_ms": 1782863700000
+    }
+  ],
+  "classification_policy": "Cutoff when label end reaches July; verified interior candle discontinuity is gap-related; a terminal source ending before the cutoff is unknown unless exact listing evidence proves the boundary. Coarse monthly registry lifecycle is not silently treated as an exact delisting time."
+}

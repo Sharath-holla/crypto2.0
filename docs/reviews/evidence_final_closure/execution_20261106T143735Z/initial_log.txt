@@ -1,0 +1,30 @@
+c892cc0 (HEAD -> fix/phase7-final-architecture-repair-20261106) docs: clarify sidecar path in RunPod review
+ccff3e3 RunPod review: container-aware RAM (cgroup) in runtime snapshots, push list for checkpoint-referenced files, report for Codex
+ada0478 docs: Phase 7 smoke-readiness closure report (verdict NOT_READY_FOR_SMOKE)
+96d7159 Phase7 closure: real Gold hash verification (138/138 PASS), superseded-cache registry, smoke yaml + success criteria amended
+5c89a62 Phase7 closure: truncation-invariance leakage test; static import-boundary test; CRYPTO_AI_RESEARCH_MODE order-client guard
+7ebc79e Phase7 closure: volatility-normalised target inverse now uses the forward divisor max(|scale|, floor)
+7079a6e Phase7 closure: baseline contract v2 (cross-sectional IC, TRAIN-mean baseline) on the same validation rows
+78a2888 Phase7 closure: explicit H0 data ownership (corrections on purged Cal-A1, calibrator on Cal-A2, Validation = early stopping only)
+72117ce Phase7 closure: Cal-A internal selection split purged by actual label_end_time (+embargo), identity fallback
+bd1bdbd Phase7 closure: honest resource estimator (ESTIMATED_* labels, Arrow term, cgroup RAM/CPU, --json); record ECONOMIC_STATUS in training report
+0b3dce0 feat(economics): trade-level metrics labelled as proxies; portfolio Sharpe/drawdown NOT_AVAILABLE; funding/cost/entry status contract
+0cd1953 style(tests): wrap long lines in preparation identity tests
+6a291c9 test(cache): use keyword symbol_balanced in preparation identity tests
+299c1c6 feat(cache): prepared-cache identity depends only on matrix-affecting code (preparation_identity); economics/selection/ledger edits no longer invalidate matrices
+e32f68b feat(admission): one shared fail-closed admission for official training; generic phase7-research train -> NON_CANONICAL_RESEARCH_ENTRYPOINT; CPU-only smoke; GPU needs approval file (IA-11, IA-12)
+f5fae0a feat(selection): real 16-fold selection protocol with Cal-A/Cal-B roles; DESCRIPTIVE/DEVELOPMENT/INDEPENDENT purposes (IA-03)
+19ae8a4 feat(results): canonical completion flow - publish identity-checked result + receipt before checkpoint COMPLETE; CSV is a ledger view (IA-02, IA-20)
+7bae15a docs(reviews): Phase 7 final repair report (verdict NOT_READY_FOR_SMOKE)
+070539e chore(economics): correct finding id in NO_TRADE comments (IA-15, not IA-12)
+9191665 docs(research): frozen Phase 7 success criteria v1 and declarative smoke config
+a4db0e7 feat(m01): read-only feature-key census tool and context-sensitivity tests (IA-05)
+60d6a86 fix(economics): explicit NO_TRADE candidate in Cal-B threshold selection (IA-12)
+10006f6 feat(results): immutable result receipts and trial ledger (IA-20)
+32d594a fix(identity): bind hardening semantics to experiment resume identity (IA-04)
+f5f8d33 fix(selection): fold overlap matrix and frozen selection chronology (IA-03)
+d4c0825 fix(research): reject duplicate/mixed result identities; demote invalid inference (IA-01, IA-02)
+c249e28 (fix/phase7a-final-scientific-hardening-20261106) docs(reviews): final hardening readiness report + exhaustive read-only research audit (5 files)
+687e697 feat(final-hardening): read-only per-spec RAM/disk estimator (python -m crypto_ai.phase7.resource_estimate)
+d3c8da7 feat(final-hardening): explicit zero-actual metrics, baseline deltas/IC, results provenance columns, richer console line
+0eb9296 (fix/phase7c-architecture-20261105) fix(N-01,N-02,N-03): NaN-safe Ridge baseline, clean stop on FitAbortedError, record hardening settings in reports

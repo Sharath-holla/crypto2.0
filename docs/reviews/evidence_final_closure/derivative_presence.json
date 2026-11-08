@@ -1,0 +1,362 @@
+[
+  {
+    "symbol": "BCHUSDT",
+    "kind": "funding",
+    "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/funding/market-silver-69f014a447027584d6ab1287/manifest.json",
+    "present": true
+  },
+  {
+    "symbol": "BCHUSDT",
+    "kind": "index",
+    "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/index_kline/market-silver-v2-1-4cbae5be4aa74e3a73dd9beb/manifest.json",
+    "present": true
+  },
+  {
+    "symbol": "BCHUSDT",
+    "kind": "mark",
+    "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/mark_kline/market-silver-v2-1-7b9d9ed61d565f0e1ec7b81b/manifest.json",
+    "present": true
+  },
+  {
+    "symbol": "BLZUSDT",
+    "kind": "funding",
+    "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/funding/market-silver-b07f27fc532ec04feffb157e/manifest.json",
+    "present": true
+  },
+  {
+    "symbol": "BLZUSDT",
+    "kind": "index",
+    "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/index_kline/market-silver-v2-1-fe0bde3795b6d5783dd47d84/manifest.json",
+    "present": true
+  },
+  {
+    "symbol": "BLZUSDT",
+    "kind": "mark",
+    "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/mark_kline/market-silver-v2-1-cba89558a613b22469c4ef70/manifest.json",
+    "present": true
+  },
+  {
+    "symbol": "BTCUSDT",
+    "kind": "funding",
+    "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/funding/market-silver-9ab4991244016133a46a0ce8/manifest.json",
+    "present": true
+  },
+  {
+    "symbol": "BTCUSDT",
+    "kind": "index",
+    "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/index_kline/market-silver-v2-1-3b322aa03a74a1899007266c/manifest.json",
+    "present": true
+  },
+  {
+    "symbol": "BTCUSDT",
+    "kind": "mark",
+    "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/mark_kline/market-silver-v2-1-3adfcf389c22af782bfe1d8c/manifest.json",
+    "present": true
+  },
+  {
+    "symbol": "COMPUSDT",
+    "kind": "funding",
+    "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/funding/market-silver-db2d1db25a596525b62e2675/manifest.json",
+    "present": true
+  },
+  {
+    "symbol": "COMPUSDT",
+    "kind": "index",
+    "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/index_kline/market-silver-v2-1-9286550f978a48d9eacdca6f/manifest.json",
+    "present": true
+  },
+  {
+    "symbol": "COMPUSDT",
+    "kind": "mark",
+    "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/mark_kline/market-silver-v2-1-6561f7d4cb3ee2e589927bfa/manifest.json",
+    "present": true
+  },
+  {
+    "symbol": "DOGEUSDT",
+    "kind": "funding",
+    "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/funding/market-silver-f932092e7dc147e7e5df9d6c/manifest.json",
+    "present": true
+  },
+  {
+    "symbol": "DOGEUSDT",
+    "kind": "index",
+    "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/index_kline/market-silver-v2-1-3ac8f54ff9c4760cb49738f3/manifest.json",
+    "present": true
+  },
+  {
+    "symbol": "DOGEUSDT",
+    "kind": "mark",
+    "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/mark_kline/market-silver-v2-1-80d4388784a960ed4851f84b/manifest.json",
+    "present": true
+  },
+  {
+    "symbol": "ETHUSDT",
+    "kind": "funding",
+    "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/funding/market-silver-941bce52bcd9be8895605dca/manifest.json",
+    "present": true
+  },
+  {
+    "symbol": "ETHUSDT",
+    "kind": "index",
+    "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/index_kline/market-silver-v2-1-f519c50fedc71f0195af6662/manifest.json",
+    "present": true
+  },
+  {
+    "symbol": "ETHUSDT",
+    "kind": "mark",
+    "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/mark_kline/market-silver-v2-1-d1d37e42b2f6e82f68851e94/manifest.json",
+    "present": true
+  },
+  {
+    "symbol": "FILUSDT",
+    "kind": "funding",
+    "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/funding/market-silver-10d4b069fe7b102f4858c5a2/manifest.json",
+    "present": true
+  },
+  {
+    "symbol": "FILUSDT",
+    "kind": "index",
+    "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/index_kline/market-silver-v2-1-8eeb34f90a9473c14be966f9/manifest.json",
+    "present": true
+  },
+  {
+    "symbol": "FILUSDT",
+    "kind": "mark",
+    "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/mark_kline/market-silver-v2-1-f656d26a35d13496474cd1fa/manifest.json",
+    "present": true
+  },
+  {
+    "symbol": "FLMUSDT",
+    "kind": "funding",
+    "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/funding/market-silver-650c6e8aea8b252bcfb0a323/manifest.json",
+    "present": true
+  },
+  {
+    "symbol": "FLMUSDT",
+    "kind": "index",
+    "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/index_kline/market-silver-v2-1-19496e4f21094c8fd8ef7183/manifest.json",
+    "present": true
+  },
+  {
+    "symbol": "FLMUSDT",
+    "kind": "mark",
+    "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/mark_kline/market-silver-v2-1-6d2a4c24592d3acee576d3c7/manifest.json",
+    "present": true
+  },
+  {
+    "symbol": "HNTUSDT",
+    "kind": "funding",
+    "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/funding/market-silver-f3a59429cece6e1eca87e73a/manifest.json",
+    "present": true
+  },
+  {
+    "symbol": "HNTUSDT",
+    "kind": "index",
+    "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/index_kline/market-silver-v2-1-374b85fc0d363eff0651966d/manifest.json",
+    "present": true
+  },
+  {
+    "symbol": "HNTUSDT",
+    "kind": "mark",
+    "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/mark_kline/market-silver-v2-1-cd769074b69d8e18d80d1c16/manifest.json",
+    "present": true
+  },
+  {
+    "symbol": "IOTAUSDT",
+    "kind": "funding",
+    "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/funding/market-silver-3f1481a8cb5380750aa9cabf/manifest.json",
+    "present": true
+  },
+  {
+    "symbol": "IOTAUSDT",
+    "kind": "index",
+    "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/index_kline/market-silver-v2-1-763945d23df9d469526d9225/manifest.json",
+    "present": true
+  },
+  {
+    "symbol": "IOTAUSDT",
+    "kind": "mark",
+    "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/mark_kline/market-silver-v2-1-923519fb69621b1c3e93c0ed/manifest.json",
+    "present": true
+  },
+  {
+    "symbol": "KNCUSDT",
+    "kind": "funding",
+    "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/funding/market-silver-977e3b619f45936f2e5f1d92/manifest.json",
+    "present": true
+  },
+  {
+    "symbol": "KNCUSDT",
+    "kind": "index",
+    "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/index_kline/market-silver-v2-1-461a4160f40d1a4bc75f8fc1/manifest.json",
+    "present": true
+  },
+  {
+    "symbol": "KNCUSDT",
+    "kind": "mark",
+    "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/mark_kline/market-silver-v2-1-54a0b1cf8b89bdfcd1c26958/manifest.json",
+    "present": true
+  },
+  {
+    "symbol": "KSMUSDT",
+    "kind": "funding",
+    "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/funding/market-silver-0a7b4aac632962a93644d1da/manifest.json",
+    "present": true
+  },
+  {
+    "symbol": "KSMUSDT",
+    "kind": "index",
+    "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/index_kline/market-silver-v2-1-da088a84aaf02b1c34d959a5/manifest.json",
+    "present": true
+  },
+  {
+    "symbol": "KSMUSDT",
+    "kind": "mark",
+    "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/mark_kline/market-silver-v2-1-1af20ccf895e534a98fdfc0a/manifest.json",
+    "present": true
+  },
+  {
+    "symbol": "NEOUSDT",
+    "kind": "funding",
+    "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/funding/market-silver-e2b5367dee1fe2d390cc7761/manifest.json",
+    "present": true
+  },
+  {
+    "symbol": "NEOUSDT",
+    "kind": "index",
+    "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/index_kline/market-silver-v2-1-25e57bc33183ca153982a776/manifest.json",
+    "present": true
+  },
+  {
+    "symbol": "NEOUSDT",
+    "kind": "mark",
+    "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/mark_kline/market-silver-v2-1-fa4248506fe15a026997c5c0/manifest.json",
+    "present": true
+  },
+  {
+    "symbol": "OMGUSDT",
+    "kind": "funding",
+    "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/funding/market-silver-078280b45a6d61f173ee8a49/manifest.json",
+    "present": true
+  },
+  {
+    "symbol": "OMGUSDT",
+    "kind": "index",
+    "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/index_kline/market-silver-v2-1-5b9770c8c86b4d068919d8af/manifest.json",
+    "present": true
+  },
+  {
+    "symbol": "OMGUSDT",
+    "kind": "mark",
+    "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/mark_kline/market-silver-v2-1-b43410c1ae38a93b8c176069/manifest.json",
+    "present": true
+  },
+  {
+    "symbol": "ONTUSDT",
+    "kind": "funding",
+    "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/funding/market-silver-03cf302106e99d94fccc85ac/manifest.json",
+    "present": true
+  },
+  {
+    "symbol": "ONTUSDT",
+    "kind": "index",
+    "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/index_kline/market-silver-v2-1-1645bff2c534381955e03a3f/manifest.json",
+    "present": true
+  },
+  {
+    "symbol": "ONTUSDT",
+    "kind": "mark",
+    "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/mark_kline/market-silver-v2-1-522a788e33bb8f5536c6a709/manifest.json",
+    "present": true
+  },
+  {
+    "symbol": "STORJUSDT",
+    "kind": "funding",
+    "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/funding/market-silver-a3274df8740c37475e8a31fe/manifest.json",
+    "present": true
+  },
+  {
+    "symbol": "STORJUSDT",
+    "kind": "index",
+    "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/index_kline/market-silver-v2-1-28f66f48574b6f467845876c/manifest.json",
+    "present": true
+  },
+  {
+    "symbol": "STORJUSDT",
+    "kind": "mark",
+    "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/mark_kline/market-silver-v2-1-79adeff9baa200b191fc0431/manifest.json",
+    "present": true
+  },
+  {
+    "symbol": "TRXUSDT",
+    "kind": "funding",
+    "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/funding/market-silver-776a3916c500cac9246681d3/manifest.json",
+    "present": true
+  },
+  {
+    "symbol": "TRXUSDT",
+    "kind": "index",
+    "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/index_kline/market-silver-v2-1-041ba4d85b5466a52b64573c/manifest.json",
+    "present": true
+  },
+  {
+    "symbol": "TRXUSDT",
+    "kind": "mark",
+    "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/mark_kline/market-silver-v2-1-d13ccd2d553e391fd3ffd739/manifest.json",
+    "present": true
+  },
+  {
+    "symbol": "UNIUSDT",
+    "kind": "funding",
+    "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/funding/market-silver-8d02d69f307bf1b0abf83e07/manifest.json",
+    "present": true
+  },
+  {
+    "symbol": "UNIUSDT",
+    "kind": "index",
+    "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/index_kline/market-silver-v2-1-dfe389f2a906a4fc71850f2b/manifest.json",
+    "present": true
+  },
+  {
+    "symbol": "UNIUSDT",
+    "kind": "mark",
+    "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/mark_kline/market-silver-v2-1-3e513247354348ea04ad9b47/manifest.json",
+    "present": true
+  },
+  {
+    "symbol": "ZECUSDT",
+    "kind": "funding",
+    "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/funding/market-silver-3bbcbafb22fcd498b6dff5ce/manifest.json",
+    "present": true
+  },
+  {
+    "symbol": "ZECUSDT",
+    "kind": "index",
+    "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/index_kline/market-silver-v2-1-69be83855d5cf6a85656ba0a/manifest.json",
+    "present": true
+  },
+  {
+    "symbol": "ZECUSDT",
+    "kind": "mark",
+    "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/mark_kline/market-silver-v2-1-d078ab32dc255b785e04ecea/manifest.json",
+    "present": true
+  },
+  {
+    "symbol": "ZRXUSDT",
+    "kind": "funding",
+    "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/funding/market-silver-33b99506f9aa0e9129bcefa6/manifest.json",
+    "present": true
+  },
+  {
+    "symbol": "ZRXUSDT",
+    "kind": "index",
+    "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/index_kline/market-silver-v2-1-be54d66b3beabe3874cb8ce7/manifest.json",
+    "present": true
+  },
+  {
+    "symbol": "ZRXUSDT",
+    "kind": "mark",
+    "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/mark_kline/market-silver-v2-1-145d8a8d9d6c3bbe59732772/manifest.json",
+    "present": true
+  }
+]

@@ -1,0 +1,64 @@
+{
+  "metric_scope": "TRADE_LEVEL_PROXY_NOT_PORTFOLIO",
+  "portfolio_sharpe": "NOT_AVAILABLE",
+  "portfolio_max_drawdown": "NOT_AVAILABLE",
+  "portfolio_calmar": "NOT_AVAILABLE",
+  "funding_model_status": "NOT_MODELLED",
+  "cost_model_label": "STATIC_COST_STRESS",
+  "entry_price_label": "REFERENCE_EXECUTION_PRICE",
+  "economic_status": "REGRESSION_PLUMBING_ONLY_NO_TRADABILITY_CLAIM",
+  "cost_policy_version": "phase7_nonoverlapping_cal_b_v2",
+  "costs": {
+    "assumption_classification": "RESEARCH COST ASSUMPTIONS",
+    "high_liquidity": {
+      "taker_fee_bps_per_side": 4.0,
+      "spread_bps_round_trip": 1.0,
+      "slippage_bps_per_side": 1.0
+    },
+    "medium_liquidity": {
+      "taker_fee_bps_per_side": 4.0,
+      "spread_bps_round_trip": 2.0,
+      "slippage_bps_per_side": 2.0
+    },
+    "lower_liquidity": {
+      "taker_fee_bps_per_side": 4.0,
+      "spread_bps_round_trip": 4.0,
+      "slippage_bps_per_side": 4.0
+    },
+    "fixed_policy_multipliers": [
+      1.0,
+      1.25,
+      1.5,
+      2.0
+    ],
+    "threshold_grid_bps": [
+      2.0,
+      4.0,
+      6.0,
+      8.0,
+      10.0
+    ],
+    "minimum_calibration_trades": 30
+  },
+  "tier_costs": {
+    "HIGH_LIQUIDITY": {
+      "fee_bps": 8.0,
+      "spread_bps": 1.0,
+      "slippage_bps": 2.0
+    },
+    "MEDIUM_LIQUIDITY": {
+      "fee_bps": 8.0,
+      "spread_bps": 2.0,
+      "slippage_bps": 4.0
+    },
+    "LOWER_LIQUIDITY": {
+      "fee_bps": 8.0,
+      "spread_bps": 4.0,
+      "slippage_bps": 8.0
+    }
+  },
+  "funding_input_data": "20 funding datasets locally present and hash/row-count validated; feature input is not funding cash-flow accounting",
+  "actual_real_oos_models_in_this_task": 0,
+  "model_pipeline_validated": false,
+  "tradability_validated": false
+}

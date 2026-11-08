@@ -1,0 +1,8 @@
+ M docs/reviews/crypto2_architecture_scorecard_20261106.md
+ M docs/reviews/crypto2_exhaustive_research_audit_20261106.md
+ M docs/reviews/crypto2_literature_comparison_20261106.md
+ M docs/reviews/crypto2_loophole_register_20261106.md
+ M docs/reviews/crypto2_training_code_audit_20261106.md
+?? "Claude outputs/"
+?? docs/reviews/evidence_crypto2_20261106/
+?? docs/reviews/evidence_final_closure/

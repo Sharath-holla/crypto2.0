@@ -1,0 +1,11 @@
+usage: feature_census.py [-h] --features-path FEATURES_PATH --gold-path
+                         GOLD_PATH --output OUTPUT
+
+Read-only feature-key census: independent feature availability vs Gold keys
+(IA-05 / M-01).
+
+options:
+  -h, --help            show this help message and exit
+  --features-path FEATURES_PATH
+  --gold-path GOLD_PATH
+  --output OUTPUT

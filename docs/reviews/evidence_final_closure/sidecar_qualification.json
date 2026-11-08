@@ -1,0 +1,24 @@
+{
+  "status": "PASS",
+  "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v3/manifest.json",
+  "identity": {
+    "source": "FEATURE_CONTEXT_SIDECAR",
+    "manifest_sha256": "ea5f25a2a7c009c79a9ecbbe795960234b67074d36d2db7c21424724fabc2048"
+  },
+  "partitions": 138,
+  "rows": 12588383,
+  "data_bytes": 740888775,
+  "exact_data_hash_equivalence_to_v2": true,
+  "numeric_evidence": "sidecar_validation.json",
+  "numeric_rows_compared": 50352548,
+  "numeric_tolerances": {
+    "rtol": 1e-09,
+    "atol": 1e-12
+  },
+  "source": "FEATURE_CONTEXT_SIDECAR",
+  "superseded_sidecars_preserved": [
+    "feature_context_sidecar_v1",
+    "feature_context_sidecar_v2"
+  ],
+  "reason_for_republication": "Final builder provenance and input/configuration identity binding; every data partition is byte-identical to the fully checked v2 projection."
+}

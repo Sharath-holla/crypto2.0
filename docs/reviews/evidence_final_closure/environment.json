@@ -1,0 +1,18 @@
+{
+  "python": "3.12.16",
+  "system_python": "Python 3.12.16",
+  "platform": "macOS-27.2-arm64-arm-64bit",
+  "architecture": "arm64",
+  "uv": "uv 0.13.7 (316c827e0 2026-11-03 aarch64-apple-darwin)",
+  "packages": {
+    "numpy": "2.4.6",
+    "pyarrow": "24.0.0",
+    "lightgbm": "4.7.0",
+    "pydantic": "2.13.4",
+    "pytest": "9.1.1",
+    "ruff": "0.16.3",
+    "scikit-learn": "1.9.0",
+    "joblib": "1.5.3"
+  },
+  "uv_lock_sha256": "d0cf77d737384e0d35e6175daf74bfa9716ece8a9f246d1f107beb0a01556d85"
+}

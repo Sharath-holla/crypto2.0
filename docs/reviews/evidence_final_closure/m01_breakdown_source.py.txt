@@ -1,0 +1,76 @@
+import json
+from datetime import datetime
+from pathlib import Path
+
+import numpy as np
+import pyarrow as pa
+import pyarrow.parquet as pq
+
+from crypto_ai.phase7.feature_census import _keys_from_parquet
+
+evidence = Path("docs/reviews/evidence_final_closure")
+validation = json.loads((evidence / "gold_validation.json").read_text())
+manifest_path = Path(validation["manifest_path"])
+manifest = json.loads(manifest_path.read_text())
+features = _keys_from_parquet(Path("/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/independent_feature_keys"))
+calendar = json.loads(Path("configs/research/phase7_selection_chronology_v1.json").read_text())["calendar"]
+cutoff = int(datetime.fromisoformat(validation["research_cutoff_exclusive"]).timestamp() * 1000)
+union_census = json.loads((evidence / "m01_census.json").read_text())
+result = {
+    "schema": "phase7_m01_breakdown_v1",
+    "lost_fraction": union_census["lost_keys"] / union_census["feature_keys"],
+    "by_horizon": {}, "by_fold_split": {}, "union_missing_events": [],
+    "classification_policy": "Cutoff when label end reaches July; verified interior candle discontinuity is gap-related; a terminal source ending before the cutoff is unknown unless exact listing evidence proves the boundary. Coarse monthly registry lifecycle is not silently treated as an exact delisting time.",
+}
+horizons = (15, 30, 60, 120)
+for h in horizons:
+    result["by_horizon"][str(h)] = {"feature_keys": 0, "gold_keys": 0, "retained_keys": 0, "lost_keys": 0, "by_symbol": {}, "reason_counts": {}}
+
+def count(values, lo, hi):
+    return int(np.searchsorted(values, hi) - np.searchsorted(values, lo))
+
+for symbol, times in sorted(features.items()):
+    chunks = {h: [] for h in horizons}
+    for record in manifest["partition_files"]:
+        path = manifest_path.parent / record["path"]
+        if f"symbol={symbol}" not in str(path):
+            continue
+        table = pq.ParquetFile(path).read(columns=["feature_time", "horizon_minutes"])
+        ts = table["feature_time"].cast(pa.timestamp("ms", tz="UTC")).cast(pa.int64()).to_numpy()
+        hs = table["horizon_minutes"].to_numpy()
+        for h in horizons:
+            chunks[h].append(ts[hs == h])
+    gold = {h: np.unique(np.concatenate(parts)) for h, parts in chunks.items()}
+    lost = {h: np.setdiff1d(times, gts, assume_unique=True) for h, gts in gold.items()}
+    union = np.unique(np.concatenate(list(gold.values())))
+    lost_union = np.setdiff1d(times, union, assume_unique=True)
+    result["union_missing_events"].extend({"symbol": symbol, "feature_time_ms": int(t)} for t in lost_union)
+    for h in horizons:
+        row = result["by_horizon"][str(h)]
+        row["feature_keys"] += len(times)
+        row["gold_keys"] += len(gold[h])
+        row["retained_keys"] += len(times) - len(lost[h])
+        row["lost_keys"] += len(lost[h])
+        row["by_symbol"][symbol] = {"lost_keys": len(lost[h]), "first_ms": int(lost[h][0]) if len(lost[h]) else None, "last_ms": int(lost[h][-1]) if len(lost[h]) else None}
+        for t in lost[h]:
+            if t + (h + 5) * 60000 >= cutoff:
+                reason = "CUTOFF_RELATED"
+            elif t + (h + 10) * 60000 > times[-1]:
+                reason = "UNKNOWN_TERMINAL_SOURCE_BOUNDARY"
+            else:
+                expected = t + np.arange(1, h // 5 + 3) * 300000
+                positions = np.searchsorted(times, expected)
+                reason = "GAP_RELATED" if not np.array_equal(times[np.minimum(positions, len(times) - 1)], expected) else "UNKNOWN"
+            row["reason_counts"][reason] = row["reason_counts"].get(reason, 0) + 1
+    for fold, segments in calendar.items():
+        for split, (start, end) in segments.items():
+            lo, hi = (int(datetime.fromisoformat(x.replace("Z", "+00:00")).timestamp() * 1000) for x in (start, end))
+            row = result["by_fold_split"].setdefault(f"{fold}/{split}", {"feature_keys": 0, "gold_unique_keys": 0, "lost_union_keys": 0, "loss_by_horizon": {str(h): 0 for h in horizons}})
+            row["feature_keys"] += count(times, lo, hi)
+            row["gold_unique_keys"] += count(union, lo, hi)
+            row["lost_union_keys"] += count(lost_union, lo, hi)
+            for h in horizons:
+                row["loss_by_horizon"][str(h)] += count(lost[h], lo, hi)
+    print(symbol, "union losses", len(lost_union), flush=True)
+(evidence / "m01_breakdown.json").write_text(json.dumps(result, indent=2) + "\n")
+print("complete", flush=True)

@@ -1,0 +1,17 @@
+{
+  "commit": "99cf12fbcc6ee6397ee0caf4c40b768c87ae430c",
+  "source_root": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/runpod-transfer-20261107/crypto2-source-final",
+  "archive": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/source-archives/crypto2-source-99cf12fbcc6e.tar",
+  "clean_worktree": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/verified-source-worktree-99cf12f",
+  "clean_worktree_status": "",
+  "file_count": 928,
+  "bytes": 10195770,
+  "files_sha256": "cda78ba7f1c85fec038bd9b73c8320397e4e87d7580b3a492bb032c9caf4ff92",
+  "excluded": [
+    ".git",
+    ".venv",
+    "Claude outputs",
+    "._*",
+    ".DS_Store"
+  ]
+}

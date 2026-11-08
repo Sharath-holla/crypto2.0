@@ -1,0 +1,725 @@
+I001 [*] Import block is un-sorted or un-formatted
+  --> docs/reviews/evidence_crypto2_20261106/probes.py:1:1
+   |
+ 1 | / from datetime import UTC, datetime, timedelta
+ 2 | | from pathlib import Path
+ 3 | | import json, math
+ 4 | | import numpy as np
+ 5 | | import pyarrow as pa
+ 6 | | import pyarrow.compute as pc
+ 7 | | from crypto_ai.phase7.config import load_phase7_config, FeatureConfig
+ 8 | | from crypto_ai.phase5.folds import plan_folds, calibration_split_time
+ 9 | | from crypto_ai.phase7.fixtures import synthetic_candles, synthetic_registry
+10 | | from crypto_ai.phase7.features import generate_multiasset_features, build_fold_context_table
+11 | | from crypto_ai.phase7.targets import generate_multiasset_targets
+12 | | from crypto_ai.phase7.training import _to_raw_predictions, TRAINING_CRITICAL_SOURCE_FILES
+13 | | from crypto_ai.phase7.hardening import rank_specs_with_correction, evaluate_success
+14 | | from crypto_ai.phase7.resource_estimate import estimate_spec_resources
+   | |______________________________________________________________________^
+15 |   cfg=load_phase7_config(Path('configs/phase7/research_core20_primary_v1.toml'))
+16 |   folds=plan_folds(cfg.data_start,cfg.research_cutoff,cfg.prospective_holdout_start,cfg.schedule)
+   |
+help: Organize imports
+   |
+1  + import json
+2  + import math
+3  | from datetime import UTC, datetime, timedelta
+4  | from pathlib import Path
+   - import json, math
+5  +
+6  | import numpy as np
+7  | import pyarrow as pa
+8  | import pyarrow.compute as pc
+   - from crypto_ai.phase7.config import load_phase7_config, FeatureConfig
+   - from crypto_ai.phase5.folds import plan_folds, calibration_split_time
+9  +
+10 + from crypto_ai.phase5.folds import calibration_split_time, plan_folds
+11 + from crypto_ai.phase7.config import FeatureConfig, load_phase7_config
+12 + from crypto_ai.phase7.features import build_fold_context_table, generate_multiasset_features
+13 | from crypto_ai.phase7.fixtures import synthetic_candles, synthetic_registry
+   - from crypto_ai.phase7.features import generate_multiasset_features, build_fold_context_table
+   - from crypto_ai.phase7.targets import generate_multiasset_targets
+   - from crypto_ai.phase7.training import _to_raw_predictions, TRAINING_CRITICAL_SOURCE_FILES
+   - from crypto_ai.phase7.hardening import rank_specs_with_correction, evaluate_success
+14 + from crypto_ai.phase7.hardening import evaluate_success, rank_specs_with_correction
+15 | from crypto_ai.phase7.resource_estimate import estimate_spec_resources
+16 + from crypto_ai.phase7.targets import generate_multiasset_targets
+17 + from crypto_ai.phase7.training import TRAINING_CRITICAL_SOURCE_FILES, _to_raw_predictions
+18 +
+19 | cfg=load_phase7_config(Path('configs/phase7/research_core20_primary_v1.toml'))
+   |
+
+E401 [*] Multiple imports on one line
+ --> docs/reviews/evidence_crypto2_20261106/probes.py:3:1
+  |
+1 | from datetime import UTC, datetime, timedelta
+2 | from pathlib import Path
+3 | import json, math
+  | ^^^^^^^^^^^^^^^^^
+4 | import numpy as np
+5 | import pyarrow as pa
+  |
+help: Split imports
+  |
+2 | from pathlib import Path
+  - import json, math
+3 + import json
+4 + import math
+5 | import numpy as np
+  |
+
+E501 Line too long (138 > 100)
+  --> docs/reviews/evidence_crypto2_20261106/probes.py:17:101
+   |
+15 | …core20_primary_v1.toml'))
+16 | …fg.prospective_holdout_start,cfg.schedule)
+17 | …ds':[p.to_dict()|{'cal_a_end':calibration_split_time(p).isoformat()} for p in folds]}
+   |                                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+18 | …lta(minutes=900)
+19 | …
+   |
+
+E702 Multiple statements on one line (semicolon)
+  --> docs/reviews/evidence_crypto2_20261106/probes.py:18:36
+   |
+16 | folds=plan_folds(cfg.data_start,cfg.research_cutoff,cfg.prospective_holdout_start,cfg.schedule)
+17 | out={'configuration_hash':cfg.configuration_hash,'folds':[p.to_dict()|{'cal_a_end':calibration_split_time(p).isoformat()} for p in fol…
+18 | start=datetime(2021,1,1,tzinfo=UTC); gap=start+timedelta(minutes=900)
+   |                                    ^
+19 | c=synthetic_candles(rows_per_symbol=260,start=start)
+20 | c=c.filter(pc.invert(pc.and_(pc.equal(c['symbol'],'SOLUSDT'),pc.equal(c['open_time'],pa.scalar(gap)))))
+   |
+
+B905 `zip()` without an explicit `strict=` parameter
+  --> docs/reviews/evidence_crypto2_20261106/probes.py:24:17
+   |
+22 | t=generate_multiasset_targets(c,f,config=cfg.targets,research_cutoff=cfg.research_cutoff).table
+23 | g=f.join(t,keys=['symbol','feature_time'],join_type='inner')
+24 | featurekeys=set(zip(f['symbol'].to_pylist(),f['feature_time'].to_pylist()))
+   |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+25 | goldkeys=set(zip(g['symbol'].to_pylist(),g['feature_time'].to_pylist()))
+26 | missing=sorted(featurekeys-goldkeys,key=lambda k:(k[1],k[0]))
+   |
+help: Add explicit value for parameter `strict=`
+
+B905 `zip()` without an explicit `strict=` parameter
+  --> docs/reviews/evidence_crypto2_20261106/probes.py:25:14
+   |
+23 | g=f.join(t,keys=['symbol','feature_time'],join_type='inner')
+24 | featurekeys=set(zip(f['symbol'].to_pylist(),f['feature_time'].to_pylist()))
+25 | goldkeys=set(zip(g['symbol'].to_pylist(),g['feature_time'].to_pylist()))
+   |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+26 | missing=sorted(featurekeys-goldkeys,key=lambda k:(k[1],k[0]))
+27 | out['M01']={'synthetic_feature_rows':len(featurekeys),'union_feature_keys':len(goldkeys),'missing_keys':len(missing),'lost_near_gap':[…
+   |
+help: Add explicit value for parameter `strict=`
+
+E501 Line too long (303 > 100)
+  --> docs/reviews/evidence_crypto2_20261106/probes.py:27:101
+   |
+25 | …
+26 | …
+27 | …ng_keys':len(missing),'lost_near_gap':[(s,x.isoformat()) for s,x in missing if gap-timedelta(hours=1)<=x<=gap],'lost_by_symbol':{s:sum(k[0]==s for k in missing) for s in sorted(set(f['symbol'].to_pylist()))}}
+   |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+28 | …
+29 | …
+   |
+
+E701 Multiple statements on one line (colon)
+  --> docs/reviews/evidence_crypto2_20261106/probes.py:28:4
+   |
+26 | missing=sorted(featurekeys-goldkeys,key=lambda k:(k[1],k[0]))
+27 | out['M01']={'synthetic_feature_rows':len(featurekeys),'union_feature_keys':len(goldkeys),'missing_keys':len(missing),'lost_near_gap':[…
+28 | try: build_fold_context_table(g,verify_observable_coverage=True)
+   |    ^
+29 | except ValueError as exc: out['M01']['guard_error']=str(exc)
+30 | # Tail-only loss of every symbol is invisible to a surviving-row witness.
+   |
+
+E701 Multiple statements on one line (colon)
+  --> docs/reviews/evidence_crypto2_20261106/probes.py:29:25
+   |
+27 | out['M01']={'synthetic_feature_rows':len(featurekeys),'union_feature_keys':len(goldkeys),'missing_keys':len(missing),'lost_near_gap':[…
+28 | try: build_fold_context_table(g,verify_observable_coverage=True)
+29 | except ValueError as exc: out['M01']['guard_error']=str(exc)
+   |                         ^
+30 | # Tail-only loss of every symbol is invisible to a surviving-row witness.
+31 | early=g.filter(pc.less(g['feature_time'],pa.scalar(gap-timedelta(minutes=20))))
+   |
+
+E702 Multiple statements on one line (semicolon)
+  --> docs/reviews/evidence_crypto2_20261106/probes.py:40:51
+   |
+38 | feat=pa.table({'symbol':base['symbol'],'feature_time':pc.add(base['open_time'],pa.scalar(timedelta(minutes=5),type=pa.duration('us')))…
+39 | labels=generate_multiasset_targets(base,feat,config=cfg.targets,research_cutoff=cfg.research_cutoff).table
+40 | bt=base.filter(pc.equal(base['symbol'],'BTCUSDT')); opens=bt['open'].to_numpy()
+   |                                                   ^
+41 | a=labels.filter(pc.and_(pc.equal(labels['symbol'],'BTCUSDT'),pc.equal(labels['feature_time'],pa.scalar(start+timedelta(minutes=155)))))
+42 | out['timing']=[]
+   |
+
+E702 Multiple statements on one line (semicolon)
+  --> docs/reviews/evidence_crypto2_20261106/probes.py:44:24
+   |
+42 | out['timing']=[]
+43 | for r in a.to_pylist():
+44 |  h=r['horizon_minutes']; expected=opens[32+h//5]/opens[32]-1
+   |                        ^
+45 |  assert r['entry_time']==start+timedelta(minutes=160)
+46 |  assert r['label_end_time']==start+timedelta(minutes=160+h)
+   |
+
+E702 Multiple statements on one line (semicolon)
+  --> docs/reviews/evidence_crypto2_20261106/probes.py:50:32
+   |
+48 |  out['timing'].append({'horizon':h,'feature':r['feature_time'].isoformat(),'entry':r['entry_time'].isoformat(),'exit':r['label_end_tim…
+49 | # Normalization inverse edge.
+50 | scale=np.array([0.,1e-10,0.01]); raw=np.array([.001]*3); norm=raw/np.maximum(abs(scale),1e-8)
+   |                                ^
+51 | out['normalization_inverse']={'raw':raw.tolist(),'scale':scale.tolist(),'reconstructed':_to_raw_predictions(pa.table({'ex_ante_volatil…
+52 | # Duplicate report rows are treated as independent folds by the ranking helper.
+   |
+
+E702 Multiple statements on one line (semicolon)
+  --> docs/reviews/evidence_crypto2_20261106/probes.py:50:56
+   |
+48 |  out['timing'].append({'horizon':h,'feature':r['feature_time'].isoformat(),'entry':r['entry_time'].isoformat(),'exit':r['label_end_tim…
+49 | # Normalization inverse edge.
+50 | scale=np.array([0.,1e-10,0.01]); raw=np.array([.001]*3); norm=raw/np.maximum(abs(scale),1e-8)
+   |                                                        ^
+51 | out['normalization_inverse']={'raw':raw.tolist(),'scale':scale.tolist(),'reconstructed':_to_raw_predictions(pa.table({'ex_ante_volatil…
+52 | # Duplicate report rows are treated as independent folds by the ranking helper.
+   |
+
+E501 Line too long (127 > 100)
+  --> docs/reviews/evidence_crypto2_20261106/probes.py:53:101
+   |
+51 | out['normalization_inverse']={'raw':raw.tolist(),'scale':scale.tolist(),'reconstructed':_to_raw_predictions(pa.table({'ex_ante_volatil…
+52 | # Duplicate report rows are treated as independent folds by the ranking helper.
+53 | rows=[{'spec':'s','fold_id':'same-fold','lightgbm_skill_vs_zero':.01,'net_return_sum':1.,'beats_zero':True} for _ in range(10)]
+   |                                                                                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+54 | out['duplicate_ranking']=rank_specs_with_correction(rows)
+55 | out['duplicate_success']=evaluate_success(rows)
+   |
+
+E501 Line too long (116 > 100)
+  --> docs/reviews/evidence_crypto2_20261106/probes.py:56:101
+   |
+54 | out['duplicate_ranking']=rank_specs_with_correction(rows)
+55 | out['duplicate_success']=evaluate_success(rows)
+56 | out['hardening_module_in_scientific_identity']='src/crypto_ai/phase7/hardening.py' in TRAINING_CRITICAL_SOURCE_FILES
+   |                                                                                                     ^^^^^^^^^^^^^^^^
+57 | out['null_FWER_independent']={str(n):1-(1-.05)**n for n in [48,768]}
+58 | out['long_gold_matrix_gib']=50352548*109*8/1024**3
+   |
+
+E402 Module level import not at top of file
+  --> docs/reviews/evidence_crypto2_20261106/probes.py:64:1
+   |
+62 | print(json.dumps({k:v for k,v in out.items() if k!='folds'},indent=2))
+63 | # Extend the source-level findings with independent tiny deterministic probes.
+64 | from tempfile import TemporaryDirectory
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+65 | from shutil import copyfile
+66 | from crypto_ai.phase7.training import scientific_source_identity
+   |
+help: Move module level imports to top of file
+
+I001 [*] Import block is un-sorted or un-formatted
+  --> docs/reviews/evidence_crypto2_20261106/probes.py:64:1
+   |
+62 |   print(json.dumps({k:v for k,v in out.items() if k!='folds'},indent=2))
+63 |   # Extend the source-level findings with independent tiny deterministic probes.
+64 | / from tempfile import TemporaryDirectory
+65 | | from shutil import copyfile
+66 | | from crypto_ai.phase7.training import scientific_source_identity
+67 | | from crypto_ai.phase7.economics import select_cal_b_thresholds
+68 | | from crypto_ai.phase7.features import build_higher_timeframe_context
+   | |____________________________________________________________________^
+69 |   with TemporaryDirectory(prefix='crypto2-source-identity-') as scratch:
+70 |       scratch=Path(scratch)
+   |
+help: Organize imports
+   |
+63 | # Extend the source-level findings with independent tiny deterministic probes.
+64 + from shutil import copyfile
+65 | from tempfile import TemporaryDirectory
+   - from shutil import copyfile
+   - from crypto_ai.phase7.training import scientific_source_identity
+66 +
+67 | from crypto_ai.phase7.economics import select_cal_b_thresholds
+68 | from crypto_ai.phase7.features import build_higher_timeframe_context
+69 + from crypto_ai.phase7.training import scientific_source_identity
+70 +
+71 | with TemporaryDirectory(prefix='crypto2-source-identity-') as scratch:
+   |
+
+E402 Module level import not at top of file
+  --> docs/reviews/evidence_crypto2_20261106/probes.py:65:1
+   |
+63 | # Extend the source-level findings with independent tiny deterministic probes.
+64 | from tempfile import TemporaryDirectory
+65 | from shutil import copyfile
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+66 | from crypto_ai.phase7.training import scientific_source_identity
+67 | from crypto_ai.phase7.economics import select_cal_b_thresholds
+   |
+help: Move module level imports to top of file
+
+E402 Module level import not at top of file
+  --> docs/reviews/evidence_crypto2_20261106/probes.py:66:1
+   |
+64 | from tempfile import TemporaryDirectory
+65 | from shutil import copyfile
+66 | from crypto_ai.phase7.training import scientific_source_identity
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+67 | from crypto_ai.phase7.economics import select_cal_b_thresholds
+68 | from crypto_ai.phase7.features import build_higher_timeframe_context
+   |
+help: Move module level imports to top of file
+
+E402 Module level import not at top of file
+  --> docs/reviews/evidence_crypto2_20261106/probes.py:67:1
+   |
+65 | from shutil import copyfile
+66 | from crypto_ai.phase7.training import scientific_source_identity
+67 | from crypto_ai.phase7.economics import select_cal_b_thresholds
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+68 | from crypto_ai.phase7.features import build_higher_timeframe_context
+69 | with TemporaryDirectory(prefix='crypto2-source-identity-') as scratch:
+   |
+help: Move module level imports to top of file
+
+E402 Module level import not at top of file
+  --> docs/reviews/evidence_crypto2_20261106/probes.py:68:1
+   |
+66 | from crypto_ai.phase7.training import scientific_source_identity
+67 | from crypto_ai.phase7.economics import select_cal_b_thresholds
+68 | from crypto_ai.phase7.features import build_higher_timeframe_context
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+69 | with TemporaryDirectory(prefix='crypto2-source-identity-') as scratch:
+70 |     scratch=Path(scratch)
+   |
+help: Move module level imports to top of file
+
+E702 Multiple statements on one line (semicolon)
+  --> docs/reviews/evidence_crypto2_20261106/probes.py:72:26
+   |
+70 |     scratch=Path(scratch)
+71 |     for name in TRAINING_CRITICAL_SOURCE_FILES:
+72 |         dest=scratch/name; dest.parent.mkdir(parents=True,exist_ok=True);copyfile(name,dest)
+   |                          ^
+73 |     dest=scratch/'src/crypto_ai/phase7/hardening.py';copyfile('src/crypto_ai/phase7/hardening.py',dest)
+74 |     before=scientific_source_identity(scratch)['manifest_sha256']
+   |
+
+E702 Multiple statements on one line (semicolon)
+  --> docs/reviews/evidence_crypto2_20261106/probes.py:72:73
+   |
+70 |     scratch=Path(scratch)
+71 |     for name in TRAINING_CRITICAL_SOURCE_FILES:
+72 |         dest=scratch/name; dest.parent.mkdir(parents=True,exist_ok=True);copyfile(name,dest)
+   |                                                                         ^
+73 |     dest=scratch/'src/crypto_ai/phase7/hardening.py';copyfile('src/crypto_ai/phase7/hardening.py',dest)
+74 |     before=scientific_source_identity(scratch)['manifest_sha256']
+   |
+
+E702 Multiple statements on one line (semicolon)
+  --> docs/reviews/evidence_crypto2_20261106/probes.py:73:53
+   |
+71 |     for name in TRAINING_CRITICAL_SOURCE_FILES:
+72 |         dest=scratch/name; dest.parent.mkdir(parents=True,exist_ok=True);copyfile(name,dest)
+73 |     dest=scratch/'src/crypto_ai/phase7/hardening.py';copyfile('src/crypto_ai/phase7/hardening.py',dest)
+   |                                                     ^
+74 |     before=scientific_source_identity(scratch)['manifest_sha256']
+75 |     dest.write_text(dest.read_text()+'\n# audit-only change in a temporary copy\n')
+   |
+
+E501 Line too long (277 > 100)
+  --> docs/reviews/evidence_crypto2_20261106/probes.py:77:101
+   |
+75 | …
+76 | …cratch)['manifest_sha256']
+77 | …0)],'entry_time':[start+timedelta(hours=2*i,minutes=5) for i in range(30)],'label_end_time':[start+timedelta(hours=2*i,minutes=65) for i in range(30)],'raw_future_return':[-.01]*30})
+   |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+78 | …idity_tiers={'BTCUSDT':'HIGH_LIQUIDITY'},cluster_mapping={},granularity='global',config=cfg.costs)
+79 | …obal']['candidates']}
+   |
+
+E702 Multiple statements on one line (semicolon)
+  --> docs/reviews/evidence_crypto2_20261106/probes.py:84:25
+   |
+82 | def interval_fixture(count,minutes):
+83 |     src=synthetic_candles(rows_per_symbol=count,start=htf_start)
+84 |     rows=src.to_pylist(); counters={}
+   |                         ^
+85 |     for row in rows:
+86 |         idx=counters.get(row['symbol'],0);counters[row['symbol']]=idx+1
+   |
+
+E702 Multiple statements on one line (semicolon)
+  --> docs/reviews/evidence_crypto2_20261106/probes.py:86:42
+   |
+84 |     rows=src.to_pylist(); counters={}
+85 |     for row in rows:
+86 |         idx=counters.get(row['symbol'],0);counters[row['symbol']]=idx+1
+   |                                          ^
+87 |         row['open_time']=htf_start+timedelta(minutes=idx*minutes)
+88 |     return pa.Table.from_pylist(rows)
+   |
+
+E702 Multiple statements on one line (semicolon)
+  --> docs/reviews/evidence_crypto2_20261106/probes.py:89:43
+   |
+87 |         row['open_time']=htf_start+timedelta(minutes=idx*minutes)
+88 |     return pa.Table.from_pylist(rows)
+89 | native_start=datetime(2021,4,1,tzinfo=UTC); boundary=native_start+timedelta(hours=16)
+   |                                           ^
+90 | native=synthetic_candles(rows_per_symbol=300,start=native_start)
+91 | # Add known synthetic derivative observations solely to exercise each input formula.
+   |
+
+E702 Multiple statements on one line (semicolon)
+  --> docs/reviews/evidence_crypto2_20261106/probes.py:94:30
+   |
+92 | cl=native['close'].to_numpy()
+93 | native=native.append_column('mark_price',pa.array(cl*1.001)).append_column('index_price',pa.array(cl*1.002)).append_column('funding_ra…
+94 | h12=interval_fixture(510,720);h24=interval_fixture(255,1440)
+   |                              ^
+95 | context=build_higher_timeframe_context(h12,h24)
+96 | fc=FeatureConfig(correlation_window_rows=12,liquidity_window_rows=12,volatility_window_rows=12,daily_volatility_rows=12,seven_day_vola…
+   |
+
+E501 Line too long (282 > 100)
+   --> docs/reviews/evidence_crypto2_20261106/probes.py:107:101
+    |
+105 | …
+106 | …15,equal_nan=True)
+107 | …rows_compared':left.num_rows,'feature_config':'short fixture windows; production column set','max_relative_tolerance':1e-12,'max_absolute_tolerance':1e-15,'actual_gold_equivalence':False}
+    |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+108 | …
+109 | …ative_thresholds','full_feature_prefix_probe']},indent=2))
+    |
+
+E501 Line too long (153 > 100)
+   --> docs/reviews/evidence_crypto2_20261106/probes.py:109:101
+    |
+107 | …ecked':len(full.feature_columns),'rows_compared':left.num_rows,'feature_config':'short fixture windows; production column set','max_…
+108 | …on.dumps(out,indent=2))
+109 | …reserves_scientific_hash','all_negative_thresholds','full_feature_prefix_probe']},indent=2))
+    |                                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+I001 [*] Import block is un-sorted or un-formatted
+   --> scripts/run_phase7a_pipeline.py:718:9
+    |
+716 |       config.assert_cloud_execution_allowed()
+717 |       if args.stage == "train":
+718 | /         from crypto_ai.phase7.preflight import build_preflight_report
+719 | |         # CHANGED BY CLAUDE (2026-11-06, closure): the shared admission function. OLD CODE:
+720 | |         # from crypto_ai.phase7.resources import require_training_runtime_contract
+721 | |         # require_training_runtime_contract()
+722 | |         from crypto_ai.phase7.admission import admit_official_training
+723 | |         from crypto_ai.phase7.runtime import RuntimePaths
+    | |_________________________________________________________^
+724 |
+725 |           admit_official_training(
+    |
+help: Organize imports
+    |
+717 |     if args.stage == "train":
+    -         from crypto_ai.phase7.preflight import build_preflight_report
+718 |         # CHANGED BY CLAUDE (2026-11-06, closure): the shared admission function. OLD CODE:
+719 |         # from crypto_ai.phase7.resources import require_training_runtime_contract
+720 |         # require_training_runtime_contract()
+721 |         from crypto_ai.phase7.admission import admit_official_training
+722 +         from crypto_ai.phase7.preflight import build_preflight_report
+723 |         from crypto_ai.phase7.runtime import RuntimePaths
+    |
+
+I001 [*] Import block is un-sorted or un-formatted
+  --> src/crypto_ai/phase7/hardening.py:10:1
+   |
+ 8 |   """
+ 9 |
+10 | / from __future__ import annotations
+11 | |
+12 | | import csv
+13 | | import json
+14 | | import math
+15 | | import os
+16 | | import tomllib
+17 | | from collections.abc import Iterable, Mapping, Sequence
+18 | | from dataclasses import asdict, dataclass, fields
+19 | | from functools import lru_cache
+20 | | from pathlib import Path
+21 | | from typing import Any
+22 | |
+23 | | from crypto_ai.phase7.result_integrity import (
+24 | |     DESCRIPTIVE_ONLY,
+25 | |     DEVELOPMENT_METRIC,
+26 | |     NOT_APPLICABLE,
+27 | |     NOT_INDEPENDENT,
+28 | |     SELECTION_METRIC,
+29 | |     reject_duplicates,
+30 | |     validate_result_set,
+31 | | )
+32 | | from crypto_ai.phase7.selection_chronology import DESCRIPTIVE_RANKING
+33 | |
+34 | | import numpy as np
+35 | | import pyarrow as pa
+   | |____________________^
+36 |
+37 |   CONFIG_ENV = "PHASE7_HARDENING_CONFIG"
+   |
+help: Organize imports
+   |
+22 |
+23 + import numpy as np
+24 + import pyarrow as pa
+25 +
+26 | from crypto_ai.phase7.result_integrity import (
+--------------------------------------------------------------------------------
+35 | from crypto_ai.phase7.selection_chronology import DESCRIPTIVE_RANKING
+   -
+   - import numpy as np
+   - import pyarrow as pa
+36 |
+   |
+
+I001 [*] Import block is un-sorted or un-formatted
+   --> src/crypto_ai/phase7/training.py:1:1
+    |
+  1 | / from __future__ import annotations
+  2 | |
+  3 | | import hashlib
+  4 | | import json
+  5 | | import os
+  6 | | import platform
+  7 | | import time
+  8 | | from contextlib import nullcontext
+  9 | | from dataclasses import asdict, dataclass
+ 10 | | from datetime import timedelta
+ 11 | | from functools import lru_cache
+ 12 | | from pathlib import Path
+ 13 | | from typing import Any
+ 14 | |
+ 15 | | import numpy as np
+ 16 | | import pyarrow as pa
+ 17 | | import pyarrow.compute as pc
+ 18 | | import pyarrow.dataset as ds
+ 19 | |
+ 20 | | from crypto_ai.data.ingestion.manifest import read_manifest
+ 21 | | from crypto_ai.data.storage import file_sha256
+ 22 | | from crypto_ai.phase5.calibration import SELECTION_HOLDOUT_FRACTION, fit_calibrator
+ 23 | | from crypto_ai.phase5.folds import FoldPlan, plan_folds
+ 24 | | from crypto_ai.phase7.admission import assert_backend_admitted
+ 25 | | from crypto_ai.phase7.artifacts import (
+ 26 | |     CheckpointStore,
+ 27 | |     atomic_json,
+ 28 | |     checkpoint_metadata_compatible,
+ 29 | | )
+ 30 | | from crypto_ai.phase7.backend import backend_metadata, resolve_lightgbm_backend
+ 31 | | from crypto_ai.phase7.config import (
+ 32 | |     FEATURE_VERSION,
+ 33 | |     PHASE7_VERSION,
+ 34 | |     TARGET_VERSION,
+ 35 | |     UNIVERSE_VERSION,
+ 36 | |     Phase7Config,
+ 37 | |     stable_hash,
+ 38 | | )
+ 39 | | from crypto_ai.phase7.economics import (
+ 40 | |     COST_POLICY_VERSION,
+ 41 | |     ThresholdSet,
+ 42 | |     _threshold_key,
+ 43 | |     adaptive_policy_cost_stress,
+ 44 | |     build_oos_trades,
+ 45 | |     fixed_policy_cost_stress,
+ 46 | |     select_cal_b_thresholds,
+ 47 | | )
+ 48 | | from crypto_ai.phase7.environment import scientific_environment_identity
+ 49 | | from crypto_ai.phase7.experiment_identity import experiment_control_identity
+ 50 | | from crypto_ai.phase7.features import (
+ 51 | |     FOLD_CONTEXT_SOURCE_COLUMNS,
+ 52 | |     FOLD_CONTEXT_VERSION,
+ 53 | |     build_fold_context_table,
+ 54 | | )
+ 55 | | from crypto_ai.phase7.folds import (
+ 56 | |     IneligibleFoldError,
+ 57 | |     MultiAssetFoldData,
+ 58 | |     slice_multiasset_fold,
+ 59 | | )
+ 60 | | # CHANGED BY CLAUDE (2026-11-06, closure): the CSV is a view of the ledger, not an authority, so
+ 61 | | # append_result_row and results_row_from_report are no longer imported here (OLD CODE kept: they
+ 62 | | # were used by _run_one to append the CSV row).
+ 63 | | from crypto_ai.phase7.hardening import (
+ 64 | |     ECONOMIC_STATUS,
+ 65 | |     RESULT_COLUMNS,
+ 66 | |     RESULTS_FILENAME,
+ 67 | |     FitAbortedError,
+ 68 | |     apply_pilot_filter,
+ 69 | |     console_fields,
+ 70 | |     current_config,
+ 71 | |     decision_metrics,
+ 72 | |     fold_gate_failed,
+ 73 | |     score_baselines,
+ 74 | |     silver_status,
+ 75 | |     stop_requested,
+ 76 | |     tier_cost_breakdown,
+ 77 | |     trading_metrics,
+ 78 | | )
+ 79 | | from crypto_ai.phase7.metrics import (
+ 80 | |     asset_concentration,
+ 81 | |     evaluate_predictions,
+ 82 | |     time_concentration,
+ 83 | | )
+ 84 | | from crypto_ai.phase7.model_registry import register_model_hash
+ 85 | | from crypto_ai.phase7.models import (
+ 86 | |     fit_architecture,
+ 87 | |     load_model,
+ 88 | |     prepare_architecture_inputs,
+ 89 | |     save_model,
+ 90 | |     split_calibration_a_for_h0,
+ 91 | | )
+ 92 | | from crypto_ai.phase7.preparation_identity import preparation_source_identity
+ 93 | | from crypto_ai.phase7.prepared_cache import (
+ 94 | |     PREPROCESSING_VERSION,
+ 95 | |     CachedPreparedData,
+ 96 | |     PreparedCacheMissError,
+ 97 | |     PreparedDataCache,
+ 98 | |     PreparedTrainingSegments,
+ 99 | |     prepared_cache_id,
+100 | | )
+101 | | from crypto_ai.phase7.progress import ProgressReporter, oos_trade_summary
+102 | | from crypto_ai.phase7.registry import SymbolRegistry
+103 | | from crypto_ai.phase7.result_publication import (
+104 | |     LEDGER_DIRNAME,
+105 | |     publish_canonical_result,
+106 | |     refresh_results_view,
+107 | | )
+108 | | from crypto_ai.phase7.resources import resource_admission
+109 | | from crypto_ai.phase7.run_lease import owned_run
+110 | | from crypto_ai.phase7.runtime import (
+111 | |     ComputeBudget,
+112 | |     RuntimePaths,
+113 | |     cache_mode_from_environment,
+114 | |     emit_event,
+115 | |     git_commit,
+116 | |     memory_snapshot,
+117 | | )
+118 | | from crypto_ai.phase7.segments import CausalDataGap
+119 | | from crypto_ai.phase7.targets import effective_normalization_scale
+120 | | from crypto_ai.phase7.telemetry import instrument, telemetry
+121 | | from crypto_ai.phase7.training_metrics import training_metric_scope
+122 | | from crypto_ai.phase7.universe import (
+123 | |     ExpansionUniversePolicy,
+124 | |     FrozenUniverse,
+125 | |     SymbolDescriptor,
+126 | |     latest_descriptors,
+127 | |     select_fold_active_universe,
+128 | | )
+    | |_^
+129 |
+130 |   RESEARCH_VIEWS = ("CORE", "EXPANDING")
+    |
+help: Organize imports
+    |
+59  | )
+60  +
+61  | # CHANGED BY CLAUDE (2026-11-06, closure): the CSV is a view of the ledger, not an authority, so
+--------------------------------------------------------------------------------
+103 | from crypto_ai.phase7.registry import SymbolRegistry
+104 + from crypto_ai.phase7.resources import resource_admission
+105 | from crypto_ai.phase7.result_publication import (
+--------------------------------------------------------------------------------
+109 | )
+    - from crypto_ai.phase7.resources import resource_admission
+110 | from crypto_ai.phase7.run_lease import owned_run
+    |
+
+SIM300 [*] Yoda condition detected
+  --> tests/phase7/test_admission.py:52:12
+   |
+50 |     with pytest.raises(AdmissionError, match="NON_CANONICAL_RESEARCH_ENTRYPOINT"):
+51 |         reject_noncanonical("crypto-ai phase7-research")
+52 |     assert CANONICAL_ENTRYPOINTS == {"benchmark_one_spec", "run_phase7a_pipeline"}
+   |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+51 |         reject_noncanonical("crypto-ai phase7-research")
+   -     assert CANONICAL_ENTRYPOINTS == {"benchmark_one_spec", "run_phase7a_pipeline"}
+52 +     assert {"benchmark_one_spec", "run_phase7a_pipeline"} == CANONICAL_ENTRYPOINTS
+53 |
+   |
+
+F401 [*] `pytest` imported but unused
+  --> tests/phase7/test_feature_census.py:9:8
+   |
+ 7 | import numpy as np
+ 8 | import pyarrow as pa
+ 9 | import pytest
+   |        ^^^^^^
+10 |
+11 | from crypto_ai.phase7 import feature_census as fc
+   |
+help: Remove unused import: `pytest`
+  |
+8 | import pyarrow as pa
+  - import pytest
+9 |
+  |
+
+E501 Line too long (101 > 100)
+   --> tests/phase7/test_feature_truncation_invariance.py:102:101
+    |
+100 |     # Repeating Arrow timestamp conversion for every feature is needlessly expensive.
+101 |     def keys(table):
+102 |         return list(zip(table["symbol"].to_pylist(), table["feature_time"].to_pylist(), strict=True))
+    |                                                                                                     ^
+103 |
+104 |     full_keys, truncated_keys = keys(full.table), keys(truncated.table)
+    |
+
+I001 [*] Import block is un-sorted or un-formatted
+  --> tests/phase7/test_standalone_training_remediation.py:1:1
+   |
+ 1 | / from __future__ import annotations
+ 2 | |
+ 3 | | import json
+ 4 | | from datetime import UTC, datetime, timedelta
+ 5 | | from pathlib import Path
+ 6 | | from types import SimpleNamespace
+ 7 | |
+ 8 | | import numpy as np
+ 9 | | import pyarrow as pa
+10 | | import pytest
+11 | |
+12 | | from crypto_ai.phase7.admission import AdmissionError
+13 | |
+14 | | from crypto_ai.phase5.folds import plan_folds
+15 | | from crypto_ai.phase7 import environment, models, pipeline, preflight, training
+16 | | from crypto_ai.phase7.config import CostConfig, ModelConfig, load_phase7_config
+17 | | from crypto_ai.phase7.economics import (
+18 | |     COST_POLICY_VERSION,
+19 | |     ThresholdSet,
+20 | |     build_oos_trades,
+21 | |     select_cal_b_thresholds,
+22 | | )
+23 | | from crypto_ai.phase7.runtime import RuntimePaths
+24 | | from crypto_ai.phase7.training_metrics import (
+25 | |     FitMetricObserver,
+26 | |     TrainingMetricScope,
+27 | |     training_metric_scope,
+28 | | )
+   | |_^
+help: Organize imports
+   |
+11 |
+   - from crypto_ai.phase7.admission import AdmissionError
+   -
+12 | from crypto_ai.phase5.folds import plan_folds
+13 | from crypto_ai.phase7 import environment, models, pipeline, preflight, training
+14 + from crypto_ai.phase7.admission import AdmissionError
+15 | from crypto_ai.phase7.config import CostConfig, ModelConfig, load_phase7_config
+   |
+
+Found 38 errors.
+[*] 9 fixable with the `--fix` option (2 hidden fixes can be enabled with the `--unsafe-fixes` option).

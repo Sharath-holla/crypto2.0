@@ -1,0 +1,59 @@
+{
+  "status": "FAIL",
+  "cache_preparation": "NOT_RUN_RESOURCE_PREFLIGHT_FAILED",
+  "gold_partition_bytes": 9672256838,
+  "fold_id": "fold-000-a0e9a4f72689",
+  "rows_by_split_observed_before_purge_and_finite_filter": {
+    "calibration_a": 262080,
+    "calibration_b": 262080,
+    "test": 529920,
+    "train": 3350407,
+    "validation": 518400
+  },
+  "observed_gold_rows_60m": 4922887,
+  "matrix_dimensions_before_purge": [
+    4922887,
+    109
+  ],
+  "fold_specific_heuristic": {
+    "estimated_rows_per_horizon_average": 4922887,
+    "rows_label": "ESTIMATED_AVERAGE",
+    "feature_count": 109,
+    "estimated_raw_matrix_bytes": 4292757464,
+    "estimated_raw_matrix_bytes_label": "ESTIMATED_AVERAGE",
+    "estimated_arrow_source_bytes": 10239604960,
+    "ram_required_bytes": 27741452822,
+    "ram_required_label": "ESTIMATED_HEURISTIC_PEAK",
+    "cache_disk_required_bytes": 7726963435,
+    "cache_disk_required_label": "ESTIMATED_HEURISTIC_PEAK",
+    "assumptions": {
+      "dtype_bytes": 8,
+      "memory_copies": 3.0,
+      "cache_copies": 1.5,
+      "headroom": 1.2,
+      "gold_columns": 130,
+      "arrow_copies": 2.0,
+      "basis": "total rows / horizon count; Fold 1 is a subset and horizons differ - a planning heuristic, not an upper bound"
+    }
+  },
+  "fold_specific_errors": [
+    "RAM: need ~25.8 GiB (ESTIMATED_HEURISTIC_PEAK), available 5.2 GiB"
+  ],
+  "measured": {
+    "cgroup_cpu_quota_cpus": null,
+    "cgroup_memory_limit_bytes": null,
+    "cpu_count": 10,
+    "disk_free_bytes": 325584801792,
+    "effective_ram_available_bytes": 5603311616,
+    "label": "MEASURED",
+    "observed": false,
+    "physical_ram_total_bytes": 17179869184,
+    "ram_available_bytes": 5603311616
+  },
+  "disk_budget_for_temporary_final_logs_artifacts_bytes": 20822635990,
+  "disk_budget_check": "PASS",
+  "limitations": "Row counts are actual Gold-key counts from the independent census breakdown, before purge/embargo/finite filtering. Peak and cache sizes remain heuristics, never upper bounds. No allocation was attempted.",
+  "prepared_cache_status": "NOT_QUALIFIED",
+  "real_reload_equivalence": "NOT_RUN_NO_QUALIFIED_CACHE",
+  "historical_cache": "PRESERVED_SUPERSEDED_NOT_REUSABLE"
+}

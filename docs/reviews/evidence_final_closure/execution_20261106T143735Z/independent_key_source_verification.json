@@ -1,0 +1,10 @@
+{
+  "status": "PASS",
+  "independent_key_manifest": "docs/reviews/evidence_final_closure/independent_feature_key_manifest.json",
+  "manifest_sha256": "0647756ec7f91ba13768a2c0ee106ffa3f864fdd178e63558b07b95efbdfd4be",
+  "partitions": 20,
+  "files_hash_matched": 20,
+  "keys": 12588383,
+  "source_method": "Exact independent KEY DOMAIN projection only, not feature values: generate_multiasset_features preserves one row for every input 5m candle with feature_time=open_time+5m; verified against actual producer by test_silver_candle_key_projection_matches_actual_feature_producer. Cropped to exclusive July research cutoff. No Gold input used.",
+  "source_feature_code_hash_current": true
+}

@@ -1,0 +1,12 @@
+usage: validate_phase7_gold.py [-h] --gold-root GOLD_ROOT [--skip-file-hashes]
+                               [--output OUTPUT]
+
+Read-only, fail-closed validation of a migrated Phase 7A Gold dataset.
+
+options:
+  -h, --help            show this help message and exit
+  --gold-root GOLD_ROOT
+  --skip-file-hashes    Skip partition SHA-256 checks (not acceptable for the
+                        final migration gate).
+  --output OUTPUT       Optional immutable JSON report used by the Phase 7A
+                        preflight gate.

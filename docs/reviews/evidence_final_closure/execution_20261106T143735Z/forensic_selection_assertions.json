@@ -1,0 +1,817 @@
+{
+  "status": "PASS",
+  "exclusions": "docs/reviews/evidence_final_closure/execution_20261106T143735Z/forensic_exclusions.json",
+  "excluded_files": 67,
+  "authority": "Only explicit canonical manifest records; no recursive file discovery",
+  "canonical_manifests": [
+    {
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/silver/binance/manifests/silver-45f06538c89ca81bdad6075f.json",
+      "sha256": "5e4b79aff26c020ede45b59736458005daec491574eb20443c433dc4447f5527",
+      "symbol": "BCHUSDT",
+      "interval": "12h",
+      "referenced_files": 2373
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/silver/binance/manifests/silver-2876b59c7d346871c1591602.json",
+      "sha256": "b5fe6b415b1b0919701741f173cfb05c22e72fcfd8415f4ceb2fb54d947ad176",
+      "symbol": "BLZUSDT",
+      "interval": "12h",
+      "referenced_files": 2113
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/silver/binance/manifests/silver-0f3f05c8ea6f6e2bd2400472.json",
+      "sha256": "e9bf3826c07335993e0382b9c5636b6dad60803908c2e7f755cabb0eb6dad3fb",
+      "symbol": "BTCUSDT",
+      "interval": "12h",
+      "referenced_files": 2373
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/silver/binance/manifests/silver-ed4cdc21a675f35da1fe1cb6.json",
+      "sha256": "515efb1c0d74e5a22d5351f5964b2768a86b52afa9ae85c87f65fbd511219777",
+      "symbol": "COMPUSDT",
+      "interval": "12h",
+      "referenced_files": 2192
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/silver/binance/manifests/silver-ad691a6093dd84cce4333587.json",
+      "sha256": "fecb04c7eb5719d7a1fe4371a270993eaafa759360e07cd6bf926f35b0f492da",
+      "symbol": "DOGEUSDT",
+      "interval": "12h",
+      "referenced_files": 2182
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/silver/binance/manifests/silver-069b060d7dec93e87f4742fe.json",
+      "sha256": "cc4ae13743be3bc09c60caa741ffdc344d9ca8f076cff809da5d3e4ed78e53bc",
+      "symbol": "ETHUSDT",
+      "interval": "12h",
+      "referenced_files": 2373
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/silver/binance/manifests/silver-206016a66db1b2cc13c8c16f.json",
+      "sha256": "fdf775fe250cf9580df5768ddc8e65e4d8b1f3d4a7fb4b70fafdc8a4341caa1a",
+      "symbol": "FILUSDT",
+      "interval": "12h",
+      "referenced_files": 2084
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/silver/binance/manifests/silver-b5516b2747ad164d33981dfe.json",
+      "sha256": "e6af25a613a502ace8763d1d025b682ec1423c3223aba7d2d398cb874f258bbc",
+      "symbol": "FLMUSDT",
+      "interval": "12h",
+      "referenced_files": 2101
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/silver/binance/manifests/silver-4534495a978b0a631a8e2d92.json",
+      "sha256": "9b69c5636083bda81475ee3ccdac840628c4d51bc303ab412a6ba58ddfb7776b",
+      "symbol": "HNTUSDT",
+      "interval": "12h",
+      "referenced_files": 1339
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/silver/binance/manifests/silver-0209d340f4917f858ca2eb61.json",
+      "sha256": "faf765f642f79801b4790e10b58bdca480f38bbbc943d9fc029d7bc76475150a",
+      "symbol": "IOTAUSDT",
+      "interval": "12h",
+      "referenced_files": 2331
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/silver/binance/manifests/silver-eb8d09804d824098c691e9af.json",
+      "sha256": "3150e6cbc7fe5db2a0cd7051e29a42cd0db4ae13c5de8b6529c54ac52d3d941f",
+      "symbol": "KNCUSDT",
+      "interval": "12h",
+      "referenced_files": 2200
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/silver/binance/manifests/silver-2dce84156be58defe5d727b4.json",
+      "sha256": "9a117f4c60be1abaa9ffaf9c61a437258aaac68c989ca881284200035cc93fa1",
+      "symbol": "KSMUSDT",
+      "interval": "12h",
+      "referenced_files": 2086
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/silver/binance/manifests/silver-39263281b6971e9b5968e019.json",
+      "sha256": "9093a772bd8a9a789e6a4826cff3aa72240e2e662b4d6bce743947eb18ad95c6",
+      "symbol": "NEOUSDT",
+      "interval": "12h",
+      "referenced_files": 2326
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/silver/binance/manifests/silver-283480b48416847b994b4cce.json",
+      "sha256": "0fe07b57b00226757feb1fa47b4db5874041d78854abd148235d7c1fc341ee7e",
+      "symbol": "OMGUSDT",
+      "interval": "12h",
+      "referenced_files": 2190
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/silver/binance/manifests/silver-dc237423d20f14c9ccff6520.json",
+      "sha256": "d63e68c86ca7fcf673dc19ac99c356111a8cf8794d82b297369e084b6e7aa09f",
+      "symbol": "ONTUSDT",
+      "interval": "12h",
+      "referenced_files": 2332
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/silver/binance/manifests/silver-1bdd91ba3d8df272fc2326e2.json",
+      "sha256": "926a432ad6316fa58ec0061e1f61be94dece24d6c982c90620e2f83eb5f32192",
+      "symbol": "STORJUSDT",
+      "interval": "12h",
+      "referenced_files": 2114
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/silver/binance/manifests/silver-263181c3f8646d76d7feb38b.json",
+      "sha256": "e5309df34b4de92752975a53a5d4d1a4457dd639ad465347ae76ed2ccfc36d53",
+      "symbol": "TRXUSDT",
+      "interval": "12h",
+      "referenced_files": 2359
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/silver/binance/manifests/silver-424b6ce5296394dc8706de18.json",
+      "sha256": "9086e859d508ef1859f12623f376839bc00d7b8207449fa85a78d53659ab6efe",
+      "symbol": "UNIUSDT",
+      "interval": "12h",
+      "referenced_files": 2112
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/silver/binance/manifests/silver-1a7fa47bb8a4e164669fa400.json",
+      "sha256": "d53a339e3cec507c773b9afbf94ed010edc290c9c6020f0b93b7c06320282770",
+      "symbol": "ZECUSDT",
+      "interval": "12h",
+      "referenced_files": 2338
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/silver/binance/manifests/silver-46644890ca12313b75c29f8b.json",
+      "sha256": "ed2b5648d4cf7ee8223ec79b563c63627ecd296d598ee2a0bda301af2605ec29",
+      "symbol": "ZRXUSDT",
+      "interval": "12h",
+      "referenced_files": 2198
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/silver/binance/manifests/silver-cc64eaea10ff267e5ffe55c9.json",
+      "sha256": "22d8b6bc0ed7af91ebab45eb16a62d30386266021686d4bc9f37323dd96d422c",
+      "symbol": "BCHUSDT",
+      "interval": "1d",
+      "referenced_files": 2373
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/silver/binance/manifests/silver-ea78a151d32f1d6839fdbdaa.json",
+      "sha256": "fb194f0e710372760b730d3b2f754fae4f402943995ee016dab01cb2bdaffc7f",
+      "symbol": "BLZUSDT",
+      "interval": "1d",
+      "referenced_files": 2113
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/silver/binance/manifests/silver-d18e58b5760fa6a1a512d670.json",
+      "sha256": "12300d5048f0cc0df78f2902e51ee9874f640ebab1ee8f7ffd29621b7e981ce1",
+      "symbol": "BTCUSDT",
+      "interval": "1d",
+      "referenced_files": 2373
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/silver/binance/manifests/silver-c2182e381a087afe14e91162.json",
+      "sha256": "a519805fdf74a41b5471ecdeb7068eaab50e9f7172f47bc7cbf3f07d9fe8548b",
+      "symbol": "COMPUSDT",
+      "interval": "1d",
+      "referenced_files": 2192
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/silver/binance/manifests/silver-3fef69c12532013e2f36dd40.json",
+      "sha256": "9c0f48148879beab4f8acf0bf97dbb21b9d57811d3608351db6510a1a6af9ce2",
+      "symbol": "DOGEUSDT",
+      "interval": "1d",
+      "referenced_files": 2182
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/silver/binance/manifests/silver-a2099e332150c6811670e704.json",
+      "sha256": "41644e6578395f15fe1e45fe78a11ad9da0201edcf27f06dedbd21f530d11f83",
+      "symbol": "ETHUSDT",
+      "interval": "1d",
+      "referenced_files": 2373
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/silver/binance/manifests/silver-b6b4f141b7171e241c7ec116.json",
+      "sha256": "10d177e5a40880fd492552490d4889dc00a4149b26598bcd5149649ca56a993f",
+      "symbol": "FILUSDT",
+      "interval": "1d",
+      "referenced_files": 2084
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/silver/binance/manifests/silver-bdaf5d5ab901ff526232a00f.json",
+      "sha256": "3dda3adce1b9e20eec7b552fe6648b2575710484085ffb35dd4cbef0c5d4eb97",
+      "symbol": "FLMUSDT",
+      "interval": "1d",
+      "referenced_files": 2101
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/silver/binance/manifests/silver-9f73d777ea992da74b2c19b8.json",
+      "sha256": "70f1dcb5d6491abf7b3ffe1426a0196ef024d46b00ff87c4c6e28d5bf786284f",
+      "symbol": "HNTUSDT",
+      "interval": "1d",
+      "referenced_files": 1339
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/silver/binance/manifests/silver-54d566dc4cfc4a58f40fb4d9.json",
+      "sha256": "5fd7574086ac59e876ac8576cd233e314262c9ffc5b9d430e7709575a07a2e50",
+      "symbol": "IOTAUSDT",
+      "interval": "1d",
+      "referenced_files": 2331
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/silver/binance/manifests/silver-5ebf666b1c6c68c6e562380c.json",
+      "sha256": "a4ea273c19b7a3dbe86af2e205c33114493fa15607578ab30ccc6611197c0f4f",
+      "symbol": "KNCUSDT",
+      "interval": "1d",
+      "referenced_files": 2200
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/silver/binance/manifests/silver-aa814b54a5576433649fe67e.json",
+      "sha256": "bd90565fae7b85336b2d39571cfc01a58a3dd0d2bf0ad637648f1fd067419de0",
+      "symbol": "KSMUSDT",
+      "interval": "1d",
+      "referenced_files": 2086
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/silver/binance/manifests/silver-af618eadde033e3968becb3a.json",
+      "sha256": "214b13a05b726d0adf50015433e982a3cdd82fe330b165390614a2784dff07ba",
+      "symbol": "NEOUSDT",
+      "interval": "1d",
+      "referenced_files": 2326
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/silver/binance/manifests/silver-9b6d972f02e82bfe910cd81a.json",
+      "sha256": "87311a1930ca3baca4d7da913d9a2f1a9c8d54fc818a9070b5e24da4707de78f",
+      "symbol": "OMGUSDT",
+      "interval": "1d",
+      "referenced_files": 2190
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/silver/binance/manifests/silver-05d868bf4f3afac1b4af40a6.json",
+      "sha256": "ce1c066524356b0f5ff16f6561387314d05907454ca5d698c1a6e300fd019b25",
+      "symbol": "ONTUSDT",
+      "interval": "1d",
+      "referenced_files": 2332
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/silver/binance/manifests/silver-88af746e30eedc77518485cb.json",
+      "sha256": "903357e7c4074ac917abd77b2893153579f1161d5eb037155ad63bea404daec3",
+      "symbol": "STORJUSDT",
+      "interval": "1d",
+      "referenced_files": 2114
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/silver/binance/manifests/silver-4bedabfffd914a91d3caaa29.json",
+      "sha256": "53a52bcb5d46a17a87d78de6c7762b267c52587483af3fa94670f6da217b814b",
+      "symbol": "TRXUSDT",
+      "interval": "1d",
+      "referenced_files": 2359
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/silver/binance/manifests/silver-044d0fa8e8a72930800db0f8.json",
+      "sha256": "8052105215b67fd094f0164368ebd511b63ab678711cbded1efd4f4784d55802",
+      "symbol": "UNIUSDT",
+      "interval": "1d",
+      "referenced_files": 2112
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/silver/binance/manifests/silver-9fce0c4ca8e510cc221b2ced.json",
+      "sha256": "c8e6b11ed88e6660163a33f68411c206c93ae9bb85707603c03d62f71970793b",
+      "symbol": "ZECUSDT",
+      "interval": "1d",
+      "referenced_files": 2338
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/silver/binance/manifests/silver-ee6e58af81cbb462092602cd.json",
+      "sha256": "cfd732bd93e14f67f3891b6d04e562a22e212e087eec97a1966865b6f43f245c",
+      "symbol": "ZRXUSDT",
+      "interval": "1d",
+      "referenced_files": 2198
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/silver/binance/manifests/silver-23fef0f18f0bd34a4793e9d6.json",
+      "sha256": "7ac065908342aabaf33727c0b5532b8f4c6b84f66ed42457cb94850966a55f1d",
+      "symbol": "BCHUSDT",
+      "interval": "5m",
+      "referenced_files": 2373
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/silver/binance/manifests/silver-edad6a23de2defe665625c0a.json",
+      "sha256": "67098bb1485390dd228f7597d6ce01933ff864123cbc76535e54a24747cbf8be",
+      "symbol": "BLZUSDT",
+      "interval": "5m",
+      "referenced_files": 2113
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/silver/binance/manifests/silver-f53e17c959a1d7520a656871.json",
+      "sha256": "7e5f3dc020ba1dac2b7cf164ed286867bbe97d10af3e9348f21cd54b2d8f61c3",
+      "symbol": "BTCUSDT",
+      "interval": "5m",
+      "referenced_files": 2373
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/silver/binance/manifests/silver-aa455dca52d3f1d7fa8f2865.json",
+      "sha256": "44135e6b0434c87bcf708240a6f0176600a9c0142a5460f08b0e3d39393abae0",
+      "symbol": "COMPUSDT",
+      "interval": "5m",
+      "referenced_files": 2192
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/silver/binance/manifests/silver-e6d39b26406e95183f4bb451.json",
+      "sha256": "fed80ee7d953309da88fcfa685ff68739103a36c6a27035deeb2e827b76d3fd8",
+      "symbol": "DOGEUSDT",
+      "interval": "5m",
+      "referenced_files": 2182
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/silver/binance/manifests/silver-1da8f3ab73eac97150c9350a.json",
+      "sha256": "5bba0e0635654faa01776cb4616518fc4d132870d57b7c64df980af5630ceb9e",
+      "symbol": "ETHUSDT",
+      "interval": "5m",
+      "referenced_files": 2373
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/silver/binance/manifests/silver-00567896fd2698d5d992fa4b.json",
+      "sha256": "c56074a73fcfd950890d96ad257c8c4858a64722d7aa1a4430c5ee73487dc8d9",
+      "symbol": "FILUSDT",
+      "interval": "5m",
+      "referenced_files": 2084
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/silver/binance/manifests/silver-086d1dc587392ddad956fc80.json",
+      "sha256": "3f226e669cfb421b6754564bc2babb3bfde5b5427553d6f76ab54ab81696ba95",
+      "symbol": "FLMUSDT",
+      "interval": "5m",
+      "referenced_files": 2101
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/silver/binance/manifests/silver-4ec5de732565c2fbd6ee5343.json",
+      "sha256": "4cf386a0cae6e57e41ccbcf725bcd599f7f3eb745d481e08e19dc6ca74145343",
+      "symbol": "HNTUSDT",
+      "interval": "5m",
+      "referenced_files": 1339
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/silver/binance/manifests/silver-3db7eb89c5e3f5178b3e3f48.json",
+      "sha256": "e721e7163c3f0f21fa7d7e2bc0f2c716529671fda51e078fa3294c7b51fcf2d8",
+      "symbol": "IOTAUSDT",
+      "interval": "5m",
+      "referenced_files": 2331
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/silver/binance/manifests/silver-0df67f61dbf66551dc3fdb86.json",
+      "sha256": "7bd14164b88e693d3d75ef4a29ca2448445b10d5b5cd8c8dad486d9cbc526735",
+      "symbol": "KNCUSDT",
+      "interval": "5m",
+      "referenced_files": 2200
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/silver/binance/manifests/silver-e48b9370e6e51bd8d43d7cf7.json",
+      "sha256": "a54cf3d53e57c07fd8849363485740a2848512bca662480c05a45c11bcd4289d",
+      "symbol": "KSMUSDT",
+      "interval": "5m",
+      "referenced_files": 2086
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/silver/binance/manifests/silver-f429497b938f8c9f7411c6fb.json",
+      "sha256": "540623c719f67d587aeefdc20389488c0cb5fae84008b9ebc6a062db373a6d83",
+      "symbol": "NEOUSDT",
+      "interval": "5m",
+      "referenced_files": 2326
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/silver/binance/manifests/silver-9dd0aa592ff3c1ffc084e62d.json",
+      "sha256": "6c4b517b4390e1d0a77c1d2e3353cdc7d5b183c3aee224fa16629a561df397e0",
+      "symbol": "OMGUSDT",
+      "interval": "5m",
+      "referenced_files": 2190
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/silver/binance/manifests/silver-d1bb7b0176969fcecfacd3f5.json",
+      "sha256": "978841feb79af64525d6daf679c66a3dc7d222704f7a1a4583065b598baf4b62",
+      "symbol": "ONTUSDT",
+      "interval": "5m",
+      "referenced_files": 2332
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/silver/binance/manifests/silver-114f71c5dafe3aa4423e820c.json",
+      "sha256": "e6c6bee187424f4eada4f31e3d2b84f3d6cff3265be15de6c9062c39b3d68bdd",
+      "symbol": "STORJUSDT",
+      "interval": "5m",
+      "referenced_files": 2114
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/silver/binance/manifests/silver-4bb5d750b0039739442f7df9.json",
+      "sha256": "45afb99fcae27f86152a846dca9863e44043164488eb8fdc91a188eb42033781",
+      "symbol": "TRXUSDT",
+      "interval": "5m",
+      "referenced_files": 2359
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/silver/binance/manifests/silver-b08d9256d421e4abe8760e3a.json",
+      "sha256": "41680c6684e92f9de18b211956d4f3d5cbbcfcfe7160d7f75933964baaee3269",
+      "symbol": "UNIUSDT",
+      "interval": "5m",
+      "referenced_files": 2112
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/silver/binance/manifests/silver-d8c92585a431e31ce2b75bfc.json",
+      "sha256": "9da2382df74a35e5d3682bf1f8dbefbbb09a82115c04584667169b2ca21a1781",
+      "symbol": "ZECUSDT",
+      "interval": "5m",
+      "referenced_files": 2338
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/silver/binance/manifests/silver-51db8656c14d6cd710aa7eb5.json",
+      "sha256": "f60d9fdc30add939ea999b87101b798ad57dca15d1b790e0aac150e1de677215",
+      "symbol": "ZRXUSDT",
+      "interval": "5m",
+      "referenced_files": 2198
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/funding/market-silver-69f014a447027584d6ab1287/manifest.json",
+      "sha256": "1136355cf0f76ca14a24286d4b2cbc73adf6b28114d94e761937cd28b36e137f",
+      "symbol": "BCHUSDT",
+      "kind": "funding"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/index_kline/market-silver-v2-1-4cbae5be4aa74e3a73dd9beb/manifest.json",
+      "sha256": "104df5c9f23f60236c96deaecd68b4bfffade701b2f6a722fe2597250c2bcf41",
+      "symbol": "BCHUSDT",
+      "kind": "index"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/mark_kline/market-silver-v2-1-7b9d9ed61d565f0e1ec7b81b/manifest.json",
+      "sha256": "a212cf8e65c3c3953ee4f31496a5bbaad80f57d0adc23bcfd2f4a886ed96b967",
+      "symbol": "BCHUSDT",
+      "kind": "mark"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/funding/market-silver-b07f27fc532ec04feffb157e/manifest.json",
+      "sha256": "d3b3ac22a540609779cc725351b5104d5c653a9da0ff30f6a775bdd2f26d1aa6",
+      "symbol": "BLZUSDT",
+      "kind": "funding"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/index_kline/market-silver-v2-1-fe0bde3795b6d5783dd47d84/manifest.json",
+      "sha256": "57561ee8f9410ae84fc420f8ed60e6e6cad557c9592c610861efe3a3a6507052",
+      "symbol": "BLZUSDT",
+      "kind": "index"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/mark_kline/market-silver-v2-1-cba89558a613b22469c4ef70/manifest.json",
+      "sha256": "6a97abaaf92a9c35871a28a7b0aadc2c1350cb0c90776d0955333f76e142f29a",
+      "symbol": "BLZUSDT",
+      "kind": "mark"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/funding/market-silver-9ab4991244016133a46a0ce8/manifest.json",
+      "sha256": "ba5e10376a37135f99ae5bc5da402ad5e0f88b8d737893d1db5655ad5b284a5f",
+      "symbol": "BTCUSDT",
+      "kind": "funding"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/index_kline/market-silver-v2-1-3b322aa03a74a1899007266c/manifest.json",
+      "sha256": "8aab5b0bdf5d2db2361cede7e801ad6afb4b371467c2c9b3a1779749dc45a16d",
+      "symbol": "BTCUSDT",
+      "kind": "index"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/mark_kline/market-silver-v2-1-3adfcf389c22af782bfe1d8c/manifest.json",
+      "sha256": "2f3538ac0b4f43e0b35e3975e932bf7b13a25bf90bcd227c98787143ae5b5243",
+      "symbol": "BTCUSDT",
+      "kind": "mark"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/funding/market-silver-db2d1db25a596525b62e2675/manifest.json",
+      "sha256": "694bbc79c9010550acd36455d4d8e38af5c4792d5a7d9109aa5c846013b3cdc2",
+      "symbol": "COMPUSDT",
+      "kind": "funding"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/index_kline/market-silver-v2-1-9286550f978a48d9eacdca6f/manifest.json",
+      "sha256": "0a4136029a489898b7d068f4daee186a1de6185baf47ee112ce1e8edb25acd20",
+      "symbol": "COMPUSDT",
+      "kind": "index"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/mark_kline/market-silver-v2-1-6561f7d4cb3ee2e589927bfa/manifest.json",
+      "sha256": "d0d7e1ba9aa9d3aa5e1126781fef54149e7173575ffdcbed618fca4f90f131d4",
+      "symbol": "COMPUSDT",
+      "kind": "mark"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/funding/market-silver-f932092e7dc147e7e5df9d6c/manifest.json",
+      "sha256": "c82ae035015d04ce912c0195892ccd8fc2306d764c2fb54a237bb7b0a8493d6c",
+      "symbol": "DOGEUSDT",
+      "kind": "funding"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/index_kline/market-silver-v2-1-3ac8f54ff9c4760cb49738f3/manifest.json",
+      "sha256": "1aee1785bf0a38f045405b413f6e44d07d72a47516b6ae9feaf8636cd5e8e945",
+      "symbol": "DOGEUSDT",
+      "kind": "index"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/mark_kline/market-silver-v2-1-80d4388784a960ed4851f84b/manifest.json",
+      "sha256": "f538a1c53c9750f8162cf2c439904a060e2ba0d5cd72f87573fece67939ca2a9",
+      "symbol": "DOGEUSDT",
+      "kind": "mark"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/funding/market-silver-941bce52bcd9be8895605dca/manifest.json",
+      "sha256": "98550939620104e56174f35c572dbe5fdf4ac4d77040f4766d2f4d8e0ae0d0bc",
+      "symbol": "ETHUSDT",
+      "kind": "funding"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/index_kline/market-silver-v2-1-f519c50fedc71f0195af6662/manifest.json",
+      "sha256": "7e4285608e1d186c4887e8cc0214d749f40fff4fff652b88f819888c7b1ac643",
+      "symbol": "ETHUSDT",
+      "kind": "index"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/mark_kline/market-silver-v2-1-d1d37e42b2f6e82f68851e94/manifest.json",
+      "sha256": "ad94d0b39616f7929abe603b0f091ef3fd82e7f74f0815205c19fc518079f112",
+      "symbol": "ETHUSDT",
+      "kind": "mark"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/funding/market-silver-10d4b069fe7b102f4858c5a2/manifest.json",
+      "sha256": "7013c5b790a98f39997bebbe11671baeb816094c4e13b0a72d42552cc996d864",
+      "symbol": "FILUSDT",
+      "kind": "funding"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/index_kline/market-silver-v2-1-8eeb34f90a9473c14be966f9/manifest.json",
+      "sha256": "e2fb79316989a69d7d87aaf03da3d06652c4e6f9d7aca85cf33bccfb6b69dc22",
+      "symbol": "FILUSDT",
+      "kind": "index"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/mark_kline/market-silver-v2-1-f656d26a35d13496474cd1fa/manifest.json",
+      "sha256": "628ac0c23a84090a341cbaff8318207c8127cd032248225b3677bb7ed6d3f51b",
+      "symbol": "FILUSDT",
+      "kind": "mark"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/funding/market-silver-650c6e8aea8b252bcfb0a323/manifest.json",
+      "sha256": "d738b9f8519b4db6867bbf5e80986c5e3ce488380bbd4f22a92a8d7a4b9358a6",
+      "symbol": "FLMUSDT",
+      "kind": "funding"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/index_kline/market-silver-v2-1-19496e4f21094c8fd8ef7183/manifest.json",
+      "sha256": "e0cf12f06724008839b63862569a88f1b825de41353afca4087ee8ac7777f4e3",
+      "symbol": "FLMUSDT",
+      "kind": "index"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/mark_kline/market-silver-v2-1-6d2a4c24592d3acee576d3c7/manifest.json",
+      "sha256": "179dd80ebd5d95790ce83e0e0a5aa6147b988cc3cc3348846e2de9d5df21d019",
+      "symbol": "FLMUSDT",
+      "kind": "mark"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/funding/market-silver-f3a59429cece6e1eca87e73a/manifest.json",
+      "sha256": "66d5f9fef5eaaea54a31fb2f2ef77e754afd96cb9b7d576bc693627a41369b8b",
+      "symbol": "HNTUSDT",
+      "kind": "funding"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/index_kline/market-silver-v2-1-374b85fc0d363eff0651966d/manifest.json",
+      "sha256": "305d205a461c57278e18c5b061aa200e46ac76c609a486bcfc73605b1d01a494",
+      "symbol": "HNTUSDT",
+      "kind": "index"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/mark_kline/market-silver-v2-1-cd769074b69d8e18d80d1c16/manifest.json",
+      "sha256": "c390addca3adfac2fcf4dea06a9e30f2151a1435c96810507fb03afce978d8ff",
+      "symbol": "HNTUSDT",
+      "kind": "mark"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/funding/market-silver-3f1481a8cb5380750aa9cabf/manifest.json",
+      "sha256": "1186024f70f8928d514bfc8975016350f8e3ef1ffada82087b48673621a523b9",
+      "symbol": "IOTAUSDT",
+      "kind": "funding"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/index_kline/market-silver-v2-1-763945d23df9d469526d9225/manifest.json",
+      "sha256": "c58ca24bfcf96db26b3b4f89190b98128371ef0a60a506a23edf890bb70c674b",
+      "symbol": "IOTAUSDT",
+      "kind": "index"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/mark_kline/market-silver-v2-1-923519fb69621b1c3e93c0ed/manifest.json",
+      "sha256": "6faebe6bca69076f7cd26a2969a5c93127c5e032c81ad292ed30d54a79da53f8",
+      "symbol": "IOTAUSDT",
+      "kind": "mark"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/funding/market-silver-977e3b619f45936f2e5f1d92/manifest.json",
+      "sha256": "0ecc7e29f4cc702358a692eebddef26461fc59eb8afdb45b726cdb824bbb617f",
+      "symbol": "KNCUSDT",
+      "kind": "funding"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/index_kline/market-silver-v2-1-461a4160f40d1a4bc75f8fc1/manifest.json",
+      "sha256": "87d60ba9f605d462add2eb21f8c4764080519017d7a097a91e4dccfece882ccb",
+      "symbol": "KNCUSDT",
+      "kind": "index"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/mark_kline/market-silver-v2-1-54a0b1cf8b89bdfcd1c26958/manifest.json",
+      "sha256": "8b0cc420602c4ef1fe3d1966c9d61eaaad39028e5c126ebbd40b7286b35fb1d4",
+      "symbol": "KNCUSDT",
+      "kind": "mark"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/funding/market-silver-0a7b4aac632962a93644d1da/manifest.json",
+      "sha256": "d5306ac2deb5fb5bb408ce238aceb35ee25dfb9980db13f8773d741de1d6a93d",
+      "symbol": "KSMUSDT",
+      "kind": "funding"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/index_kline/market-silver-v2-1-da088a84aaf02b1c34d959a5/manifest.json",
+      "sha256": "9bf883a32c17df6883cee791a448ee94110e77250655435bab6ac848745b1480",
+      "symbol": "KSMUSDT",
+      "kind": "index"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/mark_kline/market-silver-v2-1-1af20ccf895e534a98fdfc0a/manifest.json",
+      "sha256": "107929ce21b09cc96d1d63ba264eefb42f62d9e5ed9360df2098170cbe7cfe1c",
+      "symbol": "KSMUSDT",
+      "kind": "mark"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/funding/market-silver-e2b5367dee1fe2d390cc7761/manifest.json",
+      "sha256": "c402f42e125fac67222f981dbfda3e2e21e67edd48f0b3886229300b0a4096b9",
+      "symbol": "NEOUSDT",
+      "kind": "funding"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/index_kline/market-silver-v2-1-25e57bc33183ca153982a776/manifest.json",
+      "sha256": "cbb8ca9ec73c991b4509946f315228eae53a765bce57047b5899e0853f45174a",
+      "symbol": "NEOUSDT",
+      "kind": "index"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/mark_kline/market-silver-v2-1-fa4248506fe15a026997c5c0/manifest.json",
+      "sha256": "8f8fb9cb62c1f8b69686d1d2dcc54d87a38c5e0a7a072159fabc369b7d1da4d5",
+      "symbol": "NEOUSDT",
+      "kind": "mark"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/funding/market-silver-078280b45a6d61f173ee8a49/manifest.json",
+      "sha256": "f8475994baf7f1d165aa43a068b02c8b8da9e0086f6526bf2abd2c371a7df0f0",
+      "symbol": "OMGUSDT",
+      "kind": "funding"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/index_kline/market-silver-v2-1-5b9770c8c86b4d068919d8af/manifest.json",
+      "sha256": "4b5ab5d0a61c77f9a99c0701ffa4dd0ffa5131b63f50ff4bec5c7a9641563d06",
+      "symbol": "OMGUSDT",
+      "kind": "index"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/mark_kline/market-silver-v2-1-b43410c1ae38a93b8c176069/manifest.json",
+      "sha256": "91b2cee1e52e06aaf40de1a167ca14b8b49c248415cb494ff06c2188b384562f",
+      "symbol": "OMGUSDT",
+      "kind": "mark"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/funding/market-silver-03cf302106e99d94fccc85ac/manifest.json",
+      "sha256": "903edd75734c8483d15cf18f24d736a67ba68337f31d302e366bf19a849024ec",
+      "symbol": "ONTUSDT",
+      "kind": "funding"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/index_kline/market-silver-v2-1-1645bff2c534381955e03a3f/manifest.json",
+      "sha256": "3f151f017a6f938ffb2a48ad1232821e6991142f6975653a20aa03f2bf57ad69",
+      "symbol": "ONTUSDT",
+      "kind": "index"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/mark_kline/market-silver-v2-1-522a788e33bb8f5536c6a709/manifest.json",
+      "sha256": "aa5812c0029582890be52d662845d6fb22ef536821dd2601340ce678fc9fa81a",
+      "symbol": "ONTUSDT",
+      "kind": "mark"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/funding/market-silver-a3274df8740c37475e8a31fe/manifest.json",
+      "sha256": "0e32e200492030ee4171f649c012f90d2446acee629ddb45e9bb9621bb5ec674",
+      "symbol": "STORJUSDT",
+      "kind": "funding"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/index_kline/market-silver-v2-1-28f66f48574b6f467845876c/manifest.json",
+      "sha256": "2a6efcd5e10c74caf9f60375dd0b9231f79014dd7dacafdb311d673d6682f772",
+      "symbol": "STORJUSDT",
+      "kind": "index"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/mark_kline/market-silver-v2-1-79adeff9baa200b191fc0431/manifest.json",
+      "sha256": "b8e3a13a52ee33078615a2234283f003634bec33fd01e79fd75b7665d2615a5e",
+      "symbol": "STORJUSDT",
+      "kind": "mark"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/funding/market-silver-776a3916c500cac9246681d3/manifest.json",
+      "sha256": "1d8932bdbed3b7940eb815617c48d0380e9572f8e3b13377a37056f497eb288c",
+      "symbol": "TRXUSDT",
+      "kind": "funding"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/index_kline/market-silver-v2-1-041ba4d85b5466a52b64573c/manifest.json",
+      "sha256": "2375badca09450c288b051261025718f4ec70ccbfe8b70c7f5631e5bf98565e5",
+      "symbol": "TRXUSDT",
+      "kind": "index"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/mark_kline/market-silver-v2-1-d13ccd2d553e391fd3ffd739/manifest.json",
+      "sha256": "43b4e952d6b4069f1a1c84d8a8c2f1400fb0c6d29b2d2b084b1e66c61756f27f",
+      "symbol": "TRXUSDT",
+      "kind": "mark"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/funding/market-silver-8d02d69f307bf1b0abf83e07/manifest.json",
+      "sha256": "ac0e3e5d5eb648f5668a881727e2bb6d6079f0a816312c90b570451d946da2fc",
+      "symbol": "UNIUSDT",
+      "kind": "funding"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/index_kline/market-silver-v2-1-dfe389f2a906a4fc71850f2b/manifest.json",
+      "sha256": "557f2dfa99a2db769c73ed3dcd2a966c60a97283afb9d0ed2c3c15f4e264d201",
+      "symbol": "UNIUSDT",
+      "kind": "index"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/mark_kline/market-silver-v2-1-3e513247354348ea04ad9b47/manifest.json",
+      "sha256": "dff753137596f3aaa7e9cef5788f98adfcfd26a0f3b8bc051a72926717686e76",
+      "symbol": "UNIUSDT",
+      "kind": "mark"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/funding/market-silver-3bbcbafb22fcd498b6dff5ce/manifest.json",
+      "sha256": "1d6e742ba93953ab302ba61ad310f3c4c5895ab9285fd2c1d9ccb452dc0bcd86",
+      "symbol": "ZECUSDT",
+      "kind": "funding"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/index_kline/market-silver-v2-1-69be83855d5cf6a85656ba0a/manifest.json",
+      "sha256": "3f6e5e97d210177d9eb50c46eece6389da61ca2f030f88e833a84b61ee41533e",
+      "symbol": "ZECUSDT",
+      "kind": "index"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/mark_kline/market-silver-v2-1-d078ab32dc255b785e04ecea/manifest.json",
+      "sha256": "bcb22841bf04040ed4569660ad6e5a652df1857d78f95d9b8def56f8b0cee77f",
+      "symbol": "ZECUSDT",
+      "kind": "mark"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/funding/market-silver-33b99506f9aa0e9129bcefa6/manifest.json",
+      "sha256": "330909c6a6d5bc21b7546c424ae8f2b599e8c2ed8a96f5e3ddd687f16fa98288",
+      "symbol": "ZRXUSDT",
+      "kind": "funding"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/index_kline/market-silver-v2-1-be54d66b3beabe3874cb8ce7/manifest.json",
+      "sha256": "439674f340bbda70a0bb646ac461c3391f9b386537ce2ca599e8b8d37b3be523",
+      "symbol": "ZRXUSDT",
+      "kind": "index"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/mark_kline/market-silver-v2-1-145d8a8d9d6c3bbe59732772/manifest.json",
+      "sha256": "9d3e00a6715341310688c2e8c1ed702751575e2bf4748e76854e32cc5dfb4713",
+      "symbol": "ZRXUSDT",
+      "kind": "mark"
+    }
+  ],
+  "consumers": {
+    "silver_loading": {
+      "selected_files": 131208,
+      "forensic_selected": [],
+      "selected_path_set_sha256": "4c24822ebd419eeeda51461102aa6a12c0269274cff5d3f3c0f1e7ef5dba270a"
+    },
+    "feature_generation": {
+      "selected_files": 131208,
+      "forensic_selected": [],
+      "selected_path_set_sha256": "4c24822ebd419eeeda51461102aa6a12c0269274cff5d3f3c0f1e7ef5dba270a"
+    },
+    "Gold_validation": {
+      "selected_files": 138,
+      "forensic_selected": [],
+      "selected_path_set_sha256": "65213147b1d6741080be6daab37cb8ae2e78f8b3ef6150bf81b9bd88b7bdea17"
+    },
+    "M01_census": {
+      "selected_files": 296,
+      "forensic_selected": [],
+      "selected_path_set_sha256": "54965effaeb4832e56f132a2a68705c502df670cb1493e58d5928b861e71a5d7"
+    },
+    "cache_preparation": {
+      "selected_files": 931,
+      "forensic_selected": [],
+      "selected_path_set_sha256": "00c3143e11f1e077a848388f67d4e21a6d67858ed29d945a37d3f195fe84daf8",
+      "checkpoint_referenced_expected_paths": 793,
+      "push_list_sha256": "9e47c6e291c03871a7f61fdf213897de1c44d7e562125b7d9eba5e3139844889"
+    }
+  }
+}

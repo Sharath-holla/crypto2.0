@@ -1,0 +1,40 @@
+{
+  "git_sha": "ada0478c393b212ebefd85e6fb457c8c908e2ff8",
+  "branch": "fix/phase7-final-architecture-repair-20261106",
+  "gates": {
+    "REAL_TEST_SUITE": "PASS",
+    "RUFF": "PASS",
+    "GOLD": "PASS",
+    "M01": "PASS",
+    "CACHE": "NOT_QUALIFIED",
+    "MAC": "PASS",
+    "LINUX": "EXTERNAL_RUNTIME_REQUIRED",
+    "PIPELINE": "NOT_READY_FOR_SMOKE",
+    "TRADABILITY": "NOT_ESTABLISHED",
+    "FULL_GRID": "NOT_AUTHORIZED",
+    "AUGUST": "LOCKED_UNUSED"
+  },
+  "pytest": {
+    "tests": 1370,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 1,
+    "passed": 1369,
+    "seconds": 153.615
+  },
+  "resource_preflight": "FAIL",
+  "MODEL_PIPELINE_VALIDATED": false,
+  "TRADABILITY_VALIDATED": false,
+  "M01_original_verdict": "MATERIAL_LOSS_SIDECAR_REQUIRED",
+  "M01_resolved_context_verdict": "NO_MATERIAL_LOSS",
+  "August": {
+    "status": "LOCKED_UNUSED",
+    "used": false,
+    "evaluation_authorized": false
+  },
+  "July": "UNUSED",
+  "real_data_training_performed": false,
+  "cloud_compute_started": false,
+  "smoke_command_issued": false,
+  "lock_unchanged": true
+}

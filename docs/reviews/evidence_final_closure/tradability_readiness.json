@@ -1,0 +1,47 @@
+{
+  "MODEL_PIPELINE_VALIDATED": false,
+  "TRADABILITY_VALIDATED": false,
+  "blockers": {
+    "baseline_superiority": "QUALIFIED_EVIDENCE_MISSING",
+    "capital_allocation_defined": "QUALIFIED_EVIDENCE_MISSING",
+    "concurrent_positions_defined": "QUALIFIED_EVIDENCE_MISSING",
+    "cost_stress_robustness": "QUALIFIED_EVIDENCE_MISSING",
+    "equity_curve_available": "QUALIFIED_EVIDENCE_MISSING",
+    "execution_costs_qualified": "QUALIFIED_EVIDENCE_MISSING",
+    "fitted_model_artifacts": "QUALIFIED_EVIDENCE_MISSING",
+    "funding_model_complete": "QUALIFIED_EVIDENCE_MISSING",
+    "leverage_defined": "QUALIFIED_EVIDENCE_MISSING",
+    "model_pipeline": "PIPELINE_VERIFICATION_INCOMPLETE",
+    "multiple_evaluation_folds": "QUALIFIED_EVIDENCE_MISSING",
+    "no_selection_contamination": "QUALIFIED_EVIDENCE_MISSING",
+    "non_overlapping_trade_policy": "QUALIFIED_EVIDENCE_MISSING",
+    "out_of_sample_results": "QUALIFIED_EVIDENCE_MISSING",
+    "portfolio_risk_metrics_available": "QUALIFIED_EVIDENCE_MISSING",
+    "sufficient_trades": "QUALIFIED_EVIDENCE_MISSING"
+  },
+  "holdout": {
+    "evaluation_authorized": false,
+    "status": "LOCKED_UNUSED",
+    "used": false
+  },
+  "qualification_scope": "Evidence-attestation gate; no portfolio or execution engine implemented",
+  "requirements": {
+    "baseline_superiority": false,
+    "capital_allocation_defined": false,
+    "concurrent_positions_defined": false,
+    "cost_stress_robustness": false,
+    "equity_curve_available": false,
+    "execution_costs_qualified": false,
+    "fitted_model_artifacts": false,
+    "funding_model_complete": false,
+    "leverage_defined": false,
+    "multiple_evaluation_folds": false,
+    "no_selection_contamination": false,
+    "non_overlapping_trade_policy": false,
+    "out_of_sample_results": false,
+    "portfolio_risk_metrics_available": false,
+    "sufficient_trades": false
+  },
+  "schema": "phase7_tradability_readiness_v1",
+  "tradability": "NOT_ESTABLISHED"
+}

@@ -1,0 +1,129 @@
+....................................F................................... [ 61%]
+..............................................                           [100%]
+=================================== FAILURES ===================================
+_______________ test_tiny_pipeline_connects_and_is_reproducible ________________
+
+tmp_path = PosixPath('/private/var/folders/2x/g9vjz2091f3g7g3vz9l0rg3c0000gn/T/pytest-of-cortex/pytest-16/test_tiny_pipeline_connects_an0')
+
+    def test_tiny_pipeline_connects_and_is_reproducible(tmp_path: Path) -> None:
+        first = _build_fold(tmp_path / "first")
+        second = _build_fold(tmp_path / "second")
+        config, features, targets, universe, plan, fold = first
+        _, features_2, targets_2, universe_2, plan_2, fold_2 = second
+    
+        assert _table_hash(features.table) == _table_hash(features_2.table)
+        assert _table_hash(targets.table) == _table_hash(targets_2.table)
+        assert plan.to_dict() == plan_2.to_dict()
+        assert universe.universe_hash == universe_2.universe_hash
+        assert (
+            fold.eligibility_manifest["fold_membership_hash"]
+            == (fold_2.eligibility_manifest["fold_membership_hash"])
+        )
+        for segment in (
+            fold.train,
+            fold.validation,
+            fold.calibration_a,
+            fold.calibration_b,
+            fold.release_test(frozen_identity="integration-sentinel"),
+        ):
+            assert segment.num_rows > 0
+            assert max(segment["label_end_time"].to_pylist()) < config.research_cutoff
+    
+        spec = ExperimentSpec(
+            name="architecture-G0-A6-60m-raw",
+            architecture="G0",
+            feature_group="A6",
+            horizon_minutes=60,
+            target_type="raw",
+            symbol_balanced=True,
+        )
+        from crypto_ai.phase7.recovery import inspect_spec_artifacts
+        from crypto_ai.phase7.training import training_source_identity
+    
+        identity = {
+            "fixture": "pretraining-integration-v1",
+            "experiment_id": spec.name,
+            "fold_id": fold.plan.fold_id,
+            "gold_dataset_id": "SYNTHETIC",
+            "gold_manifest_sha256": "a" * 64,
+            "model_backend_semantics": "cpu",
+            "configuration_hash": config.configuration_hash,
+            "training_source_identity": training_source_identity(),
+        }
+        reports = []
+        stores = []
+        for name, current_fold in (("run-a", fold), ("run-b", fold_2)):
+            report, files = _run_one(
+                spec,
+                current_fold,
+                ("return_5m", "range_pct"),
+                config,
+                tmp_path / name,
+                identity,
+                execution_metadata={"run_identity": "synthetic-ledger-integration"},
+            )
+            store = CheckpointStore(tmp_path / "checkpoints" / name, "synthetic-ledger-integration")
+            ledger = tmp_path / name / "result_ledger"
+            ledger_files = publish_canonical_result(ledger, report)
+            files.extend(ledger_files)
+            store.complete("train/fold-mini", files, identity)
+            assert store.is_complete("train/fold-mini", expected_metadata=identity)
+            csv = tmp_path / name / "results.csv"
+            refresh_results_view(ledger, "synthetic-ledger-integration", csv, RESULT_COLUMNS)
+            assert view_matches_ledger(ledger, "synthetic-ledger-integration", csv, RESULT_COLUMNS)
+            assert len(load_results(ledger, "synthetic-ledger-integration")) == 1
+            # Actual fitted report replay is idempotent, including its receipt and CSV view.
+            assert publish_canonical_result(ledger, report) == ledger_files
+            assert len(load_results(ledger, "synthetic-ledger-integration")) == 1
+            conflicting = deepcopy(report)
+            conflicting["phase7b"]["trading"]["expectancy"] = 999.0
+            with pytest.raises(LedgerError, match="DIFFERENT_CONTENT"):
+                publish_canonical_result(ledger, conflicting)
+            assert report["status"] == "COMPLETE"
+            assert report["test_used_for_selection"] is False
+            inspected = inspect_spec_artifacts(
+                model_path=tmp_path / name / "model.joblib",
+                report_path=tmp_path / name / "report.json",
+                checkpoint_store=store,
+                stage="train/fold-mini",
+                expected_identity=identity,
+            )
+>           assert inspected["state"] == "COMPLETE"
+E           AssertionError: assert 'INCONSISTENT' == 'COMPLETE'
+E             
+E             - COMPLETE
+E             + INCONSISTENT
+
+tests/phase7/test_pretraining_integration.py:228: AssertionError
+----------------------------- Captured stdout call -----------------------------
+{"cache_bytes": 0, "disk_free_bytes_by_root": {"artifact_root": 325556289536, "cache_root": 325556289536, "checkpoint_root": 325556289536, "model_root": 325556289536, "report_root": 325556289536, "temporary_root": 325556289536}, "elapsed_seconds": 0.00045979199785506353, "event": "RUNTIME_TELEMETRY", "gpu_vram_bytes": null, "gpu_vram_status": "NOT_APPLICABLE_CPU", "model_backend": "cpu", "phase": "START", "process_peak_rss_bytes": 410157056, "process_rss_bytes": 410157056, "ram_available_bytes": 5431459840, "ram_total_bytes": 17179869184, "stage": "PREPARE", "threads": null, "timestamp": "2026-11-06T12:59:48.785695+00:00"}
+{"cache_bytes": 0, "disk_free_bytes_by_root": {"artifact_root": 325556264960, "cache_root": 325556264960, "checkpoint_root": 325556264960, "model_root": 325556264960, "report_root": 325556264960, "temporary_root": 325556264960}, "elapsed_seconds": 0.004020791995571926, "event": "RUNTIME_TELEMETRY", "gpu_vram_bytes": null, "gpu_vram_status": "NOT_APPLICABLE_CPU", "matrix_bytes": 84224, "matrix_shape": [4548, 2], "model_backend": "cpu", "phase": "END", "process_peak_rss_bytes": 410370048, "process_rss_bytes": 410370048, "ram_available_bytes": 5431459840, "ram_total_bytes": 17179869184, "stage": "PREPARE", "threads": null, "timestamp": "2026-11-06T12:59:48.789259+00:00"}
+{"event": "MODEL_START", "fold_id": "fold-mini-integration", "process_peak_rss_bytes": 410370048, "process_rss_bytes": 410370048, "ram_available_bytes": 5431459840, "ram_total_bytes": 17179869184, "spec": "architecture-G0-A6-60m-raw"}
+{"cache_bytes": 0, "disk_free_bytes_by_root": {"artifact_root": 325556264960, "cache_root": 325556264960, "checkpoint_root": 325556264960, "model_root": 325556264960, "report_root": 325556264960, "temporary_root": 325556264960}, "elapsed_seconds": 0.0004392909977468662, "event": "RUNTIME_TELEMETRY", "gpu_vram_bytes": null, "gpu_vram_status": "NOT_APPLICABLE_CPU", "matrix_bytes": 84224, "matrix_shape": [4548, 2], "model_backend": "cpu", "model_threads": 2, "phase": "START", "process_peak_rss_bytes": 410370048, "process_rss_bytes": 410370048, "ram_available_bytes": 5431459840, "ram_total_bytes": 17179869184, "stage": "MODEL_FIT_START", "threads": null, "timestamp": "2026-11-06T12:59:48.789916+00:00"}
+{"architecture": "G0", "diagnostic_weighting": "UNWEIGHTED_ROWS; native L2 retains fit weighting", "elapsed_seconds": 0.00010458399628987536, "estimator": "global", "event": "FIT_STARTED", "feature_count": 2, "fold_id": "fold-mini-integration", "horizon_minutes": 60, "metric_scope": "TRAIN_AND_VALIDATION_ONLY", "research_view": "CORE", "round_limit": 20, "run_identity": "synthetic-ledger-integration", "spec_id": "architecture-G0-A6-60m-raw", "symbol_balanced": true, "target_column": "raw_future_return", "target_type": "raw", "test_access": "NOT_RELEASED_DURING_FIT", "timestamp": "2026-11-06T12:59:48.815409+00:00"}
+{"architecture": "G0", "diagnostic_weighting": "UNWEIGHTED_ROWS; native L2 retains fit weighting", "elapsed_seconds": 0.008136709002428688, "estimator": "global", "event": "FIT_METRICS", "feature_count": 2, "fold_id": "fold-mini-integration", "horizon_minutes": 60, "iteration": 1, "metric_scope": "TRAIN_AND_VALIDATION_ONLY", "metrics": {"train": {"directional_accuracy": 0.5899296394019349, "fixed_precision": 0.0, "fixed_recall": 0.0, "l2": 9.313564619866218e-07, "mae": 0.0008661806406962267, "rmse": 0.000965068112615178}, "validation": {"directional_accuracy": 0.5223463687150838, "fixed_precision": 0.0, "fixed_recall": 0.0, "l2": 8.699540852122638e-07, "mae": 0.0008292215781804038, "rmse": 0.0009327132920743993}}, "research_view": "CORE", "round_limit": 20, "run_identity": "synthetic-ledger-integration", "spec_id": "architecture-G0-A6-60m-raw", "symbol_balanced": true, "target_column": "raw_future_return", "target_type": "raw", "test_access": "NOT_RELEASED_DURING_FIT", "timestamp": "2026-11-06T12:59:48.823448+00:00"}
+[fit fold-mini-integration/architecture-G0-A6-60m-raw/global] round    1/20 | train L2 9.31e-07 MAE 8.66e-04 RMSE 9.65e-04 | val L2 8.70e-07 MAE 8.29e-04 RMSE 9.33e-04 dir 0.5223 P 0.0000 R 0.0000 (fixed-threshold, validation only) | val RMSE = flat | best val RMSE 9.3271e-04 @ 1 (+0 since) | elapsed 0s | peak RSS 0.4 GiB | free disk 303 GiB
+{"architecture": "G0", "best_iteration": 20, "best_scores": {"train": {"directional_accuracy": 0.5899296394019349, "fixed_precision": 0.8615916955017301, "fixed_recall": 0.4439821693907875, "l2": 6.726082999866892e-07, "mae": 0.0007333808432951896, "rmse": 0.0008201270023518851}, "validation": {"directional_accuracy": 0.5223463687150838, "fixed_precision": 0.7962085308056872, "fixed_recall": 0.33399602385685884, "l2": 6.417581786109764e-07, "mae": 0.0007094139597609283, "rmse": 0.0008010981079811488}}, "diagnostic_weighting": "UNWEIGHTED_ROWS; native L2 retains fit weighting", "elapsed_seconds": 0.03683179200015729, "estimator": "global", "event": "FIT_FINISHED", "feature_count": 2, "fold_id": "fold-mini-integration", "horizon_minutes": 60, "last_round": {"iteration": 20, "metrics": {"train": {"directional_accuracy": 0.5899296394019349, "fixed_precision": 0.8615916955017301, "fixed_recall": 0.4439821693907875, "l2": 6.726082999866892e-07, "mae": 0.0007333808432951896, "rmse": 0.0008201270023518851}, "validation": {"directional_accuracy": 0.5223463687150838, "fixed_precision": 0.7962085308056872, "fixed_recall": 0.33399602385685884, "l2": 6.417581786109764e-07, "mae": 0.0007094139597609283, "rmse": 0.0008010981079811488}}, "round_limit": 20}, "metric_scope": "TRAIN_AND_VALIDATION_ONLY", "research_view": "CORE", "round_limit": 20, "run_identity": "synthetic-ledger-integration", "spec_id": "architecture-G0-A6-60m-raw", "stop_reason": "ROUND_LIMIT", "symbol_balanced": true, "target_column": "raw_future_return", "target_type": "raw", "test_access": "NOT_RELEASED_DURING_FIT", "timestamp": "2026-11-06T12:59:48.852147+00:00"}
+{"elapsed_seconds": 0.06437212500168243, "event": "MODEL_DONE", "fold_id": "fold-mini-integration", "process_peak_rss_bytes": 414089216, "process_rss_bytes": 414089216, "ram_available_bytes": 5431459840, "ram_total_bytes": 17179869184, "spec": "architecture-G0-A6-60m-raw"}
+{"cache_bytes": 0, "disk_free_bytes_by_root": {"artifact_root": 325556240384, "cache_root": 325556240384, "checkpoint_root": 325556240384, "model_root": 325556240384, "report_root": 325556240384, "temporary_root": 325556240384}, "elapsed_seconds": 0.06523762500000885, "event": "RUNTIME_TELEMETRY", "gpu_vram_bytes": null, "gpu_vram_status": "NOT_APPLICABLE_CPU", "model_backend": "cpu", "phase": "END", "process_peak_rss_bytes": 414089216, "process_rss_bytes": 414089216, "ram_available_bytes": 5431459840, "ram_total_bytes": 17179869184, "stage": "MODEL_FIT_END", "threads": null, "timestamp": "2026-11-06T12:59:48.854720+00:00"}
+{"event": "CAL_A_START", "fold_id": "fold-mini-integration", "spec": "architecture-G0-A6-60m-raw"}
+{"cache_bytes": 0, "disk_free_bytes_by_root": {"artifact_root": 325556240384, "cache_root": 325556240384, "checkpoint_root": 325556240384, "model_root": 325556240384, "report_root": 325556240384, "temporary_root": 325556240384}, "elapsed_seconds": 0.00045908299944130704, "event": "RUNTIME_TELEMETRY", "gpu_vram_bytes": null, "gpu_vram_status": "NOT_APPLICABLE_CPU", "model_backend": "cpu", "phase": "START", "process_peak_rss_bytes": 414089216, "process_rss_bytes": 414089216, "ram_available_bytes": 5431459840, "ram_total_bytes": 17179869184, "stage": "CALIBRATE", "threads": null, "timestamp": "2026-11-06T12:59:48.855302+00:00"}
+{"event": "CAL_A_DONE", "fold_id": "fold-mini-integration", "spec": "architecture-G0-A6-60m-raw"}
+{"cache_bytes": 0, "disk_free_bytes_by_root": {"artifact_root": 325556240384, "cache_root": 325556240384, "checkpoint_root": 325556240384, "model_root": 325556240384, "report_root": 325556240384, "temporary_root": 325556240384}, "elapsed_seconds": 0.003693375001603272, "event": "RUNTIME_TELEMETRY", "gpu_vram_bytes": null, "gpu_vram_status": "NOT_APPLICABLE_CPU", "model_backend": "cpu", "phase": "END", "process_peak_rss_bytes": 414138368, "process_rss_bytes": 414138368, "ram_available_bytes": 5431459840, "ram_total_bytes": 17179869184, "stage": "CALIBRATE", "threads": null, "timestamp": "2026-11-06T12:59:48.858536+00:00"}
+{"event": "CAL_B_START", "fold_id": "fold-mini-integration", "spec": "architecture-G0-A6-60m-raw"}
+{"cache_bytes": 0, "disk_free_bytes_by_root": {"artifact_root": 325556236288, "cache_root": 325556236288, "checkpoint_root": 325556236288, "model_root": 325556236288, "report_root": 325556236288, "temporary_root": 325556236288}, "elapsed_seconds": 0.0004495000030146912, "event": "RUNTIME_TELEMETRY", "gpu_vram_bytes": null, "gpu_vram_status": "NOT_APPLICABLE_CPU", "model_backend": "cpu", "phase": "START", "process_peak_rss_bytes": 414138368, "process_rss_bytes": 414138368, "ram_available_bytes": 5431459840, "ram_total_bytes": 17179869184, "stage": "THRESHOLD", "threads": null, "timestamp": "2026-11-06T12:59:48.859126+00:00"}
+{"event": "CAL_B_DONE", "fold_id": "fold-mini-integration", "spec": "architecture-G0-A6-60m-raw"}
+{"cache_bytes": 0, "disk_free_bytes_by_root": {"artifact_root": 325556236288, "cache_root": 325556236288, "checkpoint_root": 325556236288, "model_root": 325556236288, "report_root": 325556236288, "temporary_root": 325556236288}, "elapsed_seconds": 0.007856959004129749, "event": "RUNTIME_TELEMETRY", "gpu_vram_bytes": null, "gpu_vram_status": "NOT_APPLICABLE_CPU", "model_backend": "cpu", "phase": "END", "process_peak_rss_bytes": 414236672, "process_rss_bytes": 414236672, "ram_available_bytes": 5431459840, "ram_total_bytes": 17179869184, "stage": "THRESHOLD", "threads": null, "timestamp": "2026-11-06T12:59:48.866533+00:00"}
+{"event": "TEST_EVAL_START", "fold_id": "fold-mini-integration", "spec": "architecture-G0-A6-60m-raw"}
+{"cache_bytes": 0, "disk_free_bytes_by_root": {"artifact_root": 325556236288, "cache_root": 325556236288, "checkpoint_root": 325556236288, "model_root": 325556236288, "report_root": 325556236288, "temporary_root": 325556236288}, "elapsed_seconds": 0.000444290999439545, "event": "RUNTIME_TELEMETRY", "gpu_vram_bytes": null, "gpu_vram_status": "NOT_APPLICABLE_CPU", "model_backend": "cpu", "phase": "START", "process_peak_rss_bytes": 414236672, "process_rss_bytes": 414236672, "ram_available_bytes": 5431459840, "ram_total_bytes": 17179869184, "stage": "TEST", "threads": null, "timestamp": "2026-11-06T12:59:48.867147+00:00"}
+{"event": "TEST_EVAL_DONE", "fold_id": "fold-mini-integration", "spec": "architecture-G0-A6-60m-raw"}
+{"cache_bytes": 0, "disk_free_bytes_by_root": {"artifact_root": 325556236288, "cache_root": 325556236288, "checkpoint_root": 325556236288, "model_root": 325556236288, "report_root": 325556236288, "temporary_root": 325556236288}, "elapsed_seconds": 0.04393487500055926, "event": "RUNTIME_TELEMETRY", "gpu_vram_bytes": null, "gpu_vram_status": "NOT_APPLICABLE_CPU", "model_backend": "cpu", "phase": "END", "process_peak_rss_bytes": 414564352, "process_rss_bytes": 414564352, "ram_available_bytes": 5431459840, "ram_total_bytes": 17179869184, "stage": "TEST", "threads": null, "timestamp": "2026-11-06T12:59:48.910636+00:00"}
+{"cache_bytes": 0, "disk_free_bytes_by_root": {"artifact_root": 325556236288, "cache_root": 325556236288, "checkpoint_root": 325556236288, "model_root": 325556236288, "report_root": 325556236288, "temporary_root": 325556236288}, "elapsed_seconds": null, "event": "RUNTIME_TELEMETRY", "gpu_vram_bytes": null, "gpu_vram_status": "NOT_APPLICABLE_CPU", "model_backend": "cpu", "phase": "START", "process_peak_rss_bytes": 414564352, "process_rss_bytes": 414564352, "ram_available_bytes": 5431459840, "ram_total_bytes": 17179869184, "stage": "MODEL_PUBLISH", "threads": null, "timestamp": "2026-11-06T12:59:48.912154+00:00"}
+{"cache_bytes": 0, "disk_free_bytes_by_root": {"artifact_root": 325556224000, "cache_root": 325556224000, "checkpoint_root": 325556224000, "model_root": 325556224000, "report_root": 325556224000, "temporary_root": 325556224000}, "elapsed_seconds": null, "event": "RUNTIME_TELEMETRY", "gpu_vram_bytes": null, "gpu_vram_status": "NOT_APPLICABLE_CPU", "model_backend": "cpu", "phase": "END", "process_peak_rss_bytes": 414580736, "process_rss_bytes": 414580736, "ram_available_bytes": 5431459840, "ram_total_bytes": 17179869184, "stage": "MODEL_PUBLISH", "threads": null, "timestamp": "2026-11-06T12:59:48.931027+00:00"}
+{"cache_bytes": 0, "disk_free_bytes_by_root": {"artifact_root": 325556187136, "cache_root": 325556187136, "checkpoint_root": 325556187136, "model_root": 325556187136, "report_root": 325556187136, "temporary_root": 325556187136}, "elapsed_seconds": null, "event": "RUNTIME_TELEMETRY", "gpu_vram_bytes": null, "gpu_vram_status": "NOT_APPLICABLE_CPU", "model_backend": "cpu", "phase": "START", "process_peak_rss_bytes": 414580736, "process_rss_bytes": 414580736, "ram_available_bytes": 5431459840, "ram_total_bytes": 17179869184, "stage": "REPORT_PUBLISH", "threads": null, "timestamp": "2026-11-06T12:59:48.933647+00:00"}
+{"cache_bytes": 0, "disk_free_bytes_by_root": {"artifact_root": 325556150272, "cache_root": 325556150272, "checkpoint_root": 325556150272, "model_root": 325556150272, "report_root": 325556150272, "temporary_root": 325556150272}, "elapsed_seconds": null, "event": "RUNTIME_TELEMETRY", "gpu_vram_bytes": null, "gpu_vram_status": "NOT_APPLICABLE_CPU", "model_backend": "cpu", "phase": "END", "process_peak_rss_bytes": 414580736, "process_rss_bytes": 414580736, "ram_available_bytes": 5431459840, "ram_total_bytes": 17179869184, "stage": "REPORT_PUBLISH", "threads": null, "timestamp": "2026-11-06T12:59:48.942048+00:00"}
+{"cache_bytes": 0, "checkpoint_stage": "train/fold-mini", "disk_free_bytes_by_root": {"artifact_root": 325556117504, "cache_root": 325556117504, "checkpoint_root": 325556117504, "model_root": 325556117504, "report_root": 325556117504, "temporary_root": 325556117504}, "elapsed_seconds": null, "event": "RUNTIME_TELEMETRY", "gpu_vram_bytes": null, "gpu_vram_status": "NOT_APPLICABLE_CPU", "model_backend": "cpu", "phase": "START", "process_peak_rss_bytes": 414580736, "process_rss_bytes": 414580736, "ram_available_bytes": 5431459840, "ram_total_bytes": 17179869184, "stage": "CHECKPOINT", "threads": null, "timestamp": "2026-11-06T12:59:48.945689+00:00"}
+{"cache_bytes": 0, "checkpoint_stage": "train/fold-mini", "disk_free_bytes_by_root": {"artifact_root": 325556125696, "cache_root": 325556125696, "checkpoint_root": 325556125696, "model_root": 325556125696, "report_root": 325556125696, "temporary_root": 325556125696}, "elapsed_seconds": null, "event": "RUNTIME_TELEMETRY", "gpu_vram_bytes": null, "gpu_vram_status": "NOT_APPLICABLE_CPU", "model_backend": "cpu", "phase": "END", "process_peak_rss_bytes": 414580736, "process_rss_bytes": 414580736, "ram_available_bytes": 5431459840, "ram_total_bytes": 17179869184, "stage": "CHECKPOINT", "threads": null, "timestamp": "2026-11-06T12:59:48.956962+00:00"}
+=========================== short test summary info ============================
+FAILED tests/phase7/test_pretraining_integration.py::test_tiny_pipeline_connects_and_is_reproducible
+1 failed, 117 passed in 14.10s

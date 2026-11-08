@@ -1,0 +1,412 @@
+{
+  "schema": "phase7_recovery_exclusions_v1",
+  "mirror_root": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent",
+  "count": 67,
+  "paths": [
+    {
+      "relative_path": "data/phase7/market/silver/index_kline/market-silver-v2-1-041ba4d85b5466a52b64573c/.dataset.parquet.9khb3g7b.partial",
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/index_kline/market-silver-v2-1-041ba4d85b5466a52b64573c/.dataset.parquet.9khb3g7b.partial",
+      "exists": true,
+      "bytes": 3276800
+    },
+    {
+      "relative_path": "data/phase7/market/silver/index_kline/market-silver-v2-1-1645bff2c534381955e03a3f/.dataset.parquet.iqp1ps7b.partial",
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/index_kline/market-silver-v2-1-1645bff2c534381955e03a3f/.dataset.parquet.iqp1ps7b.partial",
+      "exists": true,
+      "bytes": 3145728
+    },
+    {
+      "relative_path": "data/phase7/market/silver/index_kline/market-silver-v2-1-19496e4f21094c8fd8ef7183/.dataset.parquet.ufv51vwq.partial",
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/index_kline/market-silver-v2-1-19496e4f21094c8fd8ef7183/.dataset.parquet.ufv51vwq.partial",
+      "exists": true,
+      "bytes": 2097152
+    },
+    {
+      "relative_path": "data/phase7/market/silver/index_kline/market-silver-v2-1-25e57bc33183ca153982a776/.dataset.parquet.vjapaf9r.partial",
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/index_kline/market-silver-v2-1-25e57bc33183ca153982a776/.dataset.parquet.vjapaf9r.partial",
+      "exists": true,
+      "bytes": 7733248
+    },
+    {
+      "relative_path": "data/phase7/market/silver/index_kline/market-silver-v2-1-28f66f48574b6f467845876c/.dataset.parquet.g4p8mw6o.partial",
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/index_kline/market-silver-v2-1-28f66f48574b6f467845876c/.dataset.parquet.g4p8mw6o.partial",
+      "exists": true,
+      "bytes": 4587520
+    },
+    {
+      "relative_path": "data/phase7/market/silver/index_kline/market-silver-v2-1-374b85fc0d363eff0651966d/.dataset.parquet.ke61ovg8.partial",
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/index_kline/market-silver-v2-1-374b85fc0d363eff0651966d/.dataset.parquet.ke61ovg8.partial",
+      "exists": true,
+      "bytes": 1703936
+    },
+    {
+      "relative_path": "data/phase7/market/silver/index_kline/market-silver-v2-1-3ac8f54ff9c4760cb49738f3/.dataset.parquet.vw5hg5l4.partial",
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/index_kline/market-silver-v2-1-3ac8f54ff9c4760cb49738f3/.dataset.parquet.vw5hg5l4.partial",
+      "exists": true,
+      "bytes": 2883584
+    },
+    {
+      "relative_path": "data/phase7/market/silver/index_kline/market-silver-v2-1-3b322aa03a74a1899007266c/.dataset.parquet.ipaad52y.partial",
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/index_kline/market-silver-v2-1-3b322aa03a74a1899007266c/.dataset.parquet.ipaad52y.partial",
+      "exists": true,
+      "bytes": 3932160
+    },
+    {
+      "relative_path": "data/phase7/market/silver/index_kline/market-silver-v2-1-461a4160f40d1a4bc75f8fc1/.dataset.parquet.ohogqakx.partial",
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/index_kline/market-silver-v2-1-461a4160f40d1a4bc75f8fc1/.dataset.parquet.ohogqakx.partial",
+      "exists": true,
+      "bytes": 6684672
+    },
+    {
+      "relative_path": "data/phase7/market/silver/index_kline/market-silver-v2-1-4cbae5be4aa74e3a73dd9beb/.dataset.parquet.hoz4ljvs.partial",
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/index_kline/market-silver-v2-1-4cbae5be4aa74e3a73dd9beb/.dataset.parquet.hoz4ljvs.partial",
+      "exists": true,
+      "bytes": 3538944
+    },
+    {
+      "relative_path": "data/phase7/market/silver/index_kline/market-silver-v2-1-5b9770c8c86b4d068919d8af/.dataset.parquet.n3qwzk8b.partial",
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/index_kline/market-silver-v2-1-5b9770c8c86b4d068919d8af/.dataset.parquet.n3qwzk8b.partial",
+      "exists": true,
+      "bytes": 3801088
+    },
+    {
+      "relative_path": "data/phase7/market/silver/index_kline/market-silver-v2-1-69be83855d5cf6a85656ba0a/.dataset.parquet.6wfoqpcz.partial",
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/index_kline/market-silver-v2-1-69be83855d5cf6a85656ba0a/.dataset.parquet.6wfoqpcz.partial",
+      "exists": true,
+      "bytes": 3276800
+    },
+    {
+      "relative_path": "data/phase7/market/silver/index_kline/market-silver-v2-1-763945d23df9d469526d9225/.dataset.parquet.cqr7v_ku.partial",
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/index_kline/market-silver-v2-1-763945d23df9d469526d9225/.dataset.parquet.cqr7v_ku.partial",
+      "exists": true,
+      "bytes": 10354688
+    },
+    {
+      "relative_path": "data/phase7/market/silver/index_kline/market-silver-v2-1-8c059b47b32e559bfa414f41/.dataset.parquet.h_xy_ypb.partial",
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/index_kline/market-silver-v2-1-8c059b47b32e559bfa414f41/.dataset.parquet.h_xy_ypb.partial",
+      "exists": true,
+      "bytes": 2752512
+    },
+    {
+      "relative_path": "data/phase7/market/silver/index_kline/market-silver-v2-1-8eeb34f90a9473c14be966f9/.dataset.parquet.5qfac7_a.partial",
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/index_kline/market-silver-v2-1-8eeb34f90a9473c14be966f9/.dataset.parquet.5qfac7_a.partial",
+      "exists": true,
+      "bytes": 3670016
+    },
+    {
+      "relative_path": "data/phase7/market/silver/index_kline/market-silver-v2-1-9286550f978a48d9eacdca6f/.dataset.parquet.rlsh41gr.partial",
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/index_kline/market-silver-v2-1-9286550f978a48d9eacdca6f/.dataset.parquet.rlsh41gr.partial",
+      "exists": true,
+      "bytes": 3407872
+    },
+    {
+      "relative_path": "data/phase7/market/silver/index_kline/market-silver-v2-1-be54d66b3beabe3874cb8ce7/.dataset.parquet.04ncdxex.partial",
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/index_kline/market-silver-v2-1-be54d66b3beabe3874cb8ce7/.dataset.parquet.04ncdxex.partial",
+      "exists": true,
+      "bytes": 2359296
+    },
+    {
+      "relative_path": "data/phase7/market/silver/index_kline/market-silver-v2-1-f519c50fedc71f0195af6662/.dataset.parquet.jxt40job.partial",
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/index_kline/market-silver-v2-1-f519c50fedc71f0195af6662/.dataset.parquet.jxt40job.partial",
+      "exists": true,
+      "bytes": 3670016
+    },
+    {
+      "relative_path": "data/phase7/market/silver/index_kline/market-silver-v2-1-fe0bde3795b6d5783dd47d84/.dataset.parquet.bt6gp38l.partial",
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/index_kline/market-silver-v2-1-fe0bde3795b6d5783dd47d84/.dataset.parquet.bt6gp38l.partial",
+      "exists": true,
+      "bytes": 2621440
+    },
+    {
+      "relative_path": "data/phase7/market/silver/mark_kline/market-silver-v2-1-1af20ccf895e534a98fdfc0a/.dataset.parquet.onxvm17v.partial",
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/mark_kline/market-silver-v2-1-1af20ccf895e534a98fdfc0a/.dataset.parquet.onxvm17v.partial",
+      "exists": true,
+      "bytes": 8257536
+    },
+    {
+      "relative_path": "data/phase7/market/silver/mark_kline/market-silver-v2-1-3adfcf389c22af782bfe1d8c/.dataset.parquet.x7o4c3m5.partial",
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/mark_kline/market-silver-v2-1-3adfcf389c22af782bfe1d8c/.dataset.parquet.x7o4c3m5.partial",
+      "exists": true,
+      "bytes": 3145728
+    },
+    {
+      "relative_path": "data/phase7/market/silver/mark_kline/market-silver-v2-1-3e513247354348ea04ad9b47/.dataset.parquet.w1sto65g.partial",
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/mark_kline/market-silver-v2-1-3e513247354348ea04ad9b47/.dataset.parquet.w1sto65g.partial",
+      "exists": true,
+      "bytes": 2752512
+    },
+    {
+      "relative_path": "data/phase7/market/silver/mark_kline/market-silver-v2-1-54a0b1cf8b89bdfcd1c26958/.dataset.parquet.n2xumxt6.partial",
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/mark_kline/market-silver-v2-1-54a0b1cf8b89bdfcd1c26958/.dataset.parquet.n2xumxt6.partial",
+      "exists": true,
+      "bytes": 3014656
+    },
+    {
+      "relative_path": "data/phase7/market/silver/mark_kline/market-silver-v2-1-cd769074b69d8e18d80d1c16/.dataset.parquet.5f6vvb6y.partial",
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/mark_kline/market-silver-v2-1-cd769074b69d8e18d80d1c16/.dataset.parquet.5f6vvb6y.partial",
+      "exists": true,
+      "bytes": 1835008
+    },
+    {
+      "relative_path": "data/phase7/market/silver/mark_kline/market-silver-v2-1-d13ccd2d553e391fd3ffd739/.dataset.parquet.6t8bpe40.partial",
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/mark_kline/market-silver-v2-1-d13ccd2d553e391fd3ffd739/.dataset.parquet.6t8bpe40.partial",
+      "exists": true,
+      "bytes": 3407872
+    },
+    {
+      "relative_path": "data/phase7/market/silver/mark_kline/market-silver-v2-1-d1d37e42b2f6e82f68851e94/.dataset.parquet.xqkojjej.partial",
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/mark_kline/market-silver-v2-1-d1d37e42b2f6e82f68851e94/.dataset.parquet.xqkojjej.partial",
+      "exists": true,
+      "bytes": 7995392
+    },
+    {
+      "relative_path": "data/phase7/market/silver/mark_kline/market-silver-v2-1-eff982359012ae2b1782d5f2/.dataset.parquet.zgji8i6u.partial",
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/mark_kline/market-silver-v2-1-eff982359012ae2b1782d5f2/.dataset.parquet.zgji8i6u.partial",
+      "exists": true,
+      "bytes": 6160384
+    },
+    {
+      "relative_path": "data/phase7/market/silver/mark_kline/market-silver-v2-1-f656d26a35d13496474cd1fa/.dataset.parquet.uzt9t56b.partial",
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/mark_kline/market-silver-v2-1-f656d26a35d13496474cd1fa/.dataset.parquet.uzt9t56b.partial",
+      "exists": true,
+      "bytes": 4718592
+    },
+    {
+      "relative_path": "data/phase7/market/silver/mark_kline/market-silver-v2-1-fa4248506fe15a026997c5c0/.dataset.parquet.bm4fgylr.partial",
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/mark_kline/market-silver-v2-1-fa4248506fe15a026997c5c0/.dataset.parquet.bm4fgylr.partial",
+      "exists": true,
+      "bytes": 2097152
+    },
+    {
+      "relative_path": "data/phase7/quality/.quality-17137f6456566cba952effbf.json.nyb6owdf.partial",
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/quality/.quality-17137f6456566cba952effbf.json.nyb6owdf.partial",
+      "exists": true,
+      "bytes": 2621440
+    },
+    {
+      "relative_path": "data/phase7/quality/.quality-177dcf4125194fc613bea203.json.z4ad2l2w.partial",
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/quality/.quality-177dcf4125194fc613bea203.json.z4ad2l2w.partial",
+      "exists": true,
+      "bytes": 4849664
+    },
+    {
+      "relative_path": "data/phase7/quality/.quality-17e1acf14f59221fd3f96048.json.n_z5jp7n.partial",
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/quality/.quality-17e1acf14f59221fd3f96048.json.n_z5jp7n.partial",
+      "exists": true,
+      "bytes": 3145728
+    },
+    {
+      "relative_path": "data/phase7/quality/.quality-18495e5d5663e28b1dcc9102.json.6lxvu5xl.partial",
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/quality/.quality-18495e5d5663e28b1dcc9102.json.6lxvu5xl.partial",
+      "exists": true,
+      "bytes": 2883584
+    },
+    {
+      "relative_path": "data/phase7/quality/.quality-19fc4cbadd3c6957633e2718.json.75eg3por.partial",
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/quality/.quality-19fc4cbadd3c6957633e2718.json.75eg3por.partial",
+      "exists": true,
+      "bytes": 4063232
+    },
+    {
+      "relative_path": "data/phase7/quality/.quality-1a5fb9dd54bae48daf95f897.json.1gpei30e.partial",
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/quality/.quality-1a5fb9dd54bae48daf95f897.json.1gpei30e.partial",
+      "exists": true,
+      "bytes": 2490368
+    },
+    {
+      "relative_path": "data/phase7/quality/.quality-1b7064dac552e7ed18cf67a8.json.h0snabq0.partial",
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/quality/.quality-1b7064dac552e7ed18cf67a8.json.h0snabq0.partial",
+      "exists": true,
+      "bytes": 3276800
+    },
+    {
+      "relative_path": "data/phase7/quality/.quality-1ba22fd6fff4f78ccbf52e83.json.feo486dc.partial",
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/quality/.quality-1ba22fd6fff4f78ccbf52e83.json.feo486dc.partial",
+      "exists": true,
+      "bytes": 2228224
+    },
+    {
+      "relative_path": "data/phase7/quality/.quality-1bcfe3da0bfb933df75252c6.json.k9k0hgy4.partial",
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/quality/.quality-1bcfe3da0bfb933df75252c6.json.k9k0hgy4.partial",
+      "exists": true,
+      "bytes": 6160384
+    },
+    {
+      "relative_path": "data/phase7/quality/.quality-1d00264944d7f592ba3044cc.json.8t_vu3ub.partial",
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/quality/.quality-1d00264944d7f592ba3044cc.json.8t_vu3ub.partial",
+      "exists": true,
+      "bytes": 3538944
+    },
+    {
+      "relative_path": "data/phase7/quality/.quality-1d7b4c9e6161dcf057e4f26f.json.ep9jvp7r.partial",
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/quality/.quality-1d7b4c9e6161dcf057e4f26f.json.ep9jvp7r.partial",
+      "exists": true,
+      "bytes": 2097152
+    },
+    {
+      "relative_path": "data/phase7/quality/.quality-1e198bbe77cf90f58b4af4a1.json.xooizpok.partial",
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/quality/.quality-1e198bbe77cf90f58b4af4a1.json.xooizpok.partial",
+      "exists": true,
+      "bytes": 5898240
+    },
+    {
+      "relative_path": "data/phase7/quality/.quality-1e3848e1cecd484bb9cb903a.json.ihdok1la.partial",
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/quality/.quality-1e3848e1cecd484bb9cb903a.json.ihdok1la.partial",
+      "exists": true,
+      "bytes": 4325376
+    },
+    {
+      "relative_path": "data/phase7/quality/.quality-1f4e2bda870263723c0afd64.json.d2whnr75.partial",
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/quality/.quality-1f4e2bda870263723c0afd64.json.d2whnr75.partial",
+      "exists": true,
+      "bytes": 3538944
+    },
+    {
+      "relative_path": "data/phase7/quality/.quality-1f9f0468b24f0a45cb078e1d.json.9vcyxqwp.partial",
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/quality/.quality-1f9f0468b24f0a45cb078e1d.json.9vcyxqwp.partial",
+      "exists": true,
+      "bytes": 3538944
+    },
+    {
+      "relative_path": "data/phase7/quality/.quality-2256970fc840bafaaf2756cd.json.aj5_wp_k.partial",
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/quality/.quality-2256970fc840bafaaf2756cd.json.aj5_wp_k.partial",
+      "exists": true,
+      "bytes": 5111808
+    },
+    {
+      "relative_path": "data/phase7/quality/.quality-2711039fa8679f081cf0fc47.json.nh2kvvoz.partial",
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/quality/.quality-2711039fa8679f081cf0fc47.json.nh2kvvoz.partial",
+      "exists": true,
+      "bytes": 3014656
+    },
+    {
+      "relative_path": "data/phase7/quality/.quality-2727658060c48c7bef6940e9.json.h15fl1wh.partial",
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/quality/.quality-2727658060c48c7bef6940e9.json.h15fl1wh.partial",
+      "exists": true,
+      "bytes": 4325376
+    },
+    {
+      "relative_path": "data/phase7/quality/.quality-272df88e9bcbdc3449b37f55.json.somq90us.partial",
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/quality/.quality-272df88e9bcbdc3449b37f55.json.somq90us.partial",
+      "exists": true,
+      "bytes": 2883584
+    },
+    {
+      "relative_path": "data/phase7/quality/.quality-272fb350cbf03a5f21a94ce7.json.xzbxpm63.partial",
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/quality/.quality-272fb350cbf03a5f21a94ce7.json.xzbxpm63.partial",
+      "exists": true,
+      "bytes": 2228224
+    },
+    {
+      "relative_path": "data/phase7/quality/.quality-282029552fb00f0aab58ef52.json.dubdcilc.partial",
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/quality/.quality-282029552fb00f0aab58ef52.json.dubdcilc.partial",
+      "exists": true,
+      "bytes": 3014656
+    },
+    {
+      "relative_path": "data/phase7/quality/.quality-284fa7946e521bbcbf653236.json.r078di79.partial",
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/quality/.quality-284fa7946e521bbcbf653236.json.r078di79.partial",
+      "exists": true,
+      "bytes": 2359296
+    },
+    {
+      "relative_path": "data/phase7/quality/.quality-2aa3137d22bea092d4413b11.json.xhlx4527.partial",
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/quality/.quality-2aa3137d22bea092d4413b11.json.xhlx4527.partial",
+      "exists": true,
+      "bytes": 3276800
+    },
+    {
+      "relative_path": "data/phase7/quality/.quality-2ab986460e43076005a065ce.json.uzleia7t.partial",
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/quality/.quality-2ab986460e43076005a065ce.json.uzleia7t.partial",
+      "exists": true,
+      "bytes": 2621440
+    },
+    {
+      "relative_path": "data/phase7/quality/.quality-2b5bf544d09dc394d0938c33.json.d1bzx83u.partial",
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/quality/.quality-2b5bf544d09dc394d0938c33.json.d1bzx83u.partial",
+      "exists": true,
+      "bytes": 3801088
+    },
+    {
+      "relative_path": "data/phase7/quality/.quality-2d9c0c7b9028afb23a1a014c.json.4ugl0_jj.partial",
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/quality/.quality-2d9c0c7b9028afb23a1a014c.json.4ugl0_jj.partial",
+      "exists": true,
+      "bytes": 3145728
+    },
+    {
+      "relative_path": "data/phase7/quality/.quality-3080ceac8ed5b191547a37ef.json.swwb55c_.partial",
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/quality/.quality-3080ceac8ed5b191547a37ef.json.swwb55c_.partial",
+      "exists": true,
+      "bytes": 2490368
+    },
+    {
+      "relative_path": "data/phase7/quality/.quality-31162705c9e692aeddbbb787.json.fs3r_ily.partial",
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/quality/.quality-31162705c9e692aeddbbb787.json.fs3r_ily.partial",
+      "exists": true,
+      "bytes": 7340032
+    },
+    {
+      "relative_path": "data/phase7/quality/.quality-31f81b713ccc7a6ba0a0a400.json.8uolk618.partial",
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/quality/.quality-31f81b713ccc7a6ba0a0a400.json.8uolk618.partial",
+      "exists": true,
+      "bytes": 2228224
+    },
+    {
+      "relative_path": "data/phase7/quality/.quality-32abc70a9fb0447a02bc6a67.json.6xcj3axa.partial",
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/quality/.quality-32abc70a9fb0447a02bc6a67.json.6xcj3axa.partial",
+      "exists": true,
+      "bytes": 3670016
+    },
+    {
+      "relative_path": "data/phase7/quality/.quality-35ada93b9c84cf4df97e8c0d.json.vvwtv46l.partial",
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/quality/.quality-35ada93b9c84cf4df97e8c0d.json.vvwtv46l.partial",
+      "exists": true,
+      "bytes": 3801088
+    },
+    {
+      "relative_path": "data/phase7/quality/.quality-3633bcc247decac7d52985ed.json.a0dwgf8p.partial",
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/quality/.quality-3633bcc247decac7d52985ed.json.a0dwgf8p.partial",
+      "exists": true,
+      "bytes": 2752512
+    },
+    {
+      "relative_path": "data/phase7/quality/.quality-36854bc0e7eeda9b8014fe9f.json.1lcevle0.partial",
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/quality/.quality-36854bc0e7eeda9b8014fe9f.json.1lcevle0.partial",
+      "exists": true,
+      "bytes": 3407872
+    },
+    {
+      "relative_path": "data/phase7/quality/.quality-3711133e99be4a4cda892119.json.izgxw8bo.partial",
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/quality/.quality-3711133e99be4a4cda892119.json.izgxw8bo.partial",
+      "exists": true,
+      "bytes": 655360
+    },
+    {
+      "relative_path": "data/phase7/quality/.quality-39816304330446c89d2b2403.json.uu8m_bc3.partial",
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/quality/.quality-39816304330446c89d2b2403.json.uu8m_bc3.partial",
+      "exists": true,
+      "bytes": 524288
+    },
+    {
+      "relative_path": "data/phase7/quality/.quality-3a0d6508fc9f45d92da15222.json.gxg7n4u6.partial",
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/quality/.quality-3a0d6508fc9f45d92da15222.json.gxg7n4u6.partial",
+      "exists": true,
+      "bytes": 2883584
+    },
+    {
+      "relative_path": "data/phase7/quality/.quality-3a0f860918a53de6cb1496ff.json.0g48s4no.partial",
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/quality/.quality-3a0f860918a53de6cb1496ff.json.0g48s4no.partial",
+      "exists": true,
+      "bytes": 1048576
+    },
+    {
+      "relative_path": "data/phase7/quality/.quality-3a256231fc42d1a8cb259a1a.json.f_cy7ykw.partial",
+      "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/quality/.quality-3a256231fc42d1a8cb259a1a.json.f_cy7ykw.partial",
+      "exists": true,
+      "bytes": 655360
+    }
+  ],
+  "policy": "Exclude from scientific selection; canonical manifests are the only data authority. All forensic files preserved.",
+  "source_evidence": "/Users/cortex/Crypto2Data/lightning-download-logs/independent_verification.json",
+  "all_paths_partial": true
+}

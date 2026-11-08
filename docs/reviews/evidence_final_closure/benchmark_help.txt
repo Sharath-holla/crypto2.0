@@ -1,0 +1,18 @@
+usage: benchmark_one_spec.py [-h] [--config CONFIG] [--spec-id SPEC_ID]
+                             [--output-root OUTPUT_ROOT] [--enumerate]
+                             [--prepare-only] [--execute]
+
+Isolated canonical one-spec planning; --execute requires separate owner
+authorization.
+
+options:
+  -h, --help            show this help message and exit
+  --config CONFIG
+  --spec-id SPEC_ID
+  --output-root OUTPUT_ROOT
+  --enumerate
+  --prepare-only        With --execute: build and publish the single selected
+                        spec's prepared cache; fit nothing, write no
+                        model/report/checkpoint.
+  --execute             Future owner-authorized real-data run; default only
+                        prints a plan.

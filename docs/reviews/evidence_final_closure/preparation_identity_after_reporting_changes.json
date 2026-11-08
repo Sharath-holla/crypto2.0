@@ -1,0 +1,6 @@
+{
+  "status": "PASS",
+  "before": "a59b460070e4a40bd6979dd53ec5fb04c51666073c0d62f81627dde914ae3eea",
+  "after": "a59b460070e4a40bd6979dd53ec5fb04c51666073c0d62f81627dde914ae3eea",
+  "intervening_changes": "Model/report publication contract and ledger-aware recovery; neither changes prepared matrices."
+}

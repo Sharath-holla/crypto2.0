@@ -1,0 +1,6 @@
+{
+  "reproduced": true,
+  "issue": "Original 793-file transfer omits inputs needed to rebuild TRAIN-known descriptors",
+  "error": "Silver source manifest is unavailable: /Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/runpod-transfer-20261107/crypto2-persistent/data/phase7/bronze/binance/manifests/usdm-bchusdt-1d-b6dbb5cf4aab1d7b.json",
+  "type": "ValueError"
+}

@@ -1,0 +1,31 @@
+{
+  "metric_scope": "TRADE_LEVEL_PROXY_NOT_PORTFOLIO",
+  "portfolio_sharpe": "NOT_AVAILABLE",
+  "portfolio_max_drawdown": "NOT_AVAILABLE",
+  "portfolio_calmar": "NOT_AVAILABLE",
+  "funding_model_status": "NOT_MODELLED",
+  "cost_model_label": "STATIC_COST_STRESS",
+  "entry_price_label": "REFERENCE_EXECUTION_PRICE",
+  "economic_status": "REGRESSION_PLUMBING_ONLY_NO_TRADABILITY_CLAIM",
+  "cost_tiers": {
+    "HIGH_LIQUIDITY": {
+      "fee_bps": 8.0,
+      "spread_bps": 1.0,
+      "slippage_bps": 2.0
+    },
+    "MEDIUM_LIQUIDITY": {
+      "fee_bps": 8.0,
+      "spread_bps": 2.0,
+      "slippage_bps": 4.0
+    },
+    "LOWER_LIQUIDITY": {
+      "fee_bps": 8.0,
+      "spread_bps": 4.0,
+      "slippage_bps": 8.0
+    }
+  },
+  "funding_source_datasets_verified": 20,
+  "funding_cash_flow_engine": "NOT_MODELLED",
+  "PIPELINE_VALIDATED": false,
+  "TRADABILITY_VALIDATED": false
+}

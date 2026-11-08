@@ -1,0 +1,22 @@
+{
+  "docs/reviews/crypto2_architecture_scorecard_20261106.md": {
+    "unchanged_from_initial_dirty_diff": true,
+    "current_diff_sha256": "5daafdd11f2b23cfa6b125f443a46c7646640c9852eaf9b18e3cb9f65b6aab51"
+  },
+  "docs/reviews/crypto2_exhaustive_research_audit_20261106.md": {
+    "unchanged_from_initial_dirty_diff": true,
+    "current_diff_sha256": "19c5a013d59dd8c0f2c8a3a0fc44343efd13a3629073e3ee00e483df38d20163"
+  },
+  "docs/reviews/crypto2_literature_comparison_20261106.md": {
+    "unchanged_from_initial_dirty_diff": true,
+    "current_diff_sha256": "dcfc088c5dd0be59e09637a1bd00ba7968761b7612434c4ac421a269dc213e9a"
+  },
+  "docs/reviews/crypto2_loophole_register_20261106.md": {
+    "unchanged_from_initial_dirty_diff": true,
+    "current_diff_sha256": "7b19e6b6087f1d89337e3e0fca4092bcd99fcabaf59b85d47c3831b14b0e7248"
+  },
+  "docs/reviews/crypto2_training_code_audit_20261106.md": {
+    "unchanged_from_initial_dirty_diff": true,
+    "current_diff_sha256": "65ea10a711bfee5b47b3f4ca5db2b6d0b505ed6cba11d62c15242d7a313baf14"
+  }
+}

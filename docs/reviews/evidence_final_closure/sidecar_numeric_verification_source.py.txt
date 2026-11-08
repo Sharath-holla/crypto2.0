@@ -1,0 +1,50 @@
+import json
+from pathlib import Path
+import numpy as np
+import pyarrow as pa
+import pyarrow.parquet as pq
+from crypto_ai.phase7.context_sidecar import read_sidecar, sidecar_cache_identity
+from crypto_ai.data.storage import file_sha256
+from crypto_ai.phase7.features import FOLD_CONTEXT_SOURCE_COLUMNS
+
+evidence = Path('docs/reviews/evidence_final_closure')
+side = Path('/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v2/manifest.json')
+s = read_sidecar(side)
+g = json.loads((evidence/'gold_validation.json').read_text())
+gp = Path(g['manifest_path'])
+gold = json.loads(gp.read_text())
+identity = sidecar_cache_identity(side, gold_manifest_sha256=g['manifest_sha256'], registry_hash=gold['registry_hash'], universe_hash=gold['lineage']['core_universe_hash'], configuration_hash=s['identity']['configuration_hash'])
+report = {'identity':identity,'manifest_path':str(side),'partitions':[],'status':'PASS','rows_compared':0,'rtol':1e-9,'atol':1e-12,'tolerance_source':'Unchanged tests/phase7/test_feature_truncation_invariance.py numerical scientific contract; declared before this rerun. Exact comparison retained separately; current producer fixture projection remains bit-exact. Cross-platform explanation is an inference pending Linux.','columns':{c:{'max_absolute_difference':0.0,'nan_mask_equal':True,'within_tolerance':True} for c in FOLD_CONTEXT_SOURCE_COLUMNS[2:]}}
+for rec in s['partitions']:
+ p=side.parent/rec['path']
+ assert file_sha256(p)==rec['sha256']
+ table=pq.ParquetFile(p).read()
+ assert table.num_rows==rec['rows']
+ times=table['feature_time'].cast(pa.int64()).to_numpy()
+ symbol=rec['symbols'][0]
+ year=table['feature_time'][0].as_py().year
+ candidates=[r for r in gold['partition_files'] if f'symbol={symbol}/year={year}/' in r['path']]
+ assert len(candidates)==1
+ gt=pq.ParquetFile(gp.parent/candidates[0]['path']).read(columns=list(FOLD_CONTEXT_SOURCE_COLUMNS))
+ gtime=gt['feature_time'].cast(pa.int64()).to_numpy()
+ idx=np.searchsorted(times,gtime)
+ assert (idx<len(times)).all() and np.array_equal(times[idx],gtime)
+ failures=[]
+ for c in FOLD_CONTEXT_SOURCE_COLUMNS[2:]:
+  left,right=table[c].to_numpy()[idx],gt[c].to_numpy()
+  masks=np.array_equal(np.isnan(left),np.isnan(right))
+  close=np.allclose(left,right,rtol=1e-9,atol=1e-12,equal_nan=True)
+  finite=np.isfinite(left)&np.isfinite(right)
+  maximum=float(np.max(np.abs(left[finite]-right[finite]),initial=0))
+  row=report['columns'][c]
+  row['max_absolute_difference']=max(row['max_absolute_difference'],maximum)
+  row['nan_mask_equal'] &= masks
+  row['within_tolerance'] &= close
+  if not masks or not close:failures.append(c)
+ report['partitions'].append({'path':str(p),'rows':table.num_rows,'gold_rows_compared':gt.num_rows,'failures':failures})
+ report['rows_compared']+=gt.num_rows
+ if failures:report['status']='FAIL'
+ print(symbol,year,gt.num_rows,'failures',failures,flush=True)
+(evidence/'sidecar_validation.json').write_text(json.dumps(report,indent=2)+'\n')
+(evidence/'sidecar_manifest.json').write_bytes(side.read_bytes())
+print(report['status'],report['rows_compared'])
