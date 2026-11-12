@@ -1,0 +1,65 @@
+{
+  "status": "PASS",
+  "verified_source_commit": "99cf12fbcc6ee6397ee0caf4c40b768c87ae430c",
+  "scope": "Final documentation/evidence publication; no source changes after committed export tests",
+  "working_repo_tests": {
+    "passed": 1394,
+    "failed": 0,
+    "skipped": 0
+  },
+  "committed_export_tests": {
+    "passed": 1394,
+    "failed": 0,
+    "skipped": 0
+  },
+  "ruff_check": "PASS",
+  "ruff_format": "PASS",
+  "authored_and_structured_diff_check": "PASS",
+  "verbatim_output_whitespace_note": "Unmodified historical patch context and pytest traceback output contain expected trailing whitespace; these captured outputs are excluded from authored-text whitespace checks, not normalized.",
+  "verbatim_files_with_whitespace": [
+    {
+      "path": "docs/reviews/evidence_final_closure/execution_20261106T143735Z/execution_source_diff.patch",
+      "sha256": "ee0e6c38f1816d3ab9907855824af6aa1826f4b403e1c08d9d9916f8b8e90142"
+    },
+    {
+      "path": "docs/reviews/evidence_final_closure/execution_20261106T143735Z/initial_diff.patch",
+      "sha256": "7d4fedb3e4ba4fa40cb9cc0e9cddf4ebb2621443bcf59c57012886b6f0be5e2e"
+    },
+    {
+      "path": "docs/reviews/evidence_final_closure/execution_20261106T143735Z/pytest_committed_export.log",
+      "sha256": "7b3266fe462b3060d904eecf5d18aadabb9a90b138366a02f3e5008d279c6463"
+    },
+    {
+      "path": "docs/reviews/evidence_final_closure/execution_20261106T143735Z/pytest_committed_export.xml",
+      "sha256": "cbb08b614d263469d8ab73f6841fb5c0d5b691265933eb6739018411d5e6c8fd"
+    },
+    {
+      "path": "docs/reviews/evidence_final_closure/execution_20261106T143735Z/pytest_master.log",
+      "sha256": "62776046724f2479f9dbda6838dcfef3316a9a963bdb1427b170e062f05f2a66"
+    },
+    {
+      "path": "docs/reviews/evidence_final_closure/execution_20261106T143735Z/pytest_master.xml",
+      "sha256": "651a61511160a2be555e09e564c8a4c959422139afaa6df5d25c3d81b7792554"
+    },
+    {
+      "path": "docs/reviews/evidence_final_closure/final_tracked_diff.patch",
+      "sha256": "03acba0444797512dabf06dc5189a3fae8439df2f6d00487ef9106cdfd7bdeb4"
+    },
+    {
+      "path": "docs/reviews/evidence_final_closure/initial_diff.patch",
+      "sha256": "e1b27f9b1f02f52389d28f5807255f438dc75ae6e413fe62b4b2819f792c1da1"
+    },
+    {
+      "path": "docs/reviews/evidence_final_closure/ledger_integration.log",
+      "sha256": "f30d9071d78063edc2e016d1c69cfdfe2454a9ada205ae2422201a9c27f1fe36"
+    },
+    {
+      "path": "docs/reviews/evidence_final_closure/ledger_integration_repaired.log",
+      "sha256": "e3d79c34f6c268dca4fe8b2762cef26ebbfcfaefad63bfea364f63cbab82641b"
+    },
+    {
+      "path": "docs/reviews/evidence_final_closure/pytest_before_style.log",
+      "sha256": "81bcaa7de7e570ad4a9e23d7c6da4797ab388cd0620b62794d233aba42a4268b"
+    }
+  ]
+}

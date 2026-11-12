@@ -1,0 +1,34 @@
+# Collaborative requirements refinement
+
+Phase 7 increment 2 extends the existing project wizard, consulting worker, BusinessRecord, Requirement, ModelRun, WorkflowStep, Approval and Artifact models. SQLite remains active. No new engine, database, migration, paid transport or model installation is introduced. The complete owner brief is retained in docs/PHASE7_PRODUCTION_SDLC_SPEC.md.
+
+New projects created through the UI enable `review_before_planning`. Legacy API drafts and projects retain their existing proposal-approval contract; the optional API field defaults false for compatibility. This increment does not retroactively reinterpret older approvals.
+
+## Owner flow
+
+1. Submit requirements using the existing three-step wizard. Original text, parsed uploads, provenance and choices remain in the draft.
+2. An eligible Lead and Business Analyst each produce a strict RequirementCritique through the existing zero-cost gateway. Suggestions describe the current requirement, gap, improvement, reason, complexity, business impact and security/performance impact. The structured proposed specification remains advisory. No eligible model means the saved workflow waits without a response or reservation.
+3. The worker pauses after both critiques, before CTO architecture work. The owner accepts, rejects or edits each recommendation with a reason, answers each clarification and edits the specification. Accepted/edited recommendations must explicitly appear in the functional or nonfunctional scope. The UI includes only selected recommendations in the next saved version.
+4. Saving a revision retains the previous snapshot/reviews/approval, cancels and fences its old workflow, advances the Requirement version and creates the existing consulting workflow at the requirements-approval checkpoint. Asking AI to reconsider instead starts a new review at step zero. Every version retains the original source and upload references. A maximum of 20 versions, 100 KB per structured specification and 1 MB total refinement history bounds storage and responses.
+5. Review the saved version, acknowledge the owner's authorship and approve its exact hash. Goals, functional scope, acceptance criteria and no unresolved scope questions are mandatory. Approval binds the current requirement ID/version, canonical scope/source/document hashes, enabled owner and expiry. An expired checkpoint requires an explicit fresh revision; it is not silently resumed.
+6. Architecture consultation continues at CTO, with the approved structured scope. The existing exact proposal/architecture-selection approval, workforce, repository, engineering, publication and delivery gates still apply. No coding or external authorization is granted by requirements sign-off.
+
+When models are unavailable, the owner may explicitly author and sign a specification, preserving the existing manual planning path. This is an owner-authored policy choice, not a claim that Lead/BA analysis or independent review occurred. The UI says so. A newly revised scope never inherits a model review as certification of the changed version. Prior critiques remain inspectable in history.
+
+## Persistence and authorization
+
+`requirements_refinement.py` owns contracts, snapshots, source integrity, decisions and sign-off. `routes/refinement_operations.py` owns owner/tenant HTTP controls. Dedicated commands reuse the organization-first write lock, optimistic draft version and content-bound UUID replay protection. Conflicting writes have one winner. A repeated exact command cannot create a second revision or approval; a reused ID with different content is rejected. A retry of an old command does not renew authority.
+
+The scope hash binds the structured specification, requirement source fields, answers, recommendation decisions, source version and uploaded document references. Uploaded Artifact content hashes are rechecked. Saved critiques reference actual succeeded ModelRuns and matching WorkflowStep payloads; altered response/checkpoint/report metadata is rejected. Fixture classification remains explicit. Model execution is not automatically live verification or qualified independent review.
+
+The existing `project_setup` record protection prevents generic status mutations. Scope sign-off is revalidated before CTO consultation, proposal publication/approval and subsequent project-authority checks. Missing review state on a review-enabled draft cannot fall back to legacy authorization. Disabled owners, changed source/documents, expired or mismatched approvals cannot grant authority. Existing approved projects require their established delivery/change controls, rather than this pre-project revision endpoint.
+
+Sign-off saves an owner-authored requirements Artifact and knowledge source. Existing exact proposal approval attaches these sources to the project and permission-filtered memory. Proposals bind the scope approval/hash/specification and retain every approved requirement and acceptance criterion alongside architecture content. These are documentation artifacts, not deployable binaries.
+
+The UI integrates the review panel in submitted drafts, requirement consultation and the Requirements workspace section. It supports original/history inspection, editable proposed specifications, decisions, answers, explicit sign-off, pre-project revision of an approved scope, saved-state reload and same-command retry. Unsaved edits are retained against their original optimistic version. No extra top-level navigation is added.
+
+## Verification and limits
+
+Tests in tests/test_requirements_refinement.py exercise disposable SQLite and actual APIs/workers. Critique outputs use only explicit deterministic adapters. Browser coverage includes both no-model owner sign-off and labeled Lead/BA critique decisions. scripts/verify_requirements_restart.py starts three actual private API processes, persists one critique, abruptly exits a worker after claiming the next step, resumes after the disposable fixture lease expires and verifies exactly two reviews and one approval. It verifies signed scope across another API restart, SQLite WAL/integrity/FKs and no project creation. The interruption occurs before provider invocation; it does not claim recovery of an interrupted live inference.
+
+The existing CI also runs browser/recovery contracts against PostgreSQL and actual restricted Docker checks. Current observed counts, failures and exact-source CI evidence belong in TEST_REPORT.md. No genuine critique, live multi-model QA, generated PR, staging/production deployment or client delivery is established by fixtures. Separate architecture artifact review, three distinct QA rounds/traceability, deployment manifests/target authorization/reconciliation/rollback and full Phase 7 acceptance remain subsequent increments.

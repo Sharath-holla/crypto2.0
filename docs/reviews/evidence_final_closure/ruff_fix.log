@@ -1,0 +1,283 @@
+E501 Line too long (146 > 100)
+  --> docs/reviews/evidence_crypto2_20261106/probes.py:32:101
+   |
+30 | …re20_primary_v1.toml'))
+31 | …fg.prospective_holdout_start, cfg.schedule)
+32 | …ds': [p.to_dict() | {'cal_a_end': calibration_split_time(p).isoformat()} for p in folds]}
+   |                                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+33 | …
+34 | …
+   |
+
+E501 Line too long (108 > 100)
+  --> docs/reviews/evidence_crypto2_20261106/probes.py:36:101
+   |
+34 | gap = start + timedelta(minutes=900)
+35 | c = synthetic_candles(rows_per_symbol=260, start=start)
+36 | c = c.filter(pc.invert(pc.and_(pc.equal(c['symbol'], 'SOLUSDT'), pc.equal(c['open_time'], pa.scalar(gap)))))
+   |                                                                                                     ^^^^^^^^
+37 | f = generate_multiasset_features(c, registry=synthetic_registry(), config=FeatureConfig(correlation_window_rows=12, liquidity_window_r…
+38 | t = generate_multiasset_targets(c, f, config=cfg.targets, research_cutoff=cfg.research_cutoff).table
+   |
+
+E501 Line too long (268 > 100)
+  --> docs/reviews/evidence_crypto2_20261106/probes.py:37:101
+   |
+35 | …
+36 | …alar(gap)))))
+37 | …tion_window_rows=12, liquidity_window_rows=12, volatility_window_rows=12, daily_volatility_rows=12, seven_day_volatility_rows=24, include_12h=False, include_1d=False)).table
+   |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+38 | …table
+39 | …
+   |
+
+E501 Line too long (325 > 100)
+  --> docs/reviews/evidence_crypto2_20261106/probes.py:43:101
+   |
+41 | …
+42 | …
+43 | …'missing_keys': len(missing), 'lost_near_gap': [(s, x.isoformat()) for s, x in missing if gap - timedelta(hours=1) <= x <= gap], 'lost_by_symbol': {s: sum(k[0] == s for k in missing) for s in sorted(set(f['symbol'].to_pylist()))}}
+   |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+44 | …
+45 | …
+   |
+
+E501 Line too long (145 > 100)
+  --> docs/reviews/evidence_crypto2_20261106/probes.py:51:101
+   |
+49 | …
+50 | …], pa.scalar(chosen)))
+51 | …asses'] = build_fold_context_table(removed, verify_observable_coverage=True).num_rows > 0
+   |                                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+52 | …)
+53 | …': pc.add(base['open_time'], pa.scalar(timedelta(minutes=5), type=pa.duration('us'))), 'daily_volatility': [0.01] * base.num_rows, 'a…
+   |
+
+E501 Line too long (224 > 100)
+  --> docs/reviews/evidence_crypto2_20261106/probes.py:53:101
+   |
+51 | …ved, verify_observable_coverage=True).num_rows > 0
+52 | …
+53 | …timedelta(minutes=5), type=pa.duration('us'))), 'daily_volatility': [0.01] * base.num_rows, 'atr14_pct': [0.01] * base.num_rows})
+   |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+54 | …ch_cutoff).table
+55 | …
+   |
+
+E501 Line too long (111 > 100)
+  --> docs/reviews/evidence_crypto2_20261106/probes.py:54:101
+   |
+52 | base = synthetic_candles(rows_per_symbol=90, start=start)
+53 | feat = pa.table({'symbol': base['symbol'], 'feature_time': pc.add(base['open_time'], pa.scalar(timedelta(minutes=5), type=pa.duration(…
+54 | labels = generate_multiasset_targets(base, feat, config=cfg.targets, research_cutoff=cfg.research_cutoff).table
+   |                                                                                                     ^^^^^^^^^^^
+55 | bt = base.filter(pc.equal(base['symbol'], 'BTCUSDT'))
+56 | opens = bt['open'].to_numpy()
+   |
+
+E501 Line too long (142 > 100)
+  --> docs/reviews/evidence_crypto2_20261106/probes.py:57:101
+   |
+55 | …
+56 | …
+57 | …TCUSDT'), pc.equal(labels['feature_time'], pa.scalar(start + timedelta(minutes=155)))))
+   |                                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+58 | …
+59 | …
+   |
+
+E501 Line too long (181 > 100)
+  --> docs/reviews/evidence_crypto2_20261106/probes.py:65:101
+   |
+63 | …
+64 | …
+65 | …rmat(), 'entry': r['entry_time'].isoformat(), 'exit': r['label_end_time'].isoformat(), 'return': expected})
+   |                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+66 | …
+67 | …
+   |
+
+E501 Line too long (214 > 100)
+  --> docs/reviews/evidence_crypto2_20261106/probes.py:69:101
+   |
+67 | …
+68 | …
+69 | …d': _to_raw_predictions(pa.table({'ex_ante_volatility_scale': scale}), norm, target_type='volatility_normalized').tolist()}
+   |           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+70 | …um': 1.0, 'beats_zero': True} for _ in range(10)]
+71 | …
+   |
+
+E501 Line too long (140 > 100)
+  --> docs/reviews/evidence_crypto2_20261106/probes.py:70:101
+   |
+68 | …
+69 | …scale': scale.tolist(), 'reconstructed': _to_raw_predictions(pa.table({'ex_ante_volatility_scale': scale}), norm, target_type='volati…
+70 | …m_skill_vs_zero': 0.01, 'net_return_sum': 1.0, 'beats_zero': True} for _ in range(10)]
+   |                                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+71 | …rows)
+72 | …
+   |
+
+E501 Line too long (118 > 100)
+  --> docs/reviews/evidence_crypto2_20261106/probes.py:73:101
+   |
+71 | out['duplicate_ranking'] = rank_specs_with_correction(rows)
+72 | out['duplicate_success'] = evaluate_success(rows)
+73 | out['hardening_module_in_scientific_identity'] = 'src/crypto_ai/phase7/hardening.py' in TRAINING_CRITICAL_SOURCE_FILES
+   |                                                                                                     ^^^^^^^^^^^^^^^^^^
+74 | out['null_FWER_independent'] = {str(n): 1 - (1 - 0.05) ** n for n in [48, 768]}
+75 | out['long_gold_matrix_gib'] = 50352548 * 109 * 8 / 1024 ** 3
+   |
+
+E501 Line too long (134 > 100)
+  --> docs/reviews/evidence_crypto2_20261106/probes.py:77:101
+   |
+75 | out['long_gold_matrix_gib'] = 50352548 * 109 * 8 / 1024 ** 3
+76 | out['one_horizon_average_matrix_gib'] = 50352548 / 4 * 109 * 8 / 1024 ** 3
+77 | out['resource_average_counterexample'] = estimate_spec_resources(total_gold_rows=7, feature_count=109)['rows_per_horizon_upper_bound']
+   |                                                                                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+78 | Path('/tmp/crypto2-audit-20261106/probes.json').write_text(json.dumps(out, indent=2))
+79 | print(json.dumps({k: v for k, v in out.items() if k != 'folds'}, indent=2))
+   |
+
+E501 Line too long (125 > 100)
+  --> docs/reviews/evidence_crypto2_20261106/probes.py:90:101
+   |
+88 |     before = scientific_source_identity(scratch)['manifest_sha256']
+89 |     dest.write_text(dest.read_text() + '\n# audit-only change in a temporary copy\n')
+90 |     out['hardening_only_change_preserves_scientific_hash'] = before == scientific_source_identity(scratch)['manifest_sha256']
+   |                                                                                                     ^^^^^^^^^^^^^^^^^^^^^^^^^
+91 | q = pa.table({'symbol': ['BTCUSDT'] * 30, 'feature_time': [start + timedelta(hours=2 * i) for i in range(30)], 'entry_time': [start + …
+92 | th, diagnostics = select_cal_b_thresholds(q, np.full(30, 0.05), target_column='raw_future_return', liquidity_tiers={'BTCUSDT': 'HIGH_L…
+   |
+
+E501 Line too long (307 > 100)
+  --> docs/reviews/evidence_crypto2_20261106/probes.py:91:101
+   |
+89 | …
+90 | …ty(scratch)['manifest_sha256']
+91 | … in range(30)], 'entry_time': [start + timedelta(hours=2 * i, minutes=5) for i in range(30)], 'label_end_time': [start + timedelta(hours=2 * i, minutes=65) for i in range(30)], 'raw_future_return': [-0.01] * 30})
+   |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+92 | …n', liquidity_tiers={'BTCUSDT': 'HIGH_LIQUIDITY'}, cluster_mapping={}, granularity='global', config=cfg.costs)
+93 | …]['global']['candidates']}
+   |
+
+E501 Line too long (205 > 100)
+  --> docs/reviews/evidence_crypto2_20261106/probes.py:92:101
+   |
+90 | …ce_identity(scratch)['manifest_sha256']
+91 | … i) for i in range(30)], 'entry_time': [start + timedelta(hours=2 * i, minutes=5) for i in range(30)], 'label_end_time': [start + tim…
+92 | …ure_return', liquidity_tiers={'BTCUSDT': 'HIGH_LIQUIDITY'}, cluster_mapping={}, granularity='global', config=cfg.costs)
+   |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+93 | …['groups']['global']['candidates']}
+94 | …
+   |
+
+E501 Line too long (121 > 100)
+  --> docs/reviews/evidence_crypto2_20261106/probes.py:93:101
+   |
+91 | q = pa.table({'symbol': ['BTCUSDT'] * 30, 'feature_time': [start + timedelta(hours=2 * i) for i in range(30)], 'entry_time': [start + …
+92 | th, diagnostics = select_cal_b_thresholds(q, np.full(30, 0.05), target_column='raw_future_return', liquidity_tiers={'BTCUSDT': 'HIGH_L…
+93 | out['all_negative_thresholds'] = {'selected': th.values_bps, 'candidates': diagnostics['groups']['global']['candidates']}
+   |                                                                                                     ^^^^^^^^^^^^^^^^^^^^^
+94 | htf_start = datetime(2020, 8, 1, tzinfo=UTC)
+   |
+
+E501 Line too long (213 > 100)
+   --> docs/reviews/evidence_crypto2_20261106/probes.py:109:101
+    |
+107 | …
+108 | …
+109 | …e', pa.array(cl * 1.002)).append_column('funding_rate', pa.array(0.0001 + 1e-05 * np.sin(np.arange(native.num_rows) / 5)))
+    |           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+110 | …
+111 | …
+    |
+
+E501 Line too long (155 > 100)
+   --> docs/reviews/evidence_crypto2_20261106/probes.py:113:101
+    |
+111 | …
+112 | …
+113 | …w_rows=12, volatility_window_rows=12, daily_volatility_rows=12, seven_day_volatility_rows=24)
+    |                                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+114 | …_registry(), config=fc, higher_timeframe_context=context)
+115 | …lar(boundary)))
+    |
+
+E501 Line too long (119 > 100)
+   --> docs/reviews/evidence_crypto2_20261106/probes.py:114:101
+    |
+112 | context = build_higher_timeframe_context(h12, h24)
+113 | fc = FeatureConfig(correlation_window_rows=12, liquidity_window_rows=12, volatility_window_rows=12, daily_volatility_rows=12, seven_d…
+114 | full = generate_multiasset_features(native, registry=synthetic_registry(), config=fc, higher_timeframe_context=context)
+    |                                                                                                     ^^^^^^^^^^^^^^^^^^^
+115 | pre_native = native.filter(pc.less(native['open_time'], pa.scalar(boundary)))
+116 | pre_context = build_higher_timeframe_context(h12.filter(pc.less_equal(h12['open_time'], pa.scalar(boundary - timedelta(hours=12)))), …
+    |
+
+E501 Line too long (218 > 100)
+   --> docs/reviews/evidence_crypto2_20261106/probes.py:116:101
+    |
+114 | …timeframe_context=context)
+115 | …
+116 | …alar(boundary - timedelta(hours=12)))), h24.filter(pc.less_equal(h24['open_time'], pa.scalar(boundary - timedelta(days=1)))))
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+117 | …igher_timeframe_context=pre_context)
+118 | …
+    |
+
+E501 Line too long (129 > 100)
+   --> docs/reviews/evidence_crypto2_20261106/probes.py:117:101
+    |
+115 | …ime'], pa.scalar(boundary)))
+116 | …filter(pc.less_equal(h12['open_time'], pa.scalar(boundary - timedelta(hours=12)))), h24.filter(pc.less_equal(h24['open_time'], pa.sc…
+117 | … registry=synthetic_registry(), config=fc, higher_timeframe_context=pre_context)
+    |                                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+118 | …['feature_time'], pa.scalar(boundary)))
+119 | …
+    |
+
+E501 Line too long (117 > 100)
+   --> docs/reviews/evidence_crypto2_20261106/probes.py:122:101
+    |
+120 | assert left.select(['symbol', 'feature_time']).equals(right.select(['symbol', 'feature_time']))
+121 | for name in full.feature_columns:
+122 |     np.testing.assert_allclose(left[name].to_numpy(), right[name].to_numpy(), rtol=1e-12, atol=1e-15, equal_nan=True)
+    |                                                                                                     ^^^^^^^^^^^^^^^^^
+123 | out['full_feature_prefix_probe'] = {'status': 'PASS', 'columns_checked': len(full.feature_columns), 'rows_compared': left.num_rows, '…
+124 | Path('/tmp/crypto2-audit-20261106/probes.json').write_text(json.dumps(out, indent=2))
+    |
+
+E501 Line too long (297 > 100)
+   --> docs/reviews/evidence_crypto2_20261106/probes.py:123:101
+    |
+121 | …
+122 | …1e-15, equal_nan=True)
+123 | …ns), 'rows_compared': left.num_rows, 'feature_config': 'short fixture windows; production column set', 'max_relative_tolerance': 1e-12, 'max_absolute_tolerance': 1e-15, 'actual_gold_equivalence': False}
+    |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+124 | …
+125 | …egative_thresholds', 'full_feature_prefix_probe']}, indent=2))
+    |
+
+E501 Line too long (157 > 100)
+   --> docs/reviews/evidence_crypto2_20261106/probes.py:125:101
+    |
+123 | …checked': len(full.feature_columns), 'rows_compared': left.num_rows, 'feature_config': 'short fixture windows; production column set…
+124 | ….dumps(out, indent=2))
+125 | …eserves_scientific_hash', 'all_negative_thresholds', 'full_feature_prefix_probe']}, indent=2))
+    |                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+E501 Line too long (101 > 100)
+   --> tests/phase7/test_feature_truncation_invariance.py:102:101
+    |
+100 |     # Repeating Arrow timestamp conversion for every feature is needlessly expensive.
+101 |     def keys(table):
+102 |         return list(zip(table["symbol"].to_pylist(), table["feature_time"].to_pylist(), strict=True))
+    |                                                                                                     ^
+103 |
+104 |     full_keys, truncated_keys = keys(full.table), keys(truncated.table)
+    |
+
+Found 34 errors (8 fixed, 26 remaining).

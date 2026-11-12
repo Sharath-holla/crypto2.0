@@ -1,0 +1,98 @@
+{
+  "status": "PASS",
+  "recovery_status": "VERIFIED_RECOVERY_WITH_PRESERVED_SOURCE_PROVENANCE_DISCREPANCIES",
+  "remote_files": 1276060,
+  "remote_bytes": 34113175738,
+  "missing": 0,
+  "size_mismatches": 0,
+  "unresolved_findings": 0,
+  "preserved_source_discrepancies": 67,
+  "fresh_source_matches_local": 11,
+  "accounted_supplement_findings": 34,
+  "extra_partials": 67,
+  "hash_index": {
+    "time": "2026-11-06T12:11:36.943339+00:00",
+    "references_indexed": 2083941,
+    "unique_files": 1252032
+  },
+  "evidence": {
+    "independent_verification.json": {
+      "path": "/Users/cortex/Crypto2Data/lightning-download-logs/independent_verification.json",
+      "bytes": 151610602,
+      "sha256": "72f5e0395abef2d37999b34fca96cfe47d62503dcc8e86d1436e477e88c7c3d2"
+    },
+    "sha256-verification.json": {
+      "path": "/Users/cortex/Crypto2Data/lightning-download-logs/sha256-verification.json",
+      "bytes": 1140359741,
+      "sha256": "ebdbc81ed266815136bafb1743567054e05cc846ac941bd0ae372b3ec1645f5e"
+    },
+    "fresh-remote-audit.json": {
+      "path": "/Users/cortex/Crypto2Data/lightning-download-logs/fresh-remote-audit.json",
+      "bytes": 226,
+      "sha256": "5cd345e28395f25aa30ad0fcf37ebbd1fc1fd2a23e60a552fea428be127403df"
+    },
+    "source-checksum-findings.json": {
+      "path": "/Users/cortex/Crypto2Data/lightning-download-logs/source-checksum-findings.json",
+      "bytes": 3939,
+      "sha256": "771422937e301a885a37e6fdef8432f7a262ef9f4680ef8ecbcbbd9667674b47"
+    },
+    "supplement-checksum-coverage.json": {
+      "path": "/Users/cortex/Crypto2Data/lightning-download-logs/supplement-checksum-coverage.json",
+      "bytes": 11873,
+      "sha256": "295a146e6d17eba57d2814030eb5a2690bbc7f2e69c66c84a26532dec99e6603"
+    },
+    "remaining-findings-resolution.json": {
+      "path": "/Users/cortex/Crypto2Data/lightning-download-logs/remaining-findings-resolution.json",
+      "bytes": 26062,
+      "sha256": "93d258c5038ba39d11567c5414e27f21df9295f77c5a4c8e42dbeb7b75862e85"
+    },
+    "extra-partials-scope.json": {
+      "path": "/Users/cortex/Crypto2Data/lightning-download-logs/extra-partials-scope.json",
+      "bytes": 170,
+      "sha256": "90f8440afc717fd3625909c6f3663e5f447904ee8b01a1c355b614c6531f17e1"
+    },
+    "verified-hash-index.json": {
+      "path": "/Users/cortex/Crypto2Data/lightning-download-logs/verified-hash-index.json",
+      "bytes": 108,
+      "sha256": "5921e017a8c0fe67c3153db3471dab767303a55811be5375e78d8959ef7b7683"
+    },
+    "FINAL_RECOVERY_REPORT.json": {
+      "path": "/Users/cortex/Crypto2Data/lightning-download-logs/FINAL_RECOVERY_REPORT.json",
+      "bytes": 1433,
+      "sha256": "9333dab915abd447cf07bc63653f532eb184eab89c512f8e8a4975110c4c93b1"
+    }
+  },
+  "base_checksum_records": {
+    "records": 2083941,
+    "pass": 2083876,
+    "not_pass": 65
+  },
+  "historical_discrepancy_examples": [
+    {
+      "manifest": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/bronze/binance/manifests/segmented-usdm-dydxusdt-1d-001-52bbe79e48505fae82141761.json",
+      "path": "data/phase7/quality/quality-edb2bf831fdeada176805de7.json",
+      "expected_sha256": "85e119ca6d62fa98da3bc5524abce861e4f30c4c33dfbee28998875e13e49a04",
+      "actual_sha256": "6a8c1578e91f58f184ce9af104eb6aa8ae340df6c278a8661f3bce371d27b968",
+      "pass": false
+    },
+    {
+      "manifest": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/bronze/binance/manifests/segmented-usdm-dydxusdt-1d-001-52bbe79e48505fae82141761.json",
+      "path": "data/phase7/quarantine/quality-edb2bf831fdeada176805de7.json",
+      "expected_sha256": "8cf4812a8d54916cd9d5b587a6a90b3a8ec28f634139665ae4da8261a764e12c",
+      "actual_sha256": "42f3c95c8185c89a03fe47b0bd86697991dbb827bcfcbe8dfd99b27890fbb359",
+      "pass": false
+    },
+    {
+      "manifest": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/bronze/binance/manifests/segmented-usdm-dydxusdt-1d-001-52bbe79e48505fae82141761.json",
+      "path": "data/phase7/bronze/binance/manifests/usdm-dydxusdt-1d-83c42be90e4e00b8.json",
+      "expected_sha256": "88ca69eb35941657a46c7d3b0505e844ae5aa73f94677f4705fd5a541e22a0c1",
+      "actual_sha256": "0d726a9a393cdb2135511ca894d29df50f0a554e73867b7e7262fac6011f4746",
+      "pass": false
+    }
+  ],
+  "limitation": "Checksum verification uses available manifests and source-side expected digests; source API inventory has sizes, not authoritative hashes for every file. Historical checksum expectations disagree with11 current source files; local bytes of all11 match fresh official Lightning downloads. Original manifests, discrepancy reports and67 local partial extras preserved; no data repaired or scientific evaluation run.",
+  "network_used": false,
+  "extra_bytes": 240779264,
+  "local_file_count_including_extras": 1276127,
+  "local_bytes_including_extras": 34353955002
+}

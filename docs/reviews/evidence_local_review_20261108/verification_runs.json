@@ -1,0 +1,44 @@
+[
+  {
+    "file": "pytest_snapshot.xml",
+    "tests": 1394,
+    "failures": 2,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "file": "pytest_review_final.xml",
+    "tests": 1408,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "file": "independent_regressions_after.xml",
+    "tests": 14,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "file": "observer_fit_equivalence_final.xml",
+    "tests": 4,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "file": "latest_diagnostics_targeted.xml",
+    "tests": 71,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "file": "pytest_latest_snapshot.xml",
+    "tests": 1465,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  }
+]

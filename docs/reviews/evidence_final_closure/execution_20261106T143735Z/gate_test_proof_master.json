@@ -1,0 +1,88 @@
+{
+  "TRUNCATION": {
+    "status": "PASS",
+    "executed_tests": 21,
+    "modules": [
+      "test_feature_truncation_invariance",
+      "test_context_sidecar"
+    ],
+    "source": "pytest_committed_export_final.xml",
+    "failures": []
+  },
+  "UNIVERSE": {
+    "status": "PASS",
+    "executed_tests": 75,
+    "modules": [
+      "test_config_registry_universe",
+      "test_cold_start_universe",
+      "test_membership_gap_causality",
+      "test_causal_segment_quarantine"
+    ],
+    "source": "pytest_committed_export_final.xml",
+    "failures": []
+  },
+  "CACHE_IDENTITY": {
+    "status": "PASS",
+    "executed_tests": 43,
+    "modules": [
+      "test_preparation_identity",
+      "test_prepared_cache",
+      "test_context_sidecar"
+    ],
+    "source": "pytest_committed_export_final.xml",
+    "failures": []
+  },
+  "LEDGER": {
+    "status": "PASS",
+    "executed_tests": 118,
+    "modules": [
+      "test_result_publication",
+      "test_pretraining_integration",
+      "test_phase7_final_integrity",
+      "test_pre_lightning_hardening"
+    ],
+    "source": "pytest_committed_export_final.xml",
+    "failures": []
+  },
+  "SELECTION_PROTOCOL": {
+    "status": "PASS",
+    "executed_tests": 11,
+    "modules": [
+      "test_selection_protocol_file"
+    ],
+    "source": "pytest_committed_export_final.xml",
+    "failures": []
+  },
+  "ADMISSION": {
+    "status": "PASS",
+    "executed_tests": 77,
+    "modules": [
+      "test_admission",
+      "test_standalone_training_remediation",
+      "test_final_runtime_guards"
+    ],
+    "source": "pytest_committed_export_final.xml",
+    "failures": []
+  },
+  "CPU_SMOKE_ENFORCEMENT": {
+    "status": "PASS",
+    "executed_tests": 41,
+    "modules": [
+      "test_admission",
+      "test_runtime_backend",
+      "test_final_runtime_guards"
+    ],
+    "source": "pytest_committed_export_final.xml",
+    "failures": []
+  },
+  "LIVE_ORDER_ISOLATION": {
+    "status": "PASS",
+    "executed_tests": 7,
+    "modules": [
+      "test_research_import_boundary",
+      "test_live_order_isolation"
+    ],
+    "source": "pytest_committed_export_final.xml",
+    "failures": []
+  }
+}

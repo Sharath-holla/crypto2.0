@@ -96,6 +96,18 @@ def _finish(
     )
 
 
+def effective_normalization_scale(scale: float, floor: float) -> float:
+    """Divisor actually used by the volatility-normalized target: max(|scale|, floor).
+
+    CHANGED BY CLAUDE (2026-11-06, closure): the forward transform divided by this value but the
+    inverse multiplied by the RAW stored scale, so the round trip was wrong whenever the scale was
+    below the floor (or zero/negative). Both directions now use this one function. NaN stays NaN.
+    """
+
+    value = float(scale)
+    return max(abs(value), float(floor)) if np.isfinite(value) else float("nan")
+
+
 def _target_row(
     *,
     symbol: str,

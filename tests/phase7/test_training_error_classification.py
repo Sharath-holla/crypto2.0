@@ -22,8 +22,8 @@ from crypto_ai.phase7.training import ExperimentSpec, run_phase7_training
 _US = 1_000_000
 
 
-def _fold_table(rows: int = 3) -> pa.Table:
-    base = datetime(2022, 1, 1, tzinfo=UTC)
+def _fold_table(rows: int = 3, base: datetime | None = None) -> pa.Table:
+    base = base or datetime(2022, 1, 1, tzinfo=UTC)
     return pa.table(
         {
             "symbol": ["BTCUSDT"] * rows,
@@ -67,9 +67,11 @@ def _fold_data(tmp_path: Path) -> MultiAssetFoldData:
         test_end=datetime(2022, 10, 1, tzinfo=UTC),
     )
     table = _fold_table()
+    # CHANGED BY CLAUDE (2026-11-08): TRAIN labels must end before the VALIDATION start (purge,
+    # now asserted at the fit boundary), so the TRAIN rows sit one day earlier.
     return MultiAssetFoldData(
         plan=plan,
-        train=table,
+        train=_fold_table(base=datetime(2021, 12, 31, tzinfo=UTC)),
         validation=table,
         calibration_a=table,
         calibration_b=table,
@@ -117,7 +119,7 @@ def _patch_harness(
     monkeypatch.setenv("PHASE7_CACHE_MODE", "disabled")
     manifest = _manifest(tmp_path)
     checkpoint_root = tmp_path / "checkpoints"
-    run_root = tmp_path / "run"
+    run_root = tmp_path / "audit-test-run"
 
     def fake_manifest(_: Path) -> dict[str, object]:
         import json
@@ -153,6 +155,14 @@ def _patch_harness(
     monkeypatch.setattr("crypto_ai.phase7.training.plan_folds", fake_plan_folds)
     monkeypatch.setattr("crypto_ai.phase7.training.phase7_experiment_specs", fake_specs)
     monkeypatch.setattr("crypto_ai.phase7.training._load_fold_rows", fake_load_rows)
+    # This harness tests orchestration/error ownership, not Gold/context production.
+    monkeypatch.setattr("crypto_ai.phase7.training._load_fold_context_source", fake_load_rows)
+    monkeypatch.setattr("crypto_ai.phase7.training._context_sidecar_path", lambda _: None)
+    # Synthetic orchestration harness: admission itself is tested separately with
+    # a real contract parser; never use this stub outside isolated tmp_path tests.
+    monkeypatch.setattr(
+        "crypto_ai.phase7.admission.admit_official_training", lambda **_: {"test_fixture": True}
+    )
     monkeypatch.setattr("crypto_ai.phase7.training.slice_multiasset_fold", fake_slice)
     monkeypatch.setattr("crypto_ai.phase7.training.fit_architecture", fake_fit)
     return checkpoint_root, run_root, fit_calls

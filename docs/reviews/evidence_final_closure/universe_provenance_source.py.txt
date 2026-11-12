@@ -1,0 +1,52 @@
+import json
+from pathlib import Path
+from crypto_ai.data.storage import file_sha256
+from crypto_ai.phase5.folds import plan_folds
+from crypto_ai.phase7.config import load_phase7_config
+from crypto_ai.phase7.registry import read_registry
+from crypto_ai.phase7.segments import CausalDataGap
+from crypto_ai.phase7.universe import (
+    SymbolDescriptor, FoldActiveUniverse, read_universe, read_expansion_policy,
+    select_core_universe, select_fold_active_universe,
+)
+
+run = Path('/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/phase7/artifacts/phase7a-core20-primary-93f987736b1a79d26b773957')
+config = load_phase7_config(Path('configs/phase7/research_core20_primary_v1.toml'))
+registry = read_registry(run/'registry/symbol_registry.json')
+core = read_universe(run/'universe/core_universe.json')
+expansion = read_expansion_policy(run/'universe/expansion_policy.json')
+selection = [SymbolDescriptor.model_validate(x) for x in json.loads((run/'universe/selection_descriptors.json').read_text())['descriptors']]
+descriptors = [SymbolDescriptor.model_validate(x) for x in json.loads((run/'fold_descriptors.json').read_text())['descriptors']]
+stored = json.loads((run/'universe/fold_memberships.json').read_text())
+data = json.loads((run/'data/data_manifest.json').read_text())
+gaps = tuple(CausalDataGap.model_validate(x) for x in data['unusable_segments'])
+reselected = select_core_universe(registry, selection, selection_cutoff=core.selection_cutoff, config=config.universe)
+plans = {p.fold_id:p for p in plan_folds(config.data_start, config.research_cutoff, config.prospective_holdout_start, config.schedule)}
+errors = []
+if reselected.universe_hash != core.universe_hash: errors.append('reselected core differs')
+if len(core.symbols)!=20 or 'HNTUSDT' not in core.symbols or 'XPINUSDT' in core.symbols: errors.append('frozen Core20 changed')
+if core.selection_cutoff != config.universe.selection_cutoff: errors.append('freeze cutoff drift')
+if core.registry_hash != registry.registry_hash: errors.append('registry/core identity mismatch')
+checks=[]
+for item in stored['folds']:
+ old=FoldActiveUniverse.model_validate(item)
+ plan=plans[old.fold_id]
+ new=select_fold_active_universe(registry,descriptors,fold_id=plan.fold_id,train_end=plan.train_end,core_universe=core,expansion_policy=expansion,config=config.universe,research_view=old.research_view,unusable_segments=gaps,required_start=plan.train_start,required_end=plan.test_end)
+ causal=all(registry.by_symbol()[s].causal_available_from < plan.train_end for s in new.active_symbols)
+ relevant=[d for d in descriptors if d.symbol in new.active_symbols and d.as_of<=plan.train_end]
+ descriptor_causal=all(d.source_max_time < d.as_of<=plan.train_end for d in relevant)
+ differences = [k for k in old.model_dump(mode='json') if old.model_dump(mode='json').get(k) != new.model_dump(mode='json').get(k)]
+ row={'identity_difference_fields': differences, 'stored_gap_policy':old.gap_gate_policy, 'current_gap_policy':new.gap_gate_policy, 'fold_id':old.fold_id,'research_view':old.research_view,'train_end':plan.train_end.isoformat(),'stored_hash':old.membership_hash,'current_hash':new.membership_hash,'active_symbols_match':old.active_symbols==new.active_symbols,'active_symbols':new.active_symbols,'listing_causal':causal,'descriptors_causal':descriptor_causal}
+ if not row['active_symbols_match'] or not causal or not descriptor_causal: errors.append(f'fold membership issue: {old.fold_id}')
+ before_members = {m.symbol:m.model_dump(mode='json') for m in old.members}
+ after_members = {m.symbol:m.model_dump(mode='json') for m in new.members}
+ row['member_metadata_differences'] = [
+     {'symbol':s, 'fields':{k:{'stored':before_members[s].get(k),'current':after_members[s].get(k)}
+       for k in before_members[s] if before_members[s].get(k)!=after_members[s].get(k)}}
+     for s in before_members.keys() & after_members.keys()
+     if before_members[s]!=after_members[s]
+ ]
+ checks.append(row)
+report={'status':'PASS' if not errors else 'FAIL','errors':errors,'freeze_date':core.selection_cutoff.isoformat(),'registry_hash':registry.registry_hash,'registry_observed_at':registry.observed_at.isoformat(),'core_universe_hash':core.universe_hash,'recomputed_core_universe_hash':reselected.universe_hash,'symbols':core.symbols,'folds':checks,'file_hashes':{p:file_sha256(run/p) for p in ['registry/symbol_registry.json','universe/core_universe.json','universe/fold_memberships.json','universe/selection_descriptors.json','fold_descriptors.json']},'limits':['Registry archive lifecycle endpoints can be coarse month boundaries; historical data absence is never filled. HNT remains in frozen Core20.','Causality under future listing/status/gap perturbations is additionally covered by real cold-start/universe pytest. No universe methodology was changed.']}
+Path('docs/reviews/evidence_final_closure/universe_provenance_report.json').write_text(json.dumps(report,indent=2)+'\n')
+print(report['status'],len(checks),'fold/view records',errors)

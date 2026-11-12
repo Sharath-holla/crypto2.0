@@ -1,0 +1,216 @@
+{
+  "algorithm": "phase7_preparation_source_manifest_v1",
+  "semantics_version": "phase7_preparation_semantics_v2_feature_context_sidecar",
+  "files": [
+    {
+      "path": "configs/data/binance.toml",
+      "sha256": "4b7651649234df0a65a0fc8188714b6ac411ab50dad64c66cf640af16b2ee755"
+    },
+    {
+      "path": "configs/data_quality/default.toml",
+      "sha256": "659f7e942fc9865b0f23b3c91e9d686326f049d82d363534a06f07e26adc6571"
+    },
+    {
+      "path": "configs/phase7/research_core20_primary_v1.toml",
+      "sha256": "d202a1f67f50aaa73d0923c540b885fa0c305f46922acd1591db8945f602c2af"
+    },
+    {
+      "path": "configs/phase7/research_v1.toml",
+      "sha256": "75a5878cba0ca786163a347464db1d17b9f7b555875ab1624ab4f325f8344b29"
+    },
+    {
+      "path": "src/crypto_ai/data/ingestion/manifest.py",
+      "sha256": "231008dbaf0a210a10b948102b45e50b8a42b4c093dd99cf36c05cddb01be255"
+    },
+    {
+      "path": "src/crypto_ai/data/schema.py",
+      "sha256": "f41573641ae6c37d560125589bebfa86ae288ead4a05ff7e1ec9d05e59c729d1"
+    },
+    {
+      "path": "src/crypto_ai/data/storage/__init__.py",
+      "sha256": "ea6ecbf660904681cb65772da65dd259781e9eecc15055df395e1bde75b2cde8"
+    },
+    {
+      "path": "src/crypto_ai/data/storage/parquet.py",
+      "sha256": "14c80a337332e5e74e48a251c725713ee94da8c4968cd87311a7b0b5abe284f1"
+    },
+    {
+      "path": "src/crypto_ai/domain/__init__.py",
+      "sha256": "5f3971d1fd0817c8163879dbb69e2507b67bb426a851941e34531075a565dd1c"
+    },
+    {
+      "path": "src/crypto_ai/domain/candle.py",
+      "sha256": "603f40309de863ae00add5e5f702daa329a5f94c3ad3d6414cd770e799c26ae1"
+    },
+    {
+      "path": "src/crypto_ai/features/baseline.py",
+      "sha256": "520fa5bb294ae31c24b14916f3764cc7aa53a762eeae47b18890c76e6e40130e"
+    },
+    {
+      "path": "src/crypto_ai/phase4/asof.py",
+      "sha256": "ec3c2b7cbda48385314899f6b25ff21c2cd956310c5ef07e52e53e607fb1f93e"
+    },
+    {
+      "path": "src/crypto_ai/phase4/features.py",
+      "sha256": "3f399e5b55b9564f472d40edecdd2675da42247337708c4e3023d923e70c99b1"
+    },
+    {
+      "path": "src/crypto_ai/phase4_1/features.py",
+      "sha256": "6b613d63a966a6fcb97bb5fc9a28b1c62e5f31b174226e44bcc95c1cbd2c0fea"
+    },
+    {
+      "path": "src/crypto_ai/phase5/config.py",
+      "sha256": "cef5ddd4843ca2a95f049d7025367bcf5b2072bac3baee818728f9c523088f04"
+    },
+    {
+      "path": "src/crypto_ai/phase5/folds.py",
+      "sha256": "def942038e153ccb77a18a5ba3fb36b7b48cd4ec96e14f4f1c527c6488450657"
+    },
+    {
+      "path": "src/crypto_ai/phase6/config.py",
+      "sha256": "5c638f3dbbecb3844fb59d6ff8159ad14ad4052d9600f49dd3fe692c37d0d902"
+    },
+    {
+      "path": "src/crypto_ai/phase6/features.py",
+      "sha256": "d322587cf0e32d6bd98ed54925d975920875e094dce88807a6e6a564555267a5"
+    },
+    {
+      "path": "src/crypto_ai/phase6/labels.py",
+      "sha256": "36c214309d95301a85189d8093412b0e158bdff516fea5d2865d4052776e27d8"
+    },
+    {
+      "path": "src/crypto_ai/phase7/acquisition.py",
+      "sha256": "c5bcef6d20a7ddc7e3052c5908d9faf469c9816d1312be955114c18235d53907"
+    },
+    {
+      "path": "src/crypto_ai/phase7/config.py",
+      "sha256": "7eb94d4b9162053675b3e1d22cafa40e5d11b06fe01a2d367a107eedae3b10c0"
+    },
+    {
+      "path": "src/crypto_ai/phase7/context_sidecar.py",
+      "sha256": "456d6c3888238ee884f454965a2c1952c99dc983d179179bb6a2dd092f4396df"
+    },
+    {
+      "path": "src/crypto_ai/phase7/cross_section.py",
+      "sha256": "ea069056d8dc9b846b3706cb2449c06dce87005026d8bd883558ba506a5a7bac"
+    },
+    {
+      "path": "src/crypto_ai/phase7/features.py",
+      "sha256": "81aba3a91582349bbbccc6e2c7f2bc70a5361e1a2710e9fcf7383ee426dcf88e"
+    },
+    {
+      "path": "src/crypto_ai/phase7/folds.py",
+      "sha256": "22ef6386edcedba9bb2255e42f8988afcc2fab0a6863a9745d0cbeb74255d7a2"
+    },
+    {
+      "path": "src/crypto_ai/phase7/gold.py",
+      "sha256": "78b7e0496bfc7168277e65b371143ba80b8141ebbc21d67cbbb79ed61820daf5"
+    },
+    {
+      "path": "src/crypto_ai/phase7/gold_validation.py",
+      "sha256": "ca86ea6117fc94ab568f3d363e61bad192d94eddffcbad31ca70a226c0c07f97"
+    },
+    {
+      "path": "src/crypto_ai/phase7/prepared_cache.py",
+      "sha256": "5b48e038732a3e9a864ddfd28f3fff6125e1491231a1c37198888a3ca2dc7eaf"
+    },
+    {
+      "path": "src/crypto_ai/phase7/quality.py",
+      "sha256": "7d00f78983144ed40d0bbbeb073b5002ba52039eea3bb3621cf276132ddb5518"
+    },
+    {
+      "path": "src/crypto_ai/phase7/registry.py",
+      "sha256": "04bfd63eaf615d1cf15c48134be37299062dc56919bd5085cc08239d46734129"
+    },
+    {
+      "path": "src/crypto_ai/phase7/segments.py",
+      "sha256": "ed9f544330aed909360c31249124318c166a9bb6f9b486857ef713aec872d0c6"
+    },
+    {
+      "path": "src/crypto_ai/phase7/targets.py",
+      "sha256": "df3ac2e00e94c6d56605d9e4b41143a273b72d27bbe9f17ce838d4625dd43386"
+    },
+    {
+      "path": "src/crypto_ai/phase7/universe.py",
+      "sha256": "39ac575bfd1521a636d10365523860431947062fbfd3e60fda2f62b83637a37c"
+    }
+  ],
+  "functions": [
+    {
+      "path": "src/crypto_ai/phase7/training.py",
+      "symbol": "ExperimentSpec",
+      "sha256": "872d27a24c9cc51522242fd9c8a79b5e992708a147f989ee47b9795086c3daca"
+    },
+    {
+      "path": "src/crypto_ai/phase7/training.py",
+      "symbol": "_context_sidecar_path",
+      "sha256": "e90927de4bacc39181a414176189f671f4c406c71d0aaad4a3fce16a66dbfae4"
+    },
+    {
+      "path": "src/crypto_ai/phase7/training.py",
+      "symbol": "_finite",
+      "sha256": "a4bf9e0db0992663c1cac83d572e4abb637c3537f2022f04b16e97af41b357c9"
+    },
+    {
+      "path": "src/crypto_ai/phase7/training.py",
+      "symbol": "_load_fold_context_source",
+      "sha256": "efe3ad7a505f2e24f22a7b687706ae1e2764080f2aea7a91dae292c50a105664"
+    },
+    {
+      "path": "src/crypto_ai/phase7/training.py",
+      "symbol": "_load_fold_rows",
+      "sha256": "1e981a4cc871b79363e83475fe75e56ff426c1aa46cea0238506f22b6275aad7"
+    },
+    {
+      "path": "src/crypto_ai/phase7/training.py",
+      "symbol": "_prediction_target",
+      "sha256": "12cdb50e9223720b34d6d3e43fe988473ce8aae6420cc5d143f53881fe513e0c"
+    },
+    {
+      "path": "src/crypto_ai/phase7/training.py",
+      "symbol": "_preparation_identity",
+      "sha256": "be9880a769195c2bdf1c514a6e2994e8bb3e9f5805bd5f681bea2ba17d52e8e2"
+    },
+    {
+      "path": "src/crypto_ai/phase7/training.py",
+      "symbol": "_prepare_training_segments",
+      "sha256": "8b5feb956cd1d1325f67e8ecd3b92a06ea3517faa498e058d9cf02b065f89e63"
+    },
+    {
+      "path": "src/crypto_ai/phase7/training.py",
+      "symbol": "_prepared_cache_identity",
+      "sha256": "4cc8c89beafb7b5d22041279ebe4d20d9648dc85905f4098f2d61c7af106a5f7"
+    },
+    {
+      "path": "src/crypto_ai/phase7/training.py",
+      "symbol": "causal_descriptor_identity",
+      "sha256": "c35a0a85a5fb30ceebbfcac92f2664f37fa4636910c239ce7a0b8e73cee68b80"
+    },
+    {
+      "path": "src/crypto_ai/phase7/models.py",
+      "symbol": "PreparedArchitectureInputs",
+      "sha256": "091376649782319ec770c7737df9eed15de34c08961e646bfeeacb14132b01fc"
+    },
+    {
+      "path": "src/crypto_ai/phase7/models.py",
+      "symbol": "_floats",
+      "sha256": "f25141f0d055168469d96a2b450bc7b53dc63b8e6178cbe9d3ca3c9009a1b306"
+    },
+    {
+      "path": "src/crypto_ai/phase7/models.py",
+      "symbol": "_matrix",
+      "sha256": "7883581e1644f7f4aefeb38fbca1be8ab8465e5db50dad5d5f52c53d5b78dac5"
+    },
+    {
+      "path": "src/crypto_ai/phase7/models.py",
+      "symbol": "_symbols",
+      "sha256": "21542e616f06fa9d3ad6375609ae0a23d1f008129213d094ea4de7d1432b4961"
+    },
+    {
+      "path": "src/crypto_ai/phase7/models.py",
+      "symbol": "prepare_architecture_inputs",
+      "sha256": "cbddbb6e46ce0dc05c0b50e81be889906c7bde655610c672ed89599599744aef"
+    }
+  ],
+  "manifest_sha256": "a59b460070e4a40bd6979dd53ec5fb04c51666073c0d62f81627dde914ae3eea"
+}

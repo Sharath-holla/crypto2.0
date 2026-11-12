@@ -1,3 +1,6 @@
+# LEGACY – NOT USED BY RESEARCH. Order-capable prototype; never import or run it from research,
+# training or evaluation code. (Header added by Claude, 2026-11-02, finding M-08; no other
+# change was made to this file. Proposal to move it to a separate repo: docs/phase7b_hardening_report.md)
 # DEPRECATED: Venue-specific legacy adapter retained only for audit. ADR-017
 # selects Binance as the sole future venue. Do not configure or call this client.
 """
@@ -39,6 +42,15 @@ Install:
 
 import json
 import logging
+import os
+
+# Fail before optional trading dependencies or credential-bearing live configuration load.
+# The research package never imports this adapter; this also blocks accidental direct imports.
+if os.environ.get("CRYPTO_AI_RESEARCH_MODE") == "1":
+    raise RuntimeError(
+        "RESEARCH_MODE_ORDER_CLIENT_BLOCKED: legacy order module cannot be imported in research mode"
+    )
+
 import time
 import urllib.parse
 import uuid
@@ -151,6 +163,15 @@ class CoinSwitchClient:
     """
 
     def __init__(self, api_key: str, secret_key_hex: str, timeout: float = 10.0):
+        # CHANGED BY CLAUDE (2026-11-06, closure): order guard. Research processes set
+        # CRYPTO_AI_RESEARCH_MODE=1 (the phase 7 admission does); an order-capable client then
+        # refuses to exist. Behaviour is unchanged when the variable is unset. No credential is
+        # read or touched here.
+        if os.environ.get("CRYPTO_AI_RESEARCH_MODE") == "1":
+            raise RuntimeError(
+                "RESEARCH_MODE_ORDER_CLIENT_BLOCKED: CoinSwitchClient cannot be constructed "
+                "while CRYPTO_AI_RESEARCH_MODE=1"
+            )
         self._api_key        = api_key.strip()
         self._secret_key_hex = secret_key_hex.strip()
         self._timeout        = aiohttp.ClientTimeout(total=timeout)

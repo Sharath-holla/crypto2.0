@@ -1,0 +1,5 @@
+# CI-only loopback access to the authenticated broker. Never expose Docker control.
+services:
+  runner:
+    ports:
+      - "127.0.0.1:8090:8090"

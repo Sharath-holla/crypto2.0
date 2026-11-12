@@ -38,6 +38,20 @@ def _correlation(left: np.ndarray, right: np.ndarray) -> float | None:
     return value if np.isfinite(value) else None
 
 
+def directional_accuracy(actual: np.ndarray, predicted: np.ndarray) -> float:
+    """Share of rows with a non-zero actual whose predicted sign matches (added by Claude, L-01).
+
+    Returns 0.0 when every actual is zero; callers can see that case in ``n_zero_actuals``.
+    """
+
+    actual = np.asarray(actual, dtype=np.float64)
+    predicted = np.asarray(predicted, dtype=np.float64)
+    moving = actual != 0.0
+    if not np.any(moving):
+        return 0.0
+    return float(np.mean(np.sign(actual[moving]) == np.sign(predicted[moving])))
+
+
 def regression_metrics(actual: np.ndarray, predicted: np.ndarray) -> dict[str, Any]:
     actual, predicted = _finite_pair(actual, predicted)
     residual = predicted - actual
@@ -52,7 +66,18 @@ def regression_metrics(actual: np.ndarray, predicted: np.ndarray) -> dict[str, A
         "mae": mae,
         "rmse": rmse,
         "r2": r2,
-        "directional_accuracy": float(np.mean(np.sign(actual) == np.sign(predicted))),
+        # CHANGED BY CLAUDE (2026-11-02, finding L-01): rows whose actual return is exactly zero
+        # have no direction, so they are excluded from the denominator and counted separately.
+        # OLD CODE (kept for reference):
+        # "directional_accuracy": float(np.mean(np.sign(actual) == np.sign(predicted))),
+        "directional_accuracy": directional_accuracy(actual, predicted),
+        "n_zero_actuals": int(np.count_nonzero(actual == 0.0)),
+        # CHANGED BY CLAUDE (2026-11-06, final hardening): explicit names requested by the owner.
+        # ``directional_accuracy_nonzero`` is the same number as ``directional_accuracy`` (zero
+        # actuals excluded); the old key is kept so existing readers do not break.
+        "directional_accuracy_nonzero": directional_accuracy(actual, predicted),
+        "zero_actual_count": int(np.count_nonzero(actual == 0.0)),
+        "zero_actual_fraction": float(np.count_nonzero(actual == 0.0) / len(actual)),
         "pearson_ic": pearson,
         "spearman_ic": spearman,
         "prediction_mean": float(np.mean(predicted)),

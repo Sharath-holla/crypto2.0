@@ -2,12 +2,13 @@ from __future__ import annotations
 
 import hashlib
 import json
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any, Literal
 
 import numpy as np
 import pyarrow as pa
+import pyarrow.compute as pc
 from sklearn.cluster import KMeans
 from sklearn.preprocessing import StandardScaler
 
@@ -25,6 +26,37 @@ from crypto_ai.phase7.universe import (
     latest_descriptors,
     select_fold_active_universe,
 )
+
+
+# CHANGED BY CLAUDE (2026-11-02, finding M-06): typed error so operators and tests can tell a
+# post-TRAIN data gap (a data defect that blocks the fold) from any other ValueError.
+class PostTrainDataGapError(ValueError):
+    """An active symbol has an unusable data gap after TRAIN; the whole fold is blocked.
+
+    Subclasses ValueError and keeps the original message text, so existing handlers and
+    ``pytest.raises(ValueError, match="post-TRAIN data-quality gaps")`` still work.
+    Deliberately NOT an IneligibleFoldError: it must never be recorded as INELIGIBLE.
+    """
+
+    def __init__(self, fold_id: str, gaps: list[dict[str, str]]) -> None:
+        self.fold_id = fold_id
+        self.gaps = gaps
+        self.symbols = sorted({gap["symbol"] for gap in gaps})
+        listing = sorted(
+            f"{gap['symbol']}:{gap['interval']}:{gap['partition']}[{gap['start']} -> {gap['end']}]"
+            for gap in gaps
+        )
+        super().__init__(
+            f"{fold_id} has post-TRAIN data-quality gaps for active symbols; "
+            f"TRAIN membership is unchanged; explicit data-quality review required: {listing}"
+        )
+
+
+# CHANGED BY CLAUDE (2026-11-02, finding M-02): raised when TEST is read out of order.
+class TestAccessViolation(RuntimeError):
+    """TEST rows were requested in a way that could let them influence selection."""
+
+    __test__ = False  # not a pytest test class despite the name
 
 
 class IneligibleFoldError(ValueError):
@@ -49,11 +81,70 @@ class MultiAssetFoldData:
     age_buckets: dict[str, str]
     research_view: Literal["CORE", "EXPANDING"]
     report: dict[str, Any]
+    # CHANGED BY CLAUDE (2026-11-02, finding M-02): measured ledger of every TEST release.
+    _test_access_log: list[dict[str, Any]] = field(default_factory=list)
 
-    def release_test(self, *, frozen_identity: str) -> pa.Table:
+    # OLD CODE (kept for reference): the gate only checked that an identity string existed.
+    # def release_test(self, *, frozen_identity: str) -> pa.Table:
+    #     if not frozen_identity:
+    #         raise ValueError("test release requires frozen model/calibrator/policy identity")
+    #     return self._test
+    def release_test(
+        self,
+        *,
+        frozen_identity: str,
+        expected_identity: str | None = None,
+        consumer: str | None = None,
+    ) -> pa.Table:
+        """Release TEST rows once a model/calibrator/policy identity is frozen.
+
+        ``expected_identity`` (when given) is re-derived by the caller from the live frozen
+        objects and must equal ``frozen_identity``. ``consumer`` names the experiment taking
+        the rows; a consumer that already received TEST under a *different* identity has
+        touched TEST before its selection was frozen, which fails loudly. Every release is
+        logged with the row count and feature-time range actually handed out.
+        """
+
         if not frozen_identity:
             raise ValueError("test release requires frozen model/calibrator/policy identity")
+        if expected_identity is not None and expected_identity != frozen_identity:
+            raise TestAccessViolation(
+                f"{self.plan.fold_id}: frozen identity does not match the re-derived identity"
+            )
+        if consumer is not None:
+            for entry in self._test_access_log:
+                if entry["consumer"] == consumer and entry["frozen_identity"] != frozen_identity:
+                    raise TestAccessViolation(
+                        f"{self.plan.fold_id}: {consumer} already read TEST under a different "
+                        "frozen identity; selection must be frozen before TEST is touched"
+                    )
+        first = last = None
+        if self._test.num_rows and "feature_time" in self._test.column_names:
+            bounds = pc.min_max(self._test.column("feature_time")).as_py()
+            first, last = bounds["min"], bounds["max"]
+        self._test_access_log.append(
+            {
+                "consumer": consumer,
+                "frozen_identity": frozen_identity,
+                "rows": int(self._test.num_rows),
+                "feature_time_min": None if first is None else first.isoformat(),
+                "feature_time_max": None if last is None else last.isoformat(),
+            }
+        )
         return self._test
+
+    def test_touched_by(self, consumer: str) -> bool:
+        """True if ``consumer`` has already been handed TEST rows (measured, not asserted)."""
+
+        return any(entry["consumer"] == consumer for entry in self._test_access_log)
+
+    def test_access_summary(self, consumer: str | None = None) -> dict[str, Any]:
+        entries = [
+            dict(entry)
+            for entry in self._test_access_log
+            if consumer is None or entry["consumer"] == consumer
+        ]
+        return {"test_release_count": len(entries), "releases": entries}
 
 
 def _filter_symbols(table: pa.Table, symbols: set[str]) -> pa.Table:
@@ -189,6 +280,7 @@ def slice_multiasset_fold(
     cluster_count: int,
     seed: int,
     unusable_segments: tuple[CausalDataGap, ...] = (),
+    context_source: pa.Table | None = None,
 ) -> MultiAssetFoldData:
     policy = expansion_policy or build_expansion_policy(universe, universe_config)
     membership = select_fold_active_universe(
@@ -207,6 +299,41 @@ def slice_multiasset_fold(
     eligible_symbols = set(membership.active_symbols)
     if not eligible_symbols:
         raise IneligibleFoldError(f"{plan.fold_id} has no point-in-time eligible symbols")
+    # CHANGED BY CLAUDE (2026-11-02, finding M-06): the gap list now keeps symbol, interval,
+    # partition and the gap's time range so the error can name them.
+    # OLD CODE (kept for reference):
+    # later_gaps = sorted(
+    #     {
+    #         f"{gap.symbol}:{gap.interval}:{gap.partition}"
+    #         for gap in unusable_segments
+    #         if gap.symbol in eligible_symbols and gap.intersects(plan.train_end, plan.test_end)
+    #     }
+    # )
+    later_gaps = sorted(
+        (
+            {
+                "symbol": gap.symbol,
+                "interval": gap.interval,
+                "partition": gap.partition,
+                "start": gap.start.isoformat(),
+                "end": gap.end.isoformat(),
+            }
+            for gap in unusable_segments
+            if gap.symbol in eligible_symbols and gap.intersects(plan.train_end, plan.test_end)
+        ),
+        key=lambda item: (item["symbol"], item["interval"], item["partition"], item["start"]),
+    )
+    if later_gaps:
+        # Do not replace a noncausal symbol exclusion with permissive partial OOS
+        # evaluation. Preserve membership and stop the entire affected fold as
+        # a data defect (never INELIGIBLE or a completed scientific result).
+        # OLD CODE (kept for reference):
+        # raise ValueError(
+        #     f"{plan.fold_id} has post-TRAIN data-quality gaps for active symbols; "
+        #     f"TRAIN membership is unchanged; explicit data-quality review required: "
+        #     f"{later_gaps}"
+        # )
+        raise PostTrainDataGapError(plan.fold_id, later_gaps)
     eligible_table = _filter_symbols(table, eligible_symbols)
     if eligible_table.num_rows == 0:
         # Eligible symbols exist, yet this fold table carries no rows for them:
@@ -215,7 +342,16 @@ def slice_multiasset_fold(
             f"{plan.fold_id} has point-in-time eligible symbols but zero rows "
             "in the fold table; Gold coverage defect, not an INELIGIBLE outcome"
         )
-    eligible_table = bind_fold_cross_sectional_context(eligible_table)
+    # Cross-sectional context must be built from all horizons' feature rows (a
+    # horizon-invariant superset), never from the rows that happen to carry a valid
+    # label for this horizon; otherwise context at time t reveals future label
+    # availability (M-01). The source is restricted to the same eligible symbols.
+    eligible_context = (
+        _filter_symbols(context_source, eligible_symbols) if context_source is not None else None
+    )
+    eligible_table = bind_fold_cross_sectional_context(
+        eligible_table, context_source=eligible_context
+    )
     sliced: HardenedFoldData = slice_hardened_fold(
         eligible_table,
         plan,
@@ -248,12 +384,14 @@ def slice_multiasset_fold(
         "expansion_eligible_symbols": list(membership.expansion_eligible_symbols),
         "fold_active_symbols": list(membership.active_symbols),
         "fold_membership_hash": membership.membership_hash,
+        "gap_gate_policy": membership.gap_gate_policy,
         "fold_membership": [item.model_dump(mode="json") for item in membership.members],
         "unusable_segments": [
             gap.model_dump(mode="json")
             for gap in unusable_segments
             if gap.intersects(plan.train_start, plan.test_end)
         ],
+        "unusable_segments_role": "FOLD_COVERAGE_DIAGNOSTICS_NOT_MEMBERSHIP_SELECTION",
         "core_universe_version": universe.version,
         "core_universe_hash": universe.universe_hash,
         "core_candidate_symbols": list(universe.symbols),

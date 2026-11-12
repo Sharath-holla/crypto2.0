@@ -8,6 +8,7 @@ import time
 from contextlib import nullcontext
 from dataclasses import asdict, dataclass
 from datetime import timedelta
+from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
@@ -18,8 +19,9 @@ import pyarrow.dataset as ds
 
 from crypto_ai.data.ingestion.manifest import read_manifest
 from crypto_ai.data.storage import file_sha256
-from crypto_ai.phase5.calibration import fit_calibrator
+from crypto_ai.phase5.calibration import SELECTION_HOLDOUT_FRACTION, fit_calibrator
 from crypto_ai.phase5.folds import FoldPlan, plan_folds
+from crypto_ai.phase7.admission import assert_backend_admitted
 from crypto_ai.phase7.artifacts import (
     CheckpointStore,
     atomic_json,
@@ -34,29 +36,73 @@ from crypto_ai.phase7.config import (
     Phase7Config,
     stable_hash,
 )
+from crypto_ai.phase7.context_sidecar import (
+    SIDECAR_ENV,
+    load_sidecar_source,
+    read_sidecar,
+    sidecar_cache_identity,
+)
 from crypto_ai.phase7.economics import (
+    COST_POLICY_VERSION,
     ThresholdSet,
+    _threshold_key,
     adaptive_policy_cost_stress,
     build_oos_trades,
     fixed_policy_cost_stress,
     select_cal_b_thresholds,
+)
+from crypto_ai.phase7.environment import scientific_environment_identity
+from crypto_ai.phase7.experiment_identity import experiment_control_identity
+from crypto_ai.phase7.features import (
+    FOLD_CONTEXT_SOURCE_COLUMNS,
+    FOLD_CONTEXT_VERSION,
+    build_fold_context_table,
+)
+from crypto_ai.phase7.fit_boundary import (
+    assert_fit_segments,
+    prediction_health,
+    sample_weight_summary,
 )
 from crypto_ai.phase7.folds import (
     IneligibleFoldError,
     MultiAssetFoldData,
     slice_multiasset_fold,
 )
+
+# CHANGED BY CLAUDE (2026-11-06, closure): the CSV is a view of the ledger, not an authority, so
+# append_result_row and results_row_from_report are no longer imported here (OLD CODE kept: they
+# were used by _run_one to append the CSV row).
+from crypto_ai.phase7.hardening import (
+    ECONOMIC_STATUS,
+    RESULT_COLUMNS,
+    RESULTS_FILENAME,
+    FitAbortedError,
+    apply_pilot_filter,
+    console_fields,
+    current_config,
+    decision_metrics,
+    fold_gate_failed,
+    score_baselines,
+    silver_status,
+    stop_requested,
+    tier_cost_breakdown,
+    trading_metrics,
+)
 from crypto_ai.phase7.metrics import (
     asset_concentration,
     evaluate_predictions,
     time_concentration,
 )
+from crypto_ai.phase7.model_registry import register_model_hash
 from crypto_ai.phase7.models import (
     fit_architecture,
     load_model,
     prepare_architecture_inputs,
     save_model,
+    split_calibration_a_for_h0,
+    symbol_balanced_weights,
 )
+from crypto_ai.phase7.preparation_identity import preparation_source_identity
 from crypto_ai.phase7.prepared_cache import (
     PREPROCESSING_VERSION,
     CachedPreparedData,
@@ -67,6 +113,13 @@ from crypto_ai.phase7.prepared_cache import (
 )
 from crypto_ai.phase7.progress import ProgressReporter, oos_trade_summary
 from crypto_ai.phase7.registry import SymbolRegistry
+from crypto_ai.phase7.resources import resource_admission
+from crypto_ai.phase7.result_publication import (
+    LEDGER_DIRNAME,
+    publish_canonical_result,
+    refresh_results_view,
+)
+from crypto_ai.phase7.run_lease import owned_run
 from crypto_ai.phase7.runtime import (
     ComputeBudget,
     RuntimePaths,
@@ -76,6 +129,14 @@ from crypto_ai.phase7.runtime import (
     memory_snapshot,
 )
 from crypto_ai.phase7.segments import CausalDataGap
+from crypto_ai.phase7.targets import effective_normalization_scale
+from crypto_ai.phase7.telemetry import instrument, telemetry
+from crypto_ai.phase7.training_metrics import training_metric_scope
+from crypto_ai.phase7.training_observer import (
+    report_view,
+    resolved_monitor_manifest,
+    try_build_validation_context,
+)
 from crypto_ai.phase7.universe import (
     ExpansionUniversePolicy,
     FrozenUniverse,
@@ -85,6 +146,47 @@ from crypto_ai.phase7.universe import (
 )
 
 RESEARCH_VIEWS = ("CORE", "EXPANDING")
+PHASE7A_SCOPE = "PHASE7A_CORE20_PRIMARY"
+
+
+class PreparedOnlyComplete(Exception):
+    """Raised after the prepared cache for the single selected spec is published.
+
+    Preparation-only runs fit nothing, write no model/report/checkpoint and never
+    mark a spec or fold complete.
+    """
+
+    def __init__(self, cache_id: str, cache_path: Path | None) -> None:
+        super().__init__(f"prepared cache published: {cache_id}")
+        self.cache_id = cache_id
+        self.cache_path = cache_path
+
+
+def resolve_training_scope(
+    config: Phase7Config, scope: str | None
+) -> tuple[tuple[ExperimentSpec, ...], tuple[str, ...]]:
+    """Resolve (specs, research views) for a training call.
+
+    Phase 7A is a first-class scope: CORE only, the 48 canonical A6 primary specs.
+    A Phase 7A configuration must be run with that explicit scope; the generic
+    58-spec x CORE+EXPANDING run is refused for it rather than silently expanded.
+    """
+
+    if scope is None:
+        if str(config.name).startswith("phase7a-"):
+            raise ValueError(
+                f"configuration {config.name!r} is a Phase 7A run and must be trained with "
+                f"scope={PHASE7A_SCOPE!r} (CORE only, 48 primary specs); refusing the generic "
+                "CORE+EXPANDING 58-spec expansion"
+            )
+        return phase7_experiment_specs(config), RESEARCH_VIEWS
+    if scope != PHASE7A_SCOPE:
+        raise ValueError(f"unknown training scope: {scope!r}")
+    from crypto_ai.phase7.phase7a import primary_specs
+
+    return primary_specs(config), ("CORE",)
+
+
 SCIENTIFIC_SOURCE_IDENTITY_ALGORITHM = "phase7_scientific_source_manifest_v2"
 TRAINING_SOURCE_IDENTITY_ALGORITHM = SCIENTIFIC_SOURCE_IDENTITY_ALGORITHM
 TRAINING_CRITICAL_SOURCE_FILES = (
@@ -112,6 +214,8 @@ TRAINING_CRITICAL_SOURCE_FILES = (
     "src/crypto_ai/phase7/acquisition.py",
     "src/crypto_ai/phase7/backend.py",
     "src/crypto_ai/phase7/config.py",
+    "src/crypto_ai/phase7/cross_section.py",
+    "src/crypto_ai/phase7/context_sidecar.py",
     "src/crypto_ai/phase7/economics.py",
     "src/crypto_ai/phase7/features.py",
     "src/crypto_ai/phase7/folds.py",
@@ -132,12 +236,21 @@ TRAINING_CRITICAL_SOURCE_FILES = (
     "scripts/run_phase7a_pipeline.py",
     "src/crypto_ai/phase7/phase7a.py",
     "src/crypto_ai/phase7/benchmark_one_spec.py",
+    "src/crypto_ai/phase7/recovery.py",
+    "src/crypto_ai/phase7/device_evidence.py",
+    "src/crypto_ai/phase7/environment.py",
+    "src/crypto_ai/phase7/training_metrics.py",
 )
 EXECUTION_CONTEXT_SOURCE_FILES = (
     "src/crypto_ai/phase7/preflight.py",
     "src/crypto_ai/phase7/progress.py",
     "src/crypto_ai/phase7/runtime.py",
     "src/crypto_ai/phase7/lightning.py",
+    "src/crypto_ai/phase7/run_lease.py",
+    "src/crypto_ai/phase7/resources.py",
+    "src/crypto_ai/phase7/telemetry.py",
+    "src/crypto_ai/phase7/verify_linux.py",
+    "src/crypto_ai/phase7/equivalence.py",
     "scripts/benchmark_phase7_backend.py",
     "scripts/benchmark_phase7_preparation.py",
     "scripts/manage_phase7_cache.py",
@@ -175,11 +288,20 @@ def scientific_source_identity(repository_root: Path | None = None) -> dict[str,
     documentation, runtime paths, and machine metadata. Missing files fail closed.
     """
 
-    return _content_source_identity(
+    identity = _content_source_identity(
         SCIENTIFIC_SOURCE_IDENTITY_ALGORITHM,
         TRAINING_CRITICAL_SOURCE_FILES,
         repository_root,
     )
+    if sidecar := os.environ.get(SIDECAR_ENV, "").strip():
+        # A changed feature-only input also invalidates completed model/stage reuse
+        # and the canonical ledger's scientific identity, not only matrix caches.
+        read_sidecar(Path(sidecar))
+        identity["feature_context_sidecar_sha256"] = file_sha256(Path(sidecar))
+        identity["manifest_sha256"] = stable_hash(
+            {k: v for k, v in identity.items() if k != "manifest_sha256"}, length=64
+        )
+    return identity
 
 
 def training_source_identity(repository_root: Path | None = None) -> dict[str, Any]:
@@ -207,6 +329,8 @@ def training_stage_resume_identity(
         "schema": "phase7_training_stage_resume_v2",
         "scientific_source_identity": training_source_identity(),
         "model_backend_semantics": resolve_lightgbm_backend().name,
+        "scientific_environment": scientific_environment_identity(),
+        "cost_policy_version": COST_POLICY_VERSION,
     }
     if config is not None:
         identity["configuration_hash"] = config.configuration_hash
@@ -340,12 +464,14 @@ def experiment_output_root(run_root: Path, *, kind: str, config: Phase7Config) -
     return base / run_root.name / "models"
 
 
+@instrument("FOLD_LOAD", admit=True)
 def _load_fold_rows(
     manifest: dict[str, Any],
     plan: FoldPlan,
     horizon_minutes: int,
     *,
     dataset: ds.Dataset | None = None,
+    columns: tuple[str, ...] | None = None,
 ) -> pa.Table:
     if dataset is None:
         paths = [record["path"] for record in manifest["partition_files"]]
@@ -365,9 +491,81 @@ def _load_fold_rows(
         condition = (
             (ds.field("year") >= plan.train_start.year) & (ds.field("year") <= end_year) & condition
         )
-    return dataset.to_table(filter=condition).sort_by(
-        [("feature_time", "ascending"), ("symbol", "ascending")]
-    )
+    return dataset.to_table(
+        filter=condition, **({"columns": list(columns)} if columns is not None else {})
+    ).sort_by([("feature_time", "ascending"), ("symbol", "ascending")])
+
+
+def _context_sidecar_path(manifest: dict[str, Any]) -> Path | None:
+    value = os.environ.get(SIDECAR_ENV, "").strip()
+    if value:
+        return Path(value)
+    # No dataset implicitly qualifies for label-dependent Gold context. New datasets
+    # require a verified feature-only sidecar too; approval is bound at admission.
+    raise ValueError("M01_FEATURE_CONTEXT_SIDECAR_REQUIRED: no approved feature-only context")
+
+
+def _load_fold_context_source(
+    manifest: dict[str, Any],
+    plan: FoldPlan,
+    horizons_minutes: tuple[int, ...],
+    *,
+    dataset: ds.Dataset | None = None,
+    gold_manifest_sha256: str | None = None,
+    configuration_hash: str | None = None,
+) -> pa.Table:
+    """Feature-only rows for every horizon, the horizon-invariant source of fold context.
+
+    Cross-sectional context at time t must not depend on whether one horizon's label
+    exists (M-01), so it is computed from the union of all horizons' rows.
+    """
+    if sidecar := _context_sidecar_path(manifest):
+        if gold_manifest_sha256 is None or configuration_hash is None:
+            raise ValueError("sidecar requires the verified Gold manifest identity")
+        sidecar_cache_identity(
+            Path(sidecar),
+            gold_manifest_sha256=gold_manifest_sha256,
+            registry_hash=manifest["registry_hash"],
+            universe_hash=manifest["lineage"]["core_universe_hash"],
+            configuration_hash=configuration_hash,
+        )
+        # Read feature rows only; all future targets still come exclusively from Gold.
+        return load_sidecar_source(Path(sidecar), plan.train_start, plan.test_end)
+    parts = [
+        _load_fold_rows(
+            manifest,
+            plan,
+            horizon,
+            columns=(
+                *FOLD_CONTEXT_SOURCE_COLUMNS,
+                "market_member_count",
+                "market_membership_hash",
+                "cross_sectional_context_scope",
+            ),
+            **({"dataset": dataset} if dataset is not None else {}),
+        )
+        for horizon in horizons_minutes
+    ]
+    return build_fold_context_table(pa.concat_tables(parts), verify_observable_coverage=True)
+
+
+def finite_row_accounting(segments: dict[str, tuple[int, int]]) -> dict[str, Any]:
+    """Pre/post finite-filter row counts per segment so silent drops are visible."""
+    rows = {}
+    for name, (before, after) in segments.items():
+        if after > before or before < 0 or after < 0:
+            raise ValueError(f"invalid finite-row accounting for {name}: {before} -> {after}")
+        rows[name] = {
+            "pre_filter_rows": int(before),
+            "post_filter_rows": int(after),
+            "dropped_rows": int(before - after),
+            "dropped_fraction": (before - after) / before if before else 0.0,
+        }
+    return {
+        "policy": "drop_rows_with_nonfinite_or_null_feature_or_target",
+        "segments": rows,
+        "total_dropped_rows": sum(item["dropped_rows"] for item in rows.values()),
+    }
 
 
 def _finite(table: pa.Table, columns: tuple[str, ...], target: str) -> pa.Table:
@@ -375,9 +573,11 @@ def _finite(table: pa.Table, columns: tuple[str, ...], target: str) -> pa.Table:
     mask: pa.Array | pa.ChunkedArray = pc.is_finite(table.column(names[0]))
     for name in names[1:]:
         mask = pc.and_(mask, pc.is_finite(table.column(name)))
-    return table.filter(pc.fill_null(mask, False))
+    valid = pc.fill_null(mask, False)
+    return table if pc.all(valid).as_py() is True else table.filter(valid)
 
 
+@instrument("PREPARE", admit=True)
 def _prepare_training_segments(
     fold: MultiAssetFoldData,
     feature_columns: tuple[str, ...],
@@ -391,7 +591,7 @@ def _prepare_training_segments(
     ):
         if "cross_sectional_context_scope" not in segment.column_names:
             raise ValueError(f"{segment_name} is missing fold-bound cross-sectional context")
-        scopes = set(segment.column("cross_sectional_context_scope").to_pylist())
+        scopes = set(pc.unique(segment.column("cross_sectional_context_scope")).to_pylist())
         if scopes != {"FOLD_ACTIVE_SYMBOLS"}:
             raise ValueError(f"{segment_name} contains non-fold cross-sectional context: {scopes}")
     train = _finite(fold.train, feature_columns, target)
@@ -407,6 +607,13 @@ def _prepare_training_segments(
         validation=validation,
         calibration_a=calibration_a,
         calibration_b=calibration_b,
+        pre_filter_rows={
+            "train": fold.train.num_rows,
+            "validation": fold.validation.num_rows,
+            "calibration_a": fold.calibration_a.num_rows,
+            "calibration_b": fold.calibration_b.num_rows,
+            "test": fold._test.num_rows,
+        },
         model_inputs=prepare_architecture_inputs(
             train,
             validation,
@@ -454,6 +661,11 @@ def causal_descriptor_identity(descriptors: list[SymbolDescriptor], train_end: A
     )
 
 
+@lru_cache(maxsize=1)
+def _preparation_identity() -> dict[str, Any]:
+    return preparation_source_identity()
+
+
 def _prepared_cache_identity(
     *,
     config: Phase7Config,
@@ -470,6 +682,11 @@ def _prepared_cache_identity(
     descriptor_identity: str,
 ) -> dict[str, Any]:
     target = _prediction_target(spec)
+    # CHANGED BY CLAUDE (2026-11-06, closure): the cache key hashes only the code that can change
+    # prepared matrices (preparation_identity), not the whole training-critical file list. The
+    # ``source_identity`` argument is kept for call compatibility; it still drives resume/checkpoint
+    # identity elsewhere, where economics/selection/reporting edits MUST invalidate results.
+    preparation = _preparation_identity()
     partition_identity = [
         {
             "sha256": item.get("sha256"),
@@ -484,7 +701,9 @@ def _prepared_cache_identity(
         "gold_partition_manifest_sha256": stable_hash(partition_identity, length=64),
         "configuration_hash": config.configuration_hash,
         "gold_source_fingerprint": lineage.get("source_fingerprint"),
-        "scientific_source_identity": source_identity["manifest_sha256"],
+        # OLD CODE (kept for reference): "scientific_source_identity": source_identity[...],
+        "preparation_source_identity": preparation["manifest_sha256"],
+        "preparation_semantics_version": preparation["semantics_version"],
         "fold_id": fold_id,
         "research_view": research_view,
         "horizon_minutes": spec.horizon_minutes,
@@ -502,8 +721,22 @@ def _prepared_cache_identity(
         "feature_version": FEATURE_VERSION,
         "target_version": TARGET_VERSION,
         "matrix_dtype": "float64",
-        "matrix_code_identity": source_identity["manifest_sha256"],
+        # OLD CODE (kept for reference): "matrix_code_identity": source_identity[...],
+        "matrix_code_identity": preparation["manifest_sha256"],
         "symbol_encoding_contract": "deferred_sorted_train_symbols_one_hot_v1",
+        "fold_context_version": FOLD_CONTEXT_VERSION,
+        "fold_context_source": (
+            sidecar_cache_identity(
+                Path(sidecar),
+                gold_manifest_sha256=gold_manifest_sha256,
+                registry_hash=registry_hash,
+                universe_hash=universe_hash,
+                configuration_hash=config.configuration_hash,
+            )
+            if (sidecar := _context_sidecar_path(manifest))
+            else {"source": "GOLD_HORIZON_UNION"}
+        ),
+        "scientific_environment": scientific_environment_identity(),
     }
 
 
@@ -512,6 +745,7 @@ def _to_raw_predictions(
     predictions: np.ndarray,
     *,
     target_type: str,
+    normalization_floor: float,
 ) -> np.ndarray:
     values = np.asarray(predictions, dtype=np.float64)
     if target_type == "raw":
@@ -520,7 +754,13 @@ def _to_raw_predictions(
         table.column("ex_ante_volatility_scale").combine_chunks().to_pylist(),
         dtype=np.float64,
     )
-    return values * scale
+    # CHANGED BY CLAUDE (2026-11-06, closure): invert with the SAME divisor the forward
+    # transform used, max(|scale|, floor). OLD CODE: return values * scale
+    divisor = np.asarray(
+        [effective_normalization_scale(item, normalization_floor) for item in scale],
+        dtype=np.float64,
+    )
+    return values * divisor
 
 
 def _subset_covered(
@@ -607,6 +847,10 @@ def _validate_model_file_binding(report: dict[str, Any], model_path: Path) -> No
     claimed = identity.pop("report_identity", None)
     if claimed != stable_hash(identity, length=64):
         raise ValueError("model report content identity mismatch")
+    if "model_receipt_sha256" in report:
+        from crypto_ai.phase7.recovery import validate_model_receipt
+
+        validate_model_receipt(model_path, report)
 
 
 def _restore_completed_g0(
@@ -629,6 +873,8 @@ def _restore_completed_g0(
     model = load_model(model_path)
     if model.metadata.get("scientific_input_identity") != reported_identity:
         raise ValueError("completed estimator scientific input identity mismatch")
+    if model.metadata.get("publication") != report.get("publication"):
+        raise ValueError("completed estimator publication identity mismatch")
     _validate_complete_orphan_report(report, model)
     if model.architecture != "G0":
         raise ValueError("completed reusable model is not G0")
@@ -829,6 +1075,7 @@ def _run_one(
     execution_metadata: dict[str, Any] | None = None,
     model_path: Path | None = None,
 ) -> tuple[dict[str, Any], list[Path]]:
+    resource_admission("MODEL_FIT_START", additional_roots=(output_root, model_path or output_root))
     experiment_started = time.monotonic()
     target = _prediction_target(spec)
     prepared = prepared_segments or _prepare_training_segments(fold, feature_columns, target)
@@ -877,6 +1124,16 @@ def _run_one(
         if reusable_models is not None and spec.architecture == "H0"
         else None
     )
+    # CHANGED BY CLAUDE (2026-11-06, closure): explicit H0 data ownership. Corrections use the
+    # purged first part of Cal-A; the calibrator uses the later part; Validation is early
+    # stopping only. Non-H0 architectures are unchanged.
+    h0_correction_rows: pa.Table | None = None
+    h0_calibrator_rows: pa.Table | None = None
+    h0_ownership: dict[str, Any] | None = None
+    if spec.architecture == "H0":
+        h0_correction_rows, h0_calibrator_rows, h0_ownership = split_calibration_a_for_h0(
+            calibration_a, embargo_us=int(config.schedule.embargo_minutes) * 60 * 1_000_000
+        )
     budget = compute_budget or ComputeBudget.resolve(config.resources)
     emit_event(
         "MODEL_START",
@@ -885,7 +1142,57 @@ def _run_one(
         **memory_snapshot(),
     )
     model_started = time.monotonic()
-    with fit_context:
+    telemetry(
+        "MODEL_FIT_START",
+        "START",
+        started=model_started,
+        matrix_shape=list(prepared.model_inputs.train_x.shape),
+        matrix_bytes=prepared.model_inputs.train_x.nbytes
+        + prepared.model_inputs.validation_x.nbytes,
+        model_threads=budget.lightgbm_threads_per_model,
+    )
+    log_identity = (execution_metadata or {}).get("run_identity", "isolated")
+    log_directory = (
+        RuntimePaths.resolve(config.paths).log_root / log_identity / fold.plan.fold_id / spec.name
+    )
+    if execution_metadata is None:
+        log_directory = output_root / "training-metrics"
+    # CHANGED BY CLAUDE (2026-11-08, pre-RunPod hardening): read-only Train/Validation invariants
+    # (row identity, symbol order, purge) right before the fit, and the VALIDATION-only context
+    # for the descriptive in-fit diagnostics (raw-return units, predeclared thresholds). Neither
+    # changes a matrix, the fit, early stopping or any TEST-facing step.
+    fit_boundary_summary = assert_fit_segments(
+        train,
+        validation,
+        model_inputs=prepared.model_inputs,
+        feature_columns=feature_columns,
+        target_column=target,
+        validation_start_us=int(fold.plan.validation_start.timestamp() * 1_000_000),
+    )
+    diagnostic_context, diagnostic_context_status = try_build_validation_context(
+        validation,
+        target_type=spec.target_type,
+        normalization_floor=config.targets.normalization_floor,
+        config=current_config(),
+    )
+    with (
+        fit_context,
+        training_metric_scope(
+            log_directory,
+            diagnostics=diagnostic_context,
+            run_identity=log_identity,
+            fold_id=fold.plan.fold_id,
+            spec_id=spec.name,
+            architecture=spec.architecture,
+            research_view=fold.research_view,
+            target_type=spec.target_type,
+            target_column=target,
+            horizon_minutes=spec.horizon_minutes,
+            feature_count=len(feature_columns),
+            round_limit=config.models.n_estimators,
+            symbol_balanced=spec.symbol_balanced,
+        ) as metric_scope,
+    ):
         model = fit_architecture(
             spec.architecture,  # type: ignore[arg-type]
             train,
@@ -898,11 +1205,21 @@ def _run_one(
             cluster_mapping=fold.cluster_mapping,
             explicit_symbol_id=spec.explicit_symbol_id,
             symbol_balanced=spec.symbol_balanced,
-            hybrid_calibration=validation if spec.architecture == "H0" else None,
+            # CHANGED BY CLAUDE (2026-11-06, closure): H0 corrections come from the purged first
+            # part of Cal-A, never from the early-stopping Validation rows.
+            # OLD CODE: hybrid_calibration=validation if spec.architecture == "H0" else None,
+            hybrid_calibration=h0_correction_rows,
             eligibility_calibration_a=calibration_a,
             prepared_inputs=prepared.model_inputs,
             reusable_global=reusable_global,
         )
+    if spec.architecture == "H0" and (
+        model.metadata.get("hybrid_correction_source", {}).get("status")
+        != "SEPARATE_ROWS_DISJOINT_FROM_EARLY_STOPPING"
+    ):
+        # CHANGED BY CLAUDE (2026-11-06, closure): an official H0 fit may not correct on the
+        # early-stopping rows (finding L-04).
+        raise ValueError("H0_CORRECTION_NOT_INDEPENDENT_OF_EARLY_STOPPING")
     model.metadata["scientific_input_identity"] = checkpoint_identity
     model.metadata["model_identity"] = stable_hash(
         {
@@ -917,24 +1234,49 @@ def _run_one(
         elapsed_seconds=time.monotonic() - model_started,
         **memory_snapshot(),
     )
+    telemetry("MODEL_FIT_END", "END", started=model_started)
     if reusable_models is not None and _is_reusable_g0(spec):
         reusable_models[reuse_key] = model
     emit_event("CAL_A_START", fold_id=fold.plan.fold_id, spec=spec.name)
-    cal_a_raw, cal_a_covered = model.predict(calibration_a)
-    cal_a_table, cal_a_predictions = _subset_covered(calibration_a, cal_a_raw, cal_a_covered)
+    calibration_started = time.monotonic()
+    telemetry("CALIBRATE", "START", started=calibration_started)
+    # CHANGED BY CLAUDE (2026-11-06, closure): H0 fits its calibrator on Cal-A2 only (see
+    # split_calibration_a_for_h0); every other architecture keeps all of Cal-A.
+    # OLD CODE: predict(calibration_a) / _subset_covered(calibration_a, ...) for every architecture.
+    calibrator_source = h0_calibrator_rows if h0_calibrator_rows is not None else calibration_a
+    cal_a_raw, cal_a_covered = model.predict(calibrator_source)
+    cal_a_table, cal_a_predictions = _subset_covered(calibrator_source, cal_a_raw, cal_a_covered)
     calibrator, calibration_report = fit_calibrator(
         cal_a_predictions,
         np.asarray(cal_a_table.column(target).to_pylist(), dtype=np.float64),
         config.calibration,
+        # CHANGED BY CLAUDE (2026-11-02, finding L-03): choose identity vs linear on a held-out
+        # tail of Cal-A. OLD CODE: fit_calibrator(preds, actual, config.calibration)
+        selection_holdout_fraction=SELECTION_HOLDOUT_FRACTION,
+        # CHANGED BY CLAUDE (2026-11-06, closure): purge the fit subset by the ACTUAL
+        # label_end_time (microseconds) plus the configured embargo; otherwise identity.
+        feature_times=cal_a_table.column("feature_time")
+        .combine_chunks()
+        .cast(pa.int64())
+        .to_numpy(),
+        label_end_times=cal_a_table.column("label_end_time")
+        .combine_chunks()
+        .cast(pa.int64())
+        .to_numpy(),
+        embargo=int(config.schedule.embargo_minutes) * 60 * 1_000_000,
     )
     emit_event("CAL_A_DONE", fold_id=fold.plan.fold_id, spec=spec.name)
+    telemetry("CALIBRATE", "END", started=calibration_started)
     emit_event("CAL_B_START", fold_id=fold.plan.fold_id, spec=spec.name)
+    threshold_started = time.monotonic()
+    telemetry("THRESHOLD", "START", started=threshold_started)
     cal_b_model, cal_b_covered = model.predict(calibration_b)
     cal_b_table, cal_b_predictions = _subset_covered(calibration_b, cal_b_model, cal_b_covered)
     cal_b_raw = _to_raw_predictions(
         cal_b_table,
         calibrator.apply(cal_b_predictions),
         target_type=spec.target_type,
+        normalization_floor=config.targets.normalization_floor,
     )
     thresholds, threshold_report = select_cal_b_thresholds(
         cal_b_table,
@@ -946,6 +1288,7 @@ def _run_one(
         config=config.costs,
     )
     emit_event("CAL_B_DONE", fold_id=fold.plan.fold_id, spec=spec.name)
+    telemetry("THRESHOLD", "END", started=threshold_started)
     threshold_payload = asdict(thresholds)
     frozen_components = _frozen_test_identity_components(
         model_identity=model.metadata["model_identity"],
@@ -954,11 +1297,43 @@ def _run_one(
     )
     frozen_identity = stable_hash(frozen_components)
     emit_event("TEST_EVAL_START", fold_id=fold.plan.fold_id, spec=spec.name)
-    test = _finite(fold.release_test(frozen_identity=frozen_identity), feature_columns, target)
+    test_started = time.monotonic()
+    telemetry("TEST", "START", started=test_started)
+    # CHANGED BY CLAUDE (2026-11-02, finding M-02): the "test_used_for_selection" flag is now
+    # measured from the fold's TEST access ledger, and the frozen identity is re-derived from
+    # the live model/calibrator/thresholds right before release (fails loudly on mismatch).
+    # OLD CODE (kept for reference):
+    # raw_test = fold.release_test(frozen_identity=frozen_identity)
+    test_consumer = f"{spec.name}|{target}"
+    test_used_for_selection = any(
+        item["frozen_identity"] != frozen_identity
+        for item in fold.test_access_summary(test_consumer)["releases"]
+    )
+    if test_used_for_selection:
+        raise RuntimeError(
+            f"{fold.plan.fold_id}/{spec.name}: TEST was read before its selection was frozen"
+        )
+    raw_test = fold.release_test(
+        frozen_identity=frozen_identity,
+        expected_identity=stable_hash(
+            _frozen_test_identity_components(
+                model_identity=model.metadata["model_identity"],
+                calibrator_identity=calibrator.identity_hash,
+                thresholds=threshold_payload,
+            )
+        ),
+        consumer=test_consumer,
+    )
+    test = _finite(raw_test, feature_columns, target)
     test_model, test_covered = model.predict(test)
     calibrated = np.full(test.num_rows, np.nan)
     calibrated[test_covered] = calibrator.apply(test_model[test_covered])
-    predicted_raw = _to_raw_predictions(test, calibrated, target_type=spec.target_type)
+    predicted_raw = _to_raw_predictions(
+        test,
+        calibrated,
+        target_type=spec.target_type,
+        normalization_floor=config.targets.normalization_floor,
+    )
     metrics = evaluate_predictions(
         test,
         predicted_raw,
@@ -989,8 +1364,95 @@ def _run_one(
         }
     else:
         concentration = {"asset": None, "time": None}
+    # CHANGED BY CLAUDE (2026-11-02, Phase 3 items 2, 5, 6): additive diagnostics. Baselines use
+    # VALIDATION rows only; decision/trading metrics use the already-frozen Cal-B thresholds on
+    # TEST and are never fed back into any selection. Nothing above this line changed.
+    hardening_cfg = current_config()
+    validation_prediction, validation_covered = model.predict(validation)
+    # CHANGED BY CLAUDE (2026-11-08, baseline contract v3): the baselines use the SAME TRAIN weights
+    # the global LightGBM fit used (symbol-balanced, from TRAIN symbol row counts only).
+    baseline_weights = (
+        symbol_balanced_weights(prepared.model_inputs.train_symbols)
+        if spec.symbol_balanced
+        else None
+    )
+    baselines = score_baselines(
+        prepared.model_inputs.train_x,
+        prepared.model_inputs.train_y,
+        prepared.model_inputs.validation_x,
+        np.asarray(validation.column(target).to_pylist(), dtype=np.float64),
+        validation_prediction,
+        validation_covered,
+        config=hardening_cfg,
+        # CHANGED BY CLAUDE (2026-11-06, closure): timestamps enable the cross-sectional IC.
+        validation_times=validation.column("feature_time")
+        .combine_chunks()
+        .cast(pa.int64())
+        .to_numpy(),
+        train_weight=baseline_weights,
+        weight_policy=(
+            "SYMBOL_BALANCED_SAME_AS_GLOBAL_FIT"
+            if spec.symbol_balanced
+            else "UNWEIGHTED_SAME_AS_FIT"
+        ),
+    )
+    test_symbols = [str(item) for item in test.column("symbol").to_pylist()]
+    tier_costs = tier_cost_breakdown(config.costs)
+    cost_by_symbol = {
+        symbol: sum(tier_costs[fold.liquidity_tiers[symbol]].values())
+        for symbol in set(test_symbols)
+    }
+    threshold_by_symbol = {
+        symbol: thresholds.values_bps.get(
+            _threshold_key(symbol, thresholds.granularity, fold.cluster_mapping)
+        )
+        for symbol in set(test_symbols)
+    }
+    decision = decision_metrics(
+        test_symbols,
+        np.asarray(test.column("raw_future_return").to_pylist(), dtype=np.float64),
+        predicted_raw,
+        threshold_bps_by_symbol=threshold_by_symbol,
+        cost_bps_by_symbol=cost_by_symbol,
+    )
+    trading = trading_metrics(trades, tier_costs)
+    phase7b_block = {
+        "baselines": baselines,
+        "decision": decision,
+        "trading": trading,
+        "console_fields": console_fields(decision, trading),
+        # CHANGED BY CLAUDE (2026-11-05, Phase 7C finding N-03): the Phase 7B settings (pilot
+        # filter, fold gate, abort rule, thresholds) change what a run does but live outside the
+        # frozen config hash, so each report records the exact settings it ran under.
+        # CHANGED BY CLAUDE (2026-11-06, IA-04): and the control-plane identity (source + settings).
+        "hardening_config": asdict(current_config()),
+        "experiment_control_identity": experiment_control_identity(asdict(current_config())),
+        # CHANGED BY CLAUDE (2026-11-08): descriptive training observability. Validation-only,
+        # metric class DESCRIPTIVE_VALIDATION_DIAGNOSTIC / DEVELOPMENT_METRIC, never selection,
+        # never evidence; the canonical ledger stays authoritative.
+        "training_observer": {
+            "diagnostic_context_status": diagnostic_context_status,
+            "estimator_summaries": {
+                key: report_view(value) for key, value in sorted(metric_scope.summaries.items())
+            },
+            "fit_boundary": fit_boundary_summary,
+            # Global (G0/H0) weights only; C0 balances inside each cluster, P0 is unweighted.
+            "sample_weights": (
+                sample_weight_summary(baseline_weights, prepared.model_inputs.train_symbols)
+                if spec.architecture in {"G0", "H0"}
+                else {"status": f"PARTITIONED_{spec.architecture}_NOT_SUMMARISED"}
+            ),
+            "validation_prediction_health": prediction_health(
+                validation_prediction, validation_covered, rows=validation.num_rows
+            ),
+            "resolved_monitor_settings": resolved_monitor_manifest(),
+            "selection_eligible": False,
+            "independent_evidence": False,
+        },
+    }
     report = {
         "status": "COMPLETE",
+        "result_publication_contract": "CANONICAL_LEDGER_V1",
         "spec": asdict(spec),
         "fold_id": fold.plan.fold_id,
         "research_view": fold.research_view,
@@ -998,6 +1460,18 @@ def _run_one(
         "core_eligible_symbols": fold.eligibility_manifest["core_eligible_symbols"],
         "expansion_eligible_symbols": fold.eligibility_manifest["expansion_eligible_symbols"],
         "same_row_feature_columns": list(feature_columns),
+        "finite_row_accounting": finite_row_accounting(
+            {
+                name: ((prepared.pre_filter_rows or {}).get(name, raw.num_rows), filtered.num_rows)
+                for name, raw, filtered in (
+                    ("train", fold.train, train),
+                    ("validation", fold.validation, validation),
+                    ("calibration_a", fold.calibration_a, calibration_a),
+                    ("calibration_b", fold.calibration_b, calibration_b),
+                    ("test", raw_test, test),
+                )
+            }
+        ),
         "segment_rows": {
             "train": train.num_rows,
             "validation": validation.num_rows,
@@ -1007,6 +1481,7 @@ def _run_one(
         },
         "model": model.metadata,
         "calibration": calibration_report,
+        "h0_data_ownership": h0_ownership,
         "threshold_selection": threshold_report,
         "thresholds": threshold_payload,
         "calibrator_identity": calibrator.identity_hash,
@@ -1015,6 +1490,8 @@ def _run_one(
         "test_coverage_keys_by_symbol": coverage_keys,
         "conditional_test_metrics": _conditional_metrics(test, predicted_raw, test_covered),
         "economic": {
+            # CHANGED BY CLAUDE (2026-11-06, closure): explicit economic-status contract.
+            **ECONOMIC_STATUS,
             "cost_assumption_classification": config.costs.assumption_classification,
             "trade_count": trades.num_rows,
             "no_trade": trades.num_rows == 0,
@@ -1037,16 +1514,53 @@ def _run_one(
         "checkpoint_identity": checkpoint_identity,
         "prepared_cache_id": cache_id,
         "execution_context": execution_metadata or {},
-        "test_used_for_selection": False,
+        # CHANGED BY CLAUDE (2026-11-02, finding M-02): measured, no longer a literal.
+        # OLD CODE (kept for reference): "test_used_for_selection": False,
+        "test_used_for_selection": test_used_for_selection,
+        "test_access": fold.test_access_summary(test_consumer),
+        "phase7b": phase7b_block,
+        "july_2026_used": False,
         **config.holdout_status_payload(),
     }
     emit_event("TEST_EVAL_DONE", fold_id=fold.plan.fold_id, spec=spec.name)
+    telemetry("TEST", "END", started=test_started)
     model_path = model_path or output_root / "model.joblib"
+    from crypto_ai.phase7.recovery import publish_model_receipt
+
+    publication = {
+        "run_identity": (execution_metadata or {}).get("run_identity", output_root.name),
+        "mode": "benchmark"
+        if checkpoint_identity.get("artifact_mode") == "BENCHMARK_ONLY"
+        else "production",
+        "fold_id": fold.plan.fold_id,
+        "spec_id": spec.name,
+        "state": "MODEL_REPORT_PUBLICATION_V1",
+    }
+    model.metadata["publication"] = publication
+    report["publication"] = publication
+    resource_admission("MODEL_PUBLISH", additional_roots=(model_path.parent, output_root))
+    telemetry("MODEL_PUBLISH", "START")
     save_model(model, model_path)
+    receipt_path = publish_model_receipt(model_path, checkpoint_identity, publication)
+    telemetry("MODEL_PUBLISH", "END")
     report["model_artifact_sha256"] = file_sha256(model_path)
+    # CHANGED BY CLAUDE (2026-11-02, finding L-08): also record the hash outside the folder.
+    register_model_hash(model_path)
+    report["model_receipt_sha256"] = file_sha256(receipt_path)
     report["artifact_mode"] = checkpoint_identity.get("artifact_mode", "PRODUCTION_RESEARCH")
     report["report_identity"] = stable_hash(report, length=64)
+    resource_admission("REPORT_PUBLISH", additional_roots=(output_root,))
+    telemetry("REPORT_PUBLISH", "START")
     report_path = atomic_json(output_root / "report.json", report)
+    telemetry("REPORT_PUBLISH", "END")
+    # CHANGED BY CLAUDE (2026-11-06, closure): the results CSV is no longer appended here. The
+    # canonical result record + receipt are published by the training loop (publish_canonical_
+    # result) BEFORE the checkpoint is marked COMPLETE, and the CSV is regenerated from that
+    # ledger. OLD CODE (kept for reference):
+    # append_result_row(
+    #     output_root.parents[2] if len(output_root.parents) > 2 else output_root,
+    #     results_row_from_report(report),
+    # )
     if reporter is not None:
         reporter.fold_evaluation(
             report,
@@ -1055,10 +1569,64 @@ def _run_one(
             fold_position=fold_position,
             folds_total=folds_total,
         )
-    return report, [model_path, report_path]
+    return report, [model_path, receipt_path, report_path]
 
 
-def run_phase7_training(
+def run_phase7_training(config: Phase7Config, **kwargs: Any) -> dict[str, Any]:
+    """Every direct training call owns an isolated persistent filesystem lease."""
+    config.assert_cloud_execution_allowed()
+    # CHANGED BY CLAUDE (2026-11-06, closure): a GPU backend needs a recorded approval even for
+    # direct calls; CPU is always admitted.
+    assert_backend_admitted(resolve_lightgbm_backend())
+    resolve_training_scope(config, kwargs.get("scope"))  # fail before any lease/filesystem work
+    root = kwargs["run_root"]
+    mode = "benchmark" if kwargs.get("benchmark_spec_id") is not None else "production"
+    store = kwargs["checkpoint_store"]
+    if store.run_identity != root.name:
+        raise ValueError("training lease/checkpoint run identity mismatch")
+    if mode == "benchmark":
+        from crypto_ai.phase7.benchmark_one_spec import benchmark_plan
+
+        benchmark_plan(config, kwargs["benchmark_spec_id"], root.parent)
+        first = plan_folds(
+            config.data_start,
+            config.research_cutoff,
+            config.prospective_holdout_start,
+            config.schedule,
+        )[0]
+        if (
+            kwargs.get("benchmark_fold_id") != first.fold_id
+            or store.root.resolve() != (root / "checkpoints").resolve()
+        ):
+            raise ValueError("benchmark requires isolated checkpoints and first canonical fold")
+    elif kwargs.get("benchmark_fold_id") is not None:
+        raise ValueError("benchmark fold selector requires exactly one canonical spec")
+    from crypto_ai.phase7.admission import admit_official_training
+
+    kwargs["admission_record"] = admit_official_training(
+        entrypoint="benchmark_one_spec" if mode == "benchmark" else "run_phase7a_pipeline",
+        config=config,
+        mode="prepare" if kwargs.get("prepare_only") else "train",
+        output_root=root.parent,
+        smoke=mode == "benchmark",
+        spec_id=kwargs.get("benchmark_spec_id", "architecture-G0-A6-60m-raw"),
+        fold_id=kwargs.get("benchmark_fold_id"),
+    )
+    with owned_run(root, root.name, training_source_identity(), mode=mode):
+        try:
+            return _run_phase7_training_owned(config, **kwargs)
+        except PreparedOnlyComplete as done:
+            return {
+                "status": "PREPARED_ONLY",
+                "cache_id": done.cache_id,
+                "cache_path": str(done.cache_path),
+                "models_fitted": 0,
+                "specs_completed": 0,
+                "run_root": str(root),
+            }
+
+
+def _run_phase7_training_owned(
     config: Phase7Config,
     *,
     gold_manifest_path: Path,
@@ -1073,9 +1641,15 @@ def run_phase7_training(
     reporter: ProgressReporter | None = None,
     benchmark_spec_id: str | None = None,
     benchmark_fold_id: str | None = None,
+    scope: str | None = None,
+    prepare_only: bool = False,
+    admission_record: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     config.assert_cloud_execution_allowed()
+    if prepare_only and benchmark_spec_id is None:
+        raise ValueError("preparation-only requires exactly one selected canonical spec")
     source_identity = training_source_identity()
+    environment_identity = scientific_environment_identity()
     manifest = _load_gold_manifest(gold_manifest_path)
     gold_paths = [record["path"] for record in manifest["partition_files"]]
     gold_dataset: ds.Dataset | None = None
@@ -1086,8 +1660,11 @@ def run_phase7_training(
         config.prospective_holdout_start,
         config.schedule,
     )
-    specs = phase7_experiment_specs(config)
-    research_views = RESEARCH_VIEWS
+    specs, research_views = resolve_training_scope(config, scope)
+    # CHANGED BY CLAUDE (2026-11-02, Phase 3 item 4): optional pilot mode (one horizon x one
+    # target type) from the hardening config; a no-op unless both pilot keys are set.
+    # OLD CODE: nothing here (the full scoped spec list was always used).
+    specs = apply_pilot_filter(specs)
     benchmark_only = benchmark_spec_id is not None
     if benchmark_only:
         from crypto_ai.phase7.benchmark_one_spec import benchmark_plan
@@ -1116,24 +1693,45 @@ def run_phase7_training(
     compute_budget = ComputeBudget.resolve(config.resources)
     selected_backend = resolve_lightgbm_backend()
     execution_metadata = {
+        "run_identity": run_root.name,
         "git_commit": git_commit(),
         "configuration_hash": config.configuration_hash,
         "scientific_source_identity": source_identity,
+        "scientific_environment": environment_identity,
         "execution_source_identity": execution_source_identity(),
         "gold_dataset_id": manifest["dataset_id"],
         "gold_manifest_sha256": gold_manifest_checksum,
         "backend": backend_metadata(selected_backend),
         "compute_budget": asdict(compute_budget),
         "runtime_paths": runtime_paths.payload(),
+        "resolved_configuration": config.model_dump(mode="json"),
+        "admission": admission_record,
         "os": platform.platform(),
         "python": platform.python_version(),
     }
+    atomic_json(
+        run_root / "execution_manifests" / f"{stable_hash(execution_metadata, length=64)}.json",
+        execution_metadata,
+    )
     emit_event("COMPUTE_BUDGET_RESOLVED", **asdict(compute_budget))
+    # CHANGED BY CLAUDE (2026-11-02, Phase 3 item 9): training reads Gold only, so absent Silver
+    # is a warning, not an error. Gold rebuilds fail clearly in the pipeline gold stage instead.
+    silver = silver_status(runtime_paths.data_root)
+    if silver["status"] != "PRESENT":
+        print(
+            "[phase7:train] WARNING: Silver is absent; training proceeds from Gold only "
+            f"({silver['silver_root']}). Owner decision pending: restore Silver, or record that "
+            "Gold is the source of truth.",
+            flush=True,
+        )
+    stop_reason: str | None = None
+    aborted_fit_detail: dict[str, object] | None = None  # CHANGED BY CLAUDE (2026-11-05, N-02)
     for fold_position, plan in enumerate(folds, start=1):
         cached: dict[tuple[str, int, str, str], CachedPreparedData] = {}
         # Keep only the current horizon and prepared key. Durable entries remain
         # on disk; advancing a target/horizon releases prior Arrow/memmap payloads.
         sliced: dict[int, MultiAssetFoldData] = {}
+        fold_context: dict[str, pa.Table] = {}
         descriptor_identity = causal_descriptor_identity(descriptors, plan.train_end)
 
         def load_payload(
@@ -1142,6 +1740,7 @@ def run_phase7_training(
             *,
             cached: Any = cached,
             sliced: Any = sliced,
+            fold_context: Any = fold_context,
             plan: Any = plan,
             descriptor_identity: str = descriptor_identity,
         ) -> MultiAssetFoldData:
@@ -1203,6 +1802,15 @@ def run_phase7_training(
                     spec.horizon_minutes,
                     **({"dataset": gold_dataset} if gold_dataset is not None else {}),
                 )
+                if "source" not in fold_context:
+                    fold_context["source"] = _load_fold_context_source(
+                        manifest,
+                        plan,
+                        config.targets.horizons_minutes,
+                        gold_manifest_sha256=gold_manifest_checksum,
+                        configuration_hash=config.configuration_hash,
+                        **({"dataset": gold_dataset} if gold_dataset is not None else {}),
+                    )
                 sliced[spec.horizon_minutes] = slice_multiasset_fold(
                     table,
                     plan,
@@ -1217,6 +1825,7 @@ def run_phase7_training(
                     cluster_count=config.models.cluster_count,
                     seed=config.models.seed,
                     unusable_segments=unusable_segments,
+                    context_source=fold_context["source"],
                 )
                 emit_event(
                     "FOLD_LOAD_DONE",
@@ -1272,6 +1881,8 @@ def run_phase7_training(
                             "phase7_scientific_resume_identity_v2"
                         ),
                         "model_backend_semantics": selected_backend.name,
+                        "scientific_environment": environment_identity,
+                        "cost_policy_version": COST_POLICY_VERSION,
                         "training_source_identity": source_identity,
                         "causal_descriptor_identity": descriptor_identity,
                         **({"artifact_mode": "BENCHMARK_ONLY"} if benchmark_only else {}),
@@ -1321,6 +1932,17 @@ def run_phase7_training(
             reusable_models: dict[tuple[Any, ...], Any] = {}
             unavailable_reusable_g0: set[tuple[Any, ...]] = set()
             for spec_position, spec in enumerate(specs, start=1):
+                # CHANGED BY CLAUDE (2026-11-02, Phase 3 item 3): safe stop. A stop file in the
+                # run directory is honoured BETWEEN specs, so the current fit always finishes
+                # cleanly and its report/checkpoint are written first. Off unless the file exists.
+                if stop_reason is None and stop_requested(run_root):
+                    stop_reason = "STOP_FILE_PRESENT"
+                    print(
+                        f"[phase7:train] stop file found in {run_root}; stopping cleanly.",
+                        flush=True,
+                    )
+                if stop_reason is not None:
+                    break
                 stage = f"models/{research_view.lower()}/{plan.fold_id}/{spec.name}"
                 relative_stage = Path(research_view.lower()) / plan.fold_id / spec.name
                 output = (
@@ -1402,8 +2024,16 @@ def run_phase7_training(
                     "code_version": PHASE7_VERSION,
                     "scientific_resume_identity_schema": "phase7_scientific_resume_identity_v2",
                     "model_backend_semantics": selected_backend.name,
+                    "scientific_environment": environment_identity,
+                    "cost_policy_version": COST_POLICY_VERSION,
                     "training_source_identity": source_identity,
                     "causal_descriptor_identity": descriptor_identity,
+                    # CHANGED BY CLAUDE (2026-11-06, IA-04): hardening/selection/ledger source and
+                    # the ACTIVE hardening settings now decide whether a completed stage may be
+                    # resumed. They are NOT part of the prepared-cache identity.
+                    "experiment_control_identity": experiment_control_identity(
+                        asdict(current_config())
+                    )["manifest_sha256"],
                     "fold_context_identity": stable_hash(
                         {
                             "clusters": fold_data.cluster_mapping,
@@ -1451,11 +2081,31 @@ def run_phase7_training(
                         reusable_models[reuse_key] = completed_model
                     reports.append(completed_report)
                     continue
+                if model_path.exists() and not report_path.exists():
+                    raise ValueError(
+                        "MODEL_ONLY: preserve model; explicit operator decision required, no refit"
+                    )
                 if resume and report_path.exists():
                     orphan_report = json.loads(report_path.read_text(encoding="utf-8"))
                     orphan_files = [report_path]
                     orphan_model: Any | None = None
                     if orphan_report.get("status") == "COMPLETE":
+                        from crypto_ai.phase7.recovery import (
+                            inspect_spec_artifacts,
+                            model_receipt_path,
+                        )
+
+                        artifact_state = inspect_spec_artifacts(
+                            model_path=model_path,
+                            report_path=report_path,
+                            checkpoint_store=checkpoint_store,
+                            stage=stage,
+                            expected_identity=checkpoint_identity,
+                        )
+                        if artifact_state["state"] != "MODEL_REPORT":
+                            raise ValueError(
+                                f"orphan state {artifact_state['state']}: preserve and investigate"
+                            )
                         orphan_identity = orphan_report.get("checkpoint_identity")
                         if not isinstance(
                             orphan_identity, dict
@@ -1479,13 +2129,14 @@ def run_phase7_training(
                             raise ValueError("orphan estimator scientific input identity mismatch")
                         _validate_complete_orphan_report(orphan_report, orphan_model)
                         orphan_files.append(model_path)
+                        orphan_files.append(model_receipt_path(model_path))
                     elif orphan_report.get("status") not in {"INELIGIBLE"}:
                         raise ValueError(
                             "Orphan report has non-reusable status for "
                             f"{research_view} {plan.fold_id} {spec.name}: "
                             f"{orphan_report.get('status')!r}"
                         )
-                    if orphan_report.get("status") == "INELIGIBLE" or len(orphan_files) == 2:
+                    if orphan_report.get("status") == "INELIGIBLE" or len(orphan_files) == 3:
                         orphan_identity = orphan_report.get("checkpoint_identity")
                         if not isinstance(
                             orphan_identity, dict
@@ -1496,6 +2147,13 @@ def run_phase7_training(
                                 "Orphan report identity mismatch for "
                                 f"{research_view} {plan.fold_id} {spec.name}"
                             )
+                        # CHANGED BY CLAUDE (2026-11-06, closure): an adopted orphan (crash after
+                        # model+report, before checkpoint) must also be in the canonical ledger.
+                        if orphan_report.get("status") == "COMPLETE":
+                            orphan_files = [
+                                *orphan_files,
+                                *publish_canonical_result(run_root / LEDGER_DIRNAME, orphan_report),
+                            ]
                         checkpoint_store.complete(stage, orphan_files, checkpoint_identity)
                         if _is_reusable_g0(spec) and orphan_model is not None:
                             reuse_key = _reusable_model_key(
@@ -1584,6 +2242,15 @@ def run_phase7_training(
                         prepared_cache = cached_bundle.prepared
                 if prepared_cache is None:
                     raise AssertionError("Phase 7 prepared-segment cache was not initialized")
+                if prepare_only:
+                    if cache_mode not in {"auto", "rebuild"} or cached_bundle is None:
+                        raise ValueError(
+                            "preparation-only needs PHASE7_CACHE_MODE=auto|rebuild and a "
+                            "verified published cache; nothing was fitted"
+                        )
+                    raise PreparedOnlyComplete(
+                        cached_bundle.cache_id, durable_cache.cache_path(cache_identity)
+                    )
                 try:
                     report, files = _run_one(
                         spec,
@@ -1602,6 +2269,21 @@ def run_phase7_training(
                         execution_metadata=execution_metadata,
                         model_path=model_path,
                     )
+                # CHANGED BY CLAUDE (2026-11-05, Phase 7C finding N-02): the optional
+                # ``abort_after_worse_checks`` rule raises FitAbortedError from inside the
+                # LightGBM callback. Nothing caught it, so an enabled rule crashed the whole run
+                # with a stack trace (and could leave a lease behind). It now stops the run
+                # cleanly like the stop file does: this spec gets NO report and NO checkpoint (so
+                # it is retried on resume), and the partial summary names the spec and the reason.
+                except FitAbortedError as exc:
+                    stop_reason = "FIT_ABORTED_WORSE_THAN_BASELINE_ON_VALIDATION"
+                    aborted_fit_detail = {
+                        "spec": spec.name,
+                        "fold_id": plan.fold_id,
+                        "message": str(exc),
+                    }
+                    print(f"[phase7:train] fit aborted: {exc}", flush=True)
+                    break
                 except IneligibleFoldError as exc:
                     report = {
                         "status": "INELIGIBLE",
@@ -1621,15 +2303,61 @@ def run_phase7_training(
                     files = [atomic_json(report_path, report)]
                     if _is_reusable_g0(spec):
                         unavailable_reusable_g0.add(required_g0_key)
+                # CHANGED BY CLAUDE (2026-11-06, closure): a COMPLETE result must be published to
+                # the canonical ledger (identity-checked, hashed receipt) before the stage can be
+                # COMPLETE. Its two files are part of the checkpoint file list.
+                if report.get("status") == "COMPLETE":
+                    files = [
+                        *files,
+                        *publish_canonical_result(run_root / LEDGER_DIRNAME, report),
+                    ]
                 checkpoint_store.complete(stage, files, checkpoint_identity)
+                refresh_results_view(
+                    run_root / LEDGER_DIRNAME,
+                    run_root.name,
+                    run_root / "models" / RESULTS_FILENAME,
+                    RESULT_COLUMNS,
+                )
                 emit_event("CHECKPOINT_SAVED", stage=stage)
                 reports.append(report)
         cached.clear()
         sliced.clear()
         reusable_models.clear()
         prepared_cache = cached_bundle = fold_data = None
+        # CHANGED BY CLAUDE (2026-11-06, closure): always leave the CSV view equal to the ledger
+        # (covers resumed runs whose stages were all skipped as already COMPLETE).
+        if (run_root / LEDGER_DIRNAME).is_dir():
+            refresh_results_view(
+                run_root / LEDGER_DIRNAME,
+                run_root.name,
+                run_root / "models" / RESULTS_FILENAME,
+                RESULT_COLUMNS,
+            )
         if reporter is not None and not benchmark_only:
             reporter.fold_completed(fold_position, len(folds), plan.fold_id)
+        # CHANGED BY CLAUDE (2026-11-02, Phase 3 item 3): optional fold gate. After folds 1..N
+        # (config ``fold_gate_folds``, default 0 = off), stop if no completed spec of this fold
+        # beat the zero-return baseline on VALIDATION. TEST is not consulted.
+        if stop_reason is None and fold_gate_failed(
+            [item for item in reports if item.get("fold_id") == plan.fold_id], fold_position
+        ):
+            stop_reason = "FOLD_GATE_FAILED_NO_SPEC_BEAT_BASELINE_ON_VALIDATION"
+            print(f"[phase7:train] fold gate failed after fold {fold_position}.", flush=True)
+        if stop_reason is not None:
+            break
+    if stop_reason is not None and not benchmark_only:
+        stopped = {
+            "status": "STOPPED_EARLY",
+            "stop_reason": stop_reason,
+            "aborted_fit": aborted_fit_detail,  # CHANGED BY CLAUDE (2026-11-05, N-02)
+            "folds_planned": len(folds),
+            "completed_reports": sum(item["status"] == "COMPLETE" for item in reports),
+            "reports": reports,
+            "test_used_for_model_design": False,
+            **config.holdout_status_payload(),
+        }
+        atomic_json(run_root / "training_summary_partial.json", stopped)
+        return stopped
     if benchmark_only:
         summary = {
             "status": "BENCHMARK_ONLY",

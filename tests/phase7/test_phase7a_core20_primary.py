@@ -3,6 +3,8 @@ from __future__ import annotations
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
+import pytest
+
 from crypto_ai.phase7 import training
 from crypto_ai.phase7.config import load_phase7_config
 from crypto_ai.phase7.runner import phase7_plan
@@ -39,16 +41,39 @@ def test_phase7a_has_exactly_the_existing_48_primary_a6_specs() -> None:
     assert {spec.architecture for spec in specs} == {"G0", "C0", "P0", "H0"}
 
 
-def test_phase7a_training_surface_is_scoped_and_restores_canonical_globals() -> None:
+def test_phase7a_scope_is_first_class_and_needs_no_global_patching() -> None:
     phase7a = load_phase7_config(Path("configs/phase7/research_core20_primary_v1.toml"))
-    canonical_views = training.RESEARCH_VIEWS
-    canonical_count = len(training.phase7_experiment_specs(phase7a))
+    specs, views = training.resolve_training_scope(phase7a, training.PHASE7A_SCOPE)
+    assert views == ("CORE",)
+    assert len(specs) == 48 and specs == primary_specs(phase7a)
     with _training_patches(phase7a):
-        assert training.RESEARCH_VIEWS == ("CORE",)
-        assert len(training.phase7_experiment_specs(phase7a)) == 48
+        # Only the source-file identity is bound; scope globals stay canonical.
+        assert training.RESEARCH_VIEWS == ("CORE", "EXPANDING")
+        assert len(training.phase7_experiment_specs(phase7a)) == 58
         assert "scripts/run_phase7a_pipeline.py" in training.TRAINING_CRITICAL_SOURCE_FILES
-    assert training.RESEARCH_VIEWS == canonical_views == ("CORE", "EXPANDING")
-    assert len(training.phase7_experiment_specs(phase7a)) == canonical_count == 58
+    assert training.RESEARCH_VIEWS == ("CORE", "EXPANDING")
+
+
+def test_generic_training_refuses_to_expand_a_phase7a_configuration() -> None:
+    phase7a = load_phase7_config(Path("configs/phase7/research_core20_primary_v1.toml"))
+    with pytest.raises(ValueError, match="Phase 7A run"):
+        training.resolve_training_scope(phase7a, None)
+    with pytest.raises(ValueError, match="unknown training scope"):
+        training.resolve_training_scope(phase7a, "SOMETHING_ELSE")
+    generic = load_phase7_config(Path("configs/phase7/research_v1.toml"))
+    specs, views = training.resolve_training_scope(generic, None)
+    assert views == ("CORE", "EXPANDING") and len(specs) == 58
+
+
+def test_phase7a_one_spec_path_selects_exactly_one_canonical_spec() -> None:
+    from crypto_ai.phase7.phase7a import select_one_spec
+
+    phase7a = load_phase7_config(Path("configs/phase7/research_core20_primary_v1.toml"))
+    chosen = select_one_spec(phase7a, primary_specs(phase7a)[0].name)
+    assert chosen == primary_specs(phase7a)[0]
+    for deferred in ("feature-ablation-G0-A0-60m-raw", "htf-control-G0-BASE-60m-raw", "nonsense"):
+        with pytest.raises(ValueError, match="unknown or deferred"):
+            select_one_spec(phase7a, deferred)
 
 
 def test_phase7a_data_stage_enables_run_scoped_symbol_resume(monkeypatch: object) -> None:

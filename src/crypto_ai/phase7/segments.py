@@ -81,7 +81,8 @@ class CausalDataGap(_Frozen):
         return self
 
     def intersects(self, start: datetime, end: datetime) -> bool:
-        return self.start < end.astimezone(UTC) and self.end > start.astimezone(UTC)
+        start, end = start.astimezone(UTC), end.astimezone(UTC)
+        return start < end and self.start < end and self.end > start
 
 
 class AcquisitionOutcome(_Frozen):

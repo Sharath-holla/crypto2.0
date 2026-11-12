@@ -1,0 +1,41 @@
+# Phase 7B hardening settings (written by Claude, 2026-11-02). These are the DEFAULTS built into
+# crypto_ai.phase7.hardening.HardeningConfig; point PHASE7_HARDENING_CONFIG at a copy to change
+# them. They live outside the frozen Phase 7 config on purpose: new keys there would change the
+# config hash (93f987736b1a79d26b773957) and invalidate every prepared cache.
+[hardening]
+console_table = true              # one readable line every PHASE7_METRICS_EVERY rounds
+console_precision_recall = true   # show the LONG/SHORT action diagnostics (Validation only)
+fixed_threshold_bps = 5.0         # LEGACY (unused by the live path): old pooled P/R threshold
+metric_max_rows = 1000000         # LEGACY (unused by the live path)
+baseline_ridge_alpha = 1.0
+baseline_max_rows = 500000
+abort_after_worse_checks = 0      # 0 = off; N = abort a fit after N checks worse than zero baseline
+stop_file_name = "STOP_PHASE7"    # create this file in the run directory to stop between specs
+fold_gate_folds = 0               # 0 = off; N = stop after folds 1..N if no spec beats baseline
+pilot_horizon_minutes = 0         # set BOTH pilot keys to run one horizon x one target type
+pilot_target_type = ""
+# Success criteria: PLACEHOLDERS. Confirm or change before training; do not edit after seeing results.
+success_min_net_positive_folds = 10
+success_min_beats_baseline_folds = 10
+success_alpha = 0.05
+multiple_testing_correction = "bonferroni"
+
+# Live action diagnostics (RAW return, bps). Predeclared before any Validation result is seen and
+# never optimised. Changing them changes what the descriptive LONG/SHORT diagnostics MEAN, so they
+# are part of the experiment-control identity (but never of the prepared-matrix or model identity).
+training_diagnostic_event_threshold_bps = 5.0       # actual_raw >= +x / <= -x is a LONG/SHORT event
+training_diagnostic_prediction_threshold_bps = 5.0  # pred_raw >= +x / <= -x is a LONG/SHORT action
+# Monitoring-only knobs: never touch a fit and are excluded from the experiment-control identity.
+monitor_max_rows = 250000            # Validation rows predicted at each in-fit diagnostic check
+monitor_diagnostics_every_checks = 1 # run the diagnostics every N console checks
+monitor_xs_ic_every_checks = 4       # cross-sectional IC every N checks
+monitor_xs_ic_min_symbols = 5
+# Heuristic health thresholds: descriptive labels only, not tuned, not significance tests.
+health_gap_ratio_warn = 0.25
+health_gap_ratio_severe = 1.0
+health_variance_collapse_ratio = 0.01
+health_plateau_rounds = 30
+health_improvement_rel_tol = 0.001
+health_min_iterations = 50
+health_min_available_ram_gib = 1.0
+health_min_free_disk_gib = 5.0

@@ -1,0 +1,54 @@
+{
+  "platform": "macOS-27.2-arm64-arm-64bit",
+  "architecture": "arm64",
+  "commands": {
+    "docker": null,
+    "orb": null,
+    "colima": null,
+    "podman": null,
+    "limactl": null,
+    "qemu-system-aarch64": null,
+    "qemu-system-x86_64": null
+  },
+  "known_installations": {
+    "/Applications/Docker.app": false,
+    "/Applications/OrbStack.app": false,
+    "/Applications/Podman Desktop.app": false,
+    "/opt/homebrew/bin/docker": false,
+    "/opt/homebrew/bin/orb": false,
+    "/opt/homebrew/bin/colima": false,
+    "/opt/homebrew/bin/podman": false,
+    "/usr/local/bin/docker": false,
+    "/usr/local/bin/orb": false,
+    "/usr/local/bin/colima": false,
+    "/usr/local/bin/podman": false,
+    "/Users/cortex/.orbstack/bin/docker": false,
+    "/Users/cortex/.orbstack/bin/orb": false
+  },
+  "sockets": {
+    "/var/run/docker.sock": false,
+    "/Users/cortex/.docker/run/docker.sock": false,
+    "/Users/cortex/.orbstack/run/docker.sock": false,
+    "/Users/cortex/.colima/default/docker.sock": false,
+    "/Users/cortex/.local/share/containers/podman/machine/podman.sock": false
+  },
+  "processes": [],
+  "additional_app_locations": {
+    "/Applications/Docker.app": false,
+    "/Applications/OrbStack.app": false,
+    "/Applications/Rancher Desktop.app": false,
+    "/Applications/Podman Desktop.app": false,
+    "/Applications/UTM.app": false,
+    "/Applications/VMware Fusion.app": false,
+    "/Applications/Parallels Desktop.app": false,
+    "/Users/cortex/Applications/Docker.app": false,
+    "/Users/cortex/Applications/OrbStack.app": false,
+    "/Users/cortex/Applications/Rancher Desktop.app": false,
+    "/Users/cortex/Applications/Podman Desktop.app": false,
+    "/Users/cortex/Applications/UTM.app": false,
+    "/Users/cortex/Applications/VMware Fusion.app": false,
+    "/Users/cortex/Applications/Parallels Desktop.app": false
+  },
+  "verdict": "LINUX_PENDING_EXTERNAL_RUNTIME",
+  "linux_verification": "NOT_RUN"
+}

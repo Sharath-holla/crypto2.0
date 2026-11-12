@@ -24,7 +24,14 @@ from crypto_ai.phase7.fixtures import (
 )
 from crypto_ai.phase7.folds import slice_multiasset_fold
 from crypto_ai.phase7.gold import build_multiasset_gold
+from crypto_ai.phase7.hardening import RESULT_COLUMNS
 from crypto_ai.phase7.models import load_model
+from crypto_ai.phase7.result_ledger import LedgerError, load_results
+from crypto_ai.phase7.result_publication import (
+    publish_canonical_result,
+    refresh_results_view,
+    view_matches_ledger,
+)
 from crypto_ai.phase7.targets import generate_multiasset_targets
 from crypto_ai.phase7.training import (
     ExperimentSpec,
@@ -167,7 +174,19 @@ def test_tiny_pipeline_connects_and_is_reproducible(tmp_path: Path) -> None:
         target_type="raw",
         symbol_balanced=True,
     )
-    identity = {"fixture": "pretraining-integration-v1"}
+    from crypto_ai.phase7.recovery import inspect_spec_artifacts
+    from crypto_ai.phase7.training import training_source_identity
+
+    identity = {
+        "fixture": "pretraining-integration-v1",
+        "experiment_id": spec.name,
+        "fold_id": fold.plan.fold_id,
+        "gold_dataset_id": "SYNTHETIC",
+        "gold_manifest_sha256": "a" * 64,
+        "model_backend_semantics": "cpu",
+        "configuration_hash": config.configuration_hash,
+        "training_source_identity": training_source_identity(),
+    }
     reports = []
     stores = []
     for name, current_fold in (("run-a", fold), ("run-b", fold_2)):
@@ -178,16 +197,50 @@ def test_tiny_pipeline_connects_and_is_reproducible(tmp_path: Path) -> None:
             config,
             tmp_path / name,
             identity,
+            execution_metadata={"run_identity": "synthetic-ledger-integration"},
         )
-        store = CheckpointStore(tmp_path / "checkpoints", name)
+        store = CheckpointStore(tmp_path / "checkpoints" / name, "synthetic-ledger-integration")
+        ledger = tmp_path / name / "result_ledger"
+        ledger_files = publish_canonical_result(ledger, report)
+        files.extend(ledger_files)
         store.complete("train/fold-mini", files, identity)
         assert store.is_complete("train/fold-mini", expected_metadata=identity)
+        csv = tmp_path / name / "results.csv"
+        refresh_results_view(ledger, "synthetic-ledger-integration", csv, RESULT_COLUMNS)
+        assert view_matches_ledger(ledger, "synthetic-ledger-integration", csv, RESULT_COLUMNS)
+        assert len(load_results(ledger, "synthetic-ledger-integration")) == 1
+        # Actual fitted report replay is idempotent, including its receipt and CSV view.
+        assert publish_canonical_result(ledger, report) == ledger_files
+        assert len(load_results(ledger, "synthetic-ledger-integration")) == 1
+        conflicting = deepcopy(report)
+        conflicting["phase7b"]["trading"]["expectancy"] = 999.0
+        with pytest.raises(LedgerError, match="DIFFERENT_CONTENT"):
+            publish_canonical_result(ledger, conflicting)
         assert report["status"] == "COMPLETE"
         assert report["test_used_for_selection"] is False
+        inspected = inspect_spec_artifacts(
+            model_path=tmp_path / name / "model.joblib",
+            report_path=tmp_path / name / "report.json",
+            checkpoint_store=store,
+            stage="train/fold-mini",
+            expected_identity=identity,
+        )
+        assert inspected["state"] == "COMPLETE", inspected
+        assert inspected["canonical_ledger_verified"] is True
         reports.append(report)
         stores.append(store)
 
-    assert reports[0] == reports[1]
+    scientific_reports = deepcopy(reports)
+    for current in scientific_reports:
+        for key in (
+            "publication",
+            "model_artifact_sha256",
+            "model_receipt_sha256",
+            "report_identity",
+        ):
+            current.pop(key)
+        current["model"].pop("publication")
+    assert scientific_reports[0] == scientific_reports[1]
     assert json.loads((tmp_path / "run-a" / "report.json").read_text()) == reports[0]
 
     model_path = tmp_path / "run-a" / "model.joblib"

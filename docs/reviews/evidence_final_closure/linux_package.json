@@ -1,0 +1,15 @@
+{
+  "status": "PREPARED_NOT_EXECUTED",
+  "linux_result": "LINUX_PENDING_EXTERNAL_RUNTIME",
+  "directory": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/linux-verification-package",
+  "archive": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/linux-verification-package/crypto2-phase7-20261106-source.tar.gz",
+  "archive_sha256": "64ea2d6e50091a4d6bae5b847cbd9450315ebf528fc7871ce51d1a9bf3dc94c6",
+  "archive_bytes": 7829720,
+  "source_manifest_sha256": "5e828612e03b58e725540b4f1ecbd0bc1a17771ecaece4eb1b91273dd0f0f7ce",
+  "source_file_count": 932,
+  "base_git_sha": "ada0478c393b212ebefd85e6fb457c8c908e2ff8",
+  "branch": "fix/phase7-final-architecture-repair-20261106",
+  "script": "scripts/closure/verify_linux_external.sh",
+  "script_syntax": "PASS_BASH_N",
+  "scope": "Exact current working source and tests, tracked docs and nonignored untracked source; generated final-closure evidence is outside the source tar to avoid self-reference. No .venv, market data, sidecar/cache data or credentials. Minimal Git object/index/ref metadata included; local Git config/hooks/reflogs omitted."
+}

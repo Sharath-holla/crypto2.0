@@ -130,6 +130,18 @@ def _times(table: pa.Table, column: str) -> np.ndarray:
     return table.column(column).combine_chunks().cast(pa.int64()).to_numpy()
 
 
+def check_calibration_separation(calibration_a: pa.Table, calibration_b: pa.Table) -> None:
+    """Cal-A must end (rows and labels) strictly before Cal-B starts (added by Claude, L-05)."""
+
+    if not (calibration_a.num_rows and calibration_b.num_rows):
+        return
+    b_start = _times(calibration_b, "feature_time").min()
+    if _times(calibration_a, "feature_time").max() >= b_start:
+        raise ValueError("Cal-A must be strictly before Cal-B")
+    if _times(calibration_a, "label_end_time").max() >= b_start:
+        raise ValueError("Cal-A labels overlap Cal-B after purging")
+
+
 def _range(table: pa.Table, start: datetime, end: datetime) -> pa.Table:
     values = _times(table, "feature_time")
     start_us, end_us = int(start.timestamp() * 1_000_000), int(end.timestamp() * 1_000_000)
@@ -280,11 +292,17 @@ def slice_hardened_fold(
     for name, segment in prepared.items():
         if np.any(_times(segment, "feature_time") >= holdout_us):
             raise ValueError(f"{name} contains prospective holdout rows")
-    if calibration_a.num_rows and calibration_b.num_rows:
-        if _times(calibration_a, "feature_time")[-1] >= _times(calibration_b, "feature_time")[0]:
-            raise ValueError("Cal-A must be strictly before Cal-B")
-        if _times(calibration_a, "label_end_time")[-1] >= _times(calibration_b, "feature_time")[0]:
-            raise ValueError("Cal-A labels overlap Cal-B after purging")
+    # CHANGED BY CLAUDE (2026-11-02, finding L-05): the check now compares max/min instead of
+    # the last/first row, so it no longer depends on row order. Logic moved to a helper.
+    # OLD CODE (kept for reference):
+    # if calibration_a.num_rows and calibration_b.num_rows:
+    #     if _times(calibration_a, "feature_time")[-1] >= _times(calibration_b, "feature_time")[0]:
+    #         raise ValueError("Cal-A must be strictly before Cal-B")
+    #     if _times(calibration_a, "label_end_time")[-1] >= (
+    #         _times(calibration_b, "feature_time")[0]
+    #     ):
+    #         raise ValueError("Cal-A labels overlap Cal-B after purging")
+    check_calibration_separation(calibration_a, calibration_b)
     report = {
         "fold_id": plan.fold_id,
         "boundaries": plan.to_dict(),

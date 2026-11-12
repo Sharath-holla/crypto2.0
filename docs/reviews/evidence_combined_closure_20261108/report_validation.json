@@ -1,0 +1,9 @@
+{
+  "status": "PASS",
+  "local_links_checked": 24,
+  "report_sha256": "502118a0cb29657d545b0ebc4d01c13dc7c105ea68206da87d6060476e94c2cc",
+  "combined_source_unchanged_since_export_tests": true,
+  "unrelated_work_preserved": true,
+  "source_export_commit": "7a64ee0da53961940932dacaddb5022be7b299bb",
+  "report_publication_changes_source": false
+}

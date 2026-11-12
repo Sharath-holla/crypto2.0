@@ -1,0 +1,717 @@
+{
+  "status": "PASS",
+  "identity": {
+    "source": "FEATURE_CONTEXT_SIDECAR",
+    "manifest_sha256": "ea5f25a2a7c009c79a9ecbbe795960234b67074d36d2db7c21424724fabc2048"
+  },
+  "manifest": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v3/manifest.json",
+  "partitions": 138,
+  "rows": 12588383,
+  "all_partition_hashes_and_schema_and_rows_match": true,
+  "all_input_identities_current": true,
+  "reused_valid_sidecar": true,
+  "numeric_equivalence_proof_reused": "docs/reviews/evidence_final_closure/sidecar_validation.json; exact unchanged partition hashes confirmed in sidecar_qualification.json",
+  "numeric_tolerance": {
+    "rtol": 1e-09,
+    "atol": 1e-12
+  },
+  "source": "FEATURE_CONTEXT_SIDECAR",
+  "holdout": {
+    "evaluation_authorized": false,
+    "status": "LOCKED_UNUSED",
+    "used": false
+  },
+  "july_used": false,
+  "canonical_partitions": [
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v3/part-0000.parquet",
+      "rows": 105407,
+      "sha256": "37877ea40587c34cb1a0d0c00e2a9d00fd782de44362a2314b6050a50762ebfd"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v3/part-0001.parquet",
+      "rows": 105120,
+      "sha256": "02af9c166df58e2326172694ae637dd2db9bdea5fae10d3aa9a1f80a2499d147"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v3/part-0002.parquet",
+      "rows": 105120,
+      "sha256": "0b526a0545ea1a208f3f5977f6736dbd6c3e322c80e47cac89dfdf794e2cbd65"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v3/part-0003.parquet",
+      "rows": 105120,
+      "sha256": "d194686347f56bb98870e3f4a856985a72b81505fdc09a3829f5daec50a1db1d"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v3/part-0004.parquet",
+      "rows": 105408,
+      "sha256": "d9f6bc80d5b7f6f776d2b7e8335e3c681dd88602cd126feeeb5bcb7670d51937"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v3/part-0005.parquet",
+      "rows": 105120,
+      "sha256": "b45a9d370c41b95b9378c1622b64dd0bc17e5157cfef2255d4949fa9d0d73076"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v3/part-0006.parquet",
+      "rows": 52128,
+      "sha256": "217d35803a73a9d61e796b4054e4ecd54f755d28a507198a40a9bf9277d5d562"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v3/part-0007.parquet",
+      "rows": 30443,
+      "sha256": "73333306c64add8220af98e153ec484418ff08727a60b6a4540c9c2f78cf815c"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v3/part-0008.parquet",
+      "rows": 105120,
+      "sha256": "33b1409629104684b15c948f676bffbdc93748d769de3bb452ea80bcef23e84c"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v3/part-0009.parquet",
+      "rows": 105120,
+      "sha256": "244089df6030e65cac8b69c453e56b8201cf90c542329f50bc425131af99364a"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v3/part-0010.parquet",
+      "rows": 105120,
+      "sha256": "6caef75a0f0211374dfc41758cf6ab425b77f17f645667a139a28e72e6500373"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v3/part-0011.parquet",
+      "rows": 105408,
+      "sha256": "cded3a5ca0a9da24a40d041427c8b6be798c1dc3c080d594754ac89ecd1387e1"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v3/part-0012.parquet",
+      "rows": 105120,
+      "sha256": "4ead902d360c1cc213f4022bebbd7ecd9bd61f80ab89824e95b17987d122dfdf"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v3/part-0013.parquet",
+      "rows": 52128,
+      "sha256": "ca0a07f2e5658515e0b28860177cc298ac830bfc50a9693f3190af56ae4f48d3"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v3/part-0014.parquet",
+      "rows": 105407,
+      "sha256": "01ff6eb5972fbca4a48dcaa24ba49a6e21b0eef9e4b19f0a163a49669814bb48"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v3/part-0015.parquet",
+      "rows": 105120,
+      "sha256": "a5e68d0043da0d197999651974fb28bf69c79dfeb6813a28126edd7b940055ed"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v3/part-0016.parquet",
+      "rows": 105120,
+      "sha256": "b9f887a98d7597d87722e89142eaa0530682272b4639013dc4d988b53b3d3279"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v3/part-0017.parquet",
+      "rows": 105120,
+      "sha256": "ad61a1317fe034a9596d900ca6a865178929931a2255c7551fb0c036d5345044"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v3/part-0018.parquet",
+      "rows": 105408,
+      "sha256": "f4d0d91968e6ad1f588125a5c0e524008e5e62fd6662d310ba48ecdcb794b228"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v3/part-0019.parquet",
+      "rows": 105120,
+      "sha256": "f59d6f68a58076c5ab3f16c625a75fd9ac006a740a728b7708081188036e131e"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v3/part-0020.parquet",
+      "rows": 52128,
+      "sha256": "f55858cff9f3dcfaa8253ece594cd868eab46b7f128258cef472d0942854c1cd"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v3/part-0021.parquet",
+      "rows": 53171,
+      "sha256": "64944285b4054bec95d6a5bb88216a60bea96965ce624df8efd9131a05ff692a"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v3/part-0022.parquet",
+      "rows": 105120,
+      "sha256": "0843b3097c9be51e3b1f9370335ef5d2d3ece8dfd65513b42c71b096e4718525"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v3/part-0023.parquet",
+      "rows": 105120,
+      "sha256": "6747fae86ae7b91ebc023e804eb7efd7671650d6cae2f36b99a7cbde25e504e4"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v3/part-0024.parquet",
+      "rows": 105120,
+      "sha256": "5cafaa2bfc97b6518c35425b7148ffe8273a118a740255d5a1d71a4c0579b802"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v3/part-0025.parquet",
+      "rows": 105408,
+      "sha256": "4ceba15b10a3690bfd3b8720fdca56ac714f85c7b3f197e17ae7a9b3fd0995d2"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v3/part-0026.parquet",
+      "rows": 105120,
+      "sha256": "cb1975c62556fff1dc0d1fd1e44db574ffd95da7df5ddebe0c26edc33b54c936"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v3/part-0027.parquet",
+      "rows": 52128,
+      "sha256": "cc54e746b527576c05c226b055a8591bbe9a0bbaa0520ca176616c7e61571dd0"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v3/part-0028.parquet",
+      "rows": 50291,
+      "sha256": "4d885180697a7855515fbf08ceed2e94bdfc42fd88e776d724fcded5a5b2df8d"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v3/part-0029.parquet",
+      "rows": 105120,
+      "sha256": "146fc9f6ae8846430dcd0f209b734ee59af7854fadb98dd66179a71e8f9faada"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v3/part-0030.parquet",
+      "rows": 105120,
+      "sha256": "4f6f2fc0c2ca05c6c6b9b7df0486f9354491352a779e39ab13cb22df17f2f636"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v3/part-0031.parquet",
+      "rows": 105120,
+      "sha256": "56936510ef3ac29a227f4865b133949a5e1dcbfa4538847ce3e1a3b54ebf5da9"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v3/part-0032.parquet",
+      "rows": 105408,
+      "sha256": "8483596c42ef28960399d45a7d4df88c9b193de791644a579dc28b6eee95d2c4"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v3/part-0033.parquet",
+      "rows": 105120,
+      "sha256": "595f253389c913224d0714687a6d9fb02f56999605255ff99a0de4129c072a7c"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v3/part-0034.parquet",
+      "rows": 52128,
+      "sha256": "439b279f9af42abdc7013c454ab77eac8183fb80c62808d4c14eeafab7d3c63d"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v3/part-0035.parquet",
+      "rows": 105407,
+      "sha256": "72d1d7f92f4e4cf988cf9af01377d7af2750100849a0ef664c3ccdb6cc52582e"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v3/part-0036.parquet",
+      "rows": 105120,
+      "sha256": "ad9d5b86fdec34f18656d8b51a4b499f620779df1e9268081983dda46b191576"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v3/part-0037.parquet",
+      "rows": 105120,
+      "sha256": "635841e66c4a5fdde2ea23e8d81ad6a43366c08cd2a41f23e74ae805880d03d5"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v3/part-0038.parquet",
+      "rows": 105120,
+      "sha256": "c0305dc1aacc49c810f79c9317cf3e5d94359975739c27c1a63ff6ba146e98cf"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v3/part-0039.parquet",
+      "rows": 105408,
+      "sha256": "f8195402a0b99c044ea63b48948691e5b648e74bcce17d7865afdb62003ccfad"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v3/part-0040.parquet",
+      "rows": 105120,
+      "sha256": "d54b11e350cf6910503b3de67e996442a1ec389e768e2edc813fa6f323b086d7"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v3/part-0041.parquet",
+      "rows": 52128,
+      "sha256": "e89fd70f100895423aa58bc41677eee4196a3b7e3b8ab5b9fbf144dd8bcac28a"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v3/part-0042.parquet",
+      "rows": 22103,
+      "sha256": "dad96cb3f73f49545b4373564b156066e95078237ef4792efb06d6922f8984a6"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v3/part-0043.parquet",
+      "rows": 105120,
+      "sha256": "4a677739b283368fece118cd05cb52388bbeb911a1a000470630eacfaad8df27"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v3/part-0044.parquet",
+      "rows": 105120,
+      "sha256": "9a176b2bdd0c8cb7f43782dbeb78dc35d6f5ac15a646baa698f0a3c260fbb333"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v3/part-0045.parquet",
+      "rows": 105120,
+      "sha256": "d284a7f0b6af7ab99338ff2ce28207673aa65f4cab591fd868fd0a23522b2c6d"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v3/part-0046.parquet",
+      "rows": 105408,
+      "sha256": "e46d3207eef9465ee5024e0f0cc325a8d8aae787a7e89526235e7b9b55a8d42c"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v3/part-0047.parquet",
+      "rows": 105120,
+      "sha256": "acf68fdf97636474444ba2d649d45f5b3540cdfb9e0ab3d8b58b03afad3fa543"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v3/part-0048.parquet",
+      "rows": 52128,
+      "sha256": "fc5f9e889ac25094b6ac354274ccc4c13daacc754b14e9e5b46a2d365ec33e79"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v3/part-0049.parquet",
+      "rows": 26987,
+      "sha256": "a9ca5f908faccdc0a8deb6af1aaf674ffd0d77ad54a6237ab1fc0b590a90177f"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v3/part-0050.parquet",
+      "rows": 105120,
+      "sha256": "54254eec92b21096531f6be067586735bae49b008afe3c577026d8f89a973971"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v3/part-0051.parquet",
+      "rows": 105120,
+      "sha256": "ecaafc19795c3bd1b97d949bd57fe671d15a7b6c8ea893832bd9d59e2cb9f375"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v3/part-0052.parquet",
+      "rows": 105120,
+      "sha256": "ce46f4833d2ce661b3c98d24eb01484853d34de7c15436a24816e40c2769648e"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v3/part-0053.parquet",
+      "rows": 105408,
+      "sha256": "fdcaa730af2e3920e0814fb741ac23018291911dbded891d277722aa06ce9e87"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v3/part-0054.parquet",
+      "rows": 105120,
+      "sha256": "52c8e8d1a3b0413bada93af45e28d4b72c21780b10147934c8a78202d16678d5"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v3/part-0055.parquet",
+      "rows": 52128,
+      "sha256": "f954cbc0f11d3be138d17fef0e18dca408582dbad7e5777929dd65c00c3a9d9d"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v3/part-0056.parquet",
+      "rows": 27275,
+      "sha256": "138f6c0ae841ee5674c454855519361d9b28421b1faf7b019cfa1e04323bd7dc"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v3/part-0057.parquet",
+      "rows": 105120,
+      "sha256": "47361fb441172fcb1581a31fd45d8ae52492d58b95473e970427b1d639f580d8"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v3/part-0058.parquet",
+      "rows": 105120,
+      "sha256": "a0903107caa6d4ae8e01998ef2914ba2b5e0489e41ffc81fb91f1574d49aca0c"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v3/part-0059.parquet",
+      "rows": 105120,
+      "sha256": "485dfa2f051182cba945c967a72e4f88de228be1905fe0b267b86c63dcb6c18a"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v3/part-0060.parquet",
+      "rows": 42712,
+      "sha256": "2e5e622ea3c91bb848ab55271552db465873990a6f7c736bf15701e281fb05fd"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v3/part-0061.parquet",
+      "rows": 93215,
+      "sha256": "63e620b38421480d6bd9c83bf2529e4ee8f6f9f749aae1914942df1081c42359"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v3/part-0062.parquet",
+      "rows": 105120,
+      "sha256": "bdb8813803842a98a310d62227d19263a80f37406a01cc1ea8e45208fecbe62e"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v3/part-0063.parquet",
+      "rows": 105120,
+      "sha256": "896588e099f07c1d626a812a21486d496e5b92e115a8b6b5fee638b78e01a8a6"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v3/part-0064.parquet",
+      "rows": 105120,
+      "sha256": "4735722f499bba35f492c78d51e5c5a6448b608c175db34d6026ab4e417e9a08"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v3/part-0065.parquet",
+      "rows": 105408,
+      "sha256": "7d6768aeb0dd05bb3ff8f3af65774cc1bdb3d174b5feda0e38dfdb3f34c9b44a"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v3/part-0066.parquet",
+      "rows": 105120,
+      "sha256": "a7084c35e294ee5708920280860e566fafed9d0f1685aee07a206c53783d06c8"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v3/part-0067.parquet",
+      "rows": 52128,
+      "sha256": "a41f503f26ae45b9a33f9c8b3b307527519b3063fc44064954885476bd7b8034"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v3/part-0068.parquet",
+      "rows": 55477,
+      "sha256": "11a88b8f256adb0399f3dcb18af993cb668b6a0304e2efa9f40f53122502752b"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v3/part-0069.parquet",
+      "rows": 105120,
+      "sha256": "4b0e4f6c3d1bdb508ccf5579e2d1d37dfb4490c89ab4fbe985565302d4061754"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v3/part-0070.parquet",
+      "rows": 105120,
+      "sha256": "0721df0eb52aad076b114e8bec984c20abd0cb860ffb074b699d850377359d56"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v3/part-0071.parquet",
+      "rows": 105120,
+      "sha256": "1ccc9b98b4fc1bb28492092f0f03cd7dd6846fc69dbf3024146af935b8cb3058"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v3/part-0072.parquet",
+      "rows": 105408,
+      "sha256": "abb6345eb7ab9e0a5ecf1f900134d48463c612c6b3f50c6db5169bd8b17896f5"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v3/part-0073.parquet",
+      "rows": 105120,
+      "sha256": "786fbec964a7f88b98cf4f50182c9b2cb09bb8b566f5a36c4a710b67ec57542b"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v3/part-0074.parquet",
+      "rows": 52128,
+      "sha256": "59c0d46272089cd88d2b2ab39b2310cfa84cae61f4c1d94bfda30e31284a495b"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v3/part-0075.parquet",
+      "rows": 22667,
+      "sha256": "c9547922499479da17ef5cf7df8094f345177af1102ba355b0b8bd52be00743b"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v3/part-0076.parquet",
+      "rows": 105120,
+      "sha256": "b2bed31d49dc09c10ef6b2ea51c7647e2d80f709554307d7240ac2362c6345be"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v3/part-0077.parquet",
+      "rows": 105120,
+      "sha256": "e87d901d4fa94034b3bc022402b25489c8535a82249d3115e1bfd6b223e62e05"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v3/part-0078.parquet",
+      "rows": 105120,
+      "sha256": "d2c64aa2de599d885c477f2245e63aa6c6c5e801ce173307763031294ca4b4d1"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v3/part-0079.parquet",
+      "rows": 105408,
+      "sha256": "54f4c320a281ab5ac6fb80c1e240b94ed65e3d68e806872bcdf473cb53bd547f"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v3/part-0080.parquet",
+      "rows": 105120,
+      "sha256": "d9e788bfff2605a82c0f92c823dceac08640417ee121b0bc4ef102ebb8652f13"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v3/part-0081.parquet",
+      "rows": 52128,
+      "sha256": "3cea0528f43f6f70b4335cbae18eb1839448cebbd32207788d4c7073880c01a4"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v3/part-0082.parquet",
+      "rows": 91766,
+      "sha256": "7337aaecfcc59ea499eee2a194ae9e064ce5baf1033c5df6a15691dacf87373d"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v3/part-0083.parquet",
+      "rows": 105120,
+      "sha256": "ce0e4ec73e132b766e522edece5b72e98220d8a118ec3681c854bcf4d7d050cb"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v3/part-0084.parquet",
+      "rows": 105120,
+      "sha256": "94e6ea9a543b35fe8942868d68920fd62a19b092880960e2eb2d4bd38e3e4453"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v3/part-0085.parquet",
+      "rows": 105120,
+      "sha256": "fb3f13e794b5ce40c17ca7ba85748c65f39fd34e48ebe11ab4a01804bae12b1e"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v3/part-0086.parquet",
+      "rows": 105408,
+      "sha256": "1b40a27ed64b3083a774678b77ab606b0c2e67d3956d01caa1249df90a24c94e"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v3/part-0087.parquet",
+      "rows": 105120,
+      "sha256": "510803df60f100c6d64ef82e2f8aaf84022149c5fa0933dfd49e5c3ddfde655d"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v3/part-0088.parquet",
+      "rows": 52128,
+      "sha256": "803263c64b0c5450f1a990edded968a282442f667fa3daf7f2d92526e16d0e97"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v3/part-0089.parquet",
+      "rows": 52595,
+      "sha256": "b9e23d697fd0391444b962f5e6d2980b666537e3e80ef494a262af767b61e688"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v3/part-0090.parquet",
+      "rows": 105120,
+      "sha256": "1bd258cd84479ef2ef927f56e0800409c77c59dc88a3124fef3b03f52784a7db"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v3/part-0091.parquet",
+      "rows": 105120,
+      "sha256": "248a77ff1133ed1c5862eaf6b11304ab1ace22711fea293e2ed6df5905287be9"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v3/part-0092.parquet",
+      "rows": 105120,
+      "sha256": "4dd68103263aea5af5f6fc0e6f62bc269234a13f995b50edfb9323a5562274ee"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v3/part-0093.parquet",
+      "rows": 105408,
+      "sha256": "58a659bb1a1ac7999496f90f36449f866c46a085eb8330d36f07fe5563e88893"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v3/part-0094.parquet",
+      "rows": 105120,
+      "sha256": "a4b58fa51580a9259870d9e600fc6073e08801b82dd8501a931df3d8d87d2e6a"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v3/part-0095.parquet",
+      "rows": 52128,
+      "sha256": "d3266d7e9e5cca669308a456688729dfa41a2c928d5335769d829810dc71ad64"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v3/part-0096.parquet",
+      "rows": 93502,
+      "sha256": "8c8b86dbf2e3e3dd85cd35d4a9c13a85fb391b6b4db0f4de5fc273ae4b86f983"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v3/part-0097.parquet",
+      "rows": 105120,
+      "sha256": "824aa78674ec37623e21d868291b85d8480be7c7ed361e56b73d109421bc6ce3"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v3/part-0098.parquet",
+      "rows": 105120,
+      "sha256": "500d8d919ca97772b7f22e0eeb8f5761616d087c75531ea1ac7fcdcc806faa86"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v3/part-0099.parquet",
+      "rows": 105120,
+      "sha256": "c4ed8218cbc6e4ff0d617368a7c3fd3dc9aef094f12628cccaf6c3b3c2ca6e68"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v3/part-0100.parquet",
+      "rows": 105408,
+      "sha256": "ab090f7a8bc2369db212a83cdc5c97ceac1b973b877ad5a1e6a15c4e705530e4"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v3/part-0101.parquet",
+      "rows": 105120,
+      "sha256": "4bf970f2ad59313f6af4c85a85ef80c93e6ceeb147ffb811a54fabf3294a840c"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v3/part-0102.parquet",
+      "rows": 52128,
+      "sha256": "db45e02ed4b73bf70c946168eef380e434718909dfb0e8df1e0e818c2a7fe501"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v3/part-0103.parquet",
+      "rows": 30731,
+      "sha256": "6b989ab6b28230673ac380b1c1d67ee48373e8d3bd723830dbd759643977c5c2"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v3/part-0104.parquet",
+      "rows": 105120,
+      "sha256": "3ffc292834c1e11bd2a2831a465978fc6baac3a4e16efb7b5f8b456e628a757c"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v3/part-0105.parquet",
+      "rows": 105120,
+      "sha256": "48cd7943ea78e0c066efe2f31eaaf26bc765db3157f80966adda3f93f816f9ac"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v3/part-0106.parquet",
+      "rows": 105120,
+      "sha256": "39d63381f688f79bda25c4db1597982b45e642fde15af76f07a946f78878c1f8"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v3/part-0107.parquet",
+      "rows": 105408,
+      "sha256": "1bf71272f4b566c42b1b6356c02e0be7b57d3c39c3fbcdedbab794d0c3d871eb"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v3/part-0108.parquet",
+      "rows": 105120,
+      "sha256": "848ada0d0117c574c65ef5fa51e40e007ce50ba224beba64ac3f0f16a07a4e34"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v3/part-0109.parquet",
+      "rows": 52128,
+      "sha256": "e0ca9a79bfbcebdd9ad36a01b2775466ebdd7c93219101a70e120d9f917cd658"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v3/part-0110.parquet",
+      "rows": 101278,
+      "sha256": "779a9ab903565438d7c999e1d72c1621851385c474eb95b8ea0e2e3e6e7057c5"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v3/part-0111.parquet",
+      "rows": 105120,
+      "sha256": "5ca670000c87d01c800e002abf0926ddd35712948fd7829aadaa6d109b504677"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v3/part-0112.parquet",
+      "rows": 105120,
+      "sha256": "3a356786074e686c5c4b8ed9c64aeec9dc0a2aa19868861bac738495425f5817"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v3/part-0113.parquet",
+      "rows": 105120,
+      "sha256": "c23c7d47ec81d6eff204df37fb61ded38f9c720366fce467f49aa2daa4514200"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v3/part-0114.parquet",
+      "rows": 105408,
+      "sha256": "af89b79a0e6c128c27b22eeca906a3b451aad3f4c7c30801c4bd306397ab5979"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v3/part-0115.parquet",
+      "rows": 105120,
+      "sha256": "76b0ac21d42c585a27ecfcd1d07223ee6b2019c63b36787bdf62c3e54ddcaeb6"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v3/part-0116.parquet",
+      "rows": 52128,
+      "sha256": "ef9a8478cc241b2798fbe91e680b10ba2dac0f5cdbd9d95bc3c99f412e9f5d06"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v3/part-0117.parquet",
+      "rows": 30155,
+      "sha256": "e3f4e296fa61effce2ff76d9e0c6fa4c29b2267cc934c5722d7ee79b1455fd89"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v3/part-0118.parquet",
+      "rows": 105120,
+      "sha256": "97a734e407479f821fd71ae4144c160b82e7713c81c6a1fcf2d5c127c11976fd"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v3/part-0119.parquet",
+      "rows": 105120,
+      "sha256": "5c05a9e1c9e523baaf075d263ccfb4c91a1aa9d4184795659fa3af835a69ccbe"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v3/part-0120.parquet",
+      "rows": 105120,
+      "sha256": "9dbad0c029b7102472387bc2ef4b3db0fdf59dd5f43d176090cf574de9a952c9"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v3/part-0121.parquet",
+      "rows": 105408,
+      "sha256": "2035e65cbc7ff11cba6f9b2c21dfa2366e43cf6682cd2a83edeb87d39c9091f9"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v3/part-0122.parquet",
+      "rows": 105120,
+      "sha256": "24049533d23bdafa92bafd2268fc7b7f53c258ac6f9cc5757974c9a6c8f848d0"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v3/part-0123.parquet",
+      "rows": 52128,
+      "sha256": "d959cd114194403457014a0aee5567af0272d0f0850b8d48e1969019d649fc00"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v3/part-0124.parquet",
+      "rows": 95231,
+      "sha256": "a55d808115244144f0ccc185097879220d163eae432d68aeb0f8d54ad172ad4a"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v3/part-0125.parquet",
+      "rows": 105120,
+      "sha256": "00188bb27fa221f145143c84b4b0b39ddb38d578fc76662b3cf93355fd92eb14"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v3/part-0126.parquet",
+      "rows": 105120,
+      "sha256": "da4fa29551c9c7f1c996cebc562fb313a3da3b76aff6883b7c9cac69d5c374ab"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v3/part-0127.parquet",
+      "rows": 105120,
+      "sha256": "b0094e6a25550749b28cbbd064a78306e42b10145c3d1efbaf834aa9c2bf352b"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v3/part-0128.parquet",
+      "rows": 105408,
+      "sha256": "4fe1d9a1c756fc0a10ad3921a8533a6da2aefaf952ea60d0a030e404d7a855b4"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v3/part-0129.parquet",
+      "rows": 105120,
+      "sha256": "9c5e69fa00feb17c06d85f0f1b0aa3026082a3750bf5521b8ba8611f996986c3"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v3/part-0130.parquet",
+      "rows": 52128,
+      "sha256": "e2ba4fe6452679eee6282d67f7ab79e43337f0cef4cc543b45f0cca4c035813c"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v3/part-0131.parquet",
+      "rows": 54899,
+      "sha256": "ca23961a1e0b90a25907cb4e5a0e161990f1eed713149ea9840aea629a260ce0"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v3/part-0132.parquet",
+      "rows": 105120,
+      "sha256": "b22c7aeed1eab44fe4d41578d78ef409b1951671965a54a058f09823c1880641"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v3/part-0133.parquet",
+      "rows": 105120,
+      "sha256": "22b3a9d076b531f3f80e8572cec1406e610efe0c0de29897b3bf5788501d0cbb"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v3/part-0134.parquet",
+      "rows": 105120,
+      "sha256": "4d5522ccdbd500923d4d16631296cf9ccc1bac76fe15172d8f8683e66a74f263"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v3/part-0135.parquet",
+      "rows": 105408,
+      "sha256": "0789569c54e1824e25d76fcce6ebfc576de82a923ae04f894916b16a769ed93e"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v3/part-0136.parquet",
+      "rows": 105120,
+      "sha256": "c18920461c528d2c80c596f30f7e2532cdec77acea460fb0c4c7e90eccfb0b94"
+    },
+    {
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/feature_context_sidecar_v3/part-0137.parquet",
+      "rows": 52128,
+      "sha256": "24767166b315374dbfa0101941b729dc9f5ef8f78b613cbb58c1c7c3cbaf45b7"
+    }
+  ]
+}

@@ -1,0 +1,27 @@
+{
+  "f1_no_predictions_with_event": {
+    "reported": null,
+    "status": "NOT_DEFINED",
+    "formula_denominator": 1,
+    "documented_formula_expected": 0.0
+  },
+  "prediction_distribution_population": {
+    "reported_prediction_mean": 1.0,
+    "finite_prediction_mean_per_docstring": 50.5,
+    "reported_rows_valid": 1,
+    "reported_finite_prediction_fraction": 1.0
+  },
+  "threshold_underflow": {
+    "effective_threshold": 0.0,
+    "long_count": 1,
+    "short_count": 1,
+    "no_trade_count": -1,
+    "action_coverage": 2.0
+  },
+  "monitor_max_rows_overshoot": {
+    "max_rows": 1000,
+    "selected_rows": 9909,
+    "seed": 25,
+    "total_rows": 10000
+  }
+}

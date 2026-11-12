@@ -1,0 +1,19 @@
+# Generated GitHub draft publication
+
+The connector is implemented in `company_os.publication` and its separate owner-only router. Verification uses explicitly controlled GitHub HTTP fixtures and real local Git metadata. No generated remote PR has been published or live-tested. Application source commits/pushes are separately authorized; they do not approve generated task publication. The request contract follows GitHub's [versioned REST API](https://docs.github.com/en/rest/about-the-rest-api/api-versions) and [Git commit API](https://docs.github.com/en/rest/git/commits); actual publication still needs separately authorized live verification.
+
+## Configuration and approval
+
+An operator must configure `AIVENTRA_GITHUB_TOKEN` (or the configured environment reference) and `GITHUB_PUBLICATION_REPOSITORIES`, an explicit owner/repository allowlist. Use a fine-grained repository credential with only required Contents/Pull requests write and Checks read access. No credential goes into a runner, repository, model context or API response. The API only contacts fixed GitHub HTTPS repository endpoints, disables redirects/proxies, and bounds response size/time. Credential presence does not attest its privilege breadth.
+
+The owner first prepares a read-only remote preview from a completed live coding task with current proposal/repository approval, successful restricted-runner tests/build, independent QA and non-fixture author/review evidence. An immutable persisted manifest binds task revision, scope/evidence hashes, repository, exact base/local head, candidate tree, diff, target branch and exact planned remote commit. The canonical publication commit preserves the reviewed tree and approved base; its SHA can differ from the local prepared commit and is shown in the preview. Every uploaded blob/tree/commit must match its approved Git SHA before branch creation.
+
+The owner approves the exact manifest version/hash for one hour and separately chooses Publish approved draft. There is no automatic publication approval, force push, merge or deployment. Changed scope/evidence/worktree, expired approvals, pauses, changed credentials and remote base/branch conflicts fail closed. Generic record APIs cannot alter publication records.
+
+## Recovery and feedback
+
+Persisted five-minute leases prevent concurrent publishers. Every external write stage rechecks authority. After an uncertain response or expired interrupted lease, retry inspects the deterministic branch and existing pull requests before creating anything. A matching open draft with the approved head/base and verified GitHub URL is required before saved status becomes published. An existing closed/non-draft PR is not silently replaced. External operations cannot share a database transaction: a concurrent remote base move can leave approved orphan objects or a draft needing reconciliation; no success is reported until verification passes.
+
+CI checks, combined statuses and review/comments are stored for the exact remote commit. Each list is bounded to 100 and marked partial when truncated. Fresh complete feedback can prepare at most two idempotent follow-up coding scopes. Each starts awaiting separate repository approval, uses saved feedback as untrusted context and must pass the existing isolated execution/review/QA gates. It does not automatically modify the original PR.
+
+Supported candidates use SHA-1 Git objects, at most 32 changed paths and 200 KB UTF-8 source blobs/diff. Binary content, workflow configuration, case-varied secret paths, symlinks/submodules and sensitive diffs are rejected. Repeated previews reuse the same candidate/target publication; an expired uncertain publication cannot silently create a replacement PR. Broader repositories, paginated review certification and live publication remain future verification work. TEST_REPORT.md records actual results; fixtures are not live GitHub or live AI evidence.

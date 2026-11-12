@@ -380,13 +380,14 @@ def _core_universe_stage(
 
 
 def _training_patches(config: Phase7Config) -> ExitStack:
-    original_specs = training.phase7_experiment_specs
-    specs = tuple(spec for spec in original_specs(config) if spec.feature_group == "A6")
-    if specs != primary_specs(config):
+    """Bind the Phase 7A source file into the training identity.
+
+    Scope (CORE only, 48 primary specs) is a first-class ``scope=PHASE7A_SCOPE``
+    argument to ``training.run_phase7_training``; nothing is monkey-patched.
+    """
+    if training.resolve_training_scope(config, training.PHASE7A_SCOPE)[0] != primary_specs(config):
         raise AssertionError("Primary specification derivation is unstable")
     stack = ExitStack()
-    stack.enter_context(patch.object(training, "RESEARCH_VIEWS", ("CORE",)))
-    stack.enter_context(patch.object(training, "phase7_experiment_specs", lambda _: specs))
     source_files = training.TRAINING_CRITICAL_SOURCE_FILES
     if PHASE7A_SOURCE_FILE not in source_files:
         source_files = (*source_files, PHASE7A_SOURCE_FILE)
@@ -454,6 +455,19 @@ def _phase7a_data_stage(
 
 
 def run_stage(config: Phase7Config, stage: str, *, resume: bool, canary: bool) -> dict[str, object]:
+    from crypto_ai.phase7.run_lease import owned_run
+
+    validate_phase7a_config(config, load_phase7_config(SOURCE_CONFIG_PATH))
+    primary_specs(config)
+    identity = run_identity(config)
+    root = RuntimePaths.resolve(config.paths).artifact_root / identity
+    with owned_run(root, identity, training.training_source_identity(), mode="production"):
+        return _run_stage_owned(config, stage, resume=resume, canary=canary)
+
+
+def _run_stage_owned(
+    config: Phase7Config, stage: str, *, resume: bool, canary: bool
+) -> dict[str, object]:
     source = load_phase7_config(SOURCE_CONFIG_PATH)
     validate_phase7a_config(config, source)
     primary_specs(config)
@@ -533,7 +547,19 @@ def run_stage(config: Phase7Config, stage: str, *, resume: bool, canary: bool) -
         # Resolve Gold by dataset identity after migration; retain historical
         # result.json bytes and their old absolute location as audit evidence.
         gold_manifest_path = locate_gold_manifest(runtime.gold_root, str(gold["dataset_id"]))
-        descriptors = pipeline._fold_descriptors(config, registry, data)
+        descriptor_fold_ids = None
+        if canary:
+            descriptor_fold_ids = (
+                plan_folds(
+                    config.data_start,
+                    config.research_cutoff,
+                    config.prospective_holdout_start,
+                    config.schedule,
+                )[0].fold_id,
+            )
+        descriptors = pipeline._fold_descriptors(
+            config, registry, data, fold_ids=descriptor_fold_ids
+        )
         descriptor_path = atomic_json(
             root / "fold_descriptors.json",
             {"descriptors": [item.model_dump(mode="json") for item in descriptors]},
@@ -569,6 +595,7 @@ def run_stage(config: Phase7Config, stage: str, *, resume: bool, canary: bool) -
                 ):
                     training.run_phase7_training(
                         config,
+                        scope=training.PHASE7A_SCOPE,
                         gold_manifest_path=gold_manifest_path,
                         registry=registry,
                         universe=universe,
@@ -634,6 +661,7 @@ def run_stage(config: Phase7Config, stage: str, *, resume: bool, canary: bool) -
                 }
             summary = training.run_phase7_training(
                 config,
+                scope=training.PHASE7A_SCOPE,
                 gold_manifest_path=gold_manifest_path,
                 registry=registry,
                 universe=universe,
@@ -686,6 +714,27 @@ def main() -> int:
         raise ValueError("--canary is valid only for the train stage")
     config = load_phase7_config(args.config)
     config.assert_cloud_execution_allowed()
+    if args.stage == "train":
+        # CHANGED BY CLAUDE (2026-11-06, closure): the shared admission function. OLD CODE:
+        # from crypto_ai.phase7.resources import require_training_runtime_contract
+        # require_training_runtime_contract()
+        from crypto_ai.phase7.admission import admit_official_training
+        from crypto_ai.phase7.preflight import build_preflight_report
+        from crypto_ai.phase7.runtime import RuntimePaths
+
+        admit_official_training(
+            entrypoint="run_phase7a_pipeline",
+            config=config,
+            mode="train",
+            output_root=RuntimePaths.resolve(config.paths).artifact_root / "phase7a_run",
+            smoke=False,
+        )
+        validation = os.environ.get("PHASE7_GOLD_VALIDATION_REPORT", "").strip()
+        report = build_preflight_report(
+            args.config, gold_validation_report=Path(validation) if validation else None
+        )
+        if report["status"] != "PASS":
+            raise RuntimeError("training preflight failed: " + "; ".join(report["blocking_errors"]))
     result = run_stage(config, args.stage, resume=args.resume, canary=args.canary)
     print(json.dumps(result, indent=2, sort_keys=True, default=str))
     return 0

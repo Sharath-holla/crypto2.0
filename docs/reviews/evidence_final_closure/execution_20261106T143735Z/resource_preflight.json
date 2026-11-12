@@ -1,0 +1,42 @@
+{
+  "status": "FAIL",
+  "fold_id": "fold-000-a0e9a4f72689",
+  "observed_rows_by_split_before_purge_and_finite_filter": {
+    "calibration_a": 262080,
+    "calibration_b": 262080,
+    "test": 529920,
+    "train": 3350407,
+    "validation": 518400
+  },
+  "observed_gold_rows_60m": 4922887,
+  "matrix_dimensions": [
+    4922887,
+    109
+  ],
+  "raw_matrix_bytes": 4292757464,
+  "arrow_bytes_heuristic": 10239604960,
+  "cache_bytes_heuristic": 7726963435,
+  "peak_working_set_bytes_heuristic": 27741452822,
+  "measured": {
+    "cgroup_cpu_quota_cpus": null,
+    "cgroup_memory_current_bytes": null,
+    "cgroup_memory_limit_bytes": null,
+    "cpu_count": 10,
+    "disk_free_bytes": 326100353024,
+    "effective_ram_available_bytes": 4697178112,
+    "label": "MEASURED",
+    "observed": false,
+    "physical_ram_total_bytes": 17179869184,
+    "ram_available_bytes": 4697178112
+  },
+  "errors": [
+    "RAM: need ~25.8 GiB (ESTIMATED_HEURISTIC_PEAK), available 4.4 GiB"
+  ],
+  "temporary_final_logs_artifacts_disk_bytes": 20822635990,
+  "temporary_final_logs_artifacts_disk_pass": true,
+  "cache_build": "NOT_RUN_RESOURCE_PREFLIGHT_FAILED",
+  "cache_qualification": "NOT_QUALIFIED",
+  "read_only_cache_reload": "NOT_RUN_NO_QUALIFIED_CACHE",
+  "historical_caches": "PRESERVED",
+  "labels": "Observed Gold key row counts precede purge/embargo/finite filtering. All memory/cache planning numbers remain heuristics, not upper bounds."
+}

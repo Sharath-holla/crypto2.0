@@ -1,0 +1,751 @@
+........................................................................ [  5%]
+........................................................................ [ 10%]
+........................................................................ [ 15%]
+........................................................................ [ 20%]
+........................................................................ [ 25%]
+........................................................................ [ 31%]
+........................................................................ [ 36%]
+........................................................................ [ 41%]
+........................................................................ [ 46%]
+.......................................FF............................... [ 51%]
+........................................................................ [ 57%]
+........................................................................ [ 62%]
+..............................F................FF....................... [ 67%]
+........................................................................ [ 72%]
+........................................................................ [ 77%]
+........................................................................ [ 83%]
+..........................................................F............. [ 88%]
+......................................FFFF.............................. [ 93%]
+........................................................................ [ 98%]
+...................                                                      [100%]
+=================================== FAILURES ===================================
+_________ test_prepare_only_runner_publishes_one_cache_and_never_fits __________
+
+entrypoint = 'benchmark_one_spec'
+config = Phase7Config(name='phase7a-core20-primary-v1', mode='cloud', data_start=datetime.datetime(2020, 1, 1, 0, 0, tzinfo=dat...gment=500), calibration=CalibrationConfig(methods=('identity', 'linear'), reliability_buckets=10, minimum_samples=100))
+mode = 'prepare'
+output_root = PosixPath('/private/var/folders/2x/g9vjz2091f3g7g3vz9l0rg3c0000gn/T/pytest-of-cortex/pytest-1/test_prepare_only_runner_publi0/isolated')
+smoke = True, environ = None, spec_id = 'architecture-G0-A6-60m-raw'
+fold_id = 'fold-000-test'
+
+    def admit_official_training(
+        *,
+        entrypoint: str,
+        config: Any,
+        mode: str,
+        output_root: Path | None,
+        smoke: bool = True,
+        environ: Mapping[str, str] | None = None,
+        spec_id: str = "architecture-G0-A6-60m-raw",
+        fold_id: str | None = None,
+    ) -> dict[str, Any]:
+        """Run every admission check; return the record of what was verified or raise.
+    
+        ``mode`` is ``"train"`` or ``"prepare"``. ``smoke`` enforces CPU and one logical worker.
+        """
+    
+        env = os.environ if environ is None else environ
+        if mode not in {"train", "prepare"}:
+            raise AdmissionError(f"BAD_ADMISSION_MODE: {mode!r}")
+        reject_noncanonical(entrypoint)
+        from crypto_ai.phase7.run_contract import require_owner_contract, validate_environment
+    
+        try:
+            environment_names = validate_environment(env)
+        except ValueError as exc:
+            raise AdmissionError(str(exc)) from exc
+        config.assert_cloud_execution_allowed()
+        if config.configuration_hash not in APPROVED_CONFIGURATION_HASHES:
+            raise AdmissionError(f"CONFIG_NOT_APPROVED: {config.configuration_hash}")
+        if (
+            config.prospective_holdout_status != "LOCKED_UNUSED"
+            or config.prospective_holdout_used
+            or config.prospective_holdout_evaluation_authorized
+        ):
+            raise AdmissionError("HOLDOUT_NOT_LOCKED: August must be LOCKED_UNUSED and unauthorised")
+    
+        from crypto_ai.phase7.resources import (
+            configured_floor,
+            require_preparation_runtime_contract,
+            require_training_runtime_contract,
+        )
+        from crypto_ai.phase7.runtime import ComputeBudget, RuntimePaths
+    
+        try:
+            if mode == "train":
+                require_training_runtime_contract()
+            else:
+>               require_preparation_runtime_contract()
+
+src/crypto_ai/phase7/admission.py:120: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def require_preparation_runtime_contract() -> None:
+        """Admission for preparation-only runs: a cache must be writable, nothing is fitted."""
+        if configured_floor("PHASE7_MIN_FREE_RAM_GIB", "PHASE7_MIN_AVAILABLE_RAM_GB") <= 0:
+>           raise ValueError("preparation requires an explicit positive PHASE7_MIN_FREE_RAM_GIB floor")
+E           ValueError: preparation requires an explicit positive PHASE7_MIN_FREE_RAM_GIB floor
+
+src/crypto_ai/phase7/resources.py:47: ValueError
+
+The above exception was the direct cause of the following exception:
+
+tmp_path = PosixPath('/private/var/folders/2x/g9vjz2091f3g7g3vz9l0rg3c0000gn/T/pytest-of-cortex/pytest-1/test_prepare_only_runner_publi0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x11c21d910>
+
+    def test_prepare_only_runner_publishes_one_cache_and_never_fits(tmp_path, monkeypatch):
+        checkpoint_root, _, _ = _patch_harness(monkeypatch, tmp_path, fit_error=AssertionError("fit"))
+        context = _synthetic_registry()
+        root = tmp_path / "isolated" / "benchmark-only-review"
+        store = replace(
+            context.store(checkpoint_root), root=root / "checkpoints", run_identity=root.name
+        )
+        monkeypatch.setenv("PHASE7_CACHE_MODE", "auto")
+        monkeypatch.setenv("PHASE7_CACHE_ROOT", str(tmp_path / "cache"))
+        monkeypatch.setattr(training, "_run_one", lambda *_a, **_k: pytest.fail("fit/evaluate called"))
+>       result = training.run_phase7_training(
+            canonical(),
+            gold_manifest_path=tmp_path / "gold/manifest.json",
+            registry=context.registry,
+            universe=context.universe,
+            expansion_policy=context.policy,
+            descriptors=context.descriptors,
+            checkpoint_store=store,
+            run_root=root,
+            resume=True,
+            scope=training.PHASE7A_SCOPE,
+            benchmark_spec_id="architecture-G0-A6-60m-raw",
+            benchmark_fold_id="fold-000-test",
+            prepare_only=True,
+        )
+
+tests/phase7/test_independent_review_preparation.py:25: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/crypto_ai/phase7/training.py:1546: in run_phase7_training
+    kwargs["admission_record"] = admit_official_training(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+entrypoint = 'benchmark_one_spec'
+config = Phase7Config(name='phase7a-core20-primary-v1', mode='cloud', data_start=datetime.datetime(2020, 1, 1, 0, 0, tzinfo=dat...gment=500), calibration=CalibrationConfig(methods=('identity', 'linear'), reliability_buckets=10, minimum_samples=100))
+mode = 'prepare'
+output_root = PosixPath('/private/var/folders/2x/g9vjz2091f3g7g3vz9l0rg3c0000gn/T/pytest-of-cortex/pytest-1/test_prepare_only_runner_publi0/isolated')
+smoke = True, environ = None, spec_id = 'architecture-G0-A6-60m-raw'
+fold_id = 'fold-000-test'
+
+    def admit_official_training(
+        *,
+        entrypoint: str,
+        config: Any,
+        mode: str,
+        output_root: Path | None,
+        smoke: bool = True,
+        environ: Mapping[str, str] | None = None,
+        spec_id: str = "architecture-G0-A6-60m-raw",
+        fold_id: str | None = None,
+    ) -> dict[str, Any]:
+        """Run every admission check; return the record of what was verified or raise.
+    
+        ``mode`` is ``"train"`` or ``"prepare"``. ``smoke`` enforces CPU and one logical worker.
+        """
+    
+        env = os.environ if environ is None else environ
+        if mode not in {"train", "prepare"}:
+            raise AdmissionError(f"BAD_ADMISSION_MODE: {mode!r}")
+        reject_noncanonical(entrypoint)
+        from crypto_ai.phase7.run_contract import require_owner_contract, validate_environment
+    
+        try:
+            environment_names = validate_environment(env)
+        except ValueError as exc:
+            raise AdmissionError(str(exc)) from exc
+        config.assert_cloud_execution_allowed()
+        if config.configuration_hash not in APPROVED_CONFIGURATION_HASHES:
+            raise AdmissionError(f"CONFIG_NOT_APPROVED: {config.configuration_hash}")
+        if (
+            config.prospective_holdout_status != "LOCKED_UNUSED"
+            or config.prospective_holdout_used
+            or config.prospective_holdout_evaluation_authorized
+        ):
+            raise AdmissionError("HOLDOUT_NOT_LOCKED: August must be LOCKED_UNUSED and unauthorised")
+    
+        from crypto_ai.phase7.resources import (
+            configured_floor,
+            require_preparation_runtime_contract,
+            require_training_runtime_contract,
+        )
+        from crypto_ai.phase7.runtime import ComputeBudget, RuntimePaths
+    
+        try:
+            if mode == "train":
+                require_training_runtime_contract()
+            else:
+                require_preparation_runtime_contract()
+        except ValueError as exc:
+>           raise AdmissionError(f"RUNTIME_CONTRACT: {exc}") from exc
+E           crypto_ai.phase7.admission.AdmissionError: RUNTIME_CONTRACT: preparation requires an explicit positive PHASE7_MIN_FREE_RAM_GIB floor
+
+src/crypto_ai/phase7/admission.py:122: AdmissionError
+___________ test_model_only_is_detected_by_training_loop_before_fit ____________
+
+tmp_path = PosixPath('/private/var/folders/2x/g9vjz2091f3g7g3vz9l0rg3c0000gn/T/pytest-of-cortex/pytest-1/test_model_only_is_detected_by0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x11c21f320>
+
+    def test_model_only_is_detected_by_training_loop_before_fit(tmp_path, monkeypatch):
+        checkpoint_root, root, fits = _patch_harness(
+            monkeypatch,
+            tmp_path,
+            fit_error=AssertionError("must not fit"),
+        )
+        context = _synthetic_registry()
+        model = root / "models/core/fold-000-test/architecture-G0-A6-60m-raw/model.joblib"
+        model.parent.mkdir(parents=True)
+        model.write_bytes(b"opaque synthetic orphan -- never deserialize")
+        before = model.read_bytes()
+>       with pytest.raises(ValueError, match="MODEL_ONLY"):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AssertionError: Regex pattern did not match.
+E         Expected regex: 'MODEL_ONLY'
+E         Actual message: 'M01_FEATURE_CONTEXT_SIDECAR_REQUIRED: no approved feature-only context'
+
+tests/phase7/test_independent_review_preparation.py:59: AssertionError
+----------------------------- Captured stdout call -----------------------------
+{"event": "COMPUTE_BUDGET_RESOLVED", "lightgbm_threads_per_model": 2, "model_parallelism": 4, "total_cpu_threads": 10}
+[phase7:train] WARNING: Silver is absent; training proceeds from Gold only (/Users/cortex/Projects/crypto2.0/data/phase7/silver/binance). Owner decision pending: restore Silver, or record that Gold is the source of truth.
+{"event": "FOLD_LOAD_START", "fold_id": "fold-000-test", "horizon": 60, "process_peak_rss_bytes": 345899008, "process_rss_bytes": 345899008, "ram_available_bytes": 7473250304, "ram_total_bytes": 17179869184}
+{"event": "FOLD_LOAD_DONE", "fold_id": "fold-000-test", "horizon": 60, "process_peak_rss_bytes": 345899008, "process_rss_bytes": 345899008, "ram_available_bytes": 7473250304, "ram_total_bytes": 17179869184, "rows": 3}
+___________ test_runner_rebuild_reaches_fit_without_false_cache_miss ___________
+
+tmp_path = PosixPath('/private/var/folders/2x/g9vjz2091f3g7g3vz9l0rg3c0000gn/T/pytest-of-cortex/pytest-1/test_runner_rebuild_reaches_fi0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x11b8b17c0>
+
+    def test_runner_rebuild_reaches_fit_without_false_cache_miss(tmp_path, monkeypatch):
+        cp, root, calls = _patch_harness(monkeypatch, tmp_path, fit_error=ValueError("fit sentinel"))
+        monkeypatch.setenv("PHASE7_CACHE_MODE", "rebuild")
+        monkeypatch.setenv("PHASE7_CACHE_ROOT", str(tmp_path / "cache"))
+        context = _synthetic_registry()
+>       with pytest.raises(ValueError, match="fit sentinel"):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AssertionError: Regex pattern did not match.
+E         Expected regex: 'fit sentinel'
+E         Actual message: 'M01_FEATURE_CONTEXT_SIDECAR_REQUIRED: no approved feature-only context'
+
+tests/phase7/test_pre_lightning_finalization.py:158: AssertionError
+----------------------------- Captured stdout call -----------------------------
+{"event": "COMPUTE_BUDGET_RESOLVED", "lightgbm_threads_per_model": 2, "model_parallelism": 4, "total_cpu_threads": 10}
+[phase7:train] WARNING: Silver is absent; training proceeds from Gold only (/Users/cortex/Projects/crypto2.0/data/phase7/silver/binance). Owner decision pending: restore Silver, or record that Gold is the source of truth.
+____ test_one_spec_runner_cannot_complete_production_or_preload_other_keys _____
+
+entrypoint = 'benchmark_one_spec'
+config = Phase7Config(name='phase7a-core20-primary-v1', mode='cloud', data_start=datetime.datetime(2020, 1, 1, 0, 0, tzinfo=dat...gment=500), calibration=CalibrationConfig(methods=('identity', 'linear'), reliability_buckets=10, minimum_samples=100))
+mode = 'train'
+output_root = PosixPath('/private/var/folders/2x/g9vjz2091f3g7g3vz9l0rg3c0000gn/T/pytest-of-cortex/pytest-1/test_one_spec_runner_cannot_co0')
+smoke = True, environ = None, spec_id = 'architecture-G0-A6-15m-raw'
+fold_id = 'fold-000-test'
+
+    def admit_official_training(
+        *,
+        entrypoint: str,
+        config: Any,
+        mode: str,
+        output_root: Path | None,
+        smoke: bool = True,
+        environ: Mapping[str, str] | None = None,
+        spec_id: str = "architecture-G0-A6-60m-raw",
+        fold_id: str | None = None,
+    ) -> dict[str, Any]:
+        """Run every admission check; return the record of what was verified or raise.
+    
+        ``mode`` is ``"train"`` or ``"prepare"``. ``smoke`` enforces CPU and one logical worker.
+        """
+    
+        env = os.environ if environ is None else environ
+        if mode not in {"train", "prepare"}:
+            raise AdmissionError(f"BAD_ADMISSION_MODE: {mode!r}")
+        reject_noncanonical(entrypoint)
+        from crypto_ai.phase7.run_contract import require_owner_contract, validate_environment
+    
+        try:
+            environment_names = validate_environment(env)
+        except ValueError as exc:
+            raise AdmissionError(str(exc)) from exc
+        config.assert_cloud_execution_allowed()
+        if config.configuration_hash not in APPROVED_CONFIGURATION_HASHES:
+            raise AdmissionError(f"CONFIG_NOT_APPROVED: {config.configuration_hash}")
+        if (
+            config.prospective_holdout_status != "LOCKED_UNUSED"
+            or config.prospective_holdout_used
+            or config.prospective_holdout_evaluation_authorized
+        ):
+            raise AdmissionError("HOLDOUT_NOT_LOCKED: August must be LOCKED_UNUSED and unauthorised")
+    
+        from crypto_ai.phase7.resources import (
+            configured_floor,
+            require_preparation_runtime_contract,
+            require_training_runtime_contract,
+        )
+        from crypto_ai.phase7.runtime import ComputeBudget, RuntimePaths
+    
+        try:
+            if mode == "train":
+>               require_training_runtime_contract()
+
+src/crypto_ai/phase7/admission.py:118: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def require_training_runtime_contract() -> None:
+        """Cheap fail-closed CLI admission before Gold scans or backend smoke fits."""
+        if configured_floor("PHASE7_MIN_FREE_RAM_GIB", "PHASE7_MIN_AVAILABLE_RAM_GB") <= 0:
+>           raise ValueError("training requires an explicit positive PHASE7_MIN_FREE_RAM_GIB floor")
+E           ValueError: training requires an explicit positive PHASE7_MIN_FREE_RAM_GIB floor
+
+src/crypto_ai/phase7/resources.py:36: ValueError
+
+The above exception was the direct cause of the following exception:
+
+tmp_path = PosixPath('/private/var/folders/2x/g9vjz2091f3g7g3vz9l0rg3c0000gn/T/pytest-of-cortex/pytest-1/test_one_spec_runner_cannot_co0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x11b6c99d0>
+
+    def test_one_spec_runner_cannot_complete_production_or_preload_other_keys(tmp_path, monkeypatch):
+        cp, _, _ = _patch_harness(monkeypatch, tmp_path, fit_error=ValueError("must not fit"))
+        context = _synthetic_registry()
+        config = canonical()
+        spec = primary_specs(config)[0]
+        root = tmp_path / "benchmark-only-test"
+        original = context.store(cp)
+        store = replace(original, root=root / "checkpoints", run_identity=root.name)
+        calls = []
+    
+        def run_one(selected, fold, features, config, output, identity, **kwargs):
+            calls.append((selected.name, fold.plan.fold_id))
+            # CHANGED BY CLAUDE (2026-11-06, closure): a COMPLETE report must now carry the canonical
+            # identity because the loop publishes it to the result ledger before the checkpoint is
+            # COMPLETE. OLD CODE (kept for reference, an unidentified "COMPLETE" is now refused):
+            # report = {"status": "COMPLETE", "artifact_mode": "BENCHMARK_ONLY"}
+            report = {
+                "status": "COMPLETE",
+                "artifact_mode": "BENCHMARK_ONLY",
+                "test_used_for_selection": False,
+                "fold_id": fold.plan.fold_id,
+                "spec": asdict(selected),
+                "execution_context": kwargs["execution_metadata"],
+                "checkpoint_identity": identity,
+                "model": {"seed": 42, "compute_backend": "cpu"},
+                "phase7b": {
+                    "experiment_control_identity": {"manifest_sha256": "c" * 64},
+                    "baselines": {"baseline_contract_version": "baseline-fixture-v1"},
+                },
+            }
+            return report, [atomic_json(output / "report.json", report)]
+    
+        monkeypatch.setattr(training, "_run_one", run_one)
+        monkeypatch.setattr(
+            training,
+            "summarize_fold_completion",
+            lambda *_: pytest.fail("benchmark entered production completion"),
+        )
+>       result = training.run_phase7_training(
+            config,
+            gold_manifest_path=tmp_path / "gold/manifest.json",
+            registry=context.registry,
+            universe=context.universe,
+            expansion_policy=context.policy,
+            descriptors=context.descriptors,
+            checkpoint_store=store,
+            run_root=root,
+            resume=False,
+            benchmark_spec_id=spec.name,
+            benchmark_fold_id="fold-000-test",
+            scope=training.PHASE7A_SCOPE,
+        )
+
+tests/phase7/test_pre_lightning_finalization.py:321: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/crypto_ai/phase7/training.py:1546: in run_phase7_training
+    kwargs["admission_record"] = admit_official_training(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+entrypoint = 'benchmark_one_spec'
+config = Phase7Config(name='phase7a-core20-primary-v1', mode='cloud', data_start=datetime.datetime(2020, 1, 1, 0, 0, tzinfo=dat...gment=500), calibration=CalibrationConfig(methods=('identity', 'linear'), reliability_buckets=10, minimum_samples=100))
+mode = 'train'
+output_root = PosixPath('/private/var/folders/2x/g9vjz2091f3g7g3vz9l0rg3c0000gn/T/pytest-of-cortex/pytest-1/test_one_spec_runner_cannot_co0')
+smoke = True, environ = None, spec_id = 'architecture-G0-A6-15m-raw'
+fold_id = 'fold-000-test'
+
+    def admit_official_training(
+        *,
+        entrypoint: str,
+        config: Any,
+        mode: str,
+        output_root: Path | None,
+        smoke: bool = True,
+        environ: Mapping[str, str] | None = None,
+        spec_id: str = "architecture-G0-A6-60m-raw",
+        fold_id: str | None = None,
+    ) -> dict[str, Any]:
+        """Run every admission check; return the record of what was verified or raise.
+    
+        ``mode`` is ``"train"`` or ``"prepare"``. ``smoke`` enforces CPU and one logical worker.
+        """
+    
+        env = os.environ if environ is None else environ
+        if mode not in {"train", "prepare"}:
+            raise AdmissionError(f"BAD_ADMISSION_MODE: {mode!r}")
+        reject_noncanonical(entrypoint)
+        from crypto_ai.phase7.run_contract import require_owner_contract, validate_environment
+    
+        try:
+            environment_names = validate_environment(env)
+        except ValueError as exc:
+            raise AdmissionError(str(exc)) from exc
+        config.assert_cloud_execution_allowed()
+        if config.configuration_hash not in APPROVED_CONFIGURATION_HASHES:
+            raise AdmissionError(f"CONFIG_NOT_APPROVED: {config.configuration_hash}")
+        if (
+            config.prospective_holdout_status != "LOCKED_UNUSED"
+            or config.prospective_holdout_used
+            or config.prospective_holdout_evaluation_authorized
+        ):
+            raise AdmissionError("HOLDOUT_NOT_LOCKED: August must be LOCKED_UNUSED and unauthorised")
+    
+        from crypto_ai.phase7.resources import (
+            configured_floor,
+            require_preparation_runtime_contract,
+            require_training_runtime_contract,
+        )
+        from crypto_ai.phase7.runtime import ComputeBudget, RuntimePaths
+    
+        try:
+            if mode == "train":
+                require_training_runtime_contract()
+            else:
+                require_preparation_runtime_contract()
+        except ValueError as exc:
+>           raise AdmissionError(f"RUNTIME_CONTRACT: {exc}") from exc
+E           crypto_ai.phase7.admission.AdmissionError: RUNTIME_CONTRACT: training requires an explicit positive PHASE7_MIN_FREE_RAM_GIB floor
+
+src/crypto_ai/phase7/admission.py:122: AdmissionError
+____________ test_runner_releases_previous_horizon_before_next_spec ____________
+
+tmp_path = PosixPath('/private/var/folders/2x/g9vjz2091f3g7g3vz9l0rg3c0000gn/T/pytest-of-cortex/pytest-1/test_runner_releases_previous_0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x11bc833b0>
+
+    def test_runner_releases_previous_horizon_before_next_spec(tmp_path, monkeypatch):
+        cp, root, _ = _patch_harness(monkeypatch, tmp_path, fit_error=ValueError("must not fit"))
+        context = _synthetic_registry()
+        refs = []
+        seen = []
+        specs = tuple(
+            training.ExperimentSpec(f"G0-{h}", "G0", "A6", h, "raw", symbol_balanced=True)
+            for h in (15, 30)
+        )
+        monkeypatch.setattr(training, "phase7_experiment_specs", lambda _: specs)
+        monkeypatch.setattr(training, "slice_multiasset_fold", lambda *_a, **_k: _fold_data(tmp_path))
+    
+        def run_one(spec, fold, _features, _config, output, identity, **_kwargs):
+            assert all(ref() is None for ref in refs), "previous horizon/view still resident"
+            refs.append(weakref.ref(fold.train))
+            seen.append((fold.research_view, spec.horizon_minutes))
+            report = {
+                "status": "INELIGIBLE",
+                "spec": asdict(spec),
+                "fold_id": fold.plan.fold_id,
+                "research_view": fold.research_view,
+                "checkpoint_identity": identity,
+            }
+            return report, [atomic_json(output / "report.json", report)]
+    
+        monkeypatch.setattr(training, "_run_one", run_one)
+>       training.run_phase7_training(
+            Phase7Config(),
+            gold_manifest_path=tmp_path / "gold/manifest.json",
+            registry=context.registry,
+            universe=context.universe,
+            expansion_policy=context.policy,
+            descriptors=context.descriptors,
+            checkpoint_store=context.store(cp),
+            run_root=root,
+            resume=False,
+        )
+
+tests/phase7/test_pre_lightning_finalization.py:368: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/crypto_ai/phase7/training.py:1557: in run_phase7_training
+    return _run_phase7_training_owned(config, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/crypto_ai/phase7/training.py:1918: in _run_phase7_training_owned
+    cache_identity = _prepared_cache_identity(
+src/crypto_ai/phase7/training.py:725: in _prepared_cache_identity
+    if (sidecar := _context_sidecar_path(manifest))
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+manifest = {'classification': 'RETROSPECTIVE_MULTI_ASSET_RESEARCH', 'prospective_holdout_status': 'LOCKED_UNUSED', 'prospective_holdout_used': False, 'prospective_holdout_evaluation_authorized': False, ...}
+
+    def _context_sidecar_path(manifest: dict[str, Any]) -> Path | None:
+        value = os.environ.get(SIDECAR_ENV, "").strip()
+        if value:
+            return Path(value)
+        # No dataset implicitly qualifies for label-dependent Gold context. New datasets
+        # require a verified feature-only sidecar too; approval is bound at admission.
+>       raise ValueError("M01_FEATURE_CONTEXT_SIDECAR_REQUIRED: no approved feature-only context")
+E       ValueError: M01_FEATURE_CONTEXT_SIDECAR_REQUIRED: no approved feature-only context
+
+src/crypto_ai/phase7/training.py:494: ValueError
+----------------------------- Captured stdout call -----------------------------
+{"event": "COMPUTE_BUDGET_RESOLVED", "lightgbm_threads_per_model": 2, "model_parallelism": 4, "total_cpu_threads": 10}
+[phase7:train] WARNING: Silver is absent; training proceeds from Gold only (/Users/cortex/Projects/crypto2.0/data/phase7/silver/binance). Owner decision pending: restore Silver, or record that Gold is the source of truth.
+{"event": "FOLD_LOAD_START", "fold_id": "fold-000-test", "horizon": 15, "process_peak_rss_bytes": 353222656, "process_rss_bytes": 353222656, "ram_available_bytes": 7420624896, "ram_total_bytes": 17179869184}
+{"event": "FOLD_LOAD_DONE", "fold_id": "fold-000-test", "horizon": 15, "process_peak_rss_bytes": 353222656, "process_rss_bytes": 353222656, "ram_available_bytes": 7420624896, "ram_total_bytes": 17179869184, "rows": 3}
+_______ test_direct_training_cli_cannot_bypass_preflight_or_prepare_data _______
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x11b78f9e0>
+
+    def test_direct_training_cli_cannot_bypass_preflight_or_prepare_data(monkeypatch):
+        import sys
+    
+        from crypto_ai.phase7.phase7a import pipeline_dispatcher
+    
+        dispatcher = pipeline_dispatcher()
+        monkeypatch.setenv("PHASE7_ALLOW_CLOUD_RESEARCH", "1")  # Isolated startup test; no fit.
+        monkeypatch.setenv("PHASE7_CACHE_MODE", "read_only")
+        monkeypatch.delenv("PHASE7_MIN_FREE_RAM_GIB", raising=False)
+        monkeypatch.delenv("PHASE7_MIN_AVAILABLE_RAM_GB", raising=False)
+        monkeypatch.setattr(sys, "argv", ["phase7a", "--stage", "train", "--resume"])
+        monkeypatch.setattr(dispatcher, "run_stage", lambda *_a, **_k: pytest.fail("training started"))
+        calls = []
+        monkeypatch.setattr(
+            preflight,
+            "build_preflight_report",
+            lambda *_a, **_k: calls.append(1) or {"status": "FAIL", "blocking_errors": ["fixture"]},
+        )
+        with pytest.raises(AdmissionError, match="RUNTIME_CONTRACT:.*explicit positive"):
+            dispatcher.main()
+        assert not calls
+        monkeypatch.setenv("PHASE7_MIN_FREE_RAM_GIB", "8")
+        monkeypatch.setenv("PHASE7_MIN_FREE_DISK_GIB", "1")
+>       with pytest.raises(RuntimeError, match="training preflight failed"):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AssertionError: Regex pattern did not match.
+E         Expected regex: 'training preflight failed'
+E         Actual message: 'FULL_GRID_NOT_AUTHORIZED: current admission permits one CPU smoke only'
+
+tests/phase7/test_standalone_training_remediation.py:300: AssertionError
+________ test_data_defect_during_fit_propagates_and_is_never_ineligible ________
+
+tmp_path = PosixPath('/private/var/folders/2x/g9vjz2091f3g7g3vz9l0rg3c0000gn/T/pytest-of-cortex/pytest-1/test_data_defect_during_fit_pr0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x11b78ec90>
+
+    def test_data_defect_during_fit_propagates_and_is_never_ineligible(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """A plain ValueError from model fitting is a defect: it must crash loudly."""
+        checkpoint_root, run_root, _fit_calls = _patch_harness(
+            monkeypatch, tmp_path, fit_error=ValueError("defect: non-finite predictions")
+        )
+        config = Phase7Config()
+        registry = _synthetic_registry()
+>       with pytest.raises(ValueError, match="non-finite predictions"):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AssertionError: Regex pattern did not match.
+E         Expected regex: 'non-finite predictions'
+E         Actual message: 'M01_FEATURE_CONTEXT_SIDECAR_REQUIRED: no approved feature-only context'
+
+tests/phase7/test_training_error_classification.py:172: AssertionError
+----------------------------- Captured stdout call -----------------------------
+{"event": "COMPUTE_BUDGET_RESOLVED", "lightgbm_threads_per_model": 2, "model_parallelism": 4, "total_cpu_threads": 10}
+[phase7:train] WARNING: Silver is absent; training proceeds from Gold only (/Users/cortex/Projects/crypto2.0/data/phase7/silver/binance). Owner decision pending: restore Silver, or record that Gold is the source of truth.
+{"event": "FOLD_LOAD_START", "fold_id": "fold-000-test", "horizon": 60, "process_peak_rss_bytes": 526155776, "process_rss_bytes": 524222464, "ram_available_bytes": 7220494336, "ram_total_bytes": 17179869184}
+{"event": "FOLD_LOAD_DONE", "fold_id": "fold-000-test", "horizon": 60, "process_peak_rss_bytes": 526155776, "process_rss_bytes": 524222464, "ram_available_bytes": 7220494336, "ram_total_bytes": 17179869184, "rows": 3}
+_________ test_eligibility_failure_records_ineligible_and_resume_skips _________
+
+tmp_path = PosixPath('/private/var/folders/2x/g9vjz2091f3g7g3vz9l0rg3c0000gn/T/pytest-of-cortex/pytest-1/test_eligibility_failure_recor0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x11bbaeed0>
+
+    def test_eligibility_failure_records_ineligible_and_resume_skips(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """IneligibleFoldError is recorded INELIGIBLE and skipped on resume."""
+        checkpoint_root, run_root, fit_calls = _patch_harness(
+            monkeypatch,
+            tmp_path,
+            fit_error=IneligibleFoldError("G0 produced no eligible estimators"),
+        )
+        config = Phase7Config()
+        registry = _synthetic_registry()
+>       first = run_phase7_training(
+            config,
+            gold_manifest_path=_manifest(tmp_path),
+            registry=registry.registry,
+            universe=registry.universe,
+            expansion_policy=registry.policy,
+            descriptors=registry.descriptors,
+            checkpoint_store=registry.store(checkpoint_root),
+            run_root=run_root,
+            resume=False,
+        )
+
+tests/phase7/test_training_error_classification.py:202: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/crypto_ai/phase7/training.py:1557: in run_phase7_training
+    return _run_phase7_training_owned(config, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/crypto_ai/phase7/training.py:1918: in _run_phase7_training_owned
+    cache_identity = _prepared_cache_identity(
+src/crypto_ai/phase7/training.py:725: in _prepared_cache_identity
+    if (sidecar := _context_sidecar_path(manifest))
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+manifest = {'classification': 'RETROSPECTIVE_MULTI_ASSET_RESEARCH', 'prospective_holdout_status': 'LOCKED_UNUSED', 'prospective_holdout_used': False, 'prospective_holdout_evaluation_authorized': False, ...}
+
+    def _context_sidecar_path(manifest: dict[str, Any]) -> Path | None:
+        value = os.environ.get(SIDECAR_ENV, "").strip()
+        if value:
+            return Path(value)
+        # No dataset implicitly qualifies for label-dependent Gold context. New datasets
+        # require a verified feature-only sidecar too; approval is bound at admission.
+>       raise ValueError("M01_FEATURE_CONTEXT_SIDECAR_REQUIRED: no approved feature-only context")
+E       ValueError: M01_FEATURE_CONTEXT_SIDECAR_REQUIRED: no approved feature-only context
+
+src/crypto_ai/phase7/training.py:494: ValueError
+----------------------------- Captured stdout call -----------------------------
+{"event": "COMPUTE_BUDGET_RESOLVED", "lightgbm_threads_per_model": 2, "model_parallelism": 4, "total_cpu_threads": 10}
+[phase7:train] WARNING: Silver is absent; training proceeds from Gold only (/Users/cortex/Projects/crypto2.0/data/phase7/silver/binance). Owner decision pending: restore Silver, or record that Gold is the source of truth.
+{"event": "FOLD_LOAD_START", "fold_id": "fold-000-test", "horizon": 60, "process_peak_rss_bytes": 526155776, "process_rss_bytes": 524222464, "ram_available_bytes": 7220494336, "ram_total_bytes": 17179869184}
+{"event": "FOLD_LOAD_DONE", "fold_id": "fold-000-test", "horizon": 60, "process_peak_rss_bytes": 526155776, "process_rss_bytes": 524222464, "ram_available_bytes": 7220494336, "ram_total_bytes": 17179869184, "rows": 3}
+_________ test_training_source_change_rejects_orphan_report_on_resume __________
+
+tmp_path = PosixPath('/private/var/folders/2x/g9vjz2091f3g7g3vz9l0rg3c0000gn/T/pytest-of-cortex/pytest-1/test_training_source_change_re0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x11b88fc50>
+
+    def test_training_source_change_rejects_orphan_report_on_resume(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        checkpoint_root, run_root, _fit_calls = _patch_harness(
+            monkeypatch,
+            tmp_path,
+            fit_error=IneligibleFoldError("G0 produced no eligible estimators"),
+        )
+        config = Phase7Config()
+        registry = _synthetic_registry()
+>       run_phase7_training(
+            config,
+            gold_manifest_path=_manifest(tmp_path),
+            registry=registry.registry,
+            universe=registry.universe,
+            expansion_policy=registry.policy,
+            descriptors=registry.descriptors,
+            checkpoint_store=registry.store(checkpoint_root),
+            run_root=run_root,
+            resume=False,
+        )
+
+tests/phase7/test_training_error_classification.py:249: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/crypto_ai/phase7/training.py:1557: in run_phase7_training
+    return _run_phase7_training_owned(config, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/crypto_ai/phase7/training.py:1918: in _run_phase7_training_owned
+    cache_identity = _prepared_cache_identity(
+src/crypto_ai/phase7/training.py:725: in _prepared_cache_identity
+    if (sidecar := _context_sidecar_path(manifest))
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+manifest = {'classification': 'RETROSPECTIVE_MULTI_ASSET_RESEARCH', 'prospective_holdout_status': 'LOCKED_UNUSED', 'prospective_holdout_used': False, 'prospective_holdout_evaluation_authorized': False, ...}
+
+    def _context_sidecar_path(manifest: dict[str, Any]) -> Path | None:
+        value = os.environ.get(SIDECAR_ENV, "").strip()
+        if value:
+            return Path(value)
+        # No dataset implicitly qualifies for label-dependent Gold context. New datasets
+        # require a verified feature-only sidecar too; approval is bound at admission.
+>       raise ValueError("M01_FEATURE_CONTEXT_SIDECAR_REQUIRED: no approved feature-only context")
+E       ValueError: M01_FEATURE_CONTEXT_SIDECAR_REQUIRED: no approved feature-only context
+
+src/crypto_ai/phase7/training.py:494: ValueError
+----------------------------- Captured stdout call -----------------------------
+{"event": "COMPUTE_BUDGET_RESOLVED", "lightgbm_threads_per_model": 2, "model_parallelism": 4, "total_cpu_threads": 10}
+[phase7:train] WARNING: Silver is absent; training proceeds from Gold only (/Users/cortex/Projects/crypto2.0/data/phase7/silver/binance). Owner decision pending: restore Silver, or record that Gold is the source of truth.
+{"event": "FOLD_LOAD_START", "fold_id": "fold-000-test", "horizon": 60, "process_peak_rss_bytes": 526155776, "process_rss_bytes": 524222464, "ram_available_bytes": 7220494336, "ram_total_bytes": 17179869184}
+{"event": "FOLD_LOAD_DONE", "fold_id": "fold-000-test", "horizon": 60, "process_peak_rss_bytes": 526155776, "process_rss_bytes": 524222464, "ram_available_bytes": 7220494336, "ram_total_bytes": 17179869184, "rows": 3}
+__ test_ineligible_g0_makes_h0_explicitly_ineligible_without_replacement_fit ___
+
+tmp_path = PosixPath('/private/var/folders/2x/g9vjz2091f3g7g3vz9l0rg3c0000gn/T/pytest-of-cortex/pytest-1/test_ineligible_g0_makes_h0_ex0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x11ba8caa0>
+
+    def test_ineligible_g0_makes_h0_explicitly_ineligible_without_replacement_fit(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        checkpoint_root, run_root, fit_calls = _patch_harness(
+            monkeypatch, tmp_path, fit_error=IneligibleFoldError("G0 is not eligible")
+        )
+        monkeypatch.setattr(
+            "crypto_ai.phase7.training.phase7_experiment_specs",
+            lambda _: tuple(
+                ExperimentSpec(
+                    name=f"architecture-{architecture}-A6-60m-raw",
+                    architecture=architecture,
+                    feature_group="A6",
+                    horizon_minutes=60,
+                    target_type="raw",
+                    symbol_balanced=True,
+                )
+                for architecture in ("G0", "H0")
+            ),
+        )
+        registry = _synthetic_registry()
+        for resume in (False, True):
+>           summary = run_phase7_training(
+                Phase7Config(),
+                gold_manifest_path=_manifest(tmp_path),
+                registry=registry.registry,
+                universe=registry.universe,
+                expansion_policy=registry.policy,
+                descriptors=registry.descriptors,
+                checkpoint_store=registry.store(checkpoint_root),
+                run_root=run_root,
+                resume=resume,
+            )
+
+tests/phase7/test_training_error_classification.py:305: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/crypto_ai/phase7/training.py:1557: in run_phase7_training
+    return _run_phase7_training_owned(config, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/crypto_ai/phase7/training.py:1918: in _run_phase7_training_owned
+    cache_identity = _prepared_cache_identity(
+src/crypto_ai/phase7/training.py:725: in _prepared_cache_identity
+    if (sidecar := _context_sidecar_path(manifest))
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+manifest = {'classification': 'RETROSPECTIVE_MULTI_ASSET_RESEARCH', 'prospective_holdout_status': 'LOCKED_UNUSED', 'prospective_holdout_used': False, 'prospective_holdout_evaluation_authorized': False, ...}
+
+    def _context_sidecar_path(manifest: dict[str, Any]) -> Path | None:
+        value = os.environ.get(SIDECAR_ENV, "").strip()
+        if value:
+            return Path(value)
+        # No dataset implicitly qualifies for label-dependent Gold context. New datasets
+        # require a verified feature-only sidecar too; approval is bound at admission.
+>       raise ValueError("M01_FEATURE_CONTEXT_SIDECAR_REQUIRED: no approved feature-only context")
+E       ValueError: M01_FEATURE_CONTEXT_SIDECAR_REQUIRED: no approved feature-only context
+
+src/crypto_ai/phase7/training.py:494: ValueError
+----------------------------- Captured stdout call -----------------------------
+{"event": "COMPUTE_BUDGET_RESOLVED", "lightgbm_threads_per_model": 2, "model_parallelism": 4, "total_cpu_threads": 10}
+[phase7:train] WARNING: Silver is absent; training proceeds from Gold only (/Users/cortex/Projects/crypto2.0/data/phase7/silver/binance). Owner decision pending: restore Silver, or record that Gold is the source of truth.
+{"event": "FOLD_LOAD_START", "fold_id": "fold-000-test", "horizon": 60, "process_peak_rss_bytes": 526155776, "process_rss_bytes": 524222464, "ram_available_bytes": 7195082752, "ram_total_bytes": 17179869184}
+{"event": "FOLD_LOAD_DONE", "fold_id": "fold-000-test", "horizon": 60, "process_peak_rss_bytes": 526155776, "process_rss_bytes": 524222464, "ram_available_bytes": 7195082752, "ram_total_bytes": 17179869184, "rows": 3}
+=========================== short test summary info ============================
+FAILED tests/phase7/test_independent_review_preparation.py::test_prepare_only_runner_publishes_one_cache_and_never_fits
+FAILED tests/phase7/test_independent_review_preparation.py::test_model_only_is_detected_by_training_loop_before_fit
+FAILED tests/phase7/test_pre_lightning_finalization.py::test_runner_rebuild_reaches_fit_without_false_cache_miss
+FAILED tests/phase7/test_pre_lightning_finalization.py::test_one_spec_runner_cannot_complete_production_or_preload_other_keys
+FAILED tests/phase7/test_pre_lightning_finalization.py::test_runner_releases_previous_horizon_before_next_spec
+FAILED tests/phase7/test_standalone_training_remediation.py::test_direct_training_cli_cannot_bypass_preflight_or_prepare_data
+FAILED tests/phase7/test_training_error_classification.py::test_data_defect_during_fit_propagates_and_is_never_ineligible
+FAILED tests/phase7/test_training_error_classification.py::test_eligibility_failure_records_ineligible_and_resume_skips
+FAILED tests/phase7/test_training_error_classification.py::test_training_source_change_rejects_orphan_report_on_resume
+FAILED tests/phase7/test_training_error_classification.py::test_ineligible_g0_makes_h0_explicitly_ineligible_without_replacement_fit
+10 failed, 1377 passed in 154.99s (0:02:34)

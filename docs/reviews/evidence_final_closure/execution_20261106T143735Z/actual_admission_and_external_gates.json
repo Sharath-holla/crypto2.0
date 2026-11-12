@@ -1,0 +1,42 @@
+{
+  "time_utc": "2026-11-07T09:50:10.593050+00:00",
+  "actual_admission": {
+    "status": "REFUSED",
+    "error": "SMOKE_RESOURCES_REQUIRED: effective RAM >=64 GiB"
+  },
+  "machine": {
+    "python": "3.12.16",
+    "os": "macOS-27.2-arm64-arm-64bit",
+    "cpu_count": 10,
+    "host_cpu_count": 10,
+    "affinity_cpu_count": null,
+    "cgroup_cpu_quota_cpus": null,
+    "effective_cpu_count": 10,
+    "host_ram_total_bytes": 17179869184,
+    "ram_total_bytes": 17179869184,
+    "ram_available_bytes": 6341296128,
+    "disk_total_bytes": 494332366848,
+    "disk_free_bytes": 318181011456
+  },
+  "linux_gate": {
+    "status": "FAIL",
+    "linux_validation": "NOT RUN",
+    "reason": "Linux/x86_64 required"
+  },
+  "filesystem_gate": {
+    "status": "FAIL",
+    "reason": "genuine Linux/x86_64 required",
+    "filesystem_validation": "NOT_RUN"
+  },
+  "runtime_inventory": {
+    "docker": null,
+    "orb": null,
+    "colima": null,
+    "podman": null,
+    "limactl": null,
+    "qemu-system-x86_64": null
+  },
+  "os": "macOS-27.2-arm64-arm-64bit",
+  "model_fits": 0,
+  "cache_builds": 0
+}

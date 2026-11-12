@@ -1,0 +1,12 @@
+{
+  "time_utc": "2026-11-07T09:39:15.039033+00:00",
+  "method": "git prune --expire=now with all 152 unreachable objects explicitly protected as additional heads",
+  "temporary_garbage_files": 288,
+  "unreachable_objects_preserved": 152,
+  "all_object_ids_before_after_identical": true,
+  "valid_objects": 2551,
+  "backup": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/git-objects-before-maintenance-20261107",
+  "count_after": "count: 856\nsize: 4684\nin-pack: 1695\npacks: 1\nsize-pack: 2837\nprune-packable: 0\ngarbage: 0\nsize-garbage: 0\n",
+  "fsck_exit": 0,
+  "working_files_touched": false
+}

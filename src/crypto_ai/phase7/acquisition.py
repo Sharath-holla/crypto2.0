@@ -292,7 +292,9 @@ def _missing_archive_records(
     expected_count = 0
     normalized: list[dict[str, Any]] = []
     for raw_record in selected:
-        assert raw_record is not None
+        # CHANGED BY CLAUDE (2026-11-02, finding L-07). OLD CODE: assert raw_record is not None
+        if raw_record is None:
+            raise ValueError("selected partition record is missing")
         record = deepcopy(raw_record)
         start = _partition_time(record, "start")
         end = _partition_time(record, "end")
@@ -650,7 +652,9 @@ def _attempt_archive_reconciliation(
     with BinanceRestClient(settings) as rest:
         client = _RestReconciliationClient(rest, metadata)
         for key, record in zip(partition_keys, selected, strict=True):
-            assert record is not None
+            # CHANGED BY CLAUDE (2026-11-02, finding L-07). OLD CODE: assert record is not None
+            if record is None:
+                raise ValueError("selected partition record is missing")
             start = datetime.fromisoformat(str(record["start"]).replace("Z", "+00:00"))
             end = datetime.fromisoformat(str(record["end"]).replace("Z", "+00:00"))
             rest_manifest = HistoricalDownloader(settings, client).download(

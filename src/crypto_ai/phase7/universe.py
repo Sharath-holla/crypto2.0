@@ -196,6 +196,10 @@ class FoldUniverseMember(_Frozen):
 
 class FoldActiveUniverse(_Frozen):
     definition_version: Literal["dual_universe_v3"] = UNIVERSE_VERSION
+    # Missing field means a historical artifact, not permission to relabel it.
+    gap_gate_policy: Literal["FULL_FOLD_REQUIRED_RANGE_V1", "TRAIN_HISTORY_ONLY_V2"] = (
+        "FULL_FOLD_REQUIRED_RANGE_V1"
+    )
     research_view: Literal["CORE", "EXPANDING"]
     fold_id: str
     as_of: datetime
@@ -545,7 +549,10 @@ def cold_start_age_bucket(
 
 
 def fold_membership_identity(membership: FoldActiveUniverse) -> str:
-    return stable_hash(membership.model_dump(mode="json", exclude={"membership_hash"}))
+    excluded = {"membership_hash"}
+    if membership.gap_gate_policy == "FULL_FOLD_REQUIRED_RANGE_V1":
+        excluded.add("gap_gate_policy")  # Preserve old audit artifact identities exactly.
+    return stable_hash(membership.model_dump(mode="json", exclude=excluded))
 
 
 def _is_eligible(decision: EligibilityDecision) -> bool:
@@ -582,21 +589,27 @@ def select_fold_active_universe(
         candidate_symbols=set(core_universe.symbols),
     )
     fold_start = _utc(required_start) if required_start is not None else cutoff
-    fold_end = _utc(required_end) if required_end is not None else cutoff
+    # Membership freezes at TRAIN end. Validation/Cal/TEST gap evidence may
+    # explain later coverage, but must not retroactively choose training symbols.
+    fold_end = min(_utc(required_end), cutoff) if required_end is not None else cutoff
+    historical_gaps = tuple(
+        gap
+        for gap in unusable_segments
+        if gap.end <= cutoff and gap.intersects(fold_start, fold_end)
+    )
+
+    def relevant_partitions(symbol: str) -> tuple[str, ...]:
+        return tuple(sorted({gap.partition for gap in historical_gaps if gap.symbol == symbol}))
 
     def apply_segment_gate(decision: EligibilityDecision) -> EligibilityDecision:
-        relevant = tuple(
-            gap.partition
-            for gap in unusable_segments
-            if gap.symbol == decision.symbol and gap.intersects(fold_start, fold_end)
-        )
+        relevant = relevant_partitions(decision.symbol)
         if not relevant:
             return decision
         return EligibilityDecision(
             symbol=decision.symbol,
             as_of=decision.as_of,
             status=EligibilityStatus.INELIGIBLE_DATA_QUALITY,
-            reasons=("causal_unusable_segment_in_fold_required_range", *relevant),
+            reasons=("causal_unusable_segment_in_train_history", *relevant),
             descriptor=decision.descriptor,
         )
 
@@ -680,16 +693,13 @@ def select_fold_active_universe(
                 quality_status=decision.status.value,
                 eligible=selected,
                 reason=reason,
-                unusable_segments=tuple(
-                    gap.partition
-                    for gap in unusable_segments
-                    if gap.symbol == symbol and gap.intersects(fold_start, fold_end)
-                ),
+                unusable_segments=relevant_partitions(symbol),
             )
         )
     active = tuple(sorted((*core_eligible, *selected_expansion)))
     payload = {
         "definition_version": UNIVERSE_VERSION,
+        "gap_gate_policy": "TRAIN_HISTORY_ONLY_V2",
         "research_view": research_view,
         "fold_id": fold_id,
         "as_of": cutoff,

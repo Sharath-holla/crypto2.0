@@ -1,0 +1,1212 @@
+{
+  "status": "FILE_PRESENCE_ONLY",
+  "root": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/silver/binance",
+  "data_manifest_sha256": "e6532a8b6fe7246621530738b713c6529b538d219802ba77f3f3a4dad6959dd0",
+  "path_mapping": "Original immutable manifest basename resolved under local silver/binance/manifests; output paths relative to silver/binance. No input modified.",
+  "families": [
+    {
+      "symbol": "BCHUSDT",
+      "interval": "12h",
+      "manifest": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/silver/binance/manifests/silver-45f06538c89ca81bdad6075f.json",
+      "manifest_exists": true,
+      "manifest_sha256": "5e4b79aff26c020ede45b59736458005daec491574eb20443c433dc4447f5527",
+      "version": "silver-45f06538c89ca81bdad6075f",
+      "referenced_files": 2373,
+      "present_files": 2373,
+      "missing_files": 0,
+      "present_bytes": 18146266,
+      "manifest_rows": 4746,
+      "validated_range_claim": {
+        "end_exclusive": "2026-07-01T00:00:00+00:00",
+        "start": "2020-01-01T00:00:00+00:00"
+      },
+      "manifest_first_file": "versions/silver_dataset_version=silver-45f06538c89ca81bdad6075f/klines/transport=archive/market=usdm/symbol=BCHUSDT/interval=12h/date=2020-01-01/part-1577836800000-1577923200000.parquet",
+      "manifest_last_file": "versions/silver_dataset_version=silver-45f06538c89ca81bdad6075f/klines/transport=archive/market=usdm/symbol=BCHUSDT/interval=12h/date=2026-06-30/part-1782777600000-1782864000000.parquet",
+      "missing_examples": []
+    },
+    {
+      "symbol": "BLZUSDT",
+      "interval": "12h",
+      "manifest": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/silver/binance/manifests/silver-2876b59c7d346871c1591602.json",
+      "manifest_exists": true,
+      "manifest_sha256": "b5fe6b415b1b0919701741f173cfb05c22e72fcfd8415f4ceb2fb54d947ad176",
+      "version": "silver-2876b59c7d346871c1591602",
+      "referenced_files": 2113,
+      "present_files": 2113,
+      "missing_files": 0,
+      "present_bytes": 16093142,
+      "manifest_rows": 4226,
+      "validated_range_claim": {
+        "end_exclusive": "2026-07-01T00:00:00+00:00",
+        "start": "2020-09-17T00:00:00+00:00"
+      },
+      "manifest_first_file": "versions/silver_dataset_version=silver-2876b59c7d346871c1591602/klines/transport=archive/market=usdm/symbol=BLZUSDT/interval=12h/date=2020-09-17/part-1600300800000-1600387200000.parquet",
+      "manifest_last_file": "versions/silver_dataset_version=silver-2876b59c7d346871c1591602/klines/transport=archive/market=usdm/symbol=BLZUSDT/interval=12h/date=2026-06-30/part-1782777600000-1782864000000.parquet",
+      "missing_examples": []
+    },
+    {
+      "symbol": "BTCUSDT",
+      "interval": "12h",
+      "manifest": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/silver/binance/manifests/silver-0f3f05c8ea6f6e2bd2400472.json",
+      "manifest_exists": true,
+      "manifest_sha256": "e9bf3826c07335993e0382b9c5636b6dad60803908c2e7f755cabb0eb6dad3fb",
+      "version": "silver-0f3f05c8ea6f6e2bd2400472",
+      "referenced_files": 2373,
+      "present_files": 2373,
+      "missing_files": 0,
+      "present_bytes": 18203267,
+      "manifest_rows": 4746,
+      "validated_range_claim": {
+        "end_exclusive": "2026-07-01T00:00:00+00:00",
+        "start": "2020-01-01T00:00:00+00:00"
+      },
+      "manifest_first_file": "versions/silver_dataset_version=silver-0f3f05c8ea6f6e2bd2400472/klines/transport=archive/market=usdm/symbol=BTCUSDT/interval=12h/date=2020-01-01/part-1577836800000-1577923200000.parquet",
+      "manifest_last_file": "versions/silver_dataset_version=silver-0f3f05c8ea6f6e2bd2400472/klines/transport=archive/market=usdm/symbol=BTCUSDT/interval=12h/date=2026-06-30/part-1782777600000-1782864000000.parquet",
+      "missing_examples": []
+    },
+    {
+      "symbol": "COMPUSDT",
+      "interval": "12h",
+      "manifest": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/silver/binance/manifests/silver-ed4cdc21a675f35da1fe1cb6.json",
+      "manifest_exists": true,
+      "manifest_sha256": "515efb1c0d74e5a22d5351f5964b2768a86b52afa9ae85c87f65fbd511219777",
+      "version": "silver-ed4cdc21a675f35da1fe1cb6",
+      "referenced_files": 2192,
+      "present_files": 2192,
+      "missing_files": 0,
+      "present_bytes": 16805717,
+      "manifest_rows": 4384,
+      "validated_range_claim": {
+        "end_exclusive": "2026-07-01T00:00:00+00:00",
+        "start": "2020-06-30T00:00:00+00:00"
+      },
+      "manifest_first_file": "versions/silver_dataset_version=silver-ed4cdc21a675f35da1fe1cb6/klines/transport=archive/market=usdm/symbol=COMPUSDT/interval=12h/date=2020-06-30/part-1593475200000-1593561600000.parquet",
+      "manifest_last_file": "versions/silver_dataset_version=silver-ed4cdc21a675f35da1fe1cb6/klines/transport=archive/market=usdm/symbol=COMPUSDT/interval=12h/date=2026-06-30/part-1782777600000-1782864000000.parquet",
+      "missing_examples": []
+    },
+    {
+      "symbol": "DOGEUSDT",
+      "interval": "12h",
+      "manifest": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/silver/binance/manifests/silver-ad691a6093dd84cce4333587.json",
+      "manifest_exists": true,
+      "manifest_sha256": "fecb04c7eb5719d7a1fe4371a270993eaafa759360e07cd6bf926f35b0f492da",
+      "version": "silver-ad691a6093dd84cce4333587",
+      "referenced_files": 2182,
+      "present_files": 2182,
+      "missing_files": 0,
+      "present_bytes": 16723867,
+      "manifest_rows": 4364,
+      "validated_range_claim": {
+        "end_exclusive": "2026-07-01T00:00:00+00:00",
+        "start": "2020-07-10T00:00:00+00:00"
+      },
+      "manifest_first_file": "versions/silver_dataset_version=silver-ad691a6093dd84cce4333587/klines/transport=archive/market=usdm/symbol=DOGEUSDT/interval=12h/date=2020-07-10/part-1594339200000-1594425600000.parquet",
+      "manifest_last_file": "versions/silver_dataset_version=silver-ad691a6093dd84cce4333587/klines/transport=archive/market=usdm/symbol=DOGEUSDT/interval=12h/date=2026-06-30/part-1782777600000-1782864000000.parquet",
+      "missing_examples": []
+    },
+    {
+      "symbol": "ETHUSDT",
+      "interval": "12h",
+      "manifest": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/silver/binance/manifests/silver-069b060d7dec93e87f4742fe.json",
+      "manifest_exists": true,
+      "manifest_sha256": "cc4ae13743be3bc09c60caa741ffdc344d9ca8f076cff809da5d3e4ed78e53bc",
+      "version": "silver-069b060d7dec93e87f4742fe",
+      "referenced_files": 2373,
+      "present_files": 2373,
+      "missing_files": 0,
+      "present_bytes": 18146362,
+      "manifest_rows": 4746,
+      "validated_range_claim": {
+        "end_exclusive": "2026-07-01T00:00:00+00:00",
+        "start": "2020-01-01T00:00:00+00:00"
+      },
+      "manifest_first_file": "versions/silver_dataset_version=silver-069b060d7dec93e87f4742fe/klines/transport=archive/market=usdm/symbol=ETHUSDT/interval=12h/date=2020-01-01/part-1577836800000-1577923200000.parquet",
+      "manifest_last_file": "versions/silver_dataset_version=silver-069b060d7dec93e87f4742fe/klines/transport=archive/market=usdm/symbol=ETHUSDT/interval=12h/date=2026-06-30/part-1782777600000-1782864000000.parquet",
+      "missing_examples": []
+    },
+    {
+      "symbol": "FILUSDT",
+      "interval": "12h",
+      "manifest": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/silver/binance/manifests/silver-206016a66db1b2cc13c8c16f.json",
+      "manifest_exists": true,
+      "manifest_sha256": "fdf775fe250cf9580df5768ddc8e65e4d8b1f3d4a7fb4b70fafdc8a4341caa1a",
+      "version": "silver-206016a66db1b2cc13c8c16f",
+      "referenced_files": 2084,
+      "present_files": 2084,
+      "missing_files": 0,
+      "present_bytes": 16048485,
+      "manifest_rows": 4168,
+      "validated_range_claim": {
+        "end_exclusive": "2026-07-01T00:00:00+00:00",
+        "start": "2020-10-16T00:00:00+00:00"
+      },
+      "manifest_first_file": "versions/silver_dataset_version=silver-206016a66db1b2cc13c8c16f/klines/transport=archive/market=usdm/symbol=FILUSDT/interval=12h/date=2020-10-16/part-1602806400000-1602892800000.parquet",
+      "manifest_last_file": "versions/silver_dataset_version=silver-206016a66db1b2cc13c8c16f/klines/transport=archive/market=usdm/symbol=FILUSDT/interval=12h/date=2026-06-30/part-1782777600000-1782864000000.parquet",
+      "missing_examples": []
+    },
+    {
+      "symbol": "FLMUSDT",
+      "interval": "12h",
+      "manifest": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/silver/binance/manifests/silver-b5516b2747ad164d33981dfe.json",
+      "manifest_exists": true,
+      "manifest_sha256": "e6af25a613a502ace8763d1d025b682ec1423c3223aba7d2d398cb874f258bbc",
+      "version": "silver-b5516b2747ad164d33981dfe",
+      "referenced_files": 2101,
+      "present_files": 2101,
+      "missing_files": 0,
+      "present_bytes": 16150250,
+      "manifest_rows": 4202,
+      "validated_range_claim": {
+        "end_exclusive": "2026-07-01T00:00:00+00:00",
+        "start": "2020-09-29T00:00:00+00:00"
+      },
+      "manifest_first_file": "versions/silver_dataset_version=silver-b5516b2747ad164d33981dfe/klines/transport=archive/market=usdm/symbol=FLMUSDT/interval=12h/date=2020-09-29/part-1601337600000-1601424000000.parquet",
+      "manifest_last_file": "versions/silver_dataset_version=silver-b5516b2747ad164d33981dfe/klines/transport=archive/market=usdm/symbol=FLMUSDT/interval=12h/date=2026-06-30/part-1782777600000-1782864000000.parquet",
+      "missing_examples": []
+    },
+    {
+      "symbol": "HNTUSDT",
+      "interval": "12h",
+      "manifest": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/silver/binance/manifests/silver-4534495a978b0a631a8e2d92.json",
+      "manifest_exists": true,
+      "manifest_sha256": "9b69c5636083bda81475ee3ccdac840628c4d51bc303ab412a6ba58ddfb7776b",
+      "version": "silver-4534495a978b0a631a8e2d92",
+      "referenced_files": 1339,
+      "present_files": 1339,
+      "missing_files": 0,
+      "present_bytes": 10193294,
+      "manifest_rows": 2677,
+      "validated_range_claim": {
+        "end_exclusive": "2024-05-28T12:00:00+00:00",
+        "start": "2020-09-28T00:00:00+00:00"
+      },
+      "manifest_first_file": "versions/silver_dataset_version=silver-4534495a978b0a631a8e2d92/klines/transport=archive/market=usdm/symbol=HNTUSDT/interval=12h/date=2020-09-28/part-1601251200000-1601337600000.parquet",
+      "manifest_last_file": "versions/silver_dataset_version=silver-4534495a978b0a631a8e2d92/klines/transport=archive/market=usdm/symbol=HNTUSDT/interval=12h/date=2024-05-28/part-1716854400000-1716897600000.parquet",
+      "missing_examples": []
+    },
+    {
+      "symbol": "IOTAUSDT",
+      "interval": "12h",
+      "manifest": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/silver/binance/manifests/silver-0209d340f4917f858ca2eb61.json",
+      "manifest_exists": true,
+      "manifest_sha256": "faf765f642f79801b4790e10b58bdca480f38bbbc943d9fc029d7bc76475150a",
+      "version": "silver-0209d340f4917f858ca2eb61",
+      "referenced_files": 2331,
+      "present_files": 2331,
+      "missing_files": 0,
+      "present_bytes": 17998443,
+      "manifest_rows": 4662,
+      "validated_range_claim": {
+        "end_exclusive": "2026-07-01T00:00:00+00:00",
+        "start": "2020-02-12T00:00:00+00:00"
+      },
+      "manifest_first_file": "versions/silver_dataset_version=silver-0209d340f4917f858ca2eb61/klines/transport=archive/market=usdm/symbol=IOTAUSDT/interval=12h/date=2020-02-12/part-1581465600000-1581552000000.parquet",
+      "manifest_last_file": "versions/silver_dataset_version=silver-0209d340f4917f858ca2eb61/klines/transport=archive/market=usdm/symbol=IOTAUSDT/interval=12h/date=2026-06-30/part-1782777600000-1782864000000.parquet",
+      "missing_examples": []
+    },
+    {
+      "symbol": "KNCUSDT",
+      "interval": "12h",
+      "manifest": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/silver/binance/manifests/silver-eb8d09804d824098c691e9af.json",
+      "manifest_exists": true,
+      "manifest_sha256": "3150e6cbc7fe5db2a0cd7051e29a42cd0db4ae13c5de8b6529c54ac52d3d941f",
+      "version": "silver-eb8d09804d824098c691e9af",
+      "referenced_files": 2200,
+      "present_files": 2200,
+      "missing_files": 0,
+      "present_bytes": 16941318,
+      "manifest_rows": 4400,
+      "validated_range_claim": {
+        "end_exclusive": "2026-07-01T00:00:00+00:00",
+        "start": "2020-06-22T00:00:00+00:00"
+      },
+      "manifest_first_file": "versions/silver_dataset_version=silver-eb8d09804d824098c691e9af/klines/transport=archive/market=usdm/symbol=KNCUSDT/interval=12h/date=2020-06-22/part-1592784000000-1592870400000.parquet",
+      "manifest_last_file": "versions/silver_dataset_version=silver-eb8d09804d824098c691e9af/klines/transport=archive/market=usdm/symbol=KNCUSDT/interval=12h/date=2026-06-30/part-1782777600000-1782864000000.parquet",
+      "missing_examples": []
+    },
+    {
+      "symbol": "KSMUSDT",
+      "interval": "12h",
+      "manifest": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/silver/binance/manifests/silver-2dce84156be58defe5d727b4.json",
+      "manifest_exists": true,
+      "manifest_sha256": "9a117f4c60be1abaa9ffaf9c61a437258aaac68c989ca881284200035cc93fa1",
+      "version": "silver-2dce84156be58defe5d727b4",
+      "referenced_files": 2086,
+      "present_files": 2086,
+      "missing_files": 0,
+      "present_bytes": 16065513,
+      "manifest_rows": 4172,
+      "validated_range_claim": {
+        "end_exclusive": "2026-07-01T00:00:00+00:00",
+        "start": "2020-10-14T00:00:00+00:00"
+      },
+      "manifest_first_file": "versions/silver_dataset_version=silver-2dce84156be58defe5d727b4/klines/transport=archive/market=usdm/symbol=KSMUSDT/interval=12h/date=2020-10-14/part-1602633600000-1602720000000.parquet",
+      "manifest_last_file": "versions/silver_dataset_version=silver-2dce84156be58defe5d727b4/klines/transport=archive/market=usdm/symbol=KSMUSDT/interval=12h/date=2026-06-30/part-1782777600000-1782864000000.parquet",
+      "missing_examples": []
+    },
+    {
+      "symbol": "NEOUSDT",
+      "interval": "12h",
+      "manifest": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/silver/binance/manifests/silver-39263281b6971e9b5968e019.json",
+      "manifest_exists": true,
+      "manifest_sha256": "9093a772bd8a9a789e6a4826cff3aa72240e2e662b4d6bce743947eb18ad95c6",
+      "version": "silver-39263281b6971e9b5968e019",
+      "referenced_files": 2326,
+      "present_files": 2326,
+      "missing_files": 0,
+      "present_bytes": 17784181,
+      "manifest_rows": 4652,
+      "validated_range_claim": {
+        "end_exclusive": "2026-07-01T00:00:00+00:00",
+        "start": "2020-02-17T00:00:00+00:00"
+      },
+      "manifest_first_file": "versions/silver_dataset_version=silver-39263281b6971e9b5968e019/klines/transport=archive/market=usdm/symbol=NEOUSDT/interval=12h/date=2020-02-17/part-1581897600000-1581984000000.parquet",
+      "manifest_last_file": "versions/silver_dataset_version=silver-39263281b6971e9b5968e019/klines/transport=archive/market=usdm/symbol=NEOUSDT/interval=12h/date=2026-06-30/part-1782777600000-1782864000000.parquet",
+      "missing_examples": []
+    },
+    {
+      "symbol": "OMGUSDT",
+      "interval": "12h",
+      "manifest": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/silver/binance/manifests/silver-283480b48416847b994b4cce.json",
+      "manifest_exists": true,
+      "manifest_sha256": "0fe07b57b00226757feb1fa47b4db5874041d78854abd148235d7c1fc341ee7e",
+      "version": "silver-283480b48416847b994b4cce",
+      "referenced_files": 2190,
+      "present_files": 2190,
+      "missing_files": 0,
+      "present_bytes": 16811092,
+      "manifest_rows": 4380,
+      "validated_range_claim": {
+        "end_exclusive": "2026-07-01T00:00:00+00:00",
+        "start": "2020-07-02T00:00:00+00:00"
+      },
+      "manifest_first_file": "versions/silver_dataset_version=silver-283480b48416847b994b4cce/klines/transport=archive/market=usdm/symbol=OMGUSDT/interval=12h/date=2020-07-02/part-1593648000000-1593734400000.parquet",
+      "manifest_last_file": "versions/silver_dataset_version=silver-283480b48416847b994b4cce/klines/transport=archive/market=usdm/symbol=OMGUSDT/interval=12h/date=2026-06-30/part-1782777600000-1782864000000.parquet",
+      "missing_examples": []
+    },
+    {
+      "symbol": "ONTUSDT",
+      "interval": "12h",
+      "manifest": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/silver/binance/manifests/silver-dc237423d20f14c9ccff6520.json",
+      "manifest_exists": true,
+      "manifest_sha256": "d63e68c86ca7fcf673dc19ac99c356111a8cf8794d82b297369e084b6e7aa09f",
+      "version": "silver-dc237423d20f14c9ccff6520",
+      "referenced_files": 2332,
+      "present_files": 2332,
+      "missing_files": 0,
+      "present_bytes": 17828939,
+      "manifest_rows": 4664,
+      "validated_range_claim": {
+        "end_exclusive": "2026-07-01T00:00:00+00:00",
+        "start": "2020-02-11T00:00:00+00:00"
+      },
+      "manifest_first_file": "versions/silver_dataset_version=silver-dc237423d20f14c9ccff6520/klines/transport=archive/market=usdm/symbol=ONTUSDT/interval=12h/date=2020-02-11/part-1581379200000-1581465600000.parquet",
+      "manifest_last_file": "versions/silver_dataset_version=silver-dc237423d20f14c9ccff6520/klines/transport=archive/market=usdm/symbol=ONTUSDT/interval=12h/date=2026-06-30/part-1782777600000-1782864000000.parquet",
+      "missing_examples": []
+    },
+    {
+      "symbol": "STORJUSDT",
+      "interval": "12h",
+      "manifest": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/silver/binance/manifests/silver-1bdd91ba3d8df272fc2326e2.json",
+      "manifest_exists": true,
+      "manifest_sha256": "926a432ad6316fa58ec0061e1f61be94dece24d6c982c90620e2f83eb5f32192",
+      "version": "silver-1bdd91ba3d8df272fc2326e2",
+      "referenced_files": 2114,
+      "present_files": 2114,
+      "missing_files": 0,
+      "present_bytes": 16340822,
+      "manifest_rows": 4228,
+      "validated_range_claim": {
+        "end_exclusive": "2026-07-01T00:00:00+00:00",
+        "start": "2020-09-16T00:00:00+00:00"
+      },
+      "manifest_first_file": "versions/silver_dataset_version=silver-1bdd91ba3d8df272fc2326e2/klines/transport=archive/market=usdm/symbol=STORJUSDT/interval=12h/date=2020-09-16/part-1600214400000-1600300800000.parquet",
+      "manifest_last_file": "versions/silver_dataset_version=silver-1bdd91ba3d8df272fc2326e2/klines/transport=archive/market=usdm/symbol=STORJUSDT/interval=12h/date=2026-06-30/part-1782777600000-1782864000000.parquet",
+      "missing_examples": []
+    },
+    {
+      "symbol": "TRXUSDT",
+      "interval": "12h",
+      "manifest": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/silver/binance/manifests/silver-263181c3f8646d76d7feb38b.json",
+      "manifest_exists": true,
+      "manifest_sha256": "e5309df34b4de92752975a53a5d4d1a4457dd639ad465347ae76ed2ccfc36d53",
+      "version": "silver-263181c3f8646d76d7feb38b",
+      "referenced_files": 2359,
+      "present_files": 2359,
+      "missing_files": 0,
+      "present_bytes": 18159656,
+      "manifest_rows": 4718,
+      "validated_range_claim": {
+        "end_exclusive": "2026-07-01T00:00:00+00:00",
+        "start": "2020-01-15T00:00:00+00:00"
+      },
+      "manifest_first_file": "versions/silver_dataset_version=silver-263181c3f8646d76d7feb38b/klines/transport=archive/market=usdm/symbol=TRXUSDT/interval=12h/date=2020-01-15/part-1579046400000-1579132800000.parquet",
+      "manifest_last_file": "versions/silver_dataset_version=silver-263181c3f8646d76d7feb38b/klines/transport=archive/market=usdm/symbol=TRXUSDT/interval=12h/date=2026-06-30/part-1782777600000-1782864000000.parquet",
+      "missing_examples": []
+    },
+    {
+      "symbol": "UNIUSDT",
+      "interval": "12h",
+      "manifest": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/silver/binance/manifests/silver-424b6ce5296394dc8706de18.json",
+      "manifest_exists": true,
+      "manifest_sha256": "9086e859d508ef1859f12623f376839bc00d7b8207449fa85a78d53659ab6efe",
+      "version": "silver-424b6ce5296394dc8706de18",
+      "referenced_files": 2112,
+      "present_files": 2112,
+      "missing_files": 0,
+      "present_bytes": 16147508,
+      "manifest_rows": 4224,
+      "validated_range_claim": {
+        "end_exclusive": "2026-07-01T00:00:00+00:00",
+        "start": "2020-09-18T00:00:00+00:00"
+      },
+      "manifest_first_file": "versions/silver_dataset_version=silver-424b6ce5296394dc8706de18/klines/transport=archive/market=usdm/symbol=UNIUSDT/interval=12h/date=2020-09-18/part-1600387200000-1600473600000.parquet",
+      "manifest_last_file": "versions/silver_dataset_version=silver-424b6ce5296394dc8706de18/klines/transport=archive/market=usdm/symbol=UNIUSDT/interval=12h/date=2026-06-30/part-1782777600000-1782864000000.parquet",
+      "missing_examples": []
+    },
+    {
+      "symbol": "ZECUSDT",
+      "interval": "12h",
+      "manifest": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/silver/binance/manifests/silver-1a7fa47bb8a4e164669fa400.json",
+      "manifest_exists": true,
+      "manifest_sha256": "d53a339e3cec507c773b9afbf94ed010edc290c9c6020f0b93b7c06320282770",
+      "version": "silver-1a7fa47bb8a4e164669fa400",
+      "referenced_files": 2338,
+      "present_files": 2338,
+      "missing_files": 0,
+      "present_bytes": 18006876,
+      "manifest_rows": 4676,
+      "validated_range_claim": {
+        "end_exclusive": "2026-07-01T00:00:00+00:00",
+        "start": "2020-02-05T00:00:00+00:00"
+      },
+      "manifest_first_file": "versions/silver_dataset_version=silver-1a7fa47bb8a4e164669fa400/klines/transport=archive/market=usdm/symbol=ZECUSDT/interval=12h/date=2020-02-05/part-1580860800000-1580947200000.parquet",
+      "manifest_last_file": "versions/silver_dataset_version=silver-1a7fa47bb8a4e164669fa400/klines/transport=archive/market=usdm/symbol=ZECUSDT/interval=12h/date=2026-06-30/part-1782777600000-1782864000000.parquet",
+      "missing_examples": []
+    },
+    {
+      "symbol": "ZRXUSDT",
+      "interval": "12h",
+      "manifest": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/silver/binance/manifests/silver-46644890ca12313b75c29f8b.json",
+      "manifest_exists": true,
+      "manifest_sha256": "ed2b5648d4cf7ee8223ec79b563c63627ecd296d598ee2a0bda301af2605ec29",
+      "version": "silver-46644890ca12313b75c29f8b",
+      "referenced_files": 2198,
+      "present_files": 2198,
+      "missing_files": 0,
+      "present_bytes": 16805833,
+      "manifest_rows": 4396,
+      "validated_range_claim": {
+        "end_exclusive": "2026-07-01T00:00:00+00:00",
+        "start": "2020-06-24T00:00:00+00:00"
+      },
+      "manifest_first_file": "versions/silver_dataset_version=silver-46644890ca12313b75c29f8b/klines/transport=archive/market=usdm/symbol=ZRXUSDT/interval=12h/date=2020-06-24/part-1592956800000-1593043200000.parquet",
+      "manifest_last_file": "versions/silver_dataset_version=silver-46644890ca12313b75c29f8b/klines/transport=archive/market=usdm/symbol=ZRXUSDT/interval=12h/date=2026-06-30/part-1782777600000-1782864000000.parquet",
+      "missing_examples": []
+    },
+    {
+      "symbol": "BCHUSDT",
+      "interval": "1d",
+      "manifest": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/silver/binance/manifests/silver-cc64eaea10ff267e5ffe55c9.json",
+      "manifest_exists": true,
+      "manifest_sha256": "22d8b6bc0ed7af91ebab45eb16a62d30386266021686d4bc9f37323dd96d422c",
+      "version": "silver-cc64eaea10ff267e5ffe55c9",
+      "referenced_files": 2373,
+      "present_files": 2373,
+      "missing_files": 0,
+      "present_bytes": 17816484,
+      "manifest_rows": 2373,
+      "validated_range_claim": {
+        "end_exclusive": "2026-07-01T00:00:00+00:00",
+        "start": "2020-01-01T00:00:00+00:00"
+      },
+      "manifest_first_file": "versions/silver_dataset_version=silver-cc64eaea10ff267e5ffe55c9/klines/transport=archive/market=usdm/symbol=BCHUSDT/interval=1d/date=2020-01-01/part-1577836800000-1577923200000.parquet",
+      "manifest_last_file": "versions/silver_dataset_version=silver-cc64eaea10ff267e5ffe55c9/klines/transport=archive/market=usdm/symbol=BCHUSDT/interval=1d/date=2026-06-30/part-1782777600000-1782864000000.parquet",
+      "missing_examples": []
+    },
+    {
+      "symbol": "BLZUSDT",
+      "interval": "1d",
+      "manifest": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/silver/binance/manifests/silver-ea78a151d32f1d6839fdbdaa.json",
+      "manifest_exists": true,
+      "manifest_sha256": "fb194f0e710372760b730d3b2f754fae4f402943995ee016dab01cb2bdaffc7f",
+      "version": "silver-ea78a151d32f1d6839fdbdaa",
+      "referenced_files": 2113,
+      "present_files": 2113,
+      "missing_files": 0,
+      "present_bytes": 15846676,
+      "manifest_rows": 2113,
+      "validated_range_claim": {
+        "end_exclusive": "2026-07-01T00:00:00+00:00",
+        "start": "2020-09-17T00:00:00+00:00"
+      },
+      "manifest_first_file": "versions/silver_dataset_version=silver-ea78a151d32f1d6839fdbdaa/klines/transport=archive/market=usdm/symbol=BLZUSDT/interval=1d/date=2020-09-17/part-1600300800000-1600387200000.parquet",
+      "manifest_last_file": "versions/silver_dataset_version=silver-ea78a151d32f1d6839fdbdaa/klines/transport=archive/market=usdm/symbol=BLZUSDT/interval=1d/date=2026-06-30/part-1782777600000-1782864000000.parquet",
+      "missing_examples": []
+    },
+    {
+      "symbol": "BTCUSDT",
+      "interval": "1d",
+      "manifest": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/silver/binance/manifests/silver-d18e58b5760fa6a1a512d670.json",
+      "manifest_exists": true,
+      "manifest_sha256": "12300d5048f0cc0df78f2902e51ee9874f640ebab1ee8f7ffd29621b7e981ce1",
+      "version": "silver-d18e58b5760fa6a1a512d670",
+      "referenced_files": 2373,
+      "present_files": 2373,
+      "missing_files": 0,
+      "present_bytes": 17816484,
+      "manifest_rows": 2373,
+      "validated_range_claim": {
+        "end_exclusive": "2026-07-01T00:00:00+00:00",
+        "start": "2020-01-01T00:00:00+00:00"
+      },
+      "manifest_first_file": "versions/silver_dataset_version=silver-d18e58b5760fa6a1a512d670/klines/transport=archive/market=usdm/symbol=BTCUSDT/interval=1d/date=2020-01-01/part-1577836800000-1577923200000.parquet",
+      "manifest_last_file": "versions/silver_dataset_version=silver-d18e58b5760fa6a1a512d670/klines/transport=archive/market=usdm/symbol=BTCUSDT/interval=1d/date=2026-06-30/part-1782777600000-1782864000000.parquet",
+      "missing_examples": []
+    },
+    {
+      "symbol": "COMPUSDT",
+      "interval": "1d",
+      "manifest": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/silver/binance/manifests/silver-c2182e381a087afe14e91162.json",
+      "manifest_exists": true,
+      "manifest_sha256": "a519805fdf74a41b5471ecdeb7068eaab50e9f7172f47bc7cbf3f07d9fe8548b",
+      "version": "silver-c2182e381a087afe14e91162",
+      "referenced_files": 2192,
+      "present_files": 2192,
+      "missing_files": 0,
+      "present_bytes": 16501376,
+      "manifest_rows": 2192,
+      "validated_range_claim": {
+        "end_exclusive": "2026-07-01T00:00:00+00:00",
+        "start": "2020-06-30T00:00:00+00:00"
+      },
+      "manifest_first_file": "versions/silver_dataset_version=silver-c2182e381a087afe14e91162/klines/transport=archive/market=usdm/symbol=COMPUSDT/interval=1d/date=2020-06-30/part-1593475200000-1593561600000.parquet",
+      "manifest_last_file": "versions/silver_dataset_version=silver-c2182e381a087afe14e91162/klines/transport=archive/market=usdm/symbol=COMPUSDT/interval=1d/date=2026-06-30/part-1782777600000-1782864000000.parquet",
+      "missing_examples": []
+    },
+    {
+      "symbol": "DOGEUSDT",
+      "interval": "1d",
+      "manifest": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/silver/binance/manifests/silver-3fef69c12532013e2f36dd40.json",
+      "manifest_exists": true,
+      "manifest_sha256": "9c0f48148879beab4f8acf0bf97dbb21b9d57811d3608351db6510a1a6af9ce2",
+      "version": "silver-3fef69c12532013e2f36dd40",
+      "referenced_files": 2182,
+      "present_files": 2182,
+      "missing_files": 0,
+      "present_bytes": 16426096,
+      "manifest_rows": 2182,
+      "validated_range_claim": {
+        "end_exclusive": "2026-07-01T00:00:00+00:00",
+        "start": "2020-07-10T00:00:00+00:00"
+      },
+      "manifest_first_file": "versions/silver_dataset_version=silver-3fef69c12532013e2f36dd40/klines/transport=archive/market=usdm/symbol=DOGEUSDT/interval=1d/date=2020-07-10/part-1594339200000-1594425600000.parquet",
+      "manifest_last_file": "versions/silver_dataset_version=silver-3fef69c12532013e2f36dd40/klines/transport=archive/market=usdm/symbol=DOGEUSDT/interval=1d/date=2026-06-30/part-1782777600000-1782864000000.parquet",
+      "missing_examples": []
+    },
+    {
+      "symbol": "ETHUSDT",
+      "interval": "1d",
+      "manifest": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/silver/binance/manifests/silver-a2099e332150c6811670e704.json",
+      "manifest_exists": true,
+      "manifest_sha256": "41644e6578395f15fe1e45fe78a11ad9da0201edcf27f06dedbd21f530d11f83",
+      "version": "silver-a2099e332150c6811670e704",
+      "referenced_files": 2373,
+      "present_files": 2373,
+      "missing_files": 0,
+      "present_bytes": 17816484,
+      "manifest_rows": 2373,
+      "validated_range_claim": {
+        "end_exclusive": "2026-07-01T00:00:00+00:00",
+        "start": "2020-01-01T00:00:00+00:00"
+      },
+      "manifest_first_file": "versions/silver_dataset_version=silver-a2099e332150c6811670e704/klines/transport=archive/market=usdm/symbol=ETHUSDT/interval=1d/date=2020-01-01/part-1577836800000-1577923200000.parquet",
+      "manifest_last_file": "versions/silver_dataset_version=silver-a2099e332150c6811670e704/klines/transport=archive/market=usdm/symbol=ETHUSDT/interval=1d/date=2026-06-30/part-1782777600000-1782864000000.parquet",
+      "missing_examples": []
+    },
+    {
+      "symbol": "FILUSDT",
+      "interval": "1d",
+      "manifest": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/silver/binance/manifests/silver-b6b4f141b7171e241c7ec116.json",
+      "manifest_exists": true,
+      "manifest_sha256": "10d177e5a40880fd492552490d4889dc00a4149b26598bcd5149649ca56a993f",
+      "version": "silver-b6b4f141b7171e241c7ec116",
+      "referenced_files": 2084,
+      "present_files": 2084,
+      "missing_files": 0,
+      "present_bytes": 15760967,
+      "manifest_rows": 2084,
+      "validated_range_claim": {
+        "end_exclusive": "2026-07-01T00:00:00+00:00",
+        "start": "2020-10-16T00:00:00+00:00"
+      },
+      "manifest_first_file": "versions/silver_dataset_version=silver-b6b4f141b7171e241c7ec116/klines/transport=archive/market=usdm/symbol=FILUSDT/interval=1d/date=2020-10-16/part-1602806400000-1602892800000.parquet",
+      "manifest_last_file": "versions/silver_dataset_version=silver-b6b4f141b7171e241c7ec116/klines/transport=archive/market=usdm/symbol=FILUSDT/interval=1d/date=2026-06-30/part-1782777600000-1782864000000.parquet",
+      "missing_examples": []
+    },
+    {
+      "symbol": "FLMUSDT",
+      "interval": "1d",
+      "manifest": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/silver/binance/manifests/silver-bdaf5d5ab901ff526232a00f.json",
+      "manifest_exists": true,
+      "manifest_sha256": "3dda3adce1b9e20eec7b552fe6648b2575710484085ffb35dd4cbef0c5d4eb97",
+      "version": "silver-bdaf5d5ab901ff526232a00f",
+      "referenced_files": 2101,
+      "present_files": 2101,
+      "missing_files": 0,
+      "present_bytes": 15882466,
+      "manifest_rows": 2101,
+      "validated_range_claim": {
+        "end_exclusive": "2026-07-01T00:00:00+00:00",
+        "start": "2020-09-29T00:00:00+00:00"
+      },
+      "manifest_first_file": "versions/silver_dataset_version=silver-bdaf5d5ab901ff526232a00f/klines/transport=archive/market=usdm/symbol=FLMUSDT/interval=1d/date=2020-09-29/part-1601337600000-1601424000000.parquet",
+      "manifest_last_file": "versions/silver_dataset_version=silver-bdaf5d5ab901ff526232a00f/klines/transport=archive/market=usdm/symbol=FLMUSDT/interval=1d/date=2026-06-30/part-1782777600000-1782864000000.parquet",
+      "missing_examples": []
+    },
+    {
+      "symbol": "HNTUSDT",
+      "interval": "1d",
+      "manifest": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/silver/binance/manifests/silver-9f73d777ea992da74b2c19b8.json",
+      "manifest_exists": true,
+      "manifest_sha256": "70f1dcb5d6491abf7b3ffe1426a0196ef024d46b00ff87c4c6e28d5bf786284f",
+      "version": "silver-9f73d777ea992da74b2c19b8",
+      "referenced_files": 1339,
+      "present_files": 1339,
+      "missing_files": 0,
+      "present_bytes": 10039292,
+      "manifest_rows": 1339,
+      "validated_range_claim": {
+        "end_exclusive": "2024-05-29T00:00:00+00:00",
+        "start": "2020-09-28T00:00:00+00:00"
+      },
+      "manifest_first_file": "versions/silver_dataset_version=silver-9f73d777ea992da74b2c19b8/klines/transport=archive/market=usdm/symbol=HNTUSDT/interval=1d/date=2020-09-28/part-1601251200000-1601337600000.parquet",
+      "manifest_last_file": "versions/silver_dataset_version=silver-9f73d777ea992da74b2c19b8/klines/transport=archive/market=usdm/symbol=HNTUSDT/interval=1d/date=2024-05-28/part-1716854400000-1716940800000.parquet",
+      "missing_examples": []
+    },
+    {
+      "symbol": "IOTAUSDT",
+      "interval": "1d",
+      "manifest": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/silver/binance/manifests/silver-54d566dc4cfc4a58f40fb4d9.json",
+      "manifest_exists": true,
+      "manifest_sha256": "5fd7574086ac59e876ac8576cd233e314262c9ffc5b9d430e7709575a07a2e50",
+      "version": "silver-54d566dc4cfc4a58f40fb4d9",
+      "referenced_files": 2331,
+      "present_files": 2331,
+      "missing_files": 0,
+      "present_bytes": 17647736,
+      "manifest_rows": 2331,
+      "validated_range_claim": {
+        "end_exclusive": "2026-07-01T00:00:00+00:00",
+        "start": "2020-02-12T00:00:00+00:00"
+      },
+      "manifest_first_file": "versions/silver_dataset_version=silver-54d566dc4cfc4a58f40fb4d9/klines/transport=archive/market=usdm/symbol=IOTAUSDT/interval=1d/date=2020-02-12/part-1581465600000-1581552000000.parquet",
+      "manifest_last_file": "versions/silver_dataset_version=silver-54d566dc4cfc4a58f40fb4d9/klines/transport=archive/market=usdm/symbol=IOTAUSDT/interval=1d/date=2026-06-30/part-1782777600000-1782864000000.parquet",
+      "missing_examples": []
+    },
+    {
+      "symbol": "KNCUSDT",
+      "interval": "1d",
+      "manifest": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/silver/binance/manifests/silver-5ebf666b1c6c68c6e562380c.json",
+      "manifest_exists": true,
+      "manifest_sha256": "a4ea273c19b7a3dbe86af2e205c33114493fa15607578ab30ccc6611197c0f4f",
+      "version": "silver-5ebf666b1c6c68c6e562380c",
+      "referenced_files": 2200,
+      "present_files": 2200,
+      "missing_files": 0,
+      "present_bytes": 16638275,
+      "manifest_rows": 2200,
+      "validated_range_claim": {
+        "end_exclusive": "2026-07-01T00:00:00+00:00",
+        "start": "2020-06-22T00:00:00+00:00"
+      },
+      "manifest_first_file": "versions/silver_dataset_version=silver-5ebf666b1c6c68c6e562380c/klines/transport=archive/market=usdm/symbol=KNCUSDT/interval=1d/date=2020-06-22/part-1592784000000-1592870400000.parquet",
+      "manifest_last_file": "versions/silver_dataset_version=silver-5ebf666b1c6c68c6e562380c/klines/transport=archive/market=usdm/symbol=KNCUSDT/interval=1d/date=2026-06-30/part-1782777600000-1782864000000.parquet",
+      "missing_examples": []
+    },
+    {
+      "symbol": "KSMUSDT",
+      "interval": "1d",
+      "manifest": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/silver/binance/manifests/silver-aa814b54a5576433649fe67e.json",
+      "manifest_exists": true,
+      "manifest_sha256": "bd90565fae7b85336b2d39571cfc01a58a3dd0d2bf0ad637648f1fd067419de0",
+      "version": "silver-aa814b54a5576433649fe67e",
+      "referenced_files": 2086,
+      "present_files": 2086,
+      "missing_files": 0,
+      "present_bytes": 15776093,
+      "manifest_rows": 2086,
+      "validated_range_claim": {
+        "end_exclusive": "2026-07-01T00:00:00+00:00",
+        "start": "2020-10-14T00:00:00+00:00"
+      },
+      "manifest_first_file": "versions/silver_dataset_version=silver-aa814b54a5576433649fe67e/klines/transport=archive/market=usdm/symbol=KSMUSDT/interval=1d/date=2020-10-14/part-1602633600000-1602720000000.parquet",
+      "manifest_last_file": "versions/silver_dataset_version=silver-aa814b54a5576433649fe67e/klines/transport=archive/market=usdm/symbol=KSMUSDT/interval=1d/date=2026-06-30/part-1782777600000-1782864000000.parquet",
+      "missing_examples": []
+    },
+    {
+      "symbol": "NEOUSDT",
+      "interval": "1d",
+      "manifest": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/silver/binance/manifests/silver-af618eadde033e3968becb3a.json",
+      "manifest_exists": true,
+      "manifest_sha256": "214b13a05b726d0adf50015433e982a3cdd82fe330b165390614a2784dff07ba",
+      "version": "silver-af618eadde033e3968becb3a",
+      "referenced_files": 2326,
+      "present_files": 2326,
+      "missing_files": 0,
+      "present_bytes": 17463608,
+      "manifest_rows": 2326,
+      "validated_range_claim": {
+        "end_exclusive": "2026-07-01T00:00:00+00:00",
+        "start": "2020-02-17T00:00:00+00:00"
+      },
+      "manifest_first_file": "versions/silver_dataset_version=silver-af618eadde033e3968becb3a/klines/transport=archive/market=usdm/symbol=NEOUSDT/interval=1d/date=2020-02-17/part-1581897600000-1581984000000.parquet",
+      "manifest_last_file": "versions/silver_dataset_version=silver-af618eadde033e3968becb3a/klines/transport=archive/market=usdm/symbol=NEOUSDT/interval=1d/date=2026-06-30/part-1782777600000-1782864000000.parquet",
+      "missing_examples": []
+    },
+    {
+      "symbol": "OMGUSDT",
+      "interval": "1d",
+      "manifest": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/silver/binance/manifests/silver-9b6d972f02e82bfe910cd81a.json",
+      "manifest_exists": true,
+      "manifest_sha256": "87311a1930ca3baca4d7da913d9a2f1a9c8d54fc818a9070b5e24da4707de78f",
+      "version": "silver-9b6d972f02e82bfe910cd81a",
+      "referenced_files": 2190,
+      "present_files": 2190,
+      "missing_files": 0,
+      "present_bytes": 16546165,
+      "manifest_rows": 2190,
+      "validated_range_claim": {
+        "end_exclusive": "2026-07-01T00:00:00+00:00",
+        "start": "2020-07-02T00:00:00+00:00"
+      },
+      "manifest_first_file": "versions/silver_dataset_version=silver-9b6d972f02e82bfe910cd81a/klines/transport=archive/market=usdm/symbol=OMGUSDT/interval=1d/date=2020-07-02/part-1593648000000-1593734400000.parquet",
+      "manifest_last_file": "versions/silver_dataset_version=silver-9b6d972f02e82bfe910cd81a/klines/transport=archive/market=usdm/symbol=OMGUSDT/interval=1d/date=2026-06-30/part-1782777600000-1782864000000.parquet",
+      "missing_examples": []
+    },
+    {
+      "symbol": "ONTUSDT",
+      "interval": "1d",
+      "manifest": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/silver/binance/manifests/silver-05d868bf4f3afac1b4af40a6.json",
+      "manifest_exists": true,
+      "manifest_sha256": "ce1c066524356b0f5ff16f6561387314d05907454ca5d698c1a6e300fd019b25",
+      "version": "silver-05d868bf4f3afac1b4af40a6",
+      "referenced_files": 2332,
+      "present_files": 2332,
+      "missing_files": 0,
+      "present_bytes": 17508656,
+      "manifest_rows": 2332,
+      "validated_range_claim": {
+        "end_exclusive": "2026-07-01T00:00:00+00:00",
+        "start": "2020-02-11T00:00:00+00:00"
+      },
+      "manifest_first_file": "versions/silver_dataset_version=silver-05d868bf4f3afac1b4af40a6/klines/transport=archive/market=usdm/symbol=ONTUSDT/interval=1d/date=2020-02-11/part-1581379200000-1581465600000.parquet",
+      "manifest_last_file": "versions/silver_dataset_version=silver-05d868bf4f3afac1b4af40a6/klines/transport=archive/market=usdm/symbol=ONTUSDT/interval=1d/date=2026-06-30/part-1782777600000-1782864000000.parquet",
+      "missing_examples": []
+    },
+    {
+      "symbol": "STORJUSDT",
+      "interval": "1d",
+      "manifest": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/silver/binance/manifests/silver-88af746e30eedc77518485cb.json",
+      "manifest_exists": true,
+      "manifest_sha256": "903357e7c4074ac917abd77b2893153579f1161d5eb037155ad63bea404daec3",
+      "version": "silver-88af746e30eedc77518485cb",
+      "referenced_files": 2114,
+      "present_files": 2114,
+      "missing_files": 0,
+      "present_bytes": 16049163,
+      "manifest_rows": 2114,
+      "validated_range_claim": {
+        "end_exclusive": "2026-07-01T00:00:00+00:00",
+        "start": "2020-09-16T00:00:00+00:00"
+      },
+      "manifest_first_file": "versions/silver_dataset_version=silver-88af746e30eedc77518485cb/klines/transport=archive/market=usdm/symbol=STORJUSDT/interval=1d/date=2020-09-16/part-1600214400000-1600300800000.parquet",
+      "manifest_last_file": "versions/silver_dataset_version=silver-88af746e30eedc77518485cb/klines/transport=archive/market=usdm/symbol=STORJUSDT/interval=1d/date=2026-06-30/part-1782777600000-1782864000000.parquet",
+      "missing_examples": []
+    },
+    {
+      "symbol": "TRXUSDT",
+      "interval": "1d",
+      "manifest": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/silver/binance/manifests/silver-4bedabfffd914a91d3caaa29.json",
+      "manifest_exists": true,
+      "manifest_sha256": "53a52bcb5d46a17a87d78de6c7762b267c52587483af3fa94670f6da217b814b",
+      "version": "silver-4bedabfffd914a91d3caaa29",
+      "referenced_files": 2359,
+      "present_files": 2359,
+      "missing_files": 0,
+      "present_bytes": 17840792,
+      "manifest_rows": 2359,
+      "validated_range_claim": {
+        "end_exclusive": "2026-07-01T00:00:00+00:00",
+        "start": "2020-01-15T00:00:00+00:00"
+      },
+      "manifest_first_file": "versions/silver_dataset_version=silver-4bedabfffd914a91d3caaa29/klines/transport=archive/market=usdm/symbol=TRXUSDT/interval=1d/date=2020-01-15/part-1579046400000-1579132800000.parquet",
+      "manifest_last_file": "versions/silver_dataset_version=silver-4bedabfffd914a91d3caaa29/klines/transport=archive/market=usdm/symbol=TRXUSDT/interval=1d/date=2026-06-30/part-1782777600000-1782864000000.parquet",
+      "missing_examples": []
+    },
+    {
+      "symbol": "UNIUSDT",
+      "interval": "1d",
+      "manifest": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/silver/binance/manifests/silver-044d0fa8e8a72930800db0f8.json",
+      "manifest_exists": true,
+      "manifest_sha256": "8052105215b67fd094f0164368ebd511b63ab678711cbded1efd4f4784d55802",
+      "version": "silver-044d0fa8e8a72930800db0f8",
+      "referenced_files": 2112,
+      "present_files": 2112,
+      "missing_files": 0,
+      "present_bytes": 15856896,
+      "manifest_rows": 2112,
+      "validated_range_claim": {
+        "end_exclusive": "2026-07-01T00:00:00+00:00",
+        "start": "2020-09-18T00:00:00+00:00"
+      },
+      "manifest_first_file": "versions/silver_dataset_version=silver-044d0fa8e8a72930800db0f8/klines/transport=archive/market=usdm/symbol=UNIUSDT/interval=1d/date=2020-09-18/part-1600387200000-1600473600000.parquet",
+      "manifest_last_file": "versions/silver_dataset_version=silver-044d0fa8e8a72930800db0f8/klines/transport=archive/market=usdm/symbol=UNIUSDT/interval=1d/date=2026-06-30/part-1782777600000-1782864000000.parquet",
+      "missing_examples": []
+    },
+    {
+      "symbol": "ZECUSDT",
+      "interval": "1d",
+      "manifest": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/silver/binance/manifests/silver-9fce0c4ca8e510cc221b2ced.json",
+      "manifest_exists": true,
+      "manifest_sha256": "c8e6b11ed88e6660163a33f68411c206c93ae9bb85707603c03d62f71970793b",
+      "version": "silver-9fce0c4ca8e510cc221b2ced",
+      "referenced_files": 2338,
+      "present_files": 2338,
+      "missing_files": 0,
+      "present_bytes": 17681969,
+      "manifest_rows": 2338,
+      "validated_range_claim": {
+        "end_exclusive": "2026-07-01T00:00:00+00:00",
+        "start": "2020-02-05T00:00:00+00:00"
+      },
+      "manifest_first_file": "versions/silver_dataset_version=silver-9fce0c4ca8e510cc221b2ced/klines/transport=archive/market=usdm/symbol=ZECUSDT/interval=1d/date=2020-02-05/part-1580860800000-1580947200000.parquet",
+      "manifest_last_file": "versions/silver_dataset_version=silver-9fce0c4ca8e510cc221b2ced/klines/transport=archive/market=usdm/symbol=ZECUSDT/interval=1d/date=2026-06-30/part-1782777600000-1782864000000.parquet",
+      "missing_examples": []
+    },
+    {
+      "symbol": "ZRXUSDT",
+      "interval": "1d",
+      "manifest": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/silver/binance/manifests/silver-ee6e58af81cbb462092602cd.json",
+      "manifest_exists": true,
+      "manifest_sha256": "cfd732bd93e14f67f3891b6d04e562a22e212e087eec97a1966865b6f43f245c",
+      "version": "silver-ee6e58af81cbb462092602cd",
+      "referenced_files": 2198,
+      "present_files": 2198,
+      "missing_files": 0,
+      "present_bytes": 16502584,
+      "manifest_rows": 2198,
+      "validated_range_claim": {
+        "end_exclusive": "2026-07-01T00:00:00+00:00",
+        "start": "2020-06-24T00:00:00+00:00"
+      },
+      "manifest_first_file": "versions/silver_dataset_version=silver-ee6e58af81cbb462092602cd/klines/transport=archive/market=usdm/symbol=ZRXUSDT/interval=1d/date=2020-06-24/part-1592956800000-1593043200000.parquet",
+      "manifest_last_file": "versions/silver_dataset_version=silver-ee6e58af81cbb462092602cd/klines/transport=archive/market=usdm/symbol=ZRXUSDT/interval=1d/date=2026-06-30/part-1782777600000-1782864000000.parquet",
+      "missing_examples": []
+    },
+    {
+      "symbol": "BCHUSDT",
+      "interval": "5m",
+      "manifest": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/silver/binance/manifests/silver-23fef0f18f0bd34a4793e9d6.json",
+      "manifest_exists": true,
+      "manifest_sha256": "7ac065908342aabaf33727c0b5532b8f4c6b84f66ed42457cb94850966a55f1d",
+      "version": "silver-23fef0f18f0bd34a4793e9d6",
+      "referenced_files": 2373,
+      "present_files": 2373,
+      "missing_files": 0,
+      "present_bytes": 64209984,
+      "manifest_rows": 683424,
+      "validated_range_claim": {
+        "end_exclusive": "2026-07-01T00:00:00+00:00",
+        "start": "2020-01-01T00:00:00+00:00"
+      },
+      "manifest_first_file": "versions/silver_dataset_version=silver-23fef0f18f0bd34a4793e9d6/klines/transport=archive/market=usdm/symbol=BCHUSDT/interval=5m/date=2020-01-01/part-1577836800000-1577923200000.parquet",
+      "manifest_last_file": "versions/silver_dataset_version=silver-23fef0f18f0bd34a4793e9d6/klines/transport=archive/market=usdm/symbol=BCHUSDT/interval=5m/date=2026-06-30/part-1782777600000-1782864000000.parquet",
+      "missing_examples": []
+    },
+    {
+      "symbol": "BLZUSDT",
+      "interval": "5m",
+      "manifest": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/silver/binance/manifests/silver-edad6a23de2defe665625c0a.json",
+      "manifest_exists": true,
+      "manifest_sha256": "67098bb1485390dd228f7597d6ce01933ff864123cbc76535e54a24747cbf8be",
+      "version": "silver-edad6a23de2defe665625c0a",
+      "referenced_files": 2113,
+      "present_files": 2113,
+      "missing_files": 0,
+      "present_bytes": 46720822,
+      "manifest_rows": 608460,
+      "validated_range_claim": {
+        "end_exclusive": "2026-07-01T00:00:00+00:00",
+        "start": "2020-09-17T07:00:00+00:00"
+      },
+      "manifest_first_file": "versions/silver_dataset_version=silver-edad6a23de2defe665625c0a/klines/transport=archive/market=usdm/symbol=BLZUSDT/interval=5m/date=2020-09-17/part-1600326000000-1600387200000.parquet",
+      "manifest_last_file": "versions/silver_dataset_version=silver-edad6a23de2defe665625c0a/klines/transport=archive/market=usdm/symbol=BLZUSDT/interval=5m/date=2026-06-30/part-1782777600000-1782864000000.parquet",
+      "missing_examples": []
+    },
+    {
+      "symbol": "BTCUSDT",
+      "interval": "5m",
+      "manifest": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/silver/binance/manifests/silver-f53e17c959a1d7520a656871.json",
+      "manifest_exists": true,
+      "manifest_sha256": "7e5f3dc020ba1dac2b7cf164ed286867bbe97d10af3e9348f21cd54b2d8f61c3",
+      "version": "silver-f53e17c959a1d7520a656871",
+      "referenced_files": 2373,
+      "present_files": 2373,
+      "missing_files": 0,
+      "present_bytes": 68557772,
+      "manifest_rows": 683424,
+      "validated_range_claim": {
+        "end_exclusive": "2026-07-01T00:00:00+00:00",
+        "start": "2020-01-01T00:00:00+00:00"
+      },
+      "manifest_first_file": "versions/silver_dataset_version=silver-f53e17c959a1d7520a656871/klines/transport=archive/market=usdm/symbol=BTCUSDT/interval=5m/date=2020-01-01/part-1577836800000-1577923200000.parquet",
+      "manifest_last_file": "versions/silver_dataset_version=silver-f53e17c959a1d7520a656871/klines/transport=archive/market=usdm/symbol=BTCUSDT/interval=5m/date=2026-06-30/part-1782777600000-1782864000000.parquet",
+      "missing_examples": []
+    },
+    {
+      "symbol": "COMPUSDT",
+      "interval": "5m",
+      "manifest": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/silver/binance/manifests/silver-aa455dca52d3f1d7fa8f2865.json",
+      "manifest_exists": true,
+      "manifest_sha256": "44135e6b0434c87bcf708240a6f0176600a9c0142a5460f08b0e3d39393abae0",
+      "version": "silver-aa455dca52d3f1d7fa8f2865",
+      "referenced_files": 2192,
+      "present_files": 2192,
+      "missing_files": 0,
+      "present_bytes": 56102772,
+      "manifest_rows": 631188,
+      "validated_range_claim": {
+        "end_exclusive": "2026-07-01T00:00:00+00:00",
+        "start": "2020-06-30T09:00:00+00:00"
+      },
+      "manifest_first_file": "versions/silver_dataset_version=silver-aa455dca52d3f1d7fa8f2865/klines/transport=archive/market=usdm/symbol=COMPUSDT/interval=5m/date=2020-06-30/part-1593507600000-1593561600000.parquet",
+      "manifest_last_file": "versions/silver_dataset_version=silver-aa455dca52d3f1d7fa8f2865/klines/transport=archive/market=usdm/symbol=COMPUSDT/interval=5m/date=2026-06-30/part-1782777600000-1782864000000.parquet",
+      "missing_examples": []
+    },
+    {
+      "symbol": "DOGEUSDT",
+      "interval": "5m",
+      "manifest": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/silver/binance/manifests/silver-e6d39b26406e95183f4bb451.json",
+      "manifest_exists": true,
+      "manifest_sha256": "fed80ee7d953309da88fcfa685ff68739103a36c6a27035deeb2e827b76d3fd8",
+      "version": "silver-e6d39b26406e95183f4bb451",
+      "referenced_files": 2182,
+      "present_files": 2182,
+      "missing_files": 0,
+      "present_bytes": 58868310,
+      "manifest_rows": 628308,
+      "validated_range_claim": {
+        "end_exclusive": "2026-07-01T00:00:00+00:00",
+        "start": "2020-07-10T09:00:00+00:00"
+      },
+      "manifest_first_file": "versions/silver_dataset_version=silver-e6d39b26406e95183f4bb451/klines/transport=archive/market=usdm/symbol=DOGEUSDT/interval=5m/date=2020-07-10/part-1594371600000-1594425600000.parquet",
+      "manifest_last_file": "versions/silver_dataset_version=silver-e6d39b26406e95183f4bb451/klines/transport=archive/market=usdm/symbol=DOGEUSDT/interval=5m/date=2026-06-30/part-1782777600000-1782864000000.parquet",
+      "missing_examples": []
+    },
+    {
+      "symbol": "ETHUSDT",
+      "interval": "5m",
+      "manifest": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/silver/binance/manifests/silver-1da8f3ab73eac97150c9350a.json",
+      "manifest_exists": true,
+      "manifest_sha256": "5bba0e0635654faa01776cb4616518fc4d132870d57b7c64df980af5630ceb9e",
+      "version": "silver-1da8f3ab73eac97150c9350a",
+      "referenced_files": 2373,
+      "present_files": 2373,
+      "missing_files": 0,
+      "present_bytes": 68063776,
+      "manifest_rows": 683424,
+      "validated_range_claim": {
+        "end_exclusive": "2026-07-01T00:00:00+00:00",
+        "start": "2020-01-01T00:00:00+00:00"
+      },
+      "manifest_first_file": "versions/silver_dataset_version=silver-1da8f3ab73eac97150c9350a/klines/transport=archive/market=usdm/symbol=ETHUSDT/interval=5m/date=2020-01-01/part-1577836800000-1577923200000.parquet",
+      "manifest_last_file": "versions/silver_dataset_version=silver-1da8f3ab73eac97150c9350a/klines/transport=archive/market=usdm/symbol=ETHUSDT/interval=5m/date=2026-06-30/part-1782777600000-1782864000000.parquet",
+      "missing_examples": []
+    },
+    {
+      "symbol": "FILUSDT",
+      "interval": "5m",
+      "manifest": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/silver/binance/manifests/silver-00567896fd2698d5d992fa4b.json",
+      "manifest_exists": true,
+      "manifest_sha256": "c56074a73fcfd950890d96ad257c8c4858a64722d7aa1a4430c5ee73487dc8d9",
+      "version": "silver-00567896fd2698d5d992fa4b",
+      "referenced_files": 2084,
+      "present_files": 2084,
+      "missing_files": 0,
+      "present_bytes": 53347470,
+      "manifest_rows": 600120,
+      "validated_range_claim": {
+        "end_exclusive": "2026-07-01T00:00:00+00:00",
+        "start": "2020-10-16T06:00:00+00:00"
+      },
+      "manifest_first_file": "versions/silver_dataset_version=silver-00567896fd2698d5d992fa4b/klines/transport=archive/market=usdm/symbol=FILUSDT/interval=5m/date=2020-10-16/part-1602828000000-1602892800000.parquet",
+      "manifest_last_file": "versions/silver_dataset_version=silver-00567896fd2698d5d992fa4b/klines/transport=archive/market=usdm/symbol=FILUSDT/interval=5m/date=2026-06-30/part-1782777600000-1782864000000.parquet",
+      "missing_examples": []
+    },
+    {
+      "symbol": "FLMUSDT",
+      "interval": "5m",
+      "manifest": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/silver/binance/manifests/silver-086d1dc587392ddad956fc80.json",
+      "manifest_exists": true,
+      "manifest_sha256": "3f226e669cfb421b6754564bc2babb3bfde5b5427553d6f76ab54ab81696ba95",
+      "version": "silver-086d1dc587392ddad956fc80",
+      "referenced_files": 2101,
+      "present_files": 2101,
+      "missing_files": 0,
+      "present_bytes": 46321349,
+      "manifest_rows": 605004,
+      "validated_range_claim": {
+        "end_exclusive": "2026-07-01T00:00:00+00:00",
+        "start": "2020-09-29T07:00:00+00:00"
+      },
+      "manifest_first_file": "versions/silver_dataset_version=silver-086d1dc587392ddad956fc80/klines/transport=archive/market=usdm/symbol=FLMUSDT/interval=5m/date=2020-09-29/part-1601362800000-1601424000000.parquet",
+      "manifest_last_file": "versions/silver_dataset_version=silver-086d1dc587392ddad956fc80/klines/transport=archive/market=usdm/symbol=FLMUSDT/interval=5m/date=2026-06-30/part-1782777600000-1782864000000.parquet",
+      "missing_examples": []
+    },
+    {
+      "symbol": "HNTUSDT",
+      "interval": "5m",
+      "manifest": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/silver/binance/manifests/silver-4ec5de732565c2fbd6ee5343.json",
+      "manifest_exists": true,
+      "manifest_sha256": "4cf386a0cae6e57e41ccbcf725bcd599f7f3eb745d481e08e19dc6ca74145343",
+      "version": "silver-4ec5de732565c2fbd6ee5343",
+      "referenced_files": 1339,
+      "present_files": 1339,
+      "missing_files": 0,
+      "present_bytes": 27951730,
+      "manifest_rows": 385347,
+      "validated_range_claim": {
+        "end_exclusive": "2024-05-28T07:15:00+00:00",
+        "start": "2020-09-28T07:00:00+00:00"
+      },
+      "manifest_first_file": "versions/silver_dataset_version=silver-4ec5de732565c2fbd6ee5343/klines/transport=archive/market=usdm/symbol=HNTUSDT/interval=5m/date=2020-09-28/part-1601276400000-1601337600000.parquet",
+      "manifest_last_file": "versions/silver_dataset_version=silver-4ec5de732565c2fbd6ee5343/klines/transport=archive/market=usdm/symbol=HNTUSDT/interval=5m/date=2024-05-28/part-1716854400000-1716880500000.parquet",
+      "missing_examples": []
+    },
+    {
+      "symbol": "IOTAUSDT",
+      "interval": "5m",
+      "manifest": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/silver/binance/manifests/silver-3db7eb89c5e3f5178b3e3f48.json",
+      "manifest_exists": true,
+      "manifest_sha256": "e721e7163c3f0f21fa7d7e2bc0f2c716529671fda51e078fa3294c7b51fcf2d8",
+      "version": "silver-3db7eb89c5e3f5178b3e3f48",
+      "referenced_files": 2331,
+      "present_files": 2331,
+      "missing_files": 0,
+      "present_bytes": 56732705,
+      "manifest_rows": 671232,
+      "validated_range_claim": {
+        "end_exclusive": "2026-07-01T00:00:00+00:00",
+        "start": "2020-02-12T08:00:00+00:00"
+      },
+      "manifest_first_file": "versions/silver_dataset_version=silver-3db7eb89c5e3f5178b3e3f48/klines/transport=archive/market=usdm/symbol=IOTAUSDT/interval=5m/date=2020-02-12/part-1581494400000-1581552000000.parquet",
+      "manifest_last_file": "versions/silver_dataset_version=silver-3db7eb89c5e3f5178b3e3f48/klines/transport=archive/market=usdm/symbol=IOTAUSDT/interval=5m/date=2026-06-30/part-1782777600000-1782864000000.parquet",
+      "missing_examples": []
+    },
+    {
+      "symbol": "KNCUSDT",
+      "interval": "5m",
+      "manifest": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/silver/binance/manifests/silver-0df67f61dbf66551dc3fdb86.json",
+      "manifest_exists": true,
+      "manifest_sha256": "7bd14164b88e693d3d75ef4a29ca2448445b10d5b5cd8c8dad486d9cbc526735",
+      "version": "silver-0df67f61dbf66551dc3fdb86",
+      "referenced_files": 2200,
+      "present_files": 2200,
+      "missing_files": 0,
+      "present_bytes": 54740080,
+      "manifest_rows": 633494,
+      "validated_range_claim": {
+        "end_exclusive": "2026-07-01T00:00:00+00:00",
+        "start": "2020-06-22T08:50:00+00:00"
+      },
+      "manifest_first_file": "versions/silver_dataset_version=silver-0df67f61dbf66551dc3fdb86/klines/transport=archive/market=usdm/symbol=KNCUSDT/interval=5m/date=2020-06-22/part-1592815800000-1592870400000.parquet",
+      "manifest_last_file": "versions/silver_dataset_version=silver-0df67f61dbf66551dc3fdb86/klines/transport=archive/market=usdm/symbol=KNCUSDT/interval=5m/date=2026-06-30/part-1782777600000-1782864000000.parquet",
+      "missing_examples": []
+    },
+    {
+      "symbol": "KSMUSDT",
+      "interval": "5m",
+      "manifest": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/silver/binance/manifests/silver-e48b9370e6e51bd8d43d7cf7.json",
+      "manifest_exists": true,
+      "manifest_sha256": "a54cf3d53e57c07fd8849363485740a2848512bca662480c05a45c11bcd4289d",
+      "version": "silver-e48b9370e6e51bd8d43d7cf7",
+      "referenced_files": 2086,
+      "present_files": 2086,
+      "missing_files": 0,
+      "present_bytes": 53376627,
+      "manifest_rows": 600684,
+      "validated_range_claim": {
+        "end_exclusive": "2026-07-01T00:00:00+00:00",
+        "start": "2020-10-14T07:00:00+00:00"
+      },
+      "manifest_first_file": "versions/silver_dataset_version=silver-e48b9370e6e51bd8d43d7cf7/klines/transport=archive/market=usdm/symbol=KSMUSDT/interval=5m/date=2020-10-14/part-1602658800000-1602720000000.parquet",
+      "manifest_last_file": "versions/silver_dataset_version=silver-e48b9370e6e51bd8d43d7cf7/klines/transport=archive/market=usdm/symbol=KSMUSDT/interval=5m/date=2026-06-30/part-1782777600000-1782864000000.parquet",
+      "missing_examples": []
+    },
+    {
+      "symbol": "NEOUSDT",
+      "interval": "5m",
+      "manifest": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/silver/binance/manifests/silver-f429497b938f8c9f7411c6fb.json",
+      "manifest_exists": true,
+      "manifest_sha256": "540623c719f67d587aeefdc20389488c0cb5fae84008b9ebc6a062db373a6d83",
+      "version": "silver-f429497b938f8c9f7411c6fb",
+      "referenced_files": 2326,
+      "present_files": 2326,
+      "missing_files": 0,
+      "present_bytes": 61022523,
+      "manifest_rows": 669783,
+      "validated_range_claim": {
+        "end_exclusive": "2026-07-01T00:00:00+00:00",
+        "start": "2020-02-17T08:45:00+00:00"
+      },
+      "manifest_first_file": "versions/silver_dataset_version=silver-f429497b938f8c9f7411c6fb/klines/transport=archive/market=usdm/symbol=NEOUSDT/interval=5m/date=2020-02-17/part-1581929100000-1581984000000.parquet",
+      "manifest_last_file": "versions/silver_dataset_version=silver-f429497b938f8c9f7411c6fb/klines/transport=archive/market=usdm/symbol=NEOUSDT/interval=5m/date=2026-06-30/part-1782777600000-1782864000000.parquet",
+      "missing_examples": []
+    },
+    {
+      "symbol": "OMGUSDT",
+      "interval": "5m",
+      "manifest": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/silver/binance/manifests/silver-9dd0aa592ff3c1ffc084e62d.json",
+      "manifest_exists": true,
+      "manifest_sha256": "6c4b517b4390e1d0a77c1d2e3353cdc7d5b183c3aee224fa16629a561df397e0",
+      "version": "silver-9dd0aa592ff3c1ffc084e62d",
+      "referenced_files": 2190,
+      "present_files": 2190,
+      "missing_files": 0,
+      "present_bytes": 47766060,
+      "manifest_rows": 630612,
+      "validated_range_claim": {
+        "end_exclusive": "2026-07-01T00:00:00+00:00",
+        "start": "2020-07-02T09:00:00+00:00"
+      },
+      "manifest_first_file": "versions/silver_dataset_version=silver-9dd0aa592ff3c1ffc084e62d/klines/transport=archive/market=usdm/symbol=OMGUSDT/interval=5m/date=2020-07-02/part-1593680400000-1593734400000.parquet",
+      "manifest_last_file": "versions/silver_dataset_version=silver-9dd0aa592ff3c1ffc084e62d/klines/transport=archive/market=usdm/symbol=OMGUSDT/interval=5m/date=2026-06-30/part-1782777600000-1782864000000.parquet",
+      "missing_examples": []
+    },
+    {
+      "symbol": "ONTUSDT",
+      "interval": "5m",
+      "manifest": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/silver/binance/manifests/silver-d1bb7b0176969fcecfacd3f5.json",
+      "manifest_exists": true,
+      "manifest_sha256": "978841feb79af64525d6daf679c66a3dc7d222704f7a1a4583065b598baf4b62",
+      "version": "silver-d1bb7b0176969fcecfacd3f5",
+      "referenced_files": 2332,
+      "present_files": 2332,
+      "missing_files": 0,
+      "present_bytes": 56775215,
+      "manifest_rows": 671519,
+      "validated_range_claim": {
+        "end_exclusive": "2026-07-01T00:00:00+00:00",
+        "start": "2020-02-11T08:05:00+00:00"
+      },
+      "manifest_first_file": "versions/silver_dataset_version=silver-d1bb7b0176969fcecfacd3f5/klines/transport=archive/market=usdm/symbol=ONTUSDT/interval=5m/date=2020-02-11/part-1581408300000-1581465600000.parquet",
+      "manifest_last_file": "versions/silver_dataset_version=silver-d1bb7b0176969fcecfacd3f5/klines/transport=archive/market=usdm/symbol=ONTUSDT/interval=5m/date=2026-06-30/part-1782777600000-1782864000000.parquet",
+      "missing_examples": []
+    },
+    {
+      "symbol": "STORJUSDT",
+      "interval": "5m",
+      "manifest": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/silver/binance/manifests/silver-114f71c5dafe3aa4423e820c.json",
+      "manifest_exists": true,
+      "manifest_sha256": "e6c6bee187424f4eada4f31e3d2b84f3d6cff3265be15de6c9062c39b3d68bdd",
+      "version": "silver-114f71c5dafe3aa4423e820c",
+      "referenced_files": 2114,
+      "present_files": 2114,
+      "missing_files": 0,
+      "present_bytes": 53049612,
+      "manifest_rows": 608748,
+      "validated_range_claim": {
+        "end_exclusive": "2026-07-01T00:00:00+00:00",
+        "start": "2020-09-16T07:00:00+00:00"
+      },
+      "manifest_first_file": "versions/silver_dataset_version=silver-114f71c5dafe3aa4423e820c/klines/transport=archive/market=usdm/symbol=STORJUSDT/interval=5m/date=2020-09-16/part-1600239600000-1600300800000.parquet",
+      "manifest_last_file": "versions/silver_dataset_version=silver-114f71c5dafe3aa4423e820c/klines/transport=archive/market=usdm/symbol=STORJUSDT/interval=5m/date=2026-06-30/part-1782777600000-1782864000000.parquet",
+      "missing_examples": []
+    },
+    {
+      "symbol": "TRXUSDT",
+      "interval": "5m",
+      "manifest": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/silver/binance/manifests/silver-4bb5d750b0039739442f7df9.json",
+      "manifest_exists": true,
+      "manifest_sha256": "45afb99fcae27f86152a846dca9863e44043164488eb8fdc91a188eb42033781",
+      "version": "silver-4bb5d750b0039739442f7df9",
+      "referenced_files": 2359,
+      "present_files": 2359,
+      "missing_files": 0,
+      "present_bytes": 60497794,
+      "manifest_rows": 679295,
+      "validated_range_claim": {
+        "end_exclusive": "2026-07-01T00:00:00+00:00",
+        "start": "2020-01-15T08:05:00+00:00"
+      },
+      "manifest_first_file": "versions/silver_dataset_version=silver-4bb5d750b0039739442f7df9/klines/transport=archive/market=usdm/symbol=TRXUSDT/interval=5m/date=2020-01-15/part-1579075500000-1579132800000.parquet",
+      "manifest_last_file": "versions/silver_dataset_version=silver-4bb5d750b0039739442f7df9/klines/transport=archive/market=usdm/symbol=TRXUSDT/interval=5m/date=2026-06-30/part-1782777600000-1782864000000.parquet",
+      "missing_examples": []
+    },
+    {
+      "symbol": "UNIUSDT",
+      "interval": "5m",
+      "manifest": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/silver/binance/manifests/silver-b08d9256d421e4abe8760e3a.json",
+      "manifest_exists": true,
+      "manifest_sha256": "41680c6684e92f9de18b211956d4f3d5cbbcfcfe7160d7f75933964baaee3269",
+      "version": "silver-b08d9256d421e4abe8760e3a",
+      "referenced_files": 2112,
+      "present_files": 2112,
+      "missing_files": 0,
+      "present_bytes": 55046426,
+      "manifest_rows": 608172,
+      "validated_range_claim": {
+        "end_exclusive": "2026-07-01T00:00:00+00:00",
+        "start": "2020-09-18T07:00:00+00:00"
+      },
+      "manifest_first_file": "versions/silver_dataset_version=silver-b08d9256d421e4abe8760e3a/klines/transport=archive/market=usdm/symbol=UNIUSDT/interval=5m/date=2020-09-18/part-1600412400000-1600473600000.parquet",
+      "manifest_last_file": "versions/silver_dataset_version=silver-b08d9256d421e4abe8760e3a/klines/transport=archive/market=usdm/symbol=UNIUSDT/interval=5m/date=2026-06-30/part-1782777600000-1782864000000.parquet",
+      "missing_examples": []
+    },
+    {
+      "symbol": "ZECUSDT",
+      "interval": "5m",
+      "manifest": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/silver/binance/manifests/silver-d8c92585a431e31ce2b75bfc.json",
+      "manifest_exists": true,
+      "manifest_sha256": "9da2382df74a35e5d3682bf1f8dbefbbb09a82115c04584667169b2ca21a1781",
+      "version": "silver-d8c92585a431e31ce2b75bfc",
+      "referenced_files": 2338,
+      "present_files": 2338,
+      "missing_files": 0,
+      "present_bytes": 59937360,
+      "manifest_rows": 673248,
+      "validated_range_claim": {
+        "end_exclusive": "2026-07-01T00:00:00+00:00",
+        "start": "2020-02-05T08:00:00+00:00"
+      },
+      "manifest_first_file": "versions/silver_dataset_version=silver-d8c92585a431e31ce2b75bfc/klines/transport=archive/market=usdm/symbol=ZECUSDT/interval=5m/date=2020-02-05/part-1580889600000-1580947200000.parquet",
+      "manifest_last_file": "versions/silver_dataset_version=silver-d8c92585a431e31ce2b75bfc/klines/transport=archive/market=usdm/symbol=ZECUSDT/interval=5m/date=2026-06-30/part-1782777600000-1782864000000.parquet",
+      "missing_examples": []
+    },
+    {
+      "symbol": "ZRXUSDT",
+      "interval": "5m",
+      "manifest": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/silver/binance/manifests/silver-51db8656c14d6cd710aa7eb5.json",
+      "manifest_exists": true,
+      "manifest_sha256": "f60d9fdc30add939ea999b87101b798ad57dca15d1b790e0aac150e1de677215",
+      "version": "silver-51db8656c14d6cd710aa7eb5",
+      "referenced_files": 2198,
+      "present_files": 2198,
+      "missing_files": 0,
+      "present_bytes": 54379302,
+      "manifest_rows": 632916,
+      "validated_range_claim": {
+        "end_exclusive": "2026-07-01T00:00:00+00:00",
+        "start": "2020-06-24T09:00:00+00:00"
+      },
+      "manifest_first_file": "versions/silver_dataset_version=silver-51db8656c14d6cd710aa7eb5/klines/transport=archive/market=usdm/symbol=ZRXUSDT/interval=5m/date=2020-06-24/part-1592989200000-1593043200000.parquet",
+      "manifest_last_file": "versions/silver_dataset_version=silver-51db8656c14d6cd710aa7eb5/klines/transport=archive/market=usdm/symbol=ZRXUSDT/interval=5m/date=2026-06-30/part-1782777600000-1782864000000.parquet",
+      "missing_examples": []
+    }
+  ],
+  "missing_records": [],
+  "total_referenced_files": 131148,
+  "total_missing_files": 0,
+  "hash_and_schema_verification": "NOT_RUN_PENDING_FILE_COMPLETENESS"
+}

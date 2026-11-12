@@ -1,0 +1,7 @@
+{
+  "status": "PASS",
+  "gold_manifest_unchanged": true,
+  "qualified_sidecar_current_code_identity_valid": true,
+  "preparation_identity_unchanged": true,
+  "pyproject_and_lock_unchanged": true
+}

@@ -1,0 +1,33 @@
+ M docs/reviews/crypto2_architecture_scorecard_20261106.md
+ M docs/reviews/crypto2_exhaustive_research_audit_20261106.md
+ M docs/reviews/crypto2_literature_comparison_20261106.md
+ M docs/reviews/crypto2_loophole_register_20261106.md
+ M docs/reviews/crypto2_training_code_audit_20261106.md
+ M scripts/closure/verify_gold_hashes_readonly.py
+ M scripts/run_phase7a_pipeline.py
+ M src/crypto_ai/phase7/feature_census.py
+ M src/crypto_ai/phase7/hardening.py
+ M src/crypto_ai/phase7/preparation_identity.py
+ M src/crypto_ai/phase7/recovery.py
+ M src/crypto_ai/phase7/result_ledger.py
+ M src/crypto_ai/phase7/training.py
+ M tests/phase7/test_admission.py
+ M tests/phase7/test_feature_census.py
+ M tests/phase7/test_feature_truncation_invariance.py
+ M tests/phase7/test_phase7_final_integrity.py
+ M tests/phase7/test_phase7a_final_metrics_and_baselines.py
+ M tests/phase7/test_preparation_identity.py
+ M tests/phase7/test_pretraining_integration.py
+ M tests/phase7/test_progress_observability.py
+ M tests/phase7/test_result_publication.py
+ M tests/phase7/test_standalone_training_remediation.py
+?? "Claude outputs/"
+?? docs/reviews/evidence_crypto2_20261106/
+?? docs/reviews/evidence_final_closure/
+?? docs/reviews/phase7_all_gates_final_20261106.md
+?? scripts/closure/build_context_sidecar.py
+?? scripts/closure/verify_linux_external.sh
+?? src/crypto_ai/phase7/context_sidecar.py
+?? src/crypto_ai/phase7/tradability.py
+?? tests/phase7/test_context_sidecar.py
+?? tests/phase7/test_tradability_readiness.py

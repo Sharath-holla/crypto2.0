@@ -29,6 +29,7 @@ from crypto_ai.phase7.features import (
 )
 from crypto_ai.phase7.gold import build_multiasset_gold_chunks
 from crypto_ai.phase7.gold_validation import locate_gold_manifest
+from crypto_ai.phase7.hardening import require_silver
 from crypto_ai.phase7.progress import ProgressReporter
 from crypto_ai.phase7.quality import build_point_in_time_descriptors
 from crypto_ai.phase7.registry import (
@@ -591,6 +592,10 @@ def _gold_stage(
     reporter: ProgressReporter | None = None,
 ) -> tuple[dict[str, Any], list[Path]]:
     config.assert_cloud_execution_allowed()
+    # CHANGED BY CLAUDE (2026-11-02, Phase 3 item 9): a Gold REBUILD needs Silver; fail with a
+    # clear message instead of a bare FileNotFoundError deep in the stage. Training from existing
+    # Gold is unaffected. OLD CODE: no check here.
+    require_silver(config.paths.data_root, "Gold rebuild")
     boundaries: list[tuple[datetime, datetime]] = []
     cursor = config.data_start
     while cursor < config.research_cutoff:
@@ -656,6 +661,8 @@ def _fold_descriptors(
     config: Phase7Config,
     registry: SymbolRegistry,
     data: dict[str, Any],
+    *,
+    fold_ids: tuple[str, ...] | None = None,
 ) -> list[SymbolDescriptor]:
     plans = plan_folds(
         config.data_start,
@@ -663,6 +670,15 @@ def _fold_descriptors(
         config.prospective_holdout_start,
         config.schedule,
     )
+    if fold_ids is not None:
+        requested = set(fold_ids)
+        if (
+            not requested
+            or len(requested) != len(fold_ids)
+            or requested - {p.fold_id for p in plans}
+        ):
+            raise ValueError("descriptor selection requires unique canonical fold IDs")
+        plans = tuple(plan for plan in plans if plan.fold_id in requested)
     descriptors: list[SymbolDescriptor] = []
     unusable_segments = tuple(
         CausalDataGap.model_validate(item) for item in data.get("unusable_segments", [])
@@ -770,6 +786,13 @@ def run_phase7_cloud(
     """Run the non-interactive VM pipeline; the explicit environment guard is mandatory."""
 
     config.assert_cloud_execution_allowed()
+    # CHANGED BY CLAUDE (2026-11-06, closure): the generic phase7-research command is not an
+    # approved training entrypoint (stage None runs every stage, including train); it must not
+    # reach run_phase7_training with weaker admission than the canonical entrypoints.
+    if stage is None or stage == "train":
+        from crypto_ai.phase7.admission import reject_noncanonical
+
+        reject_noncanonical("crypto-ai phase7-research")
     resources = resource_snapshot(Path.cwd())
     if resources["ram_gb"] is not None and resources["ram_gb"] < config.resources.memory_guard_gb:
         raise RuntimeError(

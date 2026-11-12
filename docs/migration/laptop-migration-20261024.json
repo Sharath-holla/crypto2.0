@@ -1,0 +1,242 @@
+{
+  "schema": "crypto2_laptop_migration_public_manifest_v1",
+  "date": "2026-10-24",
+  "timezone": "Asia/Calcutta",
+  "project_status": "ON_HOLD",
+  "remote": "https://github.com/Sharath-holla/crypto2.0.git",
+  "restore_branch": "codex/laptop-migration-20261024",
+  "restore_tag": "laptop-migration-20261024",
+  "base_commit": "b8a574d62213bddab0eca356bdb903ebd4c2973f",
+  "historical_wip_commit": "03894edc91f8b19104e13f521a18b2672464d0b8",
+  "standalone_main_commit": "4ef91d53f2eb6b83157394078452cf4c1a85a5fe",
+  "independent_remote_recovery_commit": "0597a4d71b5ee1883502ea892f0c78e3961d2169",
+  "python": "3.12.14",
+  "package_versions": {
+    "numpy": "2.4.6",
+    "pyarrow": "24.0.0",
+    "lightgbm": "4.7.0",
+    "scikit-learn": "1.9.0",
+    "joblib": "1.5.3",
+    "pydantic": "2.13.4",
+    "pytest": "9.1.1",
+    "ruff": "0.16.3"
+  },
+  "full_suite": {
+    "tests": "891",
+    "failures": "0",
+    "errors": "0",
+    "skipped": "5",
+    "time": "505.969"
+  },
+  "targeted_suite": {
+    "passed": 135,
+    "failures": 0,
+    "seconds": 19.12
+  },
+  "lint": "PASS_252_FILES",
+  "format": "PASS_252_FILES",
+  "compilation": "PASS",
+  "offline_lockfile": "PASS_31_PACKAGES",
+  "linux_and_real_gold_equivalence": "NOT_RUN",
+  "cloud_operations": "NONE",
+  "training": "NO_REAL_RESEARCH_TRAINING",
+  "holdout": {
+    "status": "LOCKED_UNUSED",
+    "used": false,
+    "evaluation_authorized": false,
+    "july_unused_for_phase6_phase7": true
+  },
+  "inventory_note": "Hashes refer to Git index bytes, not Windows checkout CRLF. Manifest does not hash itself. Git commit/tag identifies the entire tree.",
+  "files": [
+    {
+      "path": ".gitattributes",
+      "bytes_in_git": 146,
+      "sha256_git_content": "6dc11c573ece867a4b4d5de95cdf287d43f2c563a5dbf2216edadabed9a5803c"
+    },
+    {
+      "path": ".gitignore",
+      "bytes_in_git": 1075,
+      "sha256_git_content": "e6866e5871d2d7fc4902131f6ad7015a8ae099f734242b82bbdd91fe8355fe64"
+    },
+    {
+      "path": "PROJECT_CONTEXT.md",
+      "bytes_in_git": 4607,
+      "sha256_git_content": "d6f618d85a0b91eb2ffb9e48a3ea33f1838e511b62154b342b7cff4981f8ebaf"
+    },
+    {
+      "path": "README.md",
+      "bytes_in_git": 12336,
+      "sha256_git_content": "3fa7a01e1e0fc4e7bfdc765fc33550cfc78b3f0383d9756814b141f0d5d23ae9"
+    },
+    {
+      "path": "docs/CRYPTO_2_PROJECT_GUIDE_PHASES_1_TO_18.md",
+      "bytes_in_git": 67889,
+      "sha256_git_content": "5b88a7319a7cf2a8b09161979293e23782b150960565609c771ab79b5fe89e75"
+    },
+    {
+      "path": "docs/FULL_CODE_REVIEW_2026_08_29.md",
+      "bytes_in_git": 17418,
+      "sha256_git_content": "ae48a082b241e13d7d084a23dab9fd84293ae6b2a8ed8a44ed9d5dbe3e11767d"
+    },
+    {
+      "path": "docs/LAPTOP_MIGRATION_2026_10_24.md",
+      "bytes_in_git": 11493,
+      "sha256_git_content": "ee54ff54e722be1d8ffff8d32a6baed78fe923b4613692abce982a3524d015ef"
+    },
+    {
+      "path": "docs/LAPTOP_MIGRATION_VERIFICATION_2026_10_24.md",
+      "bytes_in_git": 5924,
+      "sha256_git_content": "ce5ac324ee7f2620c92cb38586e6e0de66d286ae8e1ae2197f269ede20086c48"
+    },
+    {
+      "path": "docs/PHASE7A_CODE_AUDIT.md",
+      "bytes_in_git": 40059,
+      "sha256_git_content": "b95a3789317000a03d3e01ef8a8ecb0e8e0fcd6053d9440f9b8219d1fe3e5de1"
+    },
+    {
+      "path": "docs/PHASE7A_DEEP_DEBUG_AND_EVALUATION_2026_10_22.md",
+      "bytes_in_git": 13749,
+      "sha256_git_content": "b9f10833a5206f9544711b76c924814d18ad26c62ffb8759c5e924b1b3db203a"
+    },
+    {
+      "path": "docs/PHASE7A_FINAL_ERROR_AND_ARCHITECTURE_AUDIT.md",
+      "bytes_in_git": 53154,
+      "sha256_git_content": "d514f261b934ba5e3f8eab764014d5c5966499b71433a64717694d707a2bd1b7"
+    },
+    {
+      "path": "docs/PHASE7A_MEMBERSHIP_LOOKAHEAD_FIX_2026_10_23.md",
+      "bytes_in_git": 10185,
+      "sha256_git_content": "9758a27739626423a294a98c9a9b17e1eacc7460c73c9d8a5cd8d42ce492b544"
+    },
+    {
+      "path": "docs/PHASE7A_POST_REMEDIATION_ARCHITECTURE_AUDIT.md",
+      "bytes_in_git": 79649,
+      "sha256_git_content": "caa17cf85e84e2e077eee7bfcfb875da836572d0d90c1a3c06de121d3f51e5f8"
+    },
+    {
+      "path": "docs/PHASE7A_STANDALONE_TRAINING_REMEDIATION_2026_10_22.md",
+      "bytes_in_git": 10186,
+      "sha256_git_content": "c6da31f345f5da375c9faf15fd0db032b4d9d6b8399db6aab79ea335f1183751"
+    },
+    {
+      "path": "output/pdf/Crypto_2_Project_Guide_Phases_1_to_18.pdf",
+      "bytes_in_git": 85289,
+      "sha256_git_content": "ad898e7d18939de4f212cca68078198b04ec89c0c0338215bc30f24519deda2f"
+    },
+    {
+      "path": "scripts/run_phase7a_pipeline.py",
+      "bytes_in_git": 30293,
+      "sha256_git_content": "5ab573acc3089936344fd3aa508718451fce64b795ad0caaab734df549d97da3"
+    },
+    {
+      "path": "src/crypto_ai/phase7/benchmark_one_spec.py",
+      "bytes_in_git": 5909,
+      "sha256_git_content": "457fffa0eb928b080d134d24c9ace43c2e972370e49adf8fd2e5772277fa19bd"
+    },
+    {
+      "path": "src/crypto_ai/phase7/economics.py",
+      "bytes_in_git": 12819,
+      "sha256_git_content": "04bef4be6cca4c51b514bb391488f6f7b4d10dbdf453048bfcfc2f65939ccaf8"
+    },
+    {
+      "path": "src/crypto_ai/phase7/environment.py",
+      "bytes_in_git": 1025,
+      "sha256_git_content": "93808ea7e962f38b100c55967ec7b7809656d72245a6677a62eda7e7e36ee78b"
+    },
+    {
+      "path": "src/crypto_ai/phase7/folds.py",
+      "bytes_in_git": 11855,
+      "sha256_git_content": "4e1f968f84330afefba2be0b34ff345a5800235dc3012f68d8cde60c482c1a81"
+    },
+    {
+      "path": "src/crypto_ai/phase7/lightning.py",
+      "bytes_in_git": 1120,
+      "sha256_git_content": "169c53ec9d8c4e31987c871ccf88c56af0479518ec916421a969cc3646f3fd3f"
+    },
+    {
+      "path": "src/crypto_ai/phase7/models.py",
+      "bytes_in_git": 26247,
+      "sha256_git_content": "2b99096618fa42c087205a57bf4c1c75852c42536f91748dd20b728d4c8a6882"
+    },
+    {
+      "path": "src/crypto_ai/phase7/pipeline.py",
+      "bytes_in_git": 37371,
+      "sha256_git_content": "d36e0913cc98395b86777e5d6f7d9d7bb00d073cda1ae1ed10bcb1f22a5dcd21"
+    },
+    {
+      "path": "src/crypto_ai/phase7/preflight.py",
+      "bytes_in_git": 10835,
+      "sha256_git_content": "e0bbc1f2a7591bbe75536f159ae23bfc2a62c67e47566866e26f6c070109ee19"
+    },
+    {
+      "path": "src/crypto_ai/phase7/prepared_cache.py",
+      "bytes_in_git": 33521,
+      "sha256_git_content": "576192edd669886856dcb7dfdff4c71733243d417a9c94669f171e8d704f783a"
+    },
+    {
+      "path": "src/crypto_ai/phase7/resources.py",
+      "bytes_in_git": 3262,
+      "sha256_git_content": "f65525184668cb830a0a8d46f86c72e617c8583fb851eda850c7d637c5594f4f"
+    },
+    {
+      "path": "src/crypto_ai/phase7/runtime.py",
+      "bytes_in_git": 8542,
+      "sha256_git_content": "4a00fc51d9c506353ef3feb4c5b8f1b5c58bad9a8756faa0cd38eb504b817c8e"
+    },
+    {
+      "path": "src/crypto_ai/phase7/segments.py",
+      "bytes_in_git": 5624,
+      "sha256_git_content": "ed9f544330aed909360c31249124318c166a9bb6f9b486857ef713aec872d0c6"
+    },
+    {
+      "path": "src/crypto_ai/phase7/training.py",
+      "bytes_in_git": 79715,
+      "sha256_git_content": "06fc95ce833d8e620ba481da1eedf7b2823b15b1235a86793bb104108a4a8e12"
+    },
+    {
+      "path": "src/crypto_ai/phase7/training_metrics.py",
+      "bytes_in_git": 4978,
+      "sha256_git_content": "9429a5455f36ce0fad2cf31b4e81b6cca1f3b0adf2a06dd98d72fa13d1c3f507"
+    },
+    {
+      "path": "src/crypto_ai/phase7/universe.py",
+      "bytes_in_git": 29672,
+      "sha256_git_content": "39ac575bfd1521a636d10365523860431947062fbfd3e60fda2f62b83637a37c"
+    },
+    {
+      "path": "tests/integration/test_crypto_aiventra.py",
+      "bytes_in_git": 20363,
+      "sha256_git_content": "9822a25b9b9824169db642e551e1c041cc83be0900efa40f69d56fd35476996d"
+    },
+    {
+      "path": "tests/phase7/test_causal_segment_quarantine.py",
+      "bytes_in_git": 19381,
+      "sha256_git_content": "7698b0cb819153b63930606d4194106567137f050a4f8a0924eaab2b1aefb4c8"
+    },
+    {
+      "path": "tests/phase7/test_deep_debug_regressions.py",
+      "bytes_in_git": 7839,
+      "sha256_git_content": "be66dd6bfa22924975d17dd9627948ba31d98a7556c9c8ea2656ee36e59b3357"
+    },
+    {
+      "path": "tests/phase7/test_membership_gap_causality.py",
+      "bytes_in_git": 9831,
+      "sha256_git_content": "30accf58e5657f3e48fb4f3e15e041e9b2e7e2f8ddab3996e6e723040647a2b4"
+    },
+    {
+      "path": "tests/phase7/test_standalone_training_remediation.py",
+      "bytes_in_git": 17437,
+      "sha256_git_content": "91aba0d4adc4360da6450f59422246994d08a23f22dbb249bbdca5bdbccd8610"
+    }
+  ],
+  "excluded_from_github": [
+    "market data",
+    "saved runtime/model artifacts",
+    "credentials",
+    "application databases",
+    "historical scratch",
+    "opaque archives",
+    "environments and caches"
+  ],
+  "private_transfer_complete": false
+}

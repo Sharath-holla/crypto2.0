@@ -1,0 +1,1104 @@
+{
+  "status": "PASS",
+  "errors": [],
+  "freeze_date": "2022-01-01T00:00:00+00:00",
+  "registry_hash": "b2c973f0050f205e58672558",
+  "registry_observed_at": "2026-08-29T16:39:09.489109+00:00",
+  "core_universe_hash": "f71cdf65d161466037b34420",
+  "recomputed_core_universe_hash": "f71cdf65d161466037b34420",
+  "symbols": [
+    "BTCUSDT",
+    "ETHUSDT",
+    "ZRXUSDT",
+    "NEOUSDT",
+    "FLMUSDT",
+    "KNCUSDT",
+    "ONTUSDT",
+    "BLZUSDT",
+    "HNTUSDT",
+    "UNIUSDT",
+    "TRXUSDT",
+    "KSMUSDT",
+    "COMPUSDT",
+    "IOTAUSDT",
+    "STORJUSDT",
+    "OMGUSDT",
+    "ZECUSDT",
+    "FILUSDT",
+    "BCHUSDT",
+    "DOGEUSDT"
+  ],
+  "folds": [
+    {
+      "identity_difference_fields": [
+        "gap_gate_policy",
+        "membership_hash"
+      ],
+      "stored_gap_policy": "FULL_FOLD_REQUIRED_RANGE_V1",
+      "current_gap_policy": "TRAIN_HISTORY_ONLY_V2",
+      "fold_id": "fold-000-a0e9a4f72689",
+      "research_view": "CORE",
+      "train_end": "2022-01-01T00:00:00+00:00",
+      "stored_hash": "c3ed3cb9f7e35309cf65ae5d",
+      "current_hash": "163dc4e6053ed0d17ac51f97",
+      "active_symbols_match": true,
+      "active_symbols": [
+        "BCHUSDT",
+        "BLZUSDT",
+        "BTCUSDT",
+        "COMPUSDT",
+        "DOGEUSDT",
+        "ETHUSDT",
+        "FILUSDT",
+        "FLMUSDT",
+        "HNTUSDT",
+        "IOTAUSDT",
+        "KNCUSDT",
+        "KSMUSDT",
+        "NEOUSDT",
+        "OMGUSDT",
+        "ONTUSDT",
+        "STORJUSDT",
+        "TRXUSDT",
+        "UNIUSDT",
+        "ZECUSDT",
+        "ZRXUSDT"
+      ],
+      "listing_causal": true,
+      "descriptors_causal": true,
+      "member_metadata_differences": []
+    },
+    {
+      "identity_difference_fields": [
+        "gap_gate_policy",
+        "membership_hash"
+      ],
+      "stored_gap_policy": "FULL_FOLD_REQUIRED_RANGE_V1",
+      "current_gap_policy": "TRAIN_HISTORY_ONLY_V2",
+      "fold_id": "fold-001-805307169256",
+      "research_view": "CORE",
+      "train_end": "2022-04-01T00:00:00+00:00",
+      "stored_hash": "aa2976ce5747b8f6c39ea1ed",
+      "current_hash": "bca56acbedde355864430034",
+      "active_symbols_match": true,
+      "active_symbols": [
+        "BCHUSDT",
+        "BLZUSDT",
+        "BTCUSDT",
+        "COMPUSDT",
+        "DOGEUSDT",
+        "ETHUSDT",
+        "FILUSDT",
+        "FLMUSDT",
+        "HNTUSDT",
+        "IOTAUSDT",
+        "KNCUSDT",
+        "KSMUSDT",
+        "NEOUSDT",
+        "OMGUSDT",
+        "ONTUSDT",
+        "STORJUSDT",
+        "TRXUSDT",
+        "UNIUSDT",
+        "ZECUSDT",
+        "ZRXUSDT"
+      ],
+      "listing_causal": true,
+      "descriptors_causal": true,
+      "member_metadata_differences": []
+    },
+    {
+      "identity_difference_fields": [
+        "gap_gate_policy",
+        "membership_hash"
+      ],
+      "stored_gap_policy": "FULL_FOLD_REQUIRED_RANGE_V1",
+      "current_gap_policy": "TRAIN_HISTORY_ONLY_V2",
+      "fold_id": "fold-002-a2dead26c257",
+      "research_view": "CORE",
+      "train_end": "2022-07-01T00:00:00+00:00",
+      "stored_hash": "05ff909d69db98400f6fc3a0",
+      "current_hash": "fff9fca80b5ee3f46df9bcd9",
+      "active_symbols_match": true,
+      "active_symbols": [
+        "BCHUSDT",
+        "BLZUSDT",
+        "BTCUSDT",
+        "COMPUSDT",
+        "DOGEUSDT",
+        "ETHUSDT",
+        "FILUSDT",
+        "FLMUSDT",
+        "HNTUSDT",
+        "IOTAUSDT",
+        "KNCUSDT",
+        "KSMUSDT",
+        "NEOUSDT",
+        "OMGUSDT",
+        "ONTUSDT",
+        "STORJUSDT",
+        "TRXUSDT",
+        "UNIUSDT",
+        "ZECUSDT",
+        "ZRXUSDT"
+      ],
+      "listing_causal": true,
+      "descriptors_causal": true,
+      "member_metadata_differences": []
+    },
+    {
+      "identity_difference_fields": [
+        "gap_gate_policy",
+        "membership_hash"
+      ],
+      "stored_gap_policy": "FULL_FOLD_REQUIRED_RANGE_V1",
+      "current_gap_policy": "TRAIN_HISTORY_ONLY_V2",
+      "fold_id": "fold-003-a4ba910e38c1",
+      "research_view": "CORE",
+      "train_end": "2022-10-01T00:00:00+00:00",
+      "stored_hash": "d8549ef3a772b1dd09ab069c",
+      "current_hash": "65df05731f143f74c0e9e18e",
+      "active_symbols_match": true,
+      "active_symbols": [
+        "BCHUSDT",
+        "BLZUSDT",
+        "BTCUSDT",
+        "COMPUSDT",
+        "DOGEUSDT",
+        "ETHUSDT",
+        "FILUSDT",
+        "FLMUSDT",
+        "HNTUSDT",
+        "IOTAUSDT",
+        "KNCUSDT",
+        "KSMUSDT",
+        "NEOUSDT",
+        "OMGUSDT",
+        "ONTUSDT",
+        "STORJUSDT",
+        "TRXUSDT",
+        "UNIUSDT",
+        "ZECUSDT",
+        "ZRXUSDT"
+      ],
+      "listing_causal": true,
+      "descriptors_causal": true,
+      "member_metadata_differences": []
+    },
+    {
+      "identity_difference_fields": [
+        "gap_gate_policy",
+        "members",
+        "membership_hash"
+      ],
+      "stored_gap_policy": "FULL_FOLD_REQUIRED_RANGE_V1",
+      "current_gap_policy": "TRAIN_HISTORY_ONLY_V2",
+      "fold_id": "fold-004-4b03b69d638d",
+      "research_view": "CORE",
+      "train_end": "2023-01-01T00:00:00+00:00",
+      "stored_hash": "ff8db61709df02e954ad8f7b",
+      "current_hash": "50fcacf8d40ced7a490ebe41",
+      "active_symbols_match": true,
+      "active_symbols": [
+        "BCHUSDT",
+        "BLZUSDT",
+        "BTCUSDT",
+        "COMPUSDT",
+        "DOGEUSDT",
+        "ETHUSDT",
+        "FILUSDT",
+        "FLMUSDT",
+        "HNTUSDT",
+        "IOTAUSDT",
+        "KNCUSDT",
+        "KSMUSDT",
+        "NEOUSDT",
+        "OMGUSDT",
+        "ONTUSDT",
+        "STORJUSDT",
+        "TRXUSDT",
+        "UNIUSDT",
+        "ZECUSDT",
+        "ZRXUSDT"
+      ],
+      "listing_causal": true,
+      "descriptors_causal": true,
+      "member_metadata_differences": [
+        {
+          "symbol": "QNTUSDT",
+          "fields": {
+            "quality_status": {
+              "stored": "INELIGIBLE_DATA_QUALITY",
+              "current": "INELIGIBLE_HISTORY"
+            },
+            "reason": {
+              "stored": "causal_unusable_segment_in_fold_required_range;1695168000000-1695254400000",
+              "current": "insufficient_point_in_time_history"
+            },
+            "unusable_segments": {
+              "stored": [
+                "1695168000000-1695254400000"
+              ],
+              "current": []
+            }
+          }
+        }
+      ]
+    },
+    {
+      "identity_difference_fields": [
+        "gap_gate_policy",
+        "members",
+        "membership_hash"
+      ],
+      "stored_gap_policy": "FULL_FOLD_REQUIRED_RANGE_V1",
+      "current_gap_policy": "TRAIN_HISTORY_ONLY_V2",
+      "fold_id": "fold-005-2cf830b9f251",
+      "research_view": "CORE",
+      "train_end": "2023-04-01T00:00:00+00:00",
+      "stored_hash": "96e394cdc675ade8d69984cc",
+      "current_hash": "54f31c1cc2d2cfde23ceaa9e",
+      "active_symbols_match": true,
+      "active_symbols": [
+        "BCHUSDT",
+        "BLZUSDT",
+        "BTCUSDT",
+        "COMPUSDT",
+        "DOGEUSDT",
+        "ETHUSDT",
+        "FILUSDT",
+        "FLMUSDT",
+        "HNTUSDT",
+        "IOTAUSDT",
+        "KNCUSDT",
+        "KSMUSDT",
+        "NEOUSDT",
+        "OMGUSDT",
+        "ONTUSDT",
+        "STORJUSDT",
+        "TRXUSDT",
+        "UNIUSDT",
+        "ZECUSDT",
+        "ZRXUSDT"
+      ],
+      "listing_causal": true,
+      "descriptors_causal": true,
+      "member_metadata_differences": [
+        {
+          "symbol": "QNTUSDT",
+          "fields": {
+            "quality_status": {
+              "stored": "INELIGIBLE_DATA_QUALITY",
+              "current": "INELIGIBLE_HISTORY"
+            },
+            "reason": {
+              "stored": "causal_unusable_segment_in_fold_required_range;1695168000000-1695254400000",
+              "current": "insufficient_point_in_time_history"
+            },
+            "unusable_segments": {
+              "stored": [
+                "1695168000000-1695254400000"
+              ],
+              "current": []
+            }
+          }
+        },
+        {
+          "symbol": "MAGICUSDT",
+          "fields": {
+            "quality_status": {
+              "stored": "INELIGIBLE_DATA_QUALITY",
+              "current": "INELIGIBLE_HISTORY"
+            },
+            "reason": {
+              "stored": "causal_unusable_segment_in_fold_required_range;1701302400000-1701388800000",
+              "current": "insufficient_point_in_time_history"
+            },
+            "unusable_segments": {
+              "stored": [
+                "1701302400000-1701388800000"
+              ],
+              "current": []
+            }
+          }
+        }
+      ]
+    },
+    {
+      "identity_difference_fields": [
+        "gap_gate_policy",
+        "members",
+        "membership_hash"
+      ],
+      "stored_gap_policy": "FULL_FOLD_REQUIRED_RANGE_V1",
+      "current_gap_policy": "TRAIN_HISTORY_ONLY_V2",
+      "fold_id": "fold-006-d3b9e1c10821",
+      "research_view": "CORE",
+      "train_end": "2023-07-01T00:00:00+00:00",
+      "stored_hash": "af10f8e1a646c3a85e29b527",
+      "current_hash": "14c2e6a5c62cabc30945df15",
+      "active_symbols_match": true,
+      "active_symbols": [
+        "BCHUSDT",
+        "BLZUSDT",
+        "BTCUSDT",
+        "COMPUSDT",
+        "DOGEUSDT",
+        "ETHUSDT",
+        "FILUSDT",
+        "FLMUSDT",
+        "HNTUSDT",
+        "IOTAUSDT",
+        "KNCUSDT",
+        "KSMUSDT",
+        "NEOUSDT",
+        "OMGUSDT",
+        "ONTUSDT",
+        "STORJUSDT",
+        "TRXUSDT",
+        "UNIUSDT",
+        "ZECUSDT",
+        "ZRXUSDT"
+      ],
+      "listing_causal": true,
+      "descriptors_causal": true,
+      "member_metadata_differences": [
+        {
+          "symbol": "MAGICUSDT",
+          "fields": {
+            "quality_status": {
+              "stored": "INELIGIBLE_DATA_QUALITY",
+              "current": "INELIGIBLE_HISTORY"
+            },
+            "reason": {
+              "stored": "causal_unusable_segment_in_fold_required_range;1701302400000-1701388800000",
+              "current": "insufficient_point_in_time_history"
+            },
+            "unusable_segments": {
+              "stored": [
+                "1701302400000-1701388800000"
+              ],
+              "current": []
+            }
+          }
+        },
+        {
+          "symbol": "QNTUSDT",
+          "fields": {
+            "quality_status": {
+              "stored": "INELIGIBLE_DATA_QUALITY",
+              "current": "INELIGIBLE_HISTORY"
+            },
+            "reason": {
+              "stored": "causal_unusable_segment_in_fold_required_range;1695168000000-1695254400000",
+              "current": "insufficient_point_in_time_history"
+            },
+            "unusable_segments": {
+              "stored": [
+                "1695168000000-1695254400000"
+              ],
+              "current": []
+            }
+          }
+        }
+      ]
+    },
+    {
+      "identity_difference_fields": [
+        "gap_gate_policy",
+        "members",
+        "membership_hash"
+      ],
+      "stored_gap_policy": "FULL_FOLD_REQUIRED_RANGE_V1",
+      "current_gap_policy": "TRAIN_HISTORY_ONLY_V2",
+      "fold_id": "fold-007-b137dd293bcc",
+      "research_view": "CORE",
+      "train_end": "2023-10-01T00:00:00+00:00",
+      "stored_hash": "2810922fc7f1095d18fb20e1",
+      "current_hash": "36859793a7743937b25e64eb",
+      "active_symbols_match": true,
+      "active_symbols": [
+        "BCHUSDT",
+        "BLZUSDT",
+        "BTCUSDT",
+        "COMPUSDT",
+        "DOGEUSDT",
+        "ETHUSDT",
+        "FILUSDT",
+        "FLMUSDT",
+        "HNTUSDT",
+        "IOTAUSDT",
+        "KNCUSDT",
+        "KSMUSDT",
+        "NEOUSDT",
+        "OMGUSDT",
+        "ONTUSDT",
+        "STORJUSDT",
+        "TRXUSDT",
+        "UNIUSDT",
+        "ZECUSDT",
+        "ZRXUSDT"
+      ],
+      "listing_causal": true,
+      "descriptors_causal": true,
+      "member_metadata_differences": [
+        {
+          "symbol": "MAGICUSDT",
+          "fields": {
+            "quality_status": {
+              "stored": "INELIGIBLE_DATA_QUALITY",
+              "current": "INELIGIBLE_HISTORY"
+            },
+            "reason": {
+              "stored": "causal_unusable_segment_in_fold_required_range;1701302400000-1701388800000",
+              "current": "insufficient_point_in_time_history"
+            },
+            "unusable_segments": {
+              "stored": [
+                "1701302400000-1701388800000"
+              ],
+              "current": []
+            }
+          }
+        },
+        {
+          "symbol": "QNTUSDT",
+          "fields": {
+            "quality_status": {
+              "stored": "INELIGIBLE_DATA_QUALITY",
+              "current": "INELIGIBLE_HISTORY"
+            },
+            "reason": {
+              "stored": "causal_unusable_segment_in_fold_required_range;1695168000000-1695254400000",
+              "current": "insufficient_point_in_time_history"
+            },
+            "unusable_segments": {
+              "stored": [
+                "1695168000000-1695254400000"
+              ],
+              "current": []
+            }
+          }
+        }
+      ]
+    },
+    {
+      "identity_difference_fields": [
+        "gap_gate_policy",
+        "members",
+        "membership_hash"
+      ],
+      "stored_gap_policy": "FULL_FOLD_REQUIRED_RANGE_V1",
+      "current_gap_policy": "TRAIN_HISTORY_ONLY_V2",
+      "fold_id": "fold-008-b22af5bba459",
+      "research_view": "CORE",
+      "train_end": "2024-01-01T00:00:00+00:00",
+      "stored_hash": "b74fa22de2e97282dcc5a565",
+      "current_hash": "5d5b340735482f32c88e7248",
+      "active_symbols_match": true,
+      "active_symbols": [
+        "BCHUSDT",
+        "BLZUSDT",
+        "BTCUSDT",
+        "COMPUSDT",
+        "DOGEUSDT",
+        "ETHUSDT",
+        "FILUSDT",
+        "FLMUSDT",
+        "HNTUSDT",
+        "IOTAUSDT",
+        "KNCUSDT",
+        "KSMUSDT",
+        "NEOUSDT",
+        "OMGUSDT",
+        "ONTUSDT",
+        "STORJUSDT",
+        "TRXUSDT",
+        "UNIUSDT",
+        "ZECUSDT",
+        "ZRXUSDT"
+      ],
+      "listing_causal": true,
+      "descriptors_causal": true,
+      "member_metadata_differences": [
+        {
+          "symbol": "MAGICUSDT",
+          "fields": {
+            "quality_status": {
+              "stored": "INELIGIBLE_DATA_QUALITY",
+              "current": "INELIGIBLE_HISTORY"
+            },
+            "reason": {
+              "stored": "causal_unusable_segment_in_fold_required_range;1701302400000-1701388800000",
+              "current": "insufficient_point_in_time_history"
+            },
+            "unusable_segments": {
+              "stored": [
+                "1701302400000-1701388800000"
+              ],
+              "current": []
+            }
+          }
+        },
+        {
+          "symbol": "QNTUSDT",
+          "fields": {
+            "quality_status": {
+              "stored": "INELIGIBLE_DATA_QUALITY",
+              "current": "INELIGIBLE_HISTORY"
+            },
+            "reason": {
+              "stored": "causal_unusable_segment_in_fold_required_range;1695168000000-1695254400000",
+              "current": "insufficient_point_in_time_history"
+            },
+            "unusable_segments": {
+              "stored": [
+                "1695168000000-1695254400000"
+              ],
+              "current": []
+            }
+          }
+        }
+      ]
+    },
+    {
+      "identity_difference_fields": [
+        "gap_gate_policy",
+        "members",
+        "membership_hash"
+      ],
+      "stored_gap_policy": "FULL_FOLD_REQUIRED_RANGE_V1",
+      "current_gap_policy": "TRAIN_HISTORY_ONLY_V2",
+      "fold_id": "fold-009-840bf1d34764",
+      "research_view": "CORE",
+      "train_end": "2024-04-01T00:00:00+00:00",
+      "stored_hash": "b84562cde3c2bc65c97037a3",
+      "current_hash": "e054e434332046a5103eeff7",
+      "active_symbols_match": true,
+      "active_symbols": [
+        "BCHUSDT",
+        "BLZUSDT",
+        "BTCUSDT",
+        "COMPUSDT",
+        "DOGEUSDT",
+        "ETHUSDT",
+        "FILUSDT",
+        "FLMUSDT",
+        "HNTUSDT",
+        "IOTAUSDT",
+        "KNCUSDT",
+        "KSMUSDT",
+        "NEOUSDT",
+        "OMGUSDT",
+        "ONTUSDT",
+        "STORJUSDT",
+        "TRXUSDT",
+        "UNIUSDT",
+        "ZECUSDT",
+        "ZRXUSDT"
+      ],
+      "listing_causal": true,
+      "descriptors_causal": true,
+      "member_metadata_differences": [
+        {
+          "symbol": "MAGICUSDT",
+          "fields": {
+            "quality_status": {
+              "stored": "INELIGIBLE_DATA_QUALITY",
+              "current": "INELIGIBLE_HISTORY"
+            },
+            "reason": {
+              "stored": "causal_unusable_segment_in_fold_required_range;1701302400000-1701388800000",
+              "current": "insufficient_point_in_time_history"
+            },
+            "unusable_segments": {
+              "stored": [
+                "1701302400000-1701388800000"
+              ],
+              "current": []
+            }
+          }
+        },
+        {
+          "symbol": "QNTUSDT",
+          "fields": {
+            "quality_status": {
+              "stored": "INELIGIBLE_DATA_QUALITY",
+              "current": "INELIGIBLE_HISTORY"
+            },
+            "reason": {
+              "stored": "causal_unusable_segment_in_fold_required_range;1695168000000-1695254400000",
+              "current": "insufficient_point_in_time_history"
+            },
+            "unusable_segments": {
+              "stored": [
+                "1695168000000-1695254400000"
+              ],
+              "current": []
+            }
+          }
+        }
+      ]
+    },
+    {
+      "identity_difference_fields": [
+        "gap_gate_policy",
+        "members",
+        "membership_hash"
+      ],
+      "stored_gap_policy": "FULL_FOLD_REQUIRED_RANGE_V1",
+      "current_gap_policy": "TRAIN_HISTORY_ONLY_V2",
+      "fold_id": "fold-010-01be2e390a0b",
+      "research_view": "CORE",
+      "train_end": "2024-07-01T00:00:00+00:00",
+      "stored_hash": "34fcf88c7b53c72eefef7ba8",
+      "current_hash": "48e4887b368a372b4a41927f",
+      "active_symbols_match": true,
+      "active_symbols": [
+        "BCHUSDT",
+        "BLZUSDT",
+        "BTCUSDT",
+        "COMPUSDT",
+        "DOGEUSDT",
+        "ETHUSDT",
+        "FILUSDT",
+        "FLMUSDT",
+        "IOTAUSDT",
+        "KNCUSDT",
+        "KSMUSDT",
+        "NEOUSDT",
+        "OMGUSDT",
+        "ONTUSDT",
+        "STORJUSDT",
+        "TRXUSDT",
+        "UNIUSDT",
+        "ZECUSDT",
+        "ZRXUSDT"
+      ],
+      "listing_causal": true,
+      "descriptors_causal": true,
+      "member_metadata_differences": [
+        {
+          "symbol": "MAGICUSDT",
+          "fields": {
+            "quality_status": {
+              "stored": "INELIGIBLE_DATA_QUALITY",
+              "current": "INELIGIBLE_HISTORY"
+            },
+            "reason": {
+              "stored": "causal_unusable_segment_in_fold_required_range;1701302400000-1701388800000",
+              "current": "insufficient_point_in_time_history"
+            },
+            "unusable_segments": {
+              "stored": [
+                "1701302400000-1701388800000"
+              ],
+              "current": []
+            }
+          }
+        },
+        {
+          "symbol": "QNTUSDT",
+          "fields": {
+            "quality_status": {
+              "stored": "INELIGIBLE_DATA_QUALITY",
+              "current": "INELIGIBLE_HISTORY"
+            },
+            "reason": {
+              "stored": "causal_unusable_segment_in_fold_required_range;1695168000000-1695254400000",
+              "current": "insufficient_point_in_time_history"
+            },
+            "unusable_segments": {
+              "stored": [
+                "1695168000000-1695254400000"
+              ],
+              "current": []
+            }
+          }
+        }
+      ]
+    },
+    {
+      "identity_difference_fields": [
+        "gap_gate_policy",
+        "members",
+        "membership_hash"
+      ],
+      "stored_gap_policy": "FULL_FOLD_REQUIRED_RANGE_V1",
+      "current_gap_policy": "TRAIN_HISTORY_ONLY_V2",
+      "fold_id": "fold-011-d89741db3cd2",
+      "research_view": "CORE",
+      "train_end": "2024-10-01T00:00:00+00:00",
+      "stored_hash": "59fca769459b5245c2c78bc1",
+      "current_hash": "f4e99a8c3c8b441eb73a9682",
+      "active_symbols_match": true,
+      "active_symbols": [
+        "BCHUSDT",
+        "BLZUSDT",
+        "BTCUSDT",
+        "COMPUSDT",
+        "DOGEUSDT",
+        "ETHUSDT",
+        "FILUSDT",
+        "FLMUSDT",
+        "IOTAUSDT",
+        "KNCUSDT",
+        "KSMUSDT",
+        "NEOUSDT",
+        "OMGUSDT",
+        "ONTUSDT",
+        "STORJUSDT",
+        "TRXUSDT",
+        "UNIUSDT",
+        "ZECUSDT",
+        "ZRXUSDT"
+      ],
+      "listing_causal": true,
+      "descriptors_causal": true,
+      "member_metadata_differences": [
+        {
+          "symbol": "MAGICUSDT",
+          "fields": {
+            "quality_status": {
+              "stored": "INELIGIBLE_DATA_QUALITY",
+              "current": "INELIGIBLE_HISTORY"
+            },
+            "reason": {
+              "stored": "causal_unusable_segment_in_fold_required_range;1701302400000-1701388800000",
+              "current": "insufficient_point_in_time_history"
+            },
+            "unusable_segments": {
+              "stored": [
+                "1701302400000-1701388800000"
+              ],
+              "current": []
+            }
+          }
+        },
+        {
+          "symbol": "QNTUSDT",
+          "fields": {
+            "quality_status": {
+              "stored": "INELIGIBLE_DATA_QUALITY",
+              "current": "INELIGIBLE_HISTORY"
+            },
+            "reason": {
+              "stored": "causal_unusable_segment_in_fold_required_range;1695168000000-1695254400000",
+              "current": "insufficient_point_in_time_history"
+            },
+            "unusable_segments": {
+              "stored": [
+                "1695168000000-1695254400000"
+              ],
+              "current": []
+            }
+          }
+        }
+      ]
+    },
+    {
+      "identity_difference_fields": [
+        "gap_gate_policy",
+        "members",
+        "membership_hash"
+      ],
+      "stored_gap_policy": "FULL_FOLD_REQUIRED_RANGE_V1",
+      "current_gap_policy": "TRAIN_HISTORY_ONLY_V2",
+      "fold_id": "fold-012-7a680fd4ffbe",
+      "research_view": "CORE",
+      "train_end": "2025-01-01T00:00:00+00:00",
+      "stored_hash": "7b08a5fface002e8baa37eb6",
+      "current_hash": "d35987593ed5a8ec5b79cf1d",
+      "active_symbols_match": true,
+      "active_symbols": [
+        "BCHUSDT",
+        "BLZUSDT",
+        "BTCUSDT",
+        "COMPUSDT",
+        "DOGEUSDT",
+        "ETHUSDT",
+        "FILUSDT",
+        "FLMUSDT",
+        "IOTAUSDT",
+        "KNCUSDT",
+        "KSMUSDT",
+        "NEOUSDT",
+        "OMGUSDT",
+        "ONTUSDT",
+        "STORJUSDT",
+        "TRXUSDT",
+        "UNIUSDT",
+        "ZECUSDT",
+        "ZRXUSDT"
+      ],
+      "listing_causal": true,
+      "descriptors_causal": true,
+      "member_metadata_differences": [
+        {
+          "symbol": "MAGICUSDT",
+          "fields": {
+            "quality_status": {
+              "stored": "INELIGIBLE_DATA_QUALITY",
+              "current": "INELIGIBLE_HISTORY"
+            },
+            "reason": {
+              "stored": "causal_unusable_segment_in_fold_required_range;1701302400000-1701388800000",
+              "current": "insufficient_point_in_time_history"
+            },
+            "unusable_segments": {
+              "stored": [
+                "1701302400000-1701388800000"
+              ],
+              "current": []
+            }
+          }
+        },
+        {
+          "symbol": "QNTUSDT",
+          "fields": {
+            "quality_status": {
+              "stored": "INELIGIBLE_DATA_QUALITY",
+              "current": "INELIGIBLE_HISTORY"
+            },
+            "reason": {
+              "stored": "causal_unusable_segment_in_fold_required_range;1695168000000-1695254400000",
+              "current": "insufficient_point_in_time_history"
+            },
+            "unusable_segments": {
+              "stored": [
+                "1695168000000-1695254400000"
+              ],
+              "current": []
+            }
+          }
+        }
+      ]
+    },
+    {
+      "identity_difference_fields": [
+        "gap_gate_policy",
+        "members",
+        "membership_hash"
+      ],
+      "stored_gap_policy": "FULL_FOLD_REQUIRED_RANGE_V1",
+      "current_gap_policy": "TRAIN_HISTORY_ONLY_V2",
+      "fold_id": "fold-013-38fc22d70345",
+      "research_view": "CORE",
+      "train_end": "2025-04-01T00:00:00+00:00",
+      "stored_hash": "6c7cb663658288ec1483c9ba",
+      "current_hash": "4ba205208cdb6dab961df9c7",
+      "active_symbols_match": true,
+      "active_symbols": [
+        "BCHUSDT",
+        "BLZUSDT",
+        "BTCUSDT",
+        "COMPUSDT",
+        "DOGEUSDT",
+        "ETHUSDT",
+        "FILUSDT",
+        "FLMUSDT",
+        "IOTAUSDT",
+        "KNCUSDT",
+        "KSMUSDT",
+        "NEOUSDT",
+        "OMGUSDT",
+        "ONTUSDT",
+        "STORJUSDT",
+        "TRXUSDT",
+        "UNIUSDT",
+        "ZECUSDT",
+        "ZRXUSDT"
+      ],
+      "listing_causal": true,
+      "descriptors_causal": true,
+      "member_metadata_differences": [
+        {
+          "symbol": "MAGICUSDT",
+          "fields": {
+            "quality_status": {
+              "stored": "INELIGIBLE_DATA_QUALITY",
+              "current": "INELIGIBLE_HISTORY"
+            },
+            "reason": {
+              "stored": "causal_unusable_segment_in_fold_required_range;1701302400000-1701388800000",
+              "current": "insufficient_point_in_time_history"
+            },
+            "unusable_segments": {
+              "stored": [
+                "1701302400000-1701388800000"
+              ],
+              "current": []
+            }
+          }
+        },
+        {
+          "symbol": "QNTUSDT",
+          "fields": {
+            "quality_status": {
+              "stored": "INELIGIBLE_DATA_QUALITY",
+              "current": "INELIGIBLE_HISTORY"
+            },
+            "reason": {
+              "stored": "causal_unusable_segment_in_fold_required_range;1695168000000-1695254400000",
+              "current": "insufficient_point_in_time_history"
+            },
+            "unusable_segments": {
+              "stored": [
+                "1695168000000-1695254400000"
+              ],
+              "current": []
+            }
+          }
+        }
+      ]
+    },
+    {
+      "identity_difference_fields": [
+        "gap_gate_policy",
+        "members",
+        "membership_hash"
+      ],
+      "stored_gap_policy": "FULL_FOLD_REQUIRED_RANGE_V1",
+      "current_gap_policy": "TRAIN_HISTORY_ONLY_V2",
+      "fold_id": "fold-014-8b62ba7b825a",
+      "research_view": "CORE",
+      "train_end": "2025-07-01T00:00:00+00:00",
+      "stored_hash": "a4e8acb38f67f3bb4562d92f",
+      "current_hash": "2a78c544139b0ce023230635",
+      "active_symbols_match": true,
+      "active_symbols": [
+        "BCHUSDT",
+        "BLZUSDT",
+        "BTCUSDT",
+        "COMPUSDT",
+        "DOGEUSDT",
+        "ETHUSDT",
+        "FILUSDT",
+        "FLMUSDT",
+        "IOTAUSDT",
+        "KNCUSDT",
+        "KSMUSDT",
+        "NEOUSDT",
+        "OMGUSDT",
+        "ONTUSDT",
+        "STORJUSDT",
+        "TRXUSDT",
+        "UNIUSDT",
+        "ZECUSDT",
+        "ZRXUSDT"
+      ],
+      "listing_causal": true,
+      "descriptors_causal": true,
+      "member_metadata_differences": [
+        {
+          "symbol": "MAGICUSDT",
+          "fields": {
+            "quality_status": {
+              "stored": "INELIGIBLE_DATA_QUALITY",
+              "current": "INELIGIBLE_HISTORY"
+            },
+            "reason": {
+              "stored": "causal_unusable_segment_in_fold_required_range;1701302400000-1701388800000",
+              "current": "insufficient_point_in_time_history"
+            },
+            "unusable_segments": {
+              "stored": [
+                "1701302400000-1701388800000"
+              ],
+              "current": []
+            }
+          }
+        },
+        {
+          "symbol": "QNTUSDT",
+          "fields": {
+            "quality_status": {
+              "stored": "INELIGIBLE_DATA_QUALITY",
+              "current": "INELIGIBLE_HISTORY"
+            },
+            "reason": {
+              "stored": "causal_unusable_segment_in_fold_required_range;1695168000000-1695254400000",
+              "current": "insufficient_point_in_time_history"
+            },
+            "unusable_segments": {
+              "stored": [
+                "1695168000000-1695254400000"
+              ],
+              "current": []
+            }
+          }
+        }
+      ]
+    },
+    {
+      "identity_difference_fields": [
+        "gap_gate_policy",
+        "members",
+        "membership_hash"
+      ],
+      "stored_gap_policy": "FULL_FOLD_REQUIRED_RANGE_V1",
+      "current_gap_policy": "TRAIN_HISTORY_ONLY_V2",
+      "fold_id": "fold-015-ed49f0aadaf7",
+      "research_view": "CORE",
+      "train_end": "2025-10-01T00:00:00+00:00",
+      "stored_hash": "82fb137cf80bbcba312dffc5",
+      "current_hash": "74ff15f34a8ac1a49350bede",
+      "active_symbols_match": true,
+      "active_symbols": [
+        "BCHUSDT",
+        "BLZUSDT",
+        "BTCUSDT",
+        "COMPUSDT",
+        "DOGEUSDT",
+        "ETHUSDT",
+        "FILUSDT",
+        "FLMUSDT",
+        "IOTAUSDT",
+        "KNCUSDT",
+        "KSMUSDT",
+        "NEOUSDT",
+        "OMGUSDT",
+        "ONTUSDT",
+        "STORJUSDT",
+        "TRXUSDT",
+        "UNIUSDT",
+        "ZECUSDT",
+        "ZRXUSDT"
+      ],
+      "listing_causal": true,
+      "descriptors_causal": true,
+      "member_metadata_differences": [
+        {
+          "symbol": "MAGICUSDT",
+          "fields": {
+            "quality_status": {
+              "stored": "INELIGIBLE_DATA_QUALITY",
+              "current": "INELIGIBLE_HISTORY"
+            },
+            "reason": {
+              "stored": "causal_unusable_segment_in_fold_required_range;1701302400000-1701388800000",
+              "current": "insufficient_point_in_time_history"
+            },
+            "unusable_segments": {
+              "stored": [
+                "1701302400000-1701388800000"
+              ],
+              "current": []
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "file_hashes": {
+    "registry/symbol_registry.json": "6e2b5f8ba3998978bcdb206a7e42909e4c1a83f390d9ef501b1167d99f0d8bac",
+    "universe/core_universe.json": "0714b7a5b1c0bc57bc2ff918a0eafda203a1bb78bf2ab2736acc32696a9f64e7",
+    "universe/fold_memberships.json": "d7d47467f91e0eac060956875dd4dad9ff7b33f6d89ab730674290e7fcb69773",
+    "universe/selection_descriptors.json": "01bc63176450814e4031192c59c728f9e4d1dff7a56871b84358d0125070dd4b",
+    "fold_descriptors.json": "64e5e949cc586cba0fad4716ce7de3416712ef3497d8c0ee432cb00c76143513"
+  },
+  "limits": [
+    "Registry archive lifecycle endpoints can be coarse month boundaries; historical data absence is never filled. HNT remains in frozen Core20.",
+    "Causality under future listing/status/gap perturbations is additionally covered by real cold-start/universe pytest. No universe methodology was changed."
+  ]
+}

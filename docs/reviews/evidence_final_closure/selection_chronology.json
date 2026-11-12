@@ -1,0 +1,16 @@
+{
+  "status": "PASS",
+  "canonical_protocol": "configs/research/phase7_selection_chronology_v1.json",
+  "regenerated_protocol": "docs/reviews/evidence_final_closure/selection_protocol_regenerated.json",
+  "semantic_content_equal": true,
+  "canonical_file_sha256": "2741738d93c97afa90d63918ff2b9a52d895e044110004b06ed7589902b9bdfe",
+  "regenerated_file_sha256": "2741738d93c97afa90d63918ff2b9a52d895e044110004b06ed7589902b9bdfe",
+  "folds": 16,
+  "overlaps": 120,
+  "protocol_sha256": "562dbf8203f476e446cd9968d336fa74b022924c01e5b1c34f3167c065c73826",
+  "holdout": {
+    "evaluation_authorized": false,
+    "status": "LOCKED_UNUSED",
+    "used": false
+  }
+}

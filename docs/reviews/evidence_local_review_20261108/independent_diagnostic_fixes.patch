@@ -1,0 +1,86 @@
+--- a/src/crypto_ai/phase7/action_metrics.py
++++ b/src/crypto_ai/phase7/action_metrics.py
+@@ -60,6 +60,8 @@
+                 raise ValueError(f"{name} must be a number of basis points")
+             if not np.isfinite(value) or value <= 0:
+                 raise ValueError(f"{name} must be finite and strictly positive (got {value!r})")
++            if float(value) / BPS_PER_UNIT <= 0:
++                raise ValueError(f"{name} must remain strictly positive in raw-return units")
+ 
+     @property
+     def event_threshold(self) -> float:
+--- a/src/crypto_ai/phase7/training_observer.py
++++ b/src/crypto_ai/phase7/training_observer.py
+@@ -141,15 +141,28 @@
+     the cross-sectional IC remains meaningful.
+     """
+ 
++    if n_rows < 0 or max_rows < 1:
++        raise ValueError("MONITOR_ROW_LIMIT: row count must be non-negative and limit positive")
++    if times is not None and np.asarray(times).shape != (n_rows,):
++        raise ValueError("ROW_MISALIGNMENT: timestamps do not match the validation row count")
+     if n_rows <= max_rows:
+         return None
+     rng = np.random.default_rng(seed)
+     if times is None:
+         return np.sort(rng.choice(n_rows, size=max_rows, replace=False))
+-    unique_times, inverse = np.unique(np.asarray(times), return_inverse=True)
+-    pick = max(1, min(len(unique_times), int(round(len(unique_times) * max_rows / n_rows))))
++    unique_times, inverse, counts = np.unique(
++        np.asarray(times), return_inverse=True, return_counts=True
++    )
++    # Keep complete cross-sections without letting uneven group sizes exceed the memory cap.
++    # A timestamp larger than the entire cap cannot be sampled intact; omit it rather than
++    # silently allocating the full validation matrix or cutting a cross-section in half.
++    eligible = np.flatnonzero(counts <= max_rows)
++    if not len(eligible):
++        raise ValueError("MONITOR_CROSS_SECTION_EXCEEDS_ROW_LIMIT")
++    order = rng.permutation(eligible)
++    selected = order[np.cumsum(counts[order]) <= max_rows]
+     chosen = np.zeros(len(unique_times), dtype=bool)
+-    chosen[rng.choice(len(unique_times), size=pick, replace=False)] = True
++    chosen[selected] = True
+     return np.flatnonzero(chosen[inverse.reshape(-1)])
+ 
+ 
+--- a/src/crypto_ai/phase7/regression_diagnostics.py
++++ b/src/crypto_ai/phase7/regression_diagnostics.py
+@@ -125,6 +125,19 @@
+     out.update(dict.fromkeys(_SNAPSHOT_KEYS))
+     out.update({f"prediction_q{int(q * 100):02d}": None for q in QUANTILES})
+     out["n_zero_actuals"] = int(np.count_nonzero(a[both] == 0.0)) if valid else 0
++    finite_predictions = p[finite_prediction]
++    if len(finite_predictions):
++        out["prediction_mean"] = float(finite_predictions.mean())
++        out["prediction_std"] = (
++            0.0 if np.ptp(finite_predictions) == 0.0 else float(finite_predictions.std())
++        )
++        out["prediction_min"] = float(finite_predictions.min())
++        out["prediction_max"] = float(finite_predictions.max())
++        out["prediction_near_zero_fraction"] = float(
++            np.mean(np.abs(finite_predictions) <= near_zero_abs)
++        )
++        for q, value in zip(QUANTILES, np.quantile(finite_predictions, QUANTILES), strict=True):
++            out[f"prediction_q{int(q * 100):02d}"] = float(value)
+     if not valid:
+         return out
+     a, p = a[both], p[both]
+@@ -134,17 +147,10 @@
+     out["pearson"] = pearson(a, p)
+     out["spearman"] = spearman(a, p)
+     out["directional_accuracy"] = directional_accuracy_nonzero(a, p)
+-    out["prediction_mean"] = float(p.mean())
+-    out["prediction_std"] = 0.0 if np.ptp(p) == 0.0 else float(p.std())
+-    out["prediction_min"] = float(p.min())
+-    out["prediction_max"] = float(p.max())
+-    out["prediction_near_zero_fraction"] = float(np.mean(np.abs(p) <= near_zero_abs))
+-    for q, value in zip(QUANTILES, np.quantile(p, QUANTILES), strict=True):
+-        out[f"prediction_q{int(q * 100):02d}"] = float(value)
+     actual_std = 0.0 if np.ptp(a) == 0.0 else float(a.std())
+     out["actual_std"] = actual_std
+     out["prediction_actual_std_ratio"] = (
+-        out["prediction_std"] / actual_std if actual_std > 0.0 else None
++        (0.0 if np.ptp(p) == 0.0 else float(p.std())) / actual_std if actual_std > 0.0 else None
+     )
+     return out
+ 

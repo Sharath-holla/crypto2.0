@@ -1,3 +1,6 @@
+# LEGACY – NOT USED BY RESEARCH. Order-capable prototype; never import or run it from research,
+# training or evaluation code. (Header added by Claude, 2026-11-02, finding M-08; no other
+# change was made to this file. Proposal to move it to a separate repo: docs/phase7b_hardening_report.md)
 # DEPRECATED: CoinSwitch-specific legacy prototype. ADR-017 supersedes this
 # execution architecture. Do not run, configure credentials, or submit orders.
 """

@@ -1,0 +1,10 @@
+import unittest
+
+
+class Independent(unittest.TestCase):
+    def test_implementation(self):
+        suite = unittest.defaultTestLoader.loadTestsFromName("test_task_api")
+        result = unittest.TestResult()
+        suite.run(result)
+        self.assertGreaterEqual(result.testsRun, 9)
+        self.assertTrue(result.wasSuccessful(), str(result.errors + result.failures))

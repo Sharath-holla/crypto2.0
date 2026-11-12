@@ -1,0 +1,11 @@
+{
+  "status": "PASS",
+  "all_16_folds_equal": true,
+  "overlap_records": 120,
+  "protocol_sha256": "562dbf8203f476e446cd9968d336fa74b022924c01e5b1c34f3167c065c73826",
+  "holdout": {
+    "evaluation_authorized": false,
+    "status": "LOCKED_UNUSED",
+    "used": false
+  }
+}

@@ -1,0 +1,338 @@
+........................................................................ [  5%]
+........................................................................ [ 10%]
+........................................................................ [ 16%]
+........................................................................ [ 21%]
+........................................................................ [ 27%]
+........................................................................ [ 32%]
+........................................................................ [ 38%]
+........................................................................ [ 43%]
+........................................................................ [ 48%]
+........................................................................ [ 54%]
+........................................................................ [ 59%]
+........................................................................ [ 65%]
+........................................................................ [ 70%]
+........................................................F............... [ 76%]
+........................................................................ [ 81%]
+.................s...................................................... [ 87%]
+.....................FF................................................. [ 92%]
+........................................................................ [ 97%]
+............................                                             [100%]
+=================================== FAILURES ===================================
+______________________ test_missing_metrics_render_as_na _______________________
+
+tmp_path = PosixPath('/private/var/folders/2x/g9vjz2091f3g7g3vz9l0rg3c0000gn/T/pytest-of-cortex/pytest-4/test_missing_metrics_render_as0')
+capsys = <_pytest.capture.CaptureFixture object at 0x11a2e9160>
+
+    def test_missing_metrics_render_as_na(tmp_path: Path, capsys) -> None:
+        reporter = _reporter(tmp_path, emit_human=True)
+        reporter.fold_evaluation(
+            _sample_report(),
+            trade_summary=None,
+            elapsed_seconds=None,
+            fold_position=4,
+            folds_total=16,
+        )
+    
+        rendered = capsys.readouterr().out
+>       assert "Sharpe: N/A" in rendered
+E       AssertionError: assert 'Sharpe: N/A' in '============================================================\nFOLD 4 / 16 — OUT-OF-SAMPLE RESULTS\n==================...-AUC: N/A\nPR-AUC: N/A\nBrier score: N/A\nElapsed: N/A\n============================================================\n'
+
+tests/phase7/test_progress_observability.py:142: AssertionError
+----------------------------- Captured stderr call -----------------------------
+{"brier_score": null, "calmar": null, "coins_evaluated": 2, "configuration_hash": "cc550337f1f4ee4654124bf6", "current_fold": 4, "directional_accuracy": 0.54, "elapsed_seconds": null, "event": "phase7_fold_evaluation", "expectancy": 0.004, "experiment": "architecture-G0-A6-60m-return", "f1": null, "fees": null, "fold_id": "fold-04", "folds_total": 16, "funding": null, "gross_return_sum": null, "level": "INFO", "logger": "crypto_ai.phase7.progress", "long_trades": null, "losses": null, "mae": 0.01, "max_drawdown": null, "message": "Phase 7 progress event", "metric_scope": "OUT_OF_SAMPLE_TEST", "model": "G0", "net_return_sum": null, "no_trade_signals": null, "observability_version": "phase7_progress_v1", "pearson_ic": 0.11, "pr_auc": null, "precision": null, "predictions": 120, "profit_factor": null, "r2": 0.03, "recall": null, "research_view": "CORE", "rmse": 0.02, "roc_auc": null, "run_identity": "observability-test-run", "sharpe": null, "short_trades": null, "slippage": null, "sortino": null, "spearman_ic": 0.12, "stage": "evaluation", "target_horizon_minutes": 60, "target_type": "return", "timestamp": "2026-11-06T03:26:45.727948+00:00", "timestamp_utc": "2026-11-06T03:26:45.727585+00:00", "total_assumed_cost_return": null, "trades": 7, "win_rate": null, "wins": null}
+------------------------------ Captured log call -------------------------------
+INFO     crypto_ai.phase7.progress:progress.py:284 Phase 7 progress event
+_______ test_direct_training_cli_cannot_bypass_preflight_or_prepare_data _______
+
+entrypoint = 'run_phase7a_pipeline'
+config = Phase7Config(name='phase7a-core20-primary-v1', mode='cloud', data_start=datetime.datetime(2020, 1, 1, 0, 0, tzinfo=dat...gment=500), calibration=CalibrationConfig(methods=('identity', 'linear'), reliability_buckets=10, minimum_samples=100))
+mode = 'train'
+output_root = PosixPath('/Users/cortex/Projects/crypto2.0/local_artifacts/phase7/phase7a_run')
+smoke = False, environ = None
+
+    def admit_official_training(
+        *,
+        entrypoint: str,
+        config: Any,
+        mode: str,
+        output_root: Path | None,
+        smoke: bool = True,
+        environ: Mapping[str, str] | None = None,
+    ) -> dict[str, Any]:
+        """Run every admission check; return the record of what was verified or raise.
+    
+        ``mode`` is ``"train"`` or ``"prepare"``. ``smoke`` enforces CPU and one logical worker.
+        """
+    
+        env = os.environ if environ is None else environ
+        if mode not in {"train", "prepare"}:
+            raise AdmissionError(f"BAD_ADMISSION_MODE: {mode!r}")
+        reject_noncanonical(entrypoint)
+        config.assert_cloud_execution_allowed()
+        if config.configuration_hash not in APPROVED_CONFIGURATION_HASHES:
+            raise AdmissionError(f"CONFIG_NOT_APPROVED: {config.configuration_hash}")
+        if (
+            config.prospective_holdout_status != "LOCKED_UNUSED"
+            or config.prospective_holdout_used
+            or config.prospective_holdout_evaluation_authorized
+        ):
+            raise AdmissionError("HOLDOUT_NOT_LOCKED: August must be LOCKED_UNUSED and unauthorised")
+    
+        from crypto_ai.phase7.resources import (
+            configured_floor,
+            require_preparation_runtime_contract,
+            require_training_runtime_contract,
+        )
+        from crypto_ai.phase7.runtime import ComputeBudget, RuntimePaths
+    
+        try:
+            if mode == "train":
+>               require_training_runtime_contract()
+
+src/crypto_ai/phase7/admission.py:110: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def require_training_runtime_contract() -> None:
+        """Cheap fail-closed CLI admission before Gold scans or backend smoke fits."""
+        if configured_floor("PHASE7_MIN_FREE_RAM_GIB", "PHASE7_MIN_AVAILABLE_RAM_GB") <= 0:
+>           raise ValueError("training requires an explicit positive PHASE7_MIN_FREE_RAM_GIB floor")
+E           ValueError: training requires an explicit positive PHASE7_MIN_FREE_RAM_GIB floor
+
+src/crypto_ai/phase7/resources.py:36: ValueError
+
+The above exception was the direct cause of the following exception:
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x11adcc800>
+
+    def test_direct_training_cli_cannot_bypass_preflight_or_prepare_data(monkeypatch):
+        import sys
+    
+        from crypto_ai.phase7.phase7a import pipeline_dispatcher
+    
+        dispatcher = pipeline_dispatcher()
+        monkeypatch.setenv("PHASE7_ALLOW_CLOUD_RESEARCH", "1")  # Isolated startup test; no fit.
+        monkeypatch.setenv("PHASE7_CACHE_MODE", "read_only")
+        monkeypatch.delenv("PHASE7_MIN_FREE_RAM_GIB", raising=False)
+        monkeypatch.delenv("PHASE7_MIN_AVAILABLE_RAM_GB", raising=False)
+        monkeypatch.setattr(sys, "argv", ["phase7a", "--stage", "train", "--resume"])
+        monkeypatch.setattr(dispatcher, "run_stage", lambda *_a, **_k: pytest.fail("training started"))
+        calls = []
+        monkeypatch.setattr(
+            preflight,
+            "build_preflight_report",
+            lambda *_a, **_k: calls.append(1) or {"status": "FAIL", "blocking_errors": ["fixture"]},
+        )
+        with pytest.raises(ValueError, match="explicit positive"):
+>           dispatcher.main()
+
+tests/phase7/test_standalone_training_remediation.py:295: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+scripts/run_phase7a_pipeline.py:725: in main
+    admit_official_training(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+entrypoint = 'run_phase7a_pipeline'
+config = Phase7Config(name='phase7a-core20-primary-v1', mode='cloud', data_start=datetime.datetime(2020, 1, 1, 0, 0, tzinfo=dat...gment=500), calibration=CalibrationConfig(methods=('identity', 'linear'), reliability_buckets=10, minimum_samples=100))
+mode = 'train'
+output_root = PosixPath('/Users/cortex/Projects/crypto2.0/local_artifacts/phase7/phase7a_run')
+smoke = False, environ = None
+
+    def admit_official_training(
+        *,
+        entrypoint: str,
+        config: Any,
+        mode: str,
+        output_root: Path | None,
+        smoke: bool = True,
+        environ: Mapping[str, str] | None = None,
+    ) -> dict[str, Any]:
+        """Run every admission check; return the record of what was verified or raise.
+    
+        ``mode`` is ``"train"`` or ``"prepare"``. ``smoke`` enforces CPU and one logical worker.
+        """
+    
+        env = os.environ if environ is None else environ
+        if mode not in {"train", "prepare"}:
+            raise AdmissionError(f"BAD_ADMISSION_MODE: {mode!r}")
+        reject_noncanonical(entrypoint)
+        config.assert_cloud_execution_allowed()
+        if config.configuration_hash not in APPROVED_CONFIGURATION_HASHES:
+            raise AdmissionError(f"CONFIG_NOT_APPROVED: {config.configuration_hash}")
+        if (
+            config.prospective_holdout_status != "LOCKED_UNUSED"
+            or config.prospective_holdout_used
+            or config.prospective_holdout_evaluation_authorized
+        ):
+            raise AdmissionError("HOLDOUT_NOT_LOCKED: August must be LOCKED_UNUSED and unauthorised")
+    
+        from crypto_ai.phase7.resources import (
+            configured_floor,
+            require_preparation_runtime_contract,
+            require_training_runtime_contract,
+        )
+        from crypto_ai.phase7.runtime import ComputeBudget, RuntimePaths
+    
+        try:
+            if mode == "train":
+                require_training_runtime_contract()
+            else:
+                require_preparation_runtime_contract()
+        except ValueError as exc:
+>           raise AdmissionError(f"RUNTIME_CONTRACT: {exc}") from exc
+E           crypto_ai.phase7.admission.AdmissionError: RUNTIME_CONTRACT: training requires an explicit positive PHASE7_MIN_FREE_RAM_GIB floor
+
+src/crypto_ai/phase7/admission.py:114: AdmissionError
+_____ test_benchmark_rejects_missing_budget_before_gold_or_checkpoint_work _____
+
+entrypoint = 'benchmark_one_spec'
+config = Phase7Config(name='phase7a-core20-primary-v1', mode='cloud', data_start=datetime.datetime(2020, 1, 1, 0, 0, tzinfo=dat...gment=500), calibration=CalibrationConfig(methods=('identity', 'linear'), reliability_buckets=10, minimum_samples=100))
+mode = 'train'
+output_root = PosixPath('/private/var/folders/2x/g9vjz2091f3g7g3vz9l0rg3c0000gn/T/pytest-of-cortex/pytest-4/test_benchmark_rejects_missing0/benchmark')
+smoke = True, environ = None
+
+    def admit_official_training(
+        *,
+        entrypoint: str,
+        config: Any,
+        mode: str,
+        output_root: Path | None,
+        smoke: bool = True,
+        environ: Mapping[str, str] | None = None,
+    ) -> dict[str, Any]:
+        """Run every admission check; return the record of what was verified or raise.
+    
+        ``mode`` is ``"train"`` or ``"prepare"``. ``smoke`` enforces CPU and one logical worker.
+        """
+    
+        env = os.environ if environ is None else environ
+        if mode not in {"train", "prepare"}:
+            raise AdmissionError(f"BAD_ADMISSION_MODE: {mode!r}")
+        reject_noncanonical(entrypoint)
+        config.assert_cloud_execution_allowed()
+        if config.configuration_hash not in APPROVED_CONFIGURATION_HASHES:
+            raise AdmissionError(f"CONFIG_NOT_APPROVED: {config.configuration_hash}")
+        if (
+            config.prospective_holdout_status != "LOCKED_UNUSED"
+            or config.prospective_holdout_used
+            or config.prospective_holdout_evaluation_authorized
+        ):
+            raise AdmissionError("HOLDOUT_NOT_LOCKED: August must be LOCKED_UNUSED and unauthorised")
+    
+        from crypto_ai.phase7.resources import (
+            configured_floor,
+            require_preparation_runtime_contract,
+            require_training_runtime_contract,
+        )
+        from crypto_ai.phase7.runtime import ComputeBudget, RuntimePaths
+    
+        try:
+            if mode == "train":
+>               require_training_runtime_contract()
+
+src/crypto_ai/phase7/admission.py:110: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def require_training_runtime_contract() -> None:
+        """Cheap fail-closed CLI admission before Gold scans or backend smoke fits."""
+        if configured_floor("PHASE7_MIN_FREE_RAM_GIB", "PHASE7_MIN_AVAILABLE_RAM_GB") <= 0:
+>           raise ValueError("training requires an explicit positive PHASE7_MIN_FREE_RAM_GIB floor")
+E           ValueError: training requires an explicit positive PHASE7_MIN_FREE_RAM_GIB floor
+
+src/crypto_ai/phase7/resources.py:36: ValueError
+
+The above exception was the direct cause of the following exception:
+
+tmp_path = PosixPath('/private/var/folders/2x/g9vjz2091f3g7g3vz9l0rg3c0000gn/T/pytest-of-cortex/pytest-4/test_benchmark_rejects_missing0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x11adcc5f0>
+
+    def test_benchmark_rejects_missing_budget_before_gold_or_checkpoint_work(tmp_path, monkeypatch):
+        import sys
+    
+        from crypto_ai.phase7 import benchmark_one_spec
+    
+        monkeypatch.setenv("PHASE7_ALLOW_CLOUD_RESEARCH", "1")
+        monkeypatch.setenv("PHASE7_CACHE_MODE", "read_only")
+        monkeypatch.delenv("PHASE7_MIN_FREE_RAM_GIB", raising=False)
+        monkeypatch.delenv("PHASE7_MIN_AVAILABLE_RAM_GB", raising=False)
+        monkeypatch.setattr(
+            benchmark_one_spec, "validate_phase7_gold", lambda *_a: pytest.fail("Gold scanned")
+        )
+        output = tmp_path / "benchmark"
+        monkeypatch.setattr(
+            sys,
+            "argv",
+            [
+                "benchmark",
+                "--spec-id",
+                "architecture-G0-A6-60m-raw",
+                "--output-root",
+                str(output),
+                "--execute",
+            ],
+        )
+        with pytest.raises(ValueError, match="explicit positive"):
+>           benchmark_one_spec.main()
+
+tests/phase7/test_standalone_training_remediation.py:329: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/crypto_ai/phase7/benchmark_one_spec.py:111: in main
+    admit_official_training(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+entrypoint = 'benchmark_one_spec'
+config = Phase7Config(name='phase7a-core20-primary-v1', mode='cloud', data_start=datetime.datetime(2020, 1, 1, 0, 0, tzinfo=dat...gment=500), calibration=CalibrationConfig(methods=('identity', 'linear'), reliability_buckets=10, minimum_samples=100))
+mode = 'train'
+output_root = PosixPath('/private/var/folders/2x/g9vjz2091f3g7g3vz9l0rg3c0000gn/T/pytest-of-cortex/pytest-4/test_benchmark_rejects_missing0/benchmark')
+smoke = True, environ = None
+
+    def admit_official_training(
+        *,
+        entrypoint: str,
+        config: Any,
+        mode: str,
+        output_root: Path | None,
+        smoke: bool = True,
+        environ: Mapping[str, str] | None = None,
+    ) -> dict[str, Any]:
+        """Run every admission check; return the record of what was verified or raise.
+    
+        ``mode`` is ``"train"`` or ``"prepare"``. ``smoke`` enforces CPU and one logical worker.
+        """
+    
+        env = os.environ if environ is None else environ
+        if mode not in {"train", "prepare"}:
+            raise AdmissionError(f"BAD_ADMISSION_MODE: {mode!r}")
+        reject_noncanonical(entrypoint)
+        config.assert_cloud_execution_allowed()
+        if config.configuration_hash not in APPROVED_CONFIGURATION_HASHES:
+            raise AdmissionError(f"CONFIG_NOT_APPROVED: {config.configuration_hash}")
+        if (
+            config.prospective_holdout_status != "LOCKED_UNUSED"
+            or config.prospective_holdout_used
+            or config.prospective_holdout_evaluation_authorized
+        ):
+            raise AdmissionError("HOLDOUT_NOT_LOCKED: August must be LOCKED_UNUSED and unauthorised")
+    
+        from crypto_ai.phase7.resources import (
+            configured_floor,
+            require_preparation_runtime_contract,
+            require_training_runtime_contract,
+        )
+        from crypto_ai.phase7.runtime import ComputeBudget, RuntimePaths
+    
+        try:
+            if mode == "train":
+                require_training_runtime_contract()
+            else:
+                require_preparation_runtime_contract()
+        except ValueError as exc:
+>           raise AdmissionError(f"RUNTIME_CONTRACT: {exc}") from exc
+E           crypto_ai.phase7.admission.AdmissionError: RUNTIME_CONTRACT: training requires an explicit positive PHASE7_MIN_FREE_RAM_GIB floor
+
+src/crypto_ai/phase7/admission.py:114: AdmissionError
+=========================== short test summary info ============================
+SKIPPED [1] tests/phase7/test_research_import_boundary.py:110: could not import 'aiohttp': No module named 'aiohttp'
+FAILED tests/phase7/test_progress_observability.py::test_missing_metrics_render_as_na
+FAILED tests/phase7/test_standalone_training_remediation.py::test_direct_training_cli_cannot_bypass_preflight_or_prepare_data
+FAILED tests/phase7/test_standalone_training_remediation.py::test_benchmark_rejects_missing_budget_before_gold_or_checkpoint_work
+3 failed, 1320 passed, 1 skipped in 155.51s (0:02:35)

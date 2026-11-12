@@ -1,0 +1,22 @@
+# Only GitHub Actions uses this explicit disposable PostgreSQL browser profile.
+services:
+  database:
+    environment:
+      POSTGRES_DB: ${BROWSER_CI_DATABASE:?Dedicated browser CI database required}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U company -d $${POSTGRES_DB}"]
+  migrate:
+    environment: &browser_ci
+      DATABASE_URL: postgresql+psycopg://company:${DB_PASSWORD}@database/${BROWSER_CI_DATABASE:?Dedicated browser CI database required}
+      APP_ENV: test
+      ISOLATED_TEST_ENVIRONMENT: "true"
+      ISOLATED_POSTGRES_CI: "true"
+      FIXTURE_CATALOG_ENABLED: "true"
+      CI: "true"
+      BROWSER_CI_DATABASE: ${BROWSER_CI_DATABASE}
+      OWNER_EMAIL: browser-owner@fixture.test
+      OWNER_PASSWORD: isolated-browser-password
+  api:
+    environment: *browser_ci
+  worker:
+    environment: *browser_ci

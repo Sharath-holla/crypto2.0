@@ -1,0 +1,10 @@
+{
+  "status": "PASS",
+  "main_sections": 40,
+  "issues": 47,
+  "local_links_checked": 87,
+  "broken_local_links": [],
+  "six_identity_equality": "PASS",
+  "source_unchanged_since_verified_commit": true,
+  "report_sha256": "7fb691dc7c82035f59fe4b54f8daaa351f0f29fdd79cebf3308df78461725bc9"
+}

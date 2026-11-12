@@ -1,0 +1,11 @@
+{
+  "status": "EXTERNAL_RUNTIME_REQUIRED",
+  "linux_verification": "LINUX_PENDING_EXTERNAL_RUNTIME",
+  "host_guard_exit": 2,
+  "local_runtime_inventory": "linux_runtime_inventory.json",
+  "platform_guard": "linux_host_guard.json",
+  "verification_script": "scripts/closure/verify_linux_external.sh",
+  "script_syntax": "PASS_BASH_N",
+  "cloud_resources_started": false,
+  "actual_linux_tests_run": false
+}

@@ -1,0 +1,22 @@
+{
+  "scope": "Comparison against latest reviewed snapshot; current editor may continue afterwards",
+  "source_changed_since_latest_snapshot": [
+    {
+      "path": "src/crypto_ai/phase7/training_metrics.py",
+      "snapshot_sha256": "8582d4c6492c667920f56ed42a6c2c9dc0db9fd9530c81a11fcffd551a9f91c1",
+      "current_sha256": "fba41d32ec36a1dbd26694892efe61b6554a5005b3c6e9e35ab2c4b9be6e9e3e"
+    },
+    {
+      "path": "tests/phase7/test_training_observer_diagnostics.py",
+      "snapshot_sha256": "52c7abc4f6dbc00ba73b882f529fa0cd13028c026f369644b48020950e5f9e5b",
+      "current_sha256": "59caf8019535bba8f404642a3628f3fa34e9c4c3ed90b24459d8768ab5c925a1"
+    }
+  ],
+  "new_source_test_files": [],
+  "independent_fixes_present": {
+    "positive_raw_threshold": true,
+    "bounded_timestamp_sampling": true,
+    "finite_prediction_distribution": true,
+    "fit_boundary_identity": true
+  }
+}

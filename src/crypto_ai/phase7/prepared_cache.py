@@ -4,26 +4,33 @@ import json
 import math
 import os
 import shutil
+import socket
 import time
 import uuid
 from collections.abc import Iterator
-from contextlib import contextmanager
+from contextlib import ExitStack, contextmanager
 from dataclasses import dataclass
+from datetime import UTC, datetime
 from pathlib import Path
+from traceback import clear_frames
 from typing import Any
 
 import numpy as np
+import psutil
 import pyarrow as pa
 import pyarrow.ipc as ipc
 
 from crypto_ai.data.storage import file_sha256
 from crypto_ai.phase5.folds import FoldPlan
+from crypto_ai.phase7.artifacts import durable_fsync
 from crypto_ai.phase7.config import stable_hash
 from crypto_ai.phase7.folds import MultiAssetFoldData
 from crypto_ai.phase7.models import PreparedArchitectureInputs
+from crypto_ai.phase7.run_lease import owner_liveness
 from crypto_ai.phase7.runtime import CacheMode, emit_event, memory_snapshot
+from crypto_ai.phase7.telemetry import instrument
 
-PREPARED_CACHE_SCHEMA = "phase7_prepared_matrix_cache_v1"
+PREPARED_CACHE_SCHEMA = "phase7_prepared_matrix_cache_v2"
 PREPROCESSING_VERSION = "phase7_train_finite_filter_v1"
 
 
@@ -62,6 +69,7 @@ class PreparedTrainingSegments:
     calibration_a: pa.Table
     calibration_b: pa.Table
     model_inputs: PreparedArchitectureInputs
+    pre_filter_rows: dict[str, int] | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -91,6 +99,54 @@ def _symbol_array(values: np.ndarray) -> np.ndarray:
     return np.asarray(strings, dtype=f"<U{width}")
 
 
+def _validate_matrix_alignment(
+    arrays: dict[str, np.ndarray],
+    tables: dict[str, pa.Table],
+    feature_columns: tuple[str, ...],
+    target_column: str,
+) -> None:
+    """Checksums prove bytes, not that two representations contain the same rows.
+
+    Compare in bounded column/row batches; never allocate a second full matrix.
+    This is an internal consistency check, not independent Gold equivalence proof.
+    """
+    for segment in ("train", "validation", "calibration_a"):
+        table = tables[segment]
+        columns = (
+            ("symbol",)
+            if segment == "calibration_a"
+            else ("symbol", target_column, *feature_columns)
+        )
+        if any(name not in table.column_names for name in columns):
+            raise PreparedCacheCorruptError(f"matrix/table alignment columns missing: {segment}")
+        symbol_key = (
+            "calibration_symbols.npy" if segment == "calibration_a" else f"{segment}_symbols.npy"
+        )
+        for start in range(0, table.num_rows, 65_536):
+            stop = min(start + 65_536, table.num_rows)
+            batch = table.slice(start, stop - start)
+            symbols = batch.column("symbol")
+            if symbols.null_count or not np.array_equal(
+                arrays[symbol_key][start:stop], np.asarray(symbols.to_pylist(), dtype=object)
+            ):
+                raise PreparedCacheCorruptError(
+                    f"matrix/table symbol alignment mismatch: {segment}"
+                )
+            if segment == "calibration_a":
+                continue
+            for index, name in enumerate((target_column, *feature_columns)):
+                expected = batch.column(name).combine_chunks().to_numpy(zero_copy_only=False)
+                actual = (
+                    arrays[f"{segment}_y.npy"][start:stop]
+                    if index == 0
+                    else arrays[f"{segment}_x.npy"][start:stop, index - 1]
+                )
+                if not np.all(np.isfinite(actual)) or not np.array_equal(actual, expected):
+                    raise PreparedCacheCorruptError(
+                        f"matrix/table value alignment mismatch: {segment}/{name}"
+                    )
+
+
 def _fsync_file(path: Path) -> None:
     if os.name == "nt":
         # The production target is Linux. Windows Python can expose file
@@ -98,7 +154,8 @@ def _fsync_file(path: Path) -> None:
         # replace remains the portable local-development guarantee.
         return
     with path.open("rb") as stream:
-        os.fsync(stream.fileno())
+        # CHANGED BY CLAUDE (L-06). OLD CODE: os.fsync(stream.fileno())
+        durable_fsync(stream.fileno())
 
 
 def _fsync_directory(path: Path) -> None:
@@ -106,7 +163,8 @@ def _fsync_directory(path: Path) -> None:
         return
     descriptor = os.open(path, os.O_RDONLY)
     try:
-        os.fsync(descriptor)
+        # CHANGED BY CLAUDE (L-06). OLD CODE: os.fsync(descriptor)
+        durable_fsync(descriptor)
     finally:
         os.close(descriptor)
 
@@ -190,6 +248,53 @@ def referenced_cache_ids(*roots: Path) -> set[str]:
     return referenced
 
 
+def cleanup_cache_plan(root: Path, *, reference_roots: tuple[Path, ...]) -> dict[str, Any]:
+    """Read-only, conservative plan; callers must include production AND benchmark roots."""
+    referenced = referenced_cache_ids(*reference_roots)
+    entries = []
+    resolved = root.resolve()
+    if resolved.is_dir():
+        for candidate in sorted(resolved.iterdir()):
+            canonical_id = len(candidate.name) == 64 and all(
+                char in "0123456789abcdef" for char in candidate.name
+            )
+            aliased = candidate.is_symlink() or candidate.resolve().parent != resolved
+            reason = (
+                "ALIASED_OR_SYMLINK"
+                if aliased
+                else "TEMPORARY_OR_NON_ENTRY"
+                if not canonical_id or not candidate.is_dir()
+                else "REFERENCED"
+                if candidate.name in referenced
+                else "REFERENCE_ROOTS_NOT_SUPPLIED"
+                if not reference_roots
+                else "UNREFERENCED"
+            )
+            size = (
+                0
+                if aliased
+                else (
+                    _directory_size(candidate) if candidate.is_dir() else candidate.stat().st_size
+                )
+            )
+            entries.append(
+                {
+                    "cache_id": candidate.name,
+                    "bytes": size,
+                    "reason": reason,
+                    "deletable": reason == "UNREFERENCED",
+                }
+            )
+    return {
+        "dry_run": True,
+        "entries": entries,
+        "reference_roots": [str(p) for p in reference_roots],
+        "estimated_reclaimable_bytes": sum(e["bytes"] for e in entries if e["deletable"]),
+        "automatic_eviction": False,
+        "all_active_reference_roots_required": True,
+    }
+
+
 def cleanup_cache_entries(
     root: Path,
     cache_ids: tuple[str, ...],
@@ -252,27 +357,102 @@ class PreparedDataCache:
         """Validate a just-published entry, independently of lookup/rebuild policy."""
         return self._load_validated(self.cache_path(identity), identity, plan)
 
+    @staticmethod
+    def _lock_owner_payload() -> dict[str, Any]:
+        try:
+            start: float | None = psutil.Process().create_time()
+        except psutil.Error:
+            start = None
+        return {
+            "schema": "phase7_cache_publication_lock_v1",
+            "pid": os.getpid(),
+            "hostname": socket.gethostname(),
+            "process_start_time": start,
+            "created_at": datetime.now(UTC).isoformat(),
+            "token": uuid.uuid4().hex,
+        }
+
+    def _try_break_stale_lock(self, lock: Path) -> bool:
+        """Archive a publication lock only when its owner is *proven* dead.
+
+        Proof requires same-host PID liveness checked against the recorded process
+        start time (PID reuse counts as dead).  Foreign host, unreadable/legacy
+        content, missing start time, or an unavailable kernel advisory lock all fail
+        closed.  Concurrent breakers are serialised by a flock guard (kernel-released
+        on death, so it can never itself be stale) and the lock content is re-verified
+        byte-for-byte under that guard before the atomic rename.
+        """
+        if os.name == "nt":
+            return False
+        try:
+            raw = lock.read_bytes()
+            owner = json.loads(raw)
+        except (FileNotFoundError, ValueError, UnicodeDecodeError):
+            return False
+        if not isinstance(owner, dict) or owner.get("schema") != "phase7_cache_publication_lock_v1":
+            return False
+        liveness = owner_liveness(owner)
+        if liveness not in {"DEAD", "DEAD_PID_REUSED"}:
+            return False
+        import fcntl
+
+        guard = os.open(self.root / ".publication.steal.guard", os.O_CREAT | os.O_RDWR, 0o600)
+        try:
+            try:
+                fcntl.flock(guard, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            except OSError:
+                return False
+            try:
+                if lock.read_bytes() != raw:
+                    return False
+            except FileNotFoundError:
+                return False
+            stale = self.root / f".publication.stale.{uuid.uuid4().hex}"
+            os.rename(lock, stale)
+            _fsync_directory(self.root)
+            emit_event(
+                "CACHE_LOCK_STALE_RECOVERED",
+                lock=lock,
+                archived=stale,
+                liveness=liveness,
+                dead_pid=owner.get("pid"),
+            )
+            return True
+        finally:
+            os.close(guard)
+
     @contextmanager
     def _publication_lock(self, cache_id: str, *, timeout_seconds: float = 60.0) -> Iterator[None]:
         lock = self.root / f".{cache_id}.lock"
         deadline = time.monotonic() + timeout_seconds
         descriptor: int | None = None
+        payload = self._lock_owner_payload()
         while descriptor is None:
             try:
                 descriptor = os.open(lock, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
             except FileExistsError as exc:
+                if self._try_break_stale_lock(lock):
+                    continue
                 if time.monotonic() >= deadline:
                     raise TimeoutError(
-                        f"timed out waiting for prepared-cache lock: {lock}"
+                        f"timed out waiting for prepared-cache lock (owner not proven dead): {lock}"
                     ) from exc
                 time.sleep(0.05)
         try:
-            os.write(descriptor, f"pid={os.getpid()}\n".encode("ascii"))
-            os.fsync(descriptor)
+            os.write(descriptor, json.dumps(payload, sort_keys=True).encode("utf-8"))
+            # CHANGED BY CLAUDE (L-06). OLD CODE: os.fsync(descriptor)
+            durable_fsync(descriptor)
             yield
         finally:
             os.close(descriptor)
-            lock.unlink(missing_ok=True)
+            try:
+                current = json.loads(lock.read_bytes())
+            except (FileNotFoundError, ValueError, UnicodeDecodeError):
+                current = None
+            if isinstance(current, dict) and current.get("token") == payload["token"]:
+                lock.unlink(missing_ok=True)
+            elif current is not None:
+                emit_event("CACHE_LOCK_REPLACED_WHILE_HELD", lock=lock)
 
     def _move_directory(self, source: Path, destination: Path) -> None:
         if source.parent != self.root or destination.parent != self.root:
@@ -294,6 +474,7 @@ class PreparedDataCache:
         emit_event("CACHE_QUARANTINED", cache_id=cache_id, path=quarantine)
         return quarantine
 
+    @instrument("CACHE_READ", admit=True)
     def load(self, identity: dict[str, Any], plan: FoldPlan) -> CachedPreparedData:
         cache_id = prepared_cache_id(identity)
         path = self.root / cache_id
@@ -335,6 +516,21 @@ class PreparedDataCache:
 
     def _load_validated(
         self, path: Path, identity: dict[str, Any], plan: FoldPlan
+    ) -> CachedPreparedData:
+        # Failed validation must release mappings before quarantine/temp cleanup,
+        # particularly on Windows where an open mmap prevents rename/deletion.
+        with ExitStack() as cleanup:
+            try:
+                return self._load_validated_content(path, identity, plan, cleanup)
+            except BaseException as exc:
+                # Drop failed-loader frame references before closing mappings.
+                # Otherwise traceback-local inspection could dereference an
+                # already closed memmap, and Arrow buffers can retain file locks.
+                clear_frames(exc.__traceback__)
+                raise
+
+    def _load_validated_content(
+        self, path: Path, identity: dict[str, Any], plan: FoldPlan, cleanup: ExitStack
     ) -> CachedPreparedData:
         manifest_path = path / "manifest.json"
         marker_path = path / "CACHE_COMPLETE"
@@ -386,6 +582,7 @@ class PreparedDataCache:
         arrays: dict[str, np.ndarray] = {}
         for name, record in manifest["arrays"].items():
             array = np.load(path / name, mmap_mode="r", allow_pickle=False)
+            cleanup.callback(array._mmap.close)
             if list(array.shape) != record["shape"] or str(array.dtype) != record["dtype"]:
                 raise PreparedCacheCorruptError(f"array shape/dtype mismatch: {name}")
             arrays[name] = array
@@ -406,6 +603,12 @@ class PreparedDataCache:
                 raise PreparedCacheCorruptError(f"table schema mismatch: {name}")
 
         metadata = manifest["fold_metadata"]
+        pre_filter_rows = metadata.get("pre_filter_rows")
+        if not isinstance(pre_filter_rows, dict) or set(pre_filter_rows) != set(tables):
+            raise PreparedCacheCorruptError("pre-filter row accounting is absent or malformed")
+        for name, count in pre_filter_rows.items():
+            if type(count) is not int or count < tables[name].num_rows:
+                raise PreparedCacheCorruptError(f"invalid pre-filter row count: {name}")
         if metadata["fold_id"] != plan.fold_id:
             raise PreparedCacheIdentityError("fold plan identity mismatch")
         fold = MultiAssetFoldData(
@@ -437,6 +640,7 @@ class PreparedDataCache:
             validation=tables["validation"],
             calibration_a=tables["calibration_a"],
             calibration_b=tables["calibration_b"],
+            pre_filter_rows=pre_filter_rows,
             model_inputs=PreparedArchitectureInputs(
                 feature_columns=feature_columns,
                 target_column=target_column,
@@ -464,14 +668,19 @@ class PreparedDataCache:
             for name in (f"{segment}_y.npy", f"{segment}_symbols.npy"):
                 if arrays[name].shape != (row_count,):
                     raise PreparedCacheCorruptError(f"vector dimensions do not match table: {name}")
-            if not np.all(np.isfinite(arrays[f"{segment}_x.npy"])) or not np.all(
-                np.isfinite(arrays[f"{segment}_y.npy"])
-            ):
-                raise PreparedCacheCorruptError(f"cached {segment} matrix/target is not finite")
         if arrays["calibration_symbols.npy"].shape != (prepared.calibration_a.num_rows,):
             raise PreparedCacheCorruptError("calibration symbol dimensions do not match table")
+        if (
+            metadata["research_view"] != identity["research_view"]
+            or metadata["eligibility_manifest"].get("fold_membership_hash")
+            != identity["fold_membership_hash"]
+        ):
+            raise PreparedCacheIdentityError("cached fold context identity mismatch")
+        _validate_matrix_alignment(arrays, tables, feature_columns, target_column)
+        cleanup.pop_all()  # Returned memmaps retain ownership on successful load.
         return CachedPreparedData(cache_id, fold, prepared)
 
+    @instrument("CACHE_WRITE", admit=True)
     def write(
         self,
         identity: dict[str, Any],
@@ -578,6 +787,14 @@ class PreparedDataCache:
                     "liquidity_tiers": fold.liquidity_tiers,
                     "age_buckets": fold.age_buckets,
                     "report": fold.report,
+                    "pre_filter_rows": prepared.pre_filter_rows
+                    or {
+                        "train": fold.train.num_rows,
+                        "validation": fold.validation.num_rows,
+                        "calibration_a": fold.calibration_a.num_rows,
+                        "calibration_b": fold.calibration_b.num_rows,
+                        "test": fold._test.num_rows,
+                    },
                 },
             }
             manifest_path = temporary / "manifest.json"
@@ -593,6 +810,9 @@ class PreparedDataCache:
             )
             _fsync_file(temporary / "CACHE_COMPLETE")
             _fsync_directory(temporary)
+            # Validate before touching a previous valid entry or exposing a new
+            # completion marker. Incorrect prepared inputs must not replace it.
+            self._load_validated(temporary, identity, fold.plan)
             with self._publication_lock("publication"):
                 backup: Path | None = None
                 if final.exists():

@@ -1,0 +1,73 @@
+........................................................................ [  5%]
+........................................................................ [ 10%]
+........................................................................ [ 15%]
+........................................................................ [ 20%]
+........................................................................ [ 25%]
+........................................................................ [ 30%]
+........................................................................ [ 36%]
+........................................................................ [ 41%]
+........................................................................ [ 46%]
+........................................................................ [ 51%]
+........................................................................ [ 56%]
+................................................F.F..................... [ 61%]
+........................................................................ [ 67%]
+........................................................................ [ 72%]
+........................................................................ [ 77%]
+........................................................................ [ 82%]
+........................................................................ [ 87%]
+........................................................................ [ 92%]
+........................................................................ [ 98%]
+..........................                                               [100%]
+=================================== FAILURES ===================================
+____________ test_display_metrics_now_include_precision_and_recall _____________
+
+    def test_display_metrics_now_include_precision_and_recall() -> None:
+        names = [
+            name for name, _value, _flag in display_metrics(np.ones(4) * 0.001, np.ones(4) * 0.001)
+        ]
+>       assert names == ["mae", "rmse", "directional_accuracy", "fixed_precision", "fixed_recall"]
+E       AssertionError: assert ['mae', 'rmse...nal_accuracy'] == ['mae', 'rmse...fixed_recall']
+E         
+E         Right contains 2 more items, first extra item: 'fixed_precision'
+E         Use -v to get more diff
+
+tests/phase7/test_phase7b_hardening.py:44: AssertionError
+_____ test_observer_prints_a_readable_line_and_aborts_after_n_worse_checks _____
+
+tmp_path = PosixPath('/private/var/folders/2x/g9vjz2091f3g7g3vz9l0rg3c0000gn/T/pytest-of-cortex/pytest-2/test_observer_prints_a_readabl0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x11d5672f0>
+capsys = <_pytest.capture.CaptureFixture object at 0x11d567b60>
+
+    def test_observer_prints_a_readable_line_and_aborts_after_n_worse_checks(
+        tmp_path: Path, monkeypatch, capsys
+    ) -> None:
+        monkeypatch.setattr(
+            "crypto_ai.phase7.training_metrics.current_config",
+            lambda: h.HardeningConfig(abort_after_worse_checks=2),
+        )
+        scope = TrainingMetricScope(tmp_path, {"fold_id": "f1", "spec_id": "s1"}, period=1)
+        observer = FitMetricObserver(scope, "global")
+        observer.zero_baseline_rmse = 0.01
+    
+        def env(iteration: int, rmse: float) -> SimpleNamespace:
+            return SimpleNamespace(
+                iteration=iteration,
+                begin_iteration=0,
+                end_iteration=10,
+                evaluation_result_list=[
+                    ("train", "rmse", 0.009, False),
+                    ("validation", "rmse", rmse, False),
+                    ("validation", "directional_accuracy", 0.5, True),
+                ],
+            )
+    
+        observer(env(0, 0.02))  # worse than the 0.01 zero baseline: streak 1
+        out = capsys.readouterr().out
+>       assert "[fit f1/s1/global] round    1/10" in out and "fixed-threshold, validation only" in out
+E       assert ('[fit f1/s1/global] round    1/10' in '{"attempt_id": "d1fadcf4566c486d950295221ee065cc", "attempt_number": 1, "diagnostic_weighting": "UNWEIGHTED_ROWS; nat...RAM 6.0 GiB | free disk 297.6 GiB | rows train None val None | features None | backend None | threads None | lr None\n' and 'fixed-threshold, validation only' in '{"attempt_id": "d1fadcf4566c486d950295221ee065cc", "attempt_number": 1, "diagnostic_weighting": "UNWEIGHTED_ROWS; nat...RAM 6.0 GiB | free disk 297.6 GiB | rows train None val None | features None | backend None | threads None | lr None\n')
+
+tests/phase7/test_phase7b_hardening.py:79: AssertionError
+=========================== short test summary info ============================
+FAILED tests/phase7/test_phase7b_hardening.py::test_display_metrics_now_include_precision_and_recall
+FAILED tests/phase7/test_phase7b_hardening.py::test_observer_prints_a_readable_line_and_aborts_after_n_worse_checks
+2 failed, 1392 passed in 170.20s (0:02:50)

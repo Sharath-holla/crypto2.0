@@ -1,0 +1,13 @@
+# Dedicated Docker coding runner
+
+Start the optional execution stack with `docker compose -f compose.yaml -f compose.runner.yaml up --build -d --wait`. Run `python scripts/configure.py` first to generate the independent private runner token. The default Compose stack keeps generated-code execution disabled and requires no AI keys.
+
+The API/worker has no Docker socket or local execution fallback. Its client sends a sanitized UTF-8 snapshot, UUID and one of two fixed suites to the authenticated broker. Limits: 500 files, 1 MB per file, 5 MB total, 120 seconds and two concurrent broker jobs. Secret filenames, traversal, links, binary assets and detected credentials are rejected or excluded. No caller can supply a command, image, mount, network or environment. Only trusted startup pulls Python 3.12/Node 22 public runtime images.
+
+The broker uses a dedicated DinD daemon with no published port and no host Docker socket. Generated containers use UID/GID 10001, no capabilities, no-new-privileges, no network, a read-only root, read-only snapshot input, 128 MiB workspace/64 MiB temporary tmpfs, 512 MiB memory/no additional swap, one CPU and 128 PIDs. Code can modify only the ephemeral workspace. No owner/provider/database/GitHub/runner credentials enter the generated-code container. Python compileall/Node syntax verification precedes nonempty unit tests; dependency installation and arbitrary project build scripts are not enabled by these templates.
+
+Timeout, output and cancellation stop/remove the generated container; broker restart removes only its labeled executions. Authenticated results persist in the private runner volume, capped at 200 records/seven days. Application executions retain independent logs/checkpoints; an interrupted execution requires reconciliation rather than an assumed successful rerun. Public job status cannot expose the Docker control API.
+
+DinD itself is a privileged trusted infrastructure service. Use a dedicated execution host for untrusted customer workloads; this shared-kernel container design is not a VM escape certification. Agents have no DinD control. Runtime image IDs and inspected limits are returned as evidence. CI runs real Python/Node, filesystem/network/environment/cgroup probes, invalid-request rejection, failure/timeout/output/cancellation cleanup and persistent result comparison. See TEST_REPORT.md for observed results; local Docker is unavailable.
+
+Existing repository discovery/checkouts/worktrees remain owner scoped and approved. Bounded repair, fresh independent review and Git/PR preparation are the following coding-workflow increment; merely starting the broker does not certify generated software.

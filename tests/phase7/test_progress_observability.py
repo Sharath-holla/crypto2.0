@@ -139,7 +139,7 @@ def test_missing_metrics_render_as_na(tmp_path: Path, capsys) -> None:
     )
 
     rendered = capsys.readouterr().out
-    assert "Sharpe: N/A" in rendered
+    assert "Trade-return Sharpe (PROXY, not portfolio): N/A" in rendered
     assert "Precision: N/A" in rendered
     assert "NO_TRADE signals: N/A" in rendered
 

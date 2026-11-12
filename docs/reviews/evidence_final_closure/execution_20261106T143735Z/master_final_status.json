@@ -1,0 +1,42 @@
+{
+  "status": {
+    "RECOVERY": "PASS",
+    "MAC_TESTS": "PASS",
+    "RUFF": "PASS",
+    "GOLD": "PASS",
+    "SILVER": "PASS",
+    "M01": "PASS",
+    "SIDECAR": "PASS",
+    "TRUNCATION": "PASS",
+    "UNIVERSE": "PASS",
+    "IDENTITY": "FAIL",
+    "LEDGER": "PASS",
+    "SELECTION": "PASS",
+    "ADMISSION": "PASS",
+    "RESOURCE_ADMISSION": "FAIL",
+    "RUNPOD_TRANSFER_SET": "PASS",
+    "LINUX": "FAIL",
+    "FILESYSTEM": "FAIL",
+    "CACHE": "NOT_QUALIFIED",
+    "CPU_POLICY": "PASS",
+    "LIVE_ORDER_ISOLATION": "PASS",
+    "AUGUST": "LOCKED_UNUSED",
+    "PIPELINE": "NOT_READY_FOR_SMOKE",
+    "TRADABILITY": "NOT_ESTABLISHED",
+    "FULL_GRID": "NOT_AUTHORIZED"
+  },
+  "PIPELINE_VALIDATED": false,
+  "TRADABILITY_VALIDATED": false,
+  "source_commit": "99cf12fbcc6ee6397ee0caf4c40b768c87ae430c",
+  "real_data_models_fitted": 0,
+  "real_prepared_caches_qualified": 0,
+  "actual_runpod_transfer": "NOT_RUN",
+  "identity_local_export": "PASS",
+  "identity_RunPod": "NOT_RUN",
+  "blocked_by": [
+    "No authorized Linux/x86_64 endpoint or fresh owner cost/stop-deadline contract",
+    "Actual Linux and selected local filesystem qualification absent",
+    "No real prepared-cache build/read-only reload qualification",
+    "Mac has 16 GiB, below 64 GiB smoke floor and 25.8 GiB heuristic"
+  ]
+}

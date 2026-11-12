@@ -1,0 +1,1022 @@
+[
+  {
+    "symbol": "BCHUSDT",
+    "kind": "funding",
+    "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/funding/market-silver-69f014a447027584d6ab1287/manifest.json",
+    "present": true,
+    "manifest_sha256": "1136355cf0f76ca14a24286d4b2cbc73adf6b28114d94e761937cd28b36e137f",
+    "dataset_present": true,
+    "hash_match": true,
+    "actual_rows": 7119,
+    "rows_match": true,
+    "validation": {
+      "first_event_time": "2020-01-01T00:00:00+00:00",
+      "last_event_time": "2026-06-30T16:00:00.005000+00:00",
+      "row_count": 7119,
+      "status": "PASS"
+    }
+  },
+  {
+    "symbol": "BCHUSDT",
+    "kind": "index",
+    "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/index_kline/market-silver-v2-1-4cbae5be4aa74e3a73dd9beb/manifest.json",
+    "present": true,
+    "manifest_sha256": "104df5c9f23f60236c96deaecd68b4bfffade701b2f6a722fe2597250c2bcf41",
+    "dataset_present": true,
+    "hash_match": true,
+    "actual_rows": 683411,
+    "rows_match": true,
+    "validation": {
+      "first_event_time": "2020-01-01T00:00:00+00:00",
+      "last_event_time": "2026-06-30T23:55:00+00:00",
+      "row_count": 683411,
+      "status": "PASS"
+    }
+  },
+  {
+    "symbol": "BCHUSDT",
+    "kind": "mark",
+    "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/mark_kline/market-silver-v2-1-7b9d9ed61d565f0e1ec7b81b/manifest.json",
+    "present": true,
+    "manifest_sha256": "a212cf8e65c3c3953ee4f31496a5bbaad80f57d0adc23bcfd2f4a886ed96b967",
+    "dataset_present": true,
+    "hash_match": true,
+    "actual_rows": 683409,
+    "rows_match": true,
+    "validation": {
+      "first_event_time": "2020-01-01T00:00:00+00:00",
+      "last_event_time": "2026-06-30T23:55:00+00:00",
+      "row_count": 683409,
+      "status": "PASS"
+    }
+  },
+  {
+    "symbol": "BLZUSDT",
+    "kind": "funding",
+    "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/funding/market-silver-b07f27fc532ec04feffb157e/manifest.json",
+    "present": true,
+    "manifest_sha256": "d3b3ac22a540609779cc725351b5104d5c653a9da0ff30f6a775bdd2f26d1aa6",
+    "dataset_present": true,
+    "hash_match": true,
+    "actual_rows": 7131,
+    "rows_match": true,
+    "validation": {
+      "first_event_time": "2020-09-17T08:00:00.012000+00:00",
+      "last_event_time": "2025-06-19T08:00:00.003000+00:00",
+      "row_count": 7131,
+      "status": "PASS"
+    }
+  },
+  {
+    "symbol": "BLZUSDT",
+    "kind": "index",
+    "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/index_kline/market-silver-v2-1-fe0bde3795b6d5783dd47d84/manifest.json",
+    "present": true,
+    "manifest_sha256": "57561ee8f9410ae84fc420f8ed60e6e6cad557c9592c610861efe3a3a6507052",
+    "dataset_present": true,
+    "hash_match": true,
+    "actual_rows": 506063,
+    "rows_match": true,
+    "validation": {
+      "first_event_time": "2020-09-17T07:00:00+00:00",
+      "last_event_time": "2025-07-10T11:30:00+00:00",
+      "row_count": 506063,
+      "status": "PASS"
+    }
+  },
+  {
+    "symbol": "BLZUSDT",
+    "kind": "mark",
+    "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/mark_kline/market-silver-v2-1-cba89558a613b22469c4ef70/manifest.json",
+    "present": true,
+    "manifest_sha256": "6a97abaaf92a9c35871a28a7b0aadc2c1350cb0c90776d0955333f76e142f29a",
+    "dataset_present": true,
+    "hash_match": true,
+    "actual_rows": 608451,
+    "rows_match": true,
+    "validation": {
+      "first_event_time": "2020-09-17T07:00:00+00:00",
+      "last_event_time": "2026-06-30T23:55:00+00:00",
+      "row_count": 608451,
+      "status": "PASS"
+    }
+  },
+  {
+    "symbol": "BTCUSDT",
+    "kind": "funding",
+    "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/funding/market-silver-9ab4991244016133a46a0ce8/manifest.json",
+    "present": true,
+    "manifest_sha256": "ba5e10376a37135f99ae5bc5da402ad5e0f88b8d737893d1db5655ad5b284a5f",
+    "dataset_present": true,
+    "hash_match": true,
+    "actual_rows": 7119,
+    "rows_match": true,
+    "validation": {
+      "first_event_time": "2020-01-01T00:00:00+00:00",
+      "last_event_time": "2026-06-30T16:00:00.005000+00:00",
+      "row_count": 7119,
+      "status": "PASS"
+    }
+  },
+  {
+    "symbol": "BTCUSDT",
+    "kind": "index",
+    "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/index_kline/market-silver-v2-1-3b322aa03a74a1899007266c/manifest.json",
+    "present": true,
+    "manifest_sha256": "8aab5b0bdf5d2db2361cede7e801ad6afb4b371467c2c9b3a1779749dc45a16d",
+    "dataset_present": true,
+    "hash_match": true,
+    "actual_rows": 683411,
+    "rows_match": true,
+    "validation": {
+      "first_event_time": "2020-01-01T00:00:00+00:00",
+      "last_event_time": "2026-06-30T23:55:00+00:00",
+      "row_count": 683411,
+      "status": "PASS"
+    }
+  },
+  {
+    "symbol": "BTCUSDT",
+    "kind": "mark",
+    "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/mark_kline/market-silver-v2-1-3adfcf389c22af782bfe1d8c/manifest.json",
+    "present": true,
+    "manifest_sha256": "2f3538ac0b4f43e0b35e3975e932bf7b13a25bf90bcd227c98787143ae5b5243",
+    "dataset_present": true,
+    "hash_match": true,
+    "actual_rows": 683410,
+    "rows_match": true,
+    "validation": {
+      "first_event_time": "2020-01-01T00:00:00+00:00",
+      "last_event_time": "2026-06-30T23:55:00+00:00",
+      "row_count": 683410,
+      "status": "PASS"
+    }
+  },
+  {
+    "symbol": "COMPUSDT",
+    "kind": "funding",
+    "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/funding/market-silver-db2d1db25a596525b62e2675/manifest.json",
+    "present": true,
+    "manifest_sha256": "694bbc79c9010550acd36455d4d8e38af5c4792d5a7d9109aa5c846013b3cdc2",
+    "dataset_present": true,
+    "hash_match": true,
+    "actual_rows": 6574,
+    "rows_match": true,
+    "validation": {
+      "first_event_time": "2020-06-30T16:00:00.002000+00:00",
+      "last_event_time": "2026-06-30T16:00:00.005000+00:00",
+      "row_count": 6574,
+      "status": "PASS"
+    }
+  },
+  {
+    "symbol": "COMPUSDT",
+    "kind": "index",
+    "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/index_kline/market-silver-v2-1-9286550f978a48d9eacdca6f/manifest.json",
+    "present": true,
+    "manifest_sha256": "0a4136029a489898b7d068f4daee186a1de6185baf47ee112ce1e8edb25acd20",
+    "dataset_present": true,
+    "hash_match": true,
+    "actual_rows": 631180,
+    "rows_match": true,
+    "validation": {
+      "first_event_time": "2020-06-30T09:00:00+00:00",
+      "last_event_time": "2026-06-30T23:55:00+00:00",
+      "row_count": 631180,
+      "status": "PASS"
+    }
+  },
+  {
+    "symbol": "COMPUSDT",
+    "kind": "mark",
+    "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/mark_kline/market-silver-v2-1-6561f7d4cb3ee2e589927bfa/manifest.json",
+    "present": true,
+    "manifest_sha256": "d0d7e1ba9aa9d3aa5e1126781fef54149e7173575ffdcbed618fca4f90f131d4",
+    "dataset_present": true,
+    "hash_match": true,
+    "actual_rows": 631179,
+    "rows_match": true,
+    "validation": {
+      "first_event_time": "2020-06-30T09:00:00+00:00",
+      "last_event_time": "2026-06-30T23:55:00+00:00",
+      "row_count": 631179,
+      "status": "PASS"
+    }
+  },
+  {
+    "symbol": "DOGEUSDT",
+    "kind": "funding",
+    "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/funding/market-silver-f932092e7dc147e7e5df9d6c/manifest.json",
+    "present": true,
+    "manifest_sha256": "c82ae035015d04ce912c0195892ccd8fc2306d764c2fb54a237bb7b0a8493d6c",
+    "dataset_present": true,
+    "hash_match": true,
+    "actual_rows": 6544,
+    "rows_match": true,
+    "validation": {
+      "first_event_time": "2020-07-10T16:00:00+00:00",
+      "last_event_time": "2026-06-30T16:00:00.005000+00:00",
+      "row_count": 6544,
+      "status": "PASS"
+    }
+  },
+  {
+    "symbol": "DOGEUSDT",
+    "kind": "index",
+    "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/index_kline/market-silver-v2-1-3ac8f54ff9c4760cb49738f3/manifest.json",
+    "present": true,
+    "manifest_sha256": "1aee1785bf0a38f045405b413f6e44d07d72a47516b6ae9feaf8636cd5e8e945",
+    "dataset_present": true,
+    "hash_match": true,
+    "actual_rows": 628300,
+    "rows_match": true,
+    "validation": {
+      "first_event_time": "2020-07-10T09:00:00+00:00",
+      "last_event_time": "2026-06-30T23:55:00+00:00",
+      "row_count": 628300,
+      "status": "PASS"
+    }
+  },
+  {
+    "symbol": "DOGEUSDT",
+    "kind": "mark",
+    "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/mark_kline/market-silver-v2-1-80d4388784a960ed4851f84b/manifest.json",
+    "present": true,
+    "manifest_sha256": "f538a1c53c9750f8162cf2c439904a060e2ba0d5cd72f87573fece67939ca2a9",
+    "dataset_present": true,
+    "hash_match": true,
+    "actual_rows": 628299,
+    "rows_match": true,
+    "validation": {
+      "first_event_time": "2020-07-10T09:00:00+00:00",
+      "last_event_time": "2026-06-30T23:55:00+00:00",
+      "row_count": 628299,
+      "status": "PASS"
+    }
+  },
+  {
+    "symbol": "ETHUSDT",
+    "kind": "funding",
+    "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/funding/market-silver-941bce52bcd9be8895605dca/manifest.json",
+    "present": true,
+    "manifest_sha256": "98550939620104e56174f35c572dbe5fdf4ac4d77040f4766d2f4d8e0ae0d0bc",
+    "dataset_present": true,
+    "hash_match": true,
+    "actual_rows": 7119,
+    "rows_match": true,
+    "validation": {
+      "first_event_time": "2020-01-01T00:00:00+00:00",
+      "last_event_time": "2026-06-30T16:00:00.005000+00:00",
+      "row_count": 7119,
+      "status": "PASS"
+    }
+  },
+  {
+    "symbol": "ETHUSDT",
+    "kind": "index",
+    "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/index_kline/market-silver-v2-1-f519c50fedc71f0195af6662/manifest.json",
+    "present": true,
+    "manifest_sha256": "7e4285608e1d186c4887e8cc0214d749f40fff4fff652b88f819888c7b1ac643",
+    "dataset_present": true,
+    "hash_match": true,
+    "actual_rows": 683411,
+    "rows_match": true,
+    "validation": {
+      "first_event_time": "2020-01-01T00:00:00+00:00",
+      "last_event_time": "2026-06-30T23:55:00+00:00",
+      "row_count": 683411,
+      "status": "PASS"
+    }
+  },
+  {
+    "symbol": "ETHUSDT",
+    "kind": "mark",
+    "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/mark_kline/market-silver-v2-1-d1d37e42b2f6e82f68851e94/manifest.json",
+    "present": true,
+    "manifest_sha256": "ad94d0b39616f7929abe603b0f091ef3fd82e7f74f0815205c19fc518079f112",
+    "dataset_present": true,
+    "hash_match": true,
+    "actual_rows": 683409,
+    "rows_match": true,
+    "validation": {
+      "first_event_time": "2020-01-01T00:00:00+00:00",
+      "last_event_time": "2026-06-30T23:55:00+00:00",
+      "row_count": 683409,
+      "status": "PASS"
+    }
+  },
+  {
+    "symbol": "FILUSDT",
+    "kind": "funding",
+    "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/funding/market-silver-10d4b069fe7b102f4858c5a2/manifest.json",
+    "present": true,
+    "manifest_sha256": "7013c5b790a98f39997bebbe11671baeb816094c4e13b0a72d42552cc996d864",
+    "dataset_present": true,
+    "hash_match": true,
+    "actual_rows": 6251,
+    "rows_match": true,
+    "validation": {
+      "first_event_time": "2020-10-16T08:00:00.003000+00:00",
+      "last_event_time": "2026-06-30T16:00:00.005000+00:00",
+      "row_count": 6251,
+      "status": "PASS"
+    }
+  },
+  {
+    "symbol": "FILUSDT",
+    "kind": "index",
+    "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/index_kline/market-silver-v2-1-8eeb34f90a9473c14be966f9/manifest.json",
+    "present": true,
+    "manifest_sha256": "e2fb79316989a69d7d87aaf03da3d06652c4e6f9d7aca85cf33bccfb6b69dc22",
+    "dataset_present": true,
+    "hash_match": true,
+    "actual_rows": 600112,
+    "rows_match": true,
+    "validation": {
+      "first_event_time": "2020-10-16T06:00:00+00:00",
+      "last_event_time": "2026-06-30T23:55:00+00:00",
+      "row_count": 600112,
+      "status": "PASS"
+    }
+  },
+  {
+    "symbol": "FILUSDT",
+    "kind": "mark",
+    "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/mark_kline/market-silver-v2-1-f656d26a35d13496474cd1fa/manifest.json",
+    "present": true,
+    "manifest_sha256": "628ac0c23a84090a341cbaff8318207c8127cd032248225b3677bb7ed6d3f51b",
+    "dataset_present": true,
+    "hash_match": true,
+    "actual_rows": 600111,
+    "rows_match": true,
+    "validation": {
+      "first_event_time": "2020-10-16T06:00:00+00:00",
+      "last_event_time": "2026-06-30T23:55:00+00:00",
+      "row_count": 600111,
+      "status": "PASS"
+    }
+  },
+  {
+    "symbol": "FLMUSDT",
+    "kind": "funding",
+    "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/funding/market-silver-650c6e8aea8b252bcfb0a323/manifest.json",
+    "present": true,
+    "manifest_sha256": "d738b9f8519b4db6867bbf5e80986c5e3ce488380bbd4f22a92a8d7a4b9358a6",
+    "dataset_present": true,
+    "hash_match": true,
+    "actual_rows": 8483,
+    "rows_match": true,
+    "validation": {
+      "first_event_time": "2020-09-29T08:00:00+00:00",
+      "last_event_time": "2025-11-21T08:00:00+00:00",
+      "row_count": 8483,
+      "status": "PASS"
+    }
+  },
+  {
+    "symbol": "FLMUSDT",
+    "kind": "index",
+    "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/index_kline/market-silver-v2-1-19496e4f21094c8fd8ef7183/manifest.json",
+    "present": true,
+    "manifest_sha256": "e0cf12f06724008839b63862569a88f1b825de41353afca4087ee8ac7777f4e3",
+    "dataset_present": true,
+    "hash_match": true,
+    "actual_rows": 550378,
+    "rows_match": true,
+    "validation": {
+      "first_event_time": "2020-09-29T07:00:00+00:00",
+      "last_event_time": "2025-12-23T08:30:00+00:00",
+      "row_count": 550378,
+      "status": "PASS"
+    }
+  },
+  {
+    "symbol": "FLMUSDT",
+    "kind": "mark",
+    "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/mark_kline/market-silver-v2-1-6d2a4c24592d3acee576d3c7/manifest.json",
+    "present": true,
+    "manifest_sha256": "179dd80ebd5d95790ce83e0e0a5aa6147b988cc3cc3348846e2de9d5df21d019",
+    "dataset_present": true,
+    "hash_match": true,
+    "actual_rows": 604995,
+    "rows_match": true,
+    "validation": {
+      "first_event_time": "2020-09-29T07:00:00+00:00",
+      "last_event_time": "2026-06-30T23:55:00+00:00",
+      "row_count": 604995,
+      "status": "PASS"
+    }
+  },
+  {
+    "symbol": "HNTUSDT",
+    "kind": "funding",
+    "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/funding/market-silver-f3a59429cece6e1eca87e73a/manifest.json",
+    "present": true,
+    "manifest_sha256": "66d5f9fef5eaaea54a31fb2f2ef77e754afd96cb9b7d576bc693627a41369b8b",
+    "dataset_present": true,
+    "hash_match": true,
+    "actual_rows": 4039,
+    "rows_match": true,
+    "validation": {
+      "first_event_time": "2020-09-28T08:00:00+00:00",
+      "last_event_time": "2024-05-31T16:00:00+00:00",
+      "row_count": 4039,
+      "status": "PASS"
+    }
+  },
+  {
+    "symbol": "HNTUSDT",
+    "kind": "index",
+    "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/index_kline/market-silver-v2-1-374b85fc0d363eff0651966d/manifest.json",
+    "present": true,
+    "manifest_sha256": "305d205a461c57278e18c5b061aa200e46ac76c609a486bcfc73605b1d01a494",
+    "dataset_present": true,
+    "hash_match": true,
+    "actual_rows": 298354,
+    "rows_match": true,
+    "validation": {
+      "first_event_time": "2020-09-28T04:20:00+00:00",
+      "last_event_time": "2023-07-31T03:25:00+00:00",
+      "row_count": 298354,
+      "status": "PASS"
+    }
+  },
+  {
+    "symbol": "HNTUSDT",
+    "kind": "mark",
+    "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/mark_kline/market-silver-v2-1-cd769074b69d8e18d80d1c16/manifest.json",
+    "present": true,
+    "manifest_sha256": "c390addca3adfac2fcf4dea06a9e30f2151a1435c96810507fb03afce978d8ff",
+    "dataset_present": true,
+    "hash_match": true,
+    "actual_rows": 386435,
+    "rows_match": true,
+    "validation": {
+      "first_event_time": "2020-09-28T04:20:00+00:00",
+      "last_event_time": "2024-05-31T23:55:00+00:00",
+      "row_count": 386435,
+      "status": "PASS"
+    }
+  },
+  {
+    "symbol": "IOTAUSDT",
+    "kind": "funding",
+    "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/funding/market-silver-3f1481a8cb5380750aa9cabf/manifest.json",
+    "present": true,
+    "manifest_sha256": "1186024f70f8928d514bfc8975016350f8e3ef1ffada82087b48673621a523b9",
+    "dataset_present": true,
+    "hash_match": true,
+    "actual_rows": 6992,
+    "rows_match": true,
+    "validation": {
+      "first_event_time": "2020-02-12T08:00:00.001000+00:00",
+      "last_event_time": "2026-06-30T16:00:00.005000+00:00",
+      "row_count": 6992,
+      "status": "PASS"
+    }
+  },
+  {
+    "symbol": "IOTAUSDT",
+    "kind": "index",
+    "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/index_kline/market-silver-v2-1-763945d23df9d469526d9225/manifest.json",
+    "present": true,
+    "manifest_sha256": "c58ca24bfcf96db26b3b4f89190b98128371ef0a60a506a23edf890bb70c674b",
+    "dataset_present": true,
+    "hash_match": true,
+    "actual_rows": 671223,
+    "rows_match": true,
+    "validation": {
+      "first_event_time": "2020-02-12T08:00:00+00:00",
+      "last_event_time": "2026-06-30T23:55:00+00:00",
+      "row_count": 671223,
+      "status": "PASS"
+    }
+  },
+  {
+    "symbol": "IOTAUSDT",
+    "kind": "mark",
+    "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/mark_kline/market-silver-v2-1-923519fb69621b1c3e93c0ed/manifest.json",
+    "present": true,
+    "manifest_sha256": "6faebe6bca69076f7cd26a2969a5c93127c5e032c81ad292ed30d54a79da53f8",
+    "dataset_present": true,
+    "hash_match": true,
+    "actual_rows": 671223,
+    "rows_match": true,
+    "validation": {
+      "first_event_time": "2020-02-12T08:00:00+00:00",
+      "last_event_time": "2026-06-30T23:55:00+00:00",
+      "row_count": 671223,
+      "status": "PASS"
+    }
+  },
+  {
+    "symbol": "KNCUSDT",
+    "kind": "funding",
+    "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/funding/market-silver-977e3b619f45936f2e5f1d92/manifest.json",
+    "present": true,
+    "manifest_sha256": "0ecc7e29f4cc702358a692eebddef26461fc59eb8afdb45b726cdb824bbb617f",
+    "dataset_present": true,
+    "hash_match": true,
+    "actual_rows": 6598,
+    "rows_match": true,
+    "validation": {
+      "first_event_time": "2020-06-22T16:00:00.001000+00:00",
+      "last_event_time": "2026-06-30T16:00:00.005000+00:00",
+      "row_count": 6598,
+      "status": "PASS"
+    }
+  },
+  {
+    "symbol": "KNCUSDT",
+    "kind": "index",
+    "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/index_kline/market-silver-v2-1-461a4160f40d1a4bc75f8fc1/manifest.json",
+    "present": true,
+    "manifest_sha256": "87d60ba9f605d462add2eb21f8c4764080519017d7a097a91e4dccfece882ccb",
+    "dataset_present": true,
+    "hash_match": true,
+    "actual_rows": 633486,
+    "rows_match": true,
+    "validation": {
+      "first_event_time": "2020-06-22T08:50:00+00:00",
+      "last_event_time": "2026-06-30T23:55:00+00:00",
+      "row_count": 633486,
+      "status": "PASS"
+    }
+  },
+  {
+    "symbol": "KNCUSDT",
+    "kind": "mark",
+    "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/mark_kline/market-silver-v2-1-54a0b1cf8b89bdfcd1c26958/manifest.json",
+    "present": true,
+    "manifest_sha256": "8b0cc420602c4ef1fe3d1966c9d61eaaad39028e5c126ebbd40b7286b35fb1d4",
+    "dataset_present": true,
+    "hash_match": true,
+    "actual_rows": 633485,
+    "rows_match": true,
+    "validation": {
+      "first_event_time": "2020-06-22T08:50:00+00:00",
+      "last_event_time": "2026-06-30T23:55:00+00:00",
+      "row_count": 633485,
+      "status": "PASS"
+    }
+  },
+  {
+    "symbol": "KSMUSDT",
+    "kind": "funding",
+    "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/funding/market-silver-0a7b4aac632962a93644d1da/manifest.json",
+    "present": true,
+    "manifest_sha256": "d5306ac2deb5fb5bb408ce238aceb35ee25dfb9980db13f8773d741de1d6a93d",
+    "dataset_present": true,
+    "hash_match": true,
+    "actual_rows": 6257,
+    "rows_match": true,
+    "validation": {
+      "first_event_time": "2020-10-14T08:00:00+00:00",
+      "last_event_time": "2026-06-30T16:00:00.005000+00:00",
+      "row_count": 6257,
+      "status": "PASS"
+    }
+  },
+  {
+    "symbol": "KSMUSDT",
+    "kind": "index",
+    "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/index_kline/market-silver-v2-1-da088a84aaf02b1c34d959a5/manifest.json",
+    "present": true,
+    "manifest_sha256": "9bf883a32c17df6883cee791a448ee94110e77250655435bab6ac848745b1480",
+    "dataset_present": true,
+    "hash_match": true,
+    "actual_rows": 600676,
+    "rows_match": true,
+    "validation": {
+      "first_event_time": "2020-10-14T07:00:00+00:00",
+      "last_event_time": "2026-06-30T23:55:00+00:00",
+      "row_count": 600676,
+      "status": "PASS"
+    }
+  },
+  {
+    "symbol": "KSMUSDT",
+    "kind": "mark",
+    "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/mark_kline/market-silver-v2-1-1af20ccf895e534a98fdfc0a/manifest.json",
+    "present": true,
+    "manifest_sha256": "107929ce21b09cc96d1d63ba264eefb42f62d9e5ed9360df2098170cbe7cfe1c",
+    "dataset_present": true,
+    "hash_match": true,
+    "actual_rows": 600675,
+    "rows_match": true,
+    "validation": {
+      "first_event_time": "2020-10-14T07:00:00+00:00",
+      "last_event_time": "2026-06-30T23:55:00+00:00",
+      "row_count": 600675,
+      "status": "PASS"
+    }
+  },
+  {
+    "symbol": "NEOUSDT",
+    "kind": "funding",
+    "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/funding/market-silver-e2b5367dee1fe2d390cc7761/manifest.json",
+    "present": true,
+    "manifest_sha256": "c402f42e125fac67222f981dbfda3e2e21e67edd48f0b3886229300b0a4096b9",
+    "dataset_present": true,
+    "hash_match": true,
+    "actual_rows": 6976,
+    "rows_match": true,
+    "validation": {
+      "first_event_time": "2020-02-17T16:00:00+00:00",
+      "last_event_time": "2026-06-30T16:00:00.005000+00:00",
+      "row_count": 6976,
+      "status": "PASS"
+    }
+  },
+  {
+    "symbol": "NEOUSDT",
+    "kind": "index",
+    "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/index_kline/market-silver-v2-1-25e57bc33183ca153982a776/manifest.json",
+    "present": true,
+    "manifest_sha256": "cbb8ca9ec73c991b4509946f315228eae53a765bce57047b5899e0853f45174a",
+    "dataset_present": true,
+    "hash_match": true,
+    "actual_rows": 669774,
+    "rows_match": true,
+    "validation": {
+      "first_event_time": "2020-02-17T08:45:00+00:00",
+      "last_event_time": "2026-06-30T23:55:00+00:00",
+      "row_count": 669774,
+      "status": "PASS"
+    }
+  },
+  {
+    "symbol": "NEOUSDT",
+    "kind": "mark",
+    "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/mark_kline/market-silver-v2-1-fa4248506fe15a026997c5c0/manifest.json",
+    "present": true,
+    "manifest_sha256": "8f8fb9cb62c1f8b69686d1d2dcc54d87a38c5e0a7a072159fabc369b7d1da4d5",
+    "dataset_present": true,
+    "hash_match": true,
+    "actual_rows": 669774,
+    "rows_match": true,
+    "validation": {
+      "first_event_time": "2020-02-17T08:45:00+00:00",
+      "last_event_time": "2026-06-30T23:55:00+00:00",
+      "row_count": 669774,
+      "status": "PASS"
+    }
+  },
+  {
+    "symbol": "OMGUSDT",
+    "kind": "funding",
+    "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/funding/market-silver-078280b45a6d61f173ee8a49/manifest.json",
+    "present": true,
+    "manifest_sha256": "f8475994baf7f1d165aa43a068b02c8b8da9e0086f6526bf2abd2c371a7df0f0",
+    "dataset_present": true,
+    "hash_match": true,
+    "actual_rows": 5443,
+    "rows_match": true,
+    "validation": {
+      "first_event_time": "2020-07-02T16:00:00+00:00",
+      "last_event_time": "2025-06-19T08:00:00.003000+00:00",
+      "row_count": 5443,
+      "status": "PASS"
+    }
+  },
+  {
+    "symbol": "OMGUSDT",
+    "kind": "index",
+    "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/index_kline/market-silver-v2-1-5b9770c8c86b4d068919d8af/manifest.json",
+    "present": true,
+    "manifest_sha256": "4b5ab5d0a61c77f9a99c0701ffa4dd0ffa5131b63f50ff4bec5c7a9641563d06",
+    "dataset_present": true,
+    "hash_match": true,
+    "actual_rows": 558160,
+    "rows_match": true,
+    "validation": {
+      "first_event_time": "2020-07-02T09:00:00+00:00",
+      "last_event_time": "2025-10-22T10:55:00+00:00",
+      "row_count": 558160,
+      "status": "PASS"
+    }
+  },
+  {
+    "symbol": "OMGUSDT",
+    "kind": "mark",
+    "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/mark_kline/market-silver-v2-1-b43410c1ae38a93b8c176069/manifest.json",
+    "present": true,
+    "manifest_sha256": "91b2cee1e52e06aaf40de1a167ca14b8b49c248415cb494ff06c2188b384562f",
+    "dataset_present": true,
+    "hash_match": true,
+    "actual_rows": 630603,
+    "rows_match": true,
+    "validation": {
+      "first_event_time": "2020-07-02T09:00:00+00:00",
+      "last_event_time": "2026-06-30T23:55:00+00:00",
+      "row_count": 630603,
+      "status": "PASS"
+    }
+  },
+  {
+    "symbol": "ONTUSDT",
+    "kind": "funding",
+    "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/funding/market-silver-03cf302106e99d94fccc85ac/manifest.json",
+    "present": true,
+    "manifest_sha256": "903edd75734c8483d15cf18f24d736a67ba68337f31d302e366bf19a849024ec",
+    "dataset_present": true,
+    "hash_match": true,
+    "actual_rows": 8021,
+    "rows_match": true,
+    "validation": {
+      "first_event_time": "2020-02-11T16:00:00+00:00",
+      "last_event_time": "2026-06-30T20:00:00.003000+00:00",
+      "row_count": 8021,
+      "status": "PASS"
+    }
+  },
+  {
+    "symbol": "ONTUSDT",
+    "kind": "index",
+    "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/index_kline/market-silver-v2-1-1645bff2c534381955e03a3f/manifest.json",
+    "present": true,
+    "manifest_sha256": "3f151f017a6f938ffb2a48ad1232821e6991142f6975653a20aa03f2bf57ad69",
+    "dataset_present": true,
+    "hash_match": true,
+    "actual_rows": 671511,
+    "rows_match": true,
+    "validation": {
+      "first_event_time": "2020-02-11T08:05:00+00:00",
+      "last_event_time": "2026-06-30T23:55:00+00:00",
+      "row_count": 671511,
+      "status": "PASS"
+    }
+  },
+  {
+    "symbol": "ONTUSDT",
+    "kind": "mark",
+    "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/mark_kline/market-silver-v2-1-522a788e33bb8f5536c6a709/manifest.json",
+    "present": true,
+    "manifest_sha256": "aa5812c0029582890be52d662845d6fb22ef536821dd2601340ce678fc9fa81a",
+    "dataset_present": true,
+    "hash_match": true,
+    "actual_rows": 671510,
+    "rows_match": true,
+    "validation": {
+      "first_event_time": "2020-02-11T08:05:00+00:00",
+      "last_event_time": "2026-06-30T23:55:00+00:00",
+      "row_count": 671510,
+      "status": "PASS"
+    }
+  },
+  {
+    "symbol": "STORJUSDT",
+    "kind": "funding",
+    "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/funding/market-silver-a3274df8740c37475e8a31fe/manifest.json",
+    "present": true,
+    "manifest_sha256": "0e32e200492030ee4171f649c012f90d2446acee629ddb45e9bb9621bb5ec674",
+    "dataset_present": true,
+    "hash_match": true,
+    "actual_rows": 7027,
+    "rows_match": true,
+    "validation": {
+      "first_event_time": "2020-09-16T08:00:00+00:00",
+      "last_event_time": "2026-06-30T20:00:00.003000+00:00",
+      "row_count": 7027,
+      "status": "PASS"
+    }
+  },
+  {
+    "symbol": "STORJUSDT",
+    "kind": "index",
+    "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/index_kline/market-silver-v2-1-28f66f48574b6f467845876c/manifest.json",
+    "present": true,
+    "manifest_sha256": "2a6efcd5e10c74caf9f60375dd0b9231f79014dd7dacafdb311d673d6682f772",
+    "dataset_present": true,
+    "hash_match": true,
+    "actual_rows": 608740,
+    "rows_match": true,
+    "validation": {
+      "first_event_time": "2020-09-16T07:00:00+00:00",
+      "last_event_time": "2026-06-30T23:55:00+00:00",
+      "row_count": 608740,
+      "status": "PASS"
+    }
+  },
+  {
+    "symbol": "STORJUSDT",
+    "kind": "mark",
+    "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/mark_kline/market-silver-v2-1-79adeff9baa200b191fc0431/manifest.json",
+    "present": true,
+    "manifest_sha256": "b8e3a13a52ee33078615a2234283f003634bec33fd01e79fd75b7665d2615a5e",
+    "dataset_present": true,
+    "hash_match": true,
+    "actual_rows": 608739,
+    "rows_match": true,
+    "validation": {
+      "first_event_time": "2020-09-16T07:00:00+00:00",
+      "last_event_time": "2026-06-30T23:55:00+00:00",
+      "row_count": 608739,
+      "status": "PASS"
+    }
+  },
+  {
+    "symbol": "TRXUSDT",
+    "kind": "funding",
+    "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/funding/market-silver-776a3916c500cac9246681d3/manifest.json",
+    "present": true,
+    "manifest_sha256": "1d8932bdbed3b7940eb815617c48d0380e9572f8e3b13377a37056f497eb288c",
+    "dataset_present": true,
+    "hash_match": true,
+    "actual_rows": 7075,
+    "rows_match": true,
+    "validation": {
+      "first_event_time": "2020-01-15T16:00:00+00:00",
+      "last_event_time": "2026-06-30T16:00:00.005000+00:00",
+      "row_count": 7075,
+      "status": "PASS"
+    }
+  },
+  {
+    "symbol": "TRXUSDT",
+    "kind": "index",
+    "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/index_kline/market-silver-v2-1-041ba4d85b5466a52b64573c/manifest.json",
+    "present": true,
+    "manifest_sha256": "2375badca09450c288b051261025718f4ec70ccbfe8b70c7f5631e5bf98565e5",
+    "dataset_present": true,
+    "hash_match": true,
+    "actual_rows": 679282,
+    "rows_match": true,
+    "validation": {
+      "first_event_time": "2020-01-15T08:05:00+00:00",
+      "last_event_time": "2026-06-30T23:55:00+00:00",
+      "row_count": 679282,
+      "status": "PASS"
+    }
+  },
+  {
+    "symbol": "TRXUSDT",
+    "kind": "mark",
+    "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/mark_kline/market-silver-v2-1-d13ccd2d553e391fd3ffd739/manifest.json",
+    "present": true,
+    "manifest_sha256": "43b4e952d6b4069f1a1c84d8a8c2f1400fb0c6d29b2d2b084b1e66c61756f27f",
+    "dataset_present": true,
+    "hash_match": true,
+    "actual_rows": 679281,
+    "rows_match": true,
+    "validation": {
+      "first_event_time": "2020-01-15T08:05:00+00:00",
+      "last_event_time": "2026-06-30T23:55:00+00:00",
+      "row_count": 679281,
+      "status": "PASS"
+    }
+  },
+  {
+    "symbol": "UNIUSDT",
+    "kind": "funding",
+    "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/funding/market-silver-8d02d69f307bf1b0abf83e07/manifest.json",
+    "present": true,
+    "manifest_sha256": "ac0e3e5d5eb648f5668a881727e2bb6d6079f0a816312c90b570451d946da2fc",
+    "dataset_present": true,
+    "hash_match": true,
+    "actual_rows": 6335,
+    "rows_match": true,
+    "validation": {
+      "first_event_time": "2020-09-18T08:00:00.002000+00:00",
+      "last_event_time": "2026-06-30T16:00:00.005000+00:00",
+      "row_count": 6335,
+      "status": "PASS"
+    }
+  },
+  {
+    "symbol": "UNIUSDT",
+    "kind": "index",
+    "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/index_kline/market-silver-v2-1-dfe389f2a906a4fc71850f2b/manifest.json",
+    "present": true,
+    "manifest_sha256": "557f2dfa99a2db769c73ed3dcd2a966c60a97283afb9d0ed2c3c15f4e264d201",
+    "dataset_present": true,
+    "hash_match": true,
+    "actual_rows": 608163,
+    "rows_match": true,
+    "validation": {
+      "first_event_time": "2020-09-18T07:00:00+00:00",
+      "last_event_time": "2026-06-30T23:55:00+00:00",
+      "row_count": 608163,
+      "status": "PASS"
+    }
+  },
+  {
+    "symbol": "UNIUSDT",
+    "kind": "mark",
+    "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/mark_kline/market-silver-v2-1-3e513247354348ea04ad9b47/manifest.json",
+    "present": true,
+    "manifest_sha256": "dff753137596f3aaa7e9cef5788f98adfcfd26a0f3b8bc051a72926717686e76",
+    "dataset_present": true,
+    "hash_match": true,
+    "actual_rows": 608163,
+    "rows_match": true,
+    "validation": {
+      "first_event_time": "2020-09-18T07:00:00+00:00",
+      "last_event_time": "2026-06-30T23:55:00+00:00",
+      "row_count": 608163,
+      "status": "PASS"
+    }
+  },
+  {
+    "symbol": "ZECUSDT",
+    "kind": "funding",
+    "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/funding/market-silver-3bbcbafb22fcd498b6dff5ce/manifest.json",
+    "present": true,
+    "manifest_sha256": "1d6e742ba93953ab302ba61ad310f3c4c5895ab9285fd2c1d9ccb452dc0bcd86",
+    "dataset_present": true,
+    "hash_match": true,
+    "actual_rows": 7013,
+    "rows_match": true,
+    "validation": {
+      "first_event_time": "2020-02-05T08:00:00+00:00",
+      "last_event_time": "2026-06-30T16:00:00.005000+00:00",
+      "row_count": 7013,
+      "status": "PASS"
+    }
+  },
+  {
+    "symbol": "ZECUSDT",
+    "kind": "index",
+    "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/index_kline/market-silver-v2-1-69be83855d5cf6a85656ba0a/manifest.json",
+    "present": true,
+    "manifest_sha256": "3f6e5e97d210177d9eb50c46eece6389da61ca2f030f88e833a84b61ee41533e",
+    "dataset_present": true,
+    "hash_match": true,
+    "actual_rows": 673240,
+    "rows_match": true,
+    "validation": {
+      "first_event_time": "2020-02-05T08:00:00+00:00",
+      "last_event_time": "2026-06-30T23:55:00+00:00",
+      "row_count": 673240,
+      "status": "PASS"
+    }
+  },
+  {
+    "symbol": "ZECUSDT",
+    "kind": "mark",
+    "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/mark_kline/market-silver-v2-1-d078ab32dc255b785e04ecea/manifest.json",
+    "present": true,
+    "manifest_sha256": "bcb22841bf04040ed4569660ad6e5a652df1857d78f95d9b8def56f8b0cee77f",
+    "dataset_present": true,
+    "hash_match": true,
+    "actual_rows": 673239,
+    "rows_match": true,
+    "validation": {
+      "first_event_time": "2020-02-05T08:00:00+00:00",
+      "last_event_time": "2026-06-30T23:55:00+00:00",
+      "row_count": 673239,
+      "status": "PASS"
+    }
+  },
+  {
+    "symbol": "ZRXUSDT",
+    "kind": "funding",
+    "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/funding/market-silver-33b99506f9aa0e9129bcefa6/manifest.json",
+    "present": true,
+    "manifest_sha256": "330909c6a6d5bc21b7546c424ae8f2b599e8c2ed8a96f5e3ddd687f16fa98288",
+    "dataset_present": true,
+    "hash_match": true,
+    "actual_rows": 7271,
+    "rows_match": true,
+    "validation": {
+      "first_event_time": "2020-06-24T16:00:00+00:00",
+      "last_event_time": "2026-06-30T20:00:00.003000+00:00",
+      "row_count": 7271,
+      "status": "PASS"
+    }
+  },
+  {
+    "symbol": "ZRXUSDT",
+    "kind": "index",
+    "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/index_kline/market-silver-v2-1-be54d66b3beabe3874cb8ce7/manifest.json",
+    "present": true,
+    "manifest_sha256": "439674f340bbda70a0bb646ac461c3391f9b386537ce2ca599e8b8d37b3be523",
+    "dataset_present": true,
+    "hash_match": true,
+    "actual_rows": 632908,
+    "rows_match": true,
+    "validation": {
+      "first_event_time": "2020-06-24T09:00:00+00:00",
+      "last_event_time": "2026-06-30T23:55:00+00:00",
+      "row_count": 632908,
+      "status": "PASS"
+    }
+  },
+  {
+    "symbol": "ZRXUSDT",
+    "kind": "mark",
+    "path": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/market/silver/mark_kline/market-silver-v2-1-145d8a8d9d6c3bbe59732772/manifest.json",
+    "present": true,
+    "manifest_sha256": "9d3e00a6715341310688c2e8c1ed702751575e2bf4748e76854e32cc5dfb4713",
+    "dataset_present": true,
+    "hash_match": true,
+    "actual_rows": 632907,
+    "rows_match": true,
+    "validation": {
+      "first_event_time": "2020-06-24T09:00:00+00:00",
+      "last_event_time": "2026-06-30T23:55:00+00:00",
+      "row_count": 632907,
+      "status": "PASS"
+    }
+  }
+]

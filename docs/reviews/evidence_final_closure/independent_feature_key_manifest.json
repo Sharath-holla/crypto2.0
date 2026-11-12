@@ -1,0 +1,208 @@
+{
+  "method": "Exact independent KEY DOMAIN projection only, not feature values: generate_multiasset_features preserves one row for every input 5m candle with feature_time=open_time+5m; verified against actual producer by test_silver_candle_key_projection_matches_actual_feature_producer. Cropped to exclusive July research cutoff. No Gold input used.",
+  "feature_code_sha256": "81aba3a91582349bbbccc6e2c7f2bc70a5361e1a2710e9fcf7383ee426dcf88e",
+  "source_integrity_report_sha256": "f2cacbb9aa5403e54fbf2b40cf8d5fc3d0cfe1bf8b28d78582c17a8bb965329c",
+  "research_cutoff_exclusive": "2026-07-01T00:00:00Z",
+  "partitions": [
+    {
+      "symbol": "BCHUSDT",
+      "rows": 683423,
+      "source_manifest": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/silver/binance/manifests/silver-23fef0f18f0bd34a4793e9d6.json",
+      "source_manifest_sha256": "7ac065908342aabaf33727c0b5532b8f4c6b84f66ed42457cb94850966a55f1d",
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/independent_feature_keys/BCHUSDT.parquet",
+      "sha256": "d79375b727dc6427e1a6fb84e715b1debf748f9de51b3e5592df3a602484a081",
+      "first_ms": 1577837100000,
+      "last_ms": 1782863700000
+    },
+    {
+      "symbol": "BLZUSDT",
+      "rows": 608459,
+      "source_manifest": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/silver/binance/manifests/silver-edad6a23de2defe665625c0a.json",
+      "source_manifest_sha256": "67098bb1485390dd228f7597d6ce01933ff864123cbc76535e54a24747cbf8be",
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/independent_feature_keys/BLZUSDT.parquet",
+      "sha256": "de83787b23d9c37b8f42028d47e213382d6277028a7e5d2769fac811cac251fb",
+      "first_ms": 1600326300000,
+      "last_ms": 1782863700000
+    },
+    {
+      "symbol": "BTCUSDT",
+      "rows": 683423,
+      "source_manifest": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/silver/binance/manifests/silver-f53e17c959a1d7520a656871.json",
+      "source_manifest_sha256": "7e5f3dc020ba1dac2b7cf164ed286867bbe97d10af3e9348f21cd54b2d8f61c3",
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/independent_feature_keys/BTCUSDT.parquet",
+      "sha256": "ad105cd55261480450b594b616af9c5e86e27ecd7a4e463aed5adcfa75a16a91",
+      "first_ms": 1577837100000,
+      "last_ms": 1782863700000
+    },
+    {
+      "symbol": "COMPUSDT",
+      "rows": 631187,
+      "source_manifest": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/silver/binance/manifests/silver-aa455dca52d3f1d7fa8f2865.json",
+      "source_manifest_sha256": "44135e6b0434c87bcf708240a6f0176600a9c0142a5460f08b0e3d39393abae0",
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/independent_feature_keys/COMPUSDT.parquet",
+      "sha256": "570f1502a1b22a18bdcb455bc671be33b35a0e2d2e442aff9f703ab144a2f4a7",
+      "first_ms": 1593507900000,
+      "last_ms": 1782863700000
+    },
+    {
+      "symbol": "DOGEUSDT",
+      "rows": 628307,
+      "source_manifest": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/silver/binance/manifests/silver-e6d39b26406e95183f4bb451.json",
+      "source_manifest_sha256": "fed80ee7d953309da88fcfa685ff68739103a36c6a27035deeb2e827b76d3fd8",
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/independent_feature_keys/DOGEUSDT.parquet",
+      "sha256": "1514947a8bf3f8568b0e05ffc2c164572207aaeba0e8cc3f73ce62079f94242e",
+      "first_ms": 1594371900000,
+      "last_ms": 1782863700000
+    },
+    {
+      "symbol": "ETHUSDT",
+      "rows": 683423,
+      "source_manifest": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/silver/binance/manifests/silver-1da8f3ab73eac97150c9350a.json",
+      "source_manifest_sha256": "5bba0e0635654faa01776cb4616518fc4d132870d57b7c64df980af5630ceb9e",
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/independent_feature_keys/ETHUSDT.parquet",
+      "sha256": "784f16f5072658e0c8874aedfefc2e8e384e16227c2e2a49b07e1e86d1613467",
+      "first_ms": 1577837100000,
+      "last_ms": 1782863700000
+    },
+    {
+      "symbol": "FILUSDT",
+      "rows": 600119,
+      "source_manifest": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/silver/binance/manifests/silver-00567896fd2698d5d992fa4b.json",
+      "source_manifest_sha256": "c56074a73fcfd950890d96ad257c8c4858a64722d7aa1a4430c5ee73487dc8d9",
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/independent_feature_keys/FILUSDT.parquet",
+      "sha256": "1ffcfc1bd2a4f5cee25aa8a9411632032f3ac0f36102e347c8fecefde75c7845",
+      "first_ms": 1602828300000,
+      "last_ms": 1782863700000
+    },
+    {
+      "symbol": "FLMUSDT",
+      "rows": 605003,
+      "source_manifest": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/silver/binance/manifests/silver-086d1dc587392ddad956fc80.json",
+      "source_manifest_sha256": "3f226e669cfb421b6754564bc2babb3bfde5b5427553d6f76ab54ab81696ba95",
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/independent_feature_keys/FLMUSDT.parquet",
+      "sha256": "d2192a9658b19819c8b47d03b2d59b826b49c5700ffb79dd91dd1c6b87a9fafa",
+      "first_ms": 1601363100000,
+      "last_ms": 1782863700000
+    },
+    {
+      "symbol": "HNTUSDT",
+      "rows": 385347,
+      "source_manifest": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/silver/binance/manifests/silver-4ec5de732565c2fbd6ee5343.json",
+      "source_manifest_sha256": "4cf386a0cae6e57e41ccbcf725bcd599f7f3eb745d481e08e19dc6ca74145343",
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/independent_feature_keys/HNTUSDT.parquet",
+      "sha256": "03678fbbd1d44928ce8e4799d91870da121e8396018c89408c77a7529a609d07",
+      "first_ms": 1601276700000,
+      "last_ms": 1716880500000
+    },
+    {
+      "symbol": "IOTAUSDT",
+      "rows": 671231,
+      "source_manifest": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/silver/binance/manifests/silver-3db7eb89c5e3f5178b3e3f48.json",
+      "source_manifest_sha256": "e721e7163c3f0f21fa7d7e2bc0f2c716529671fda51e078fa3294c7b51fcf2d8",
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/independent_feature_keys/IOTAUSDT.parquet",
+      "sha256": "dccf99fef1fddb56da4cc86f55b8e79738deaaab6adf8e8c9909712a5c324bb7",
+      "first_ms": 1581494700000,
+      "last_ms": 1782863700000
+    },
+    {
+      "symbol": "KNCUSDT",
+      "rows": 633493,
+      "source_manifest": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/silver/binance/manifests/silver-0df67f61dbf66551dc3fdb86.json",
+      "source_manifest_sha256": "7bd14164b88e693d3d75ef4a29ca2448445b10d5b5cd8c8dad486d9cbc526735",
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/independent_feature_keys/KNCUSDT.parquet",
+      "sha256": "e403059a18b4bd4a8090c838663e82d796a3906f7e5a30f280894dc492d9af66",
+      "first_ms": 1592816100000,
+      "last_ms": 1782863700000
+    },
+    {
+      "symbol": "KSMUSDT",
+      "rows": 600683,
+      "source_manifest": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/silver/binance/manifests/silver-e48b9370e6e51bd8d43d7cf7.json",
+      "source_manifest_sha256": "a54cf3d53e57c07fd8849363485740a2848512bca662480c05a45c11bcd4289d",
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/independent_feature_keys/KSMUSDT.parquet",
+      "sha256": "f600fc0e64b165cb14991f84cf3c6797f52d57ed5882c770d916c79f488ad6fa",
+      "first_ms": 1602659100000,
+      "last_ms": 1782863700000
+    },
+    {
+      "symbol": "NEOUSDT",
+      "rows": 669782,
+      "source_manifest": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/silver/binance/manifests/silver-f429497b938f8c9f7411c6fb.json",
+      "source_manifest_sha256": "540623c719f67d587aeefdc20389488c0cb5fae84008b9ebc6a062db373a6d83",
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/independent_feature_keys/NEOUSDT.parquet",
+      "sha256": "0c54f9d7852b34b98322ffb90d6863825c4f1fb5393b93ddb83df589c1583a55",
+      "first_ms": 1581929400000,
+      "last_ms": 1782863700000
+    },
+    {
+      "symbol": "OMGUSDT",
+      "rows": 630611,
+      "source_manifest": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/silver/binance/manifests/silver-9dd0aa592ff3c1ffc084e62d.json",
+      "source_manifest_sha256": "6c4b517b4390e1d0a77c1d2e3353cdc7d5b183c3aee224fa16629a561df397e0",
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/independent_feature_keys/OMGUSDT.parquet",
+      "sha256": "66ee4d75c30932a168f5f842eea33a466d64307d2d156022932761cadf3d0e75",
+      "first_ms": 1593680700000,
+      "last_ms": 1782863700000
+    },
+    {
+      "symbol": "ONTUSDT",
+      "rows": 671518,
+      "source_manifest": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/silver/binance/manifests/silver-d1bb7b0176969fcecfacd3f5.json",
+      "source_manifest_sha256": "978841feb79af64525d6daf679c66a3dc7d222704f7a1a4583065b598baf4b62",
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/independent_feature_keys/ONTUSDT.parquet",
+      "sha256": "05fd0cf251b0e49f654bfc8b85554ae746b5635e0a5500822a26020b347f4915",
+      "first_ms": 1581408600000,
+      "last_ms": 1782863700000
+    },
+    {
+      "symbol": "STORJUSDT",
+      "rows": 608747,
+      "source_manifest": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/silver/binance/manifests/silver-114f71c5dafe3aa4423e820c.json",
+      "source_manifest_sha256": "e6c6bee187424f4eada4f31e3d2b84f3d6cff3265be15de6c9062c39b3d68bdd",
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/independent_feature_keys/STORJUSDT.parquet",
+      "sha256": "49b54206b2c043afbfe78c3c0e86fb56aff11b4b6856d6b42ef5ffe9ef7cb945",
+      "first_ms": 1600239900000,
+      "last_ms": 1782863700000
+    },
+    {
+      "symbol": "TRXUSDT",
+      "rows": 679294,
+      "source_manifest": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/silver/binance/manifests/silver-4bb5d750b0039739442f7df9.json",
+      "source_manifest_sha256": "45afb99fcae27f86152a846dca9863e44043164488eb8fdc91a188eb42033781",
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/independent_feature_keys/TRXUSDT.parquet",
+      "sha256": "cb5e7d903acef2f3e1cffea3e3cf2814cd6a621f39e2620ada8786b8af6f9e97",
+      "first_ms": 1579075800000,
+      "last_ms": 1782863700000
+    },
+    {
+      "symbol": "UNIUSDT",
+      "rows": 608171,
+      "source_manifest": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/silver/binance/manifests/silver-b08d9256d421e4abe8760e3a.json",
+      "source_manifest_sha256": "41680c6684e92f9de18b211956d4f3d5cbbcfcfe7160d7f75933964baaee3269",
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/independent_feature_keys/UNIUSDT.parquet",
+      "sha256": "16157a98e78d3c6681e6730b05777fab0ab6d998eef2c9c78e3347e50e4b00a9",
+      "first_ms": 1600412700000,
+      "last_ms": 1782863700000
+    },
+    {
+      "symbol": "ZECUSDT",
+      "rows": 673247,
+      "source_manifest": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/silver/binance/manifests/silver-d8c92585a431e31ce2b75bfc.json",
+      "source_manifest_sha256": "9da2382df74a35e5d3682bf1f8dbefbbb09a82115c04584667169b2ca21a1781",
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/independent_feature_keys/ZECUSDT.parquet",
+      "sha256": "8ae5eb205a14061d2a98e88ba060a01a624e8b00fd18a025ad1249073aca3e31",
+      "first_ms": 1580889900000,
+      "last_ms": 1782863700000
+    },
+    {
+      "symbol": "ZRXUSDT",
+      "rows": 632915,
+      "source_manifest": "/Users/cortex/Crypto2Data/lightning-full/crypto2-persistent/data/phase7/silver/binance/manifests/silver-51db8656c14d6cd710aa7eb5.json",
+      "source_manifest_sha256": "f60d9fdc30add939ea999b87101b798ad57dca15d1b790e0aac150e1de677215",
+      "path": "/Users/cortex/Crypto2Data/reports/phase7-final-closure-20261106/independent_feature_keys/ZRXUSDT.parquet",
+      "sha256": "43b57391764417eb12f74b57f3737d6d38168f6fb5d7c90b809a9e5572ba0475",
+      "first_ms": 1592989500000,
+      "last_ms": 1782863700000
+    }
+  ]
+}

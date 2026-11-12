@@ -58,3 +58,16 @@ tmp/
 .idea/
 .DS_Store
 Thumbs.db
+
+# Local incident workspaces and generated test evidence are not source packages.
+# Preserve these locally or in the private migration backup; never blanket-stage them.
+/.codex_*/
+/.freebuff/
+/.hardening_src/
+/.phase7_workload_bench/
+/.pytest-*/
+/.pytest-*.xml
+/phase7-checkpoint-work*.patch
+/audit_fix_review.diff
+/crypto2.0-project-handoff-*.tar.gz
+/project_hold_20260906/

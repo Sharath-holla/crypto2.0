@@ -3,6 +3,7 @@ from __future__ import annotations
 import os
 import uuid
 from concurrent.futures import Future, ThreadPoolExecutor
+from contextvars import copy_context
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Literal
@@ -19,7 +20,12 @@ from crypto_ai.phase7.backend import (
     resolve_lightgbm_backend,
 )
 from crypto_ai.phase7.config import ModelConfig, stable_hash
+from crypto_ai.phase7.device_evidence import fit_with_device_evidence
+from crypto_ai.phase7.fit_boundary import assert_fit_matrices
 from crypto_ai.phase7.folds import IneligibleFoldError
+from crypto_ai.phase7.model_registry import verify_registered_model
+from crypto_ai.phase7.resources import resource_admission
+from crypto_ai.phase7.training_metrics import display_metrics, fit_observer
 
 Architecture = Literal["G0", "C0", "P0", "H0"]
 
@@ -96,6 +102,78 @@ def prepare_architecture_inputs(
     return prepared
 
 
+# CHANGED BY CLAUDE (2026-11-06, closure, H0 data ownership). The H0 symbol/cluster residual
+# corrections used to be fit on the VALIDATION rows that also drive early stopping (finding
+# L-04, documented but not fixed). Ownership of rows is now:
+#   * base (global) fit ........ TRAIN
+#   * early stopping ........... VALIDATION
+#   * H0 residual correction ... first purged part of Cal-A ("Cal-A1")
+#   * calibrator (Cal-A) ....... the remaining later part of Cal-A ("Cal-A2") for H0
+#   * threshold selection ...... Cal-B
+#   * final evaluation ......... TEST (never used for any choice)
+# Cal-A1 rows whose label_end_time + embargo reaches the first Cal-A2 feature time are dropped.
+def split_calibration_a_for_h0(
+    calibration_a: pa.Table,
+    *,
+    embargo_us: int,
+    correction_fraction: float = 0.5,
+) -> tuple[pa.Table, pa.Table, dict[str, Any]]:
+    """Return (correction rows, calibrator rows, report) from Cal-A, purged by label_end_time."""
+
+    if not 0.0 < correction_fraction < 1.0:
+        raise ValueError("correction_fraction must be in (0, 1)")
+    if calibration_a.num_rows < 2:
+        raise IneligibleFoldError("H0 needs at least two Cal-A rows to split")
+    times = calibration_a.column("feature_time").combine_chunks().cast(pa.int64()).to_numpy()
+    ends = calibration_a.column("label_end_time").combine_chunks().cast(pa.int64()).to_numpy()
+    if np.any(np.diff(times) < 0):
+        raise ValueError("Cal-A rows must be sorted by feature_time")
+    boundary = int(times[min(int(len(times) * correction_fraction), len(times) - 1)])
+    correction_mask = (times < boundary) & (ends + int(embargo_us) < boundary)
+    calibrator_mask = times >= boundary
+    if not correction_mask.any() or not calibrator_mask.any():
+        raise IneligibleFoldError("H0 Cal-A split left no correction or calibrator rows")
+    report = {
+        "status": "CALIBRATION_A1_PURGED_INDEPENDENT_OF_EARLY_STOPPING",
+        "boundary_time": boundary,
+        "embargo": int(embargo_us),
+        "calibration_a_rows": int(len(times)),
+        "correction_rows": int(correction_mask.sum()),
+        "purged_rows": int(np.count_nonzero((times < boundary) & ~correction_mask)),
+        "calibrator_rows": int(calibrator_mask.sum()),
+        "ownership": {
+            "base_fit": "TRAIN",
+            "early_stopping": "VALIDATION",
+            "h0_residual_correction": "CALIBRATION_A1",
+            "calibrator": "CALIBRATION_A2",
+            "threshold": "CALIBRATION_B",
+            "final_evaluation": "TEST",
+        },
+    }
+    return (
+        calibration_a.filter(pa.array(correction_mask)),
+        calibration_a.filter(pa.array(calibrator_mask)),
+        report,
+    )
+
+
+def _assert_correction_rows_disjoint_from_early_stopping(
+    correction: pa.Table, validation: pa.Table
+) -> None:
+    """Fail closed if a (symbol, feature_time) key is in both correction and early-stop sets."""
+
+    def keys(table: pa.Table) -> set[tuple[str, int]]:
+        times = table.column("feature_time").combine_chunks().cast(pa.int64()).to_numpy()
+        symbols = _symbols(table)
+        return {(str(symbol), int(time)) for symbol, time in zip(symbols, times, strict=True)}
+
+    overlap = keys(correction) & keys(validation)
+    if overlap:
+        raise ValueError(
+            f"H0_CORRECTION_OVERLAPS_EARLY_STOPPING: {len(overlap)} (symbol, feature_time) keys"
+        )
+
+
 def symbol_balanced_weights(symbols: np.ndarray) -> np.ndarray:
     values = np.asarray(symbols, dtype=object)
     if values.ndim != 1:
@@ -143,32 +221,88 @@ def _fit(
     config: ModelConfig,
     model_threads: int,
     sample_weight: np.ndarray | None,
+    estimator_key: str = "global",
+    validation_rows: np.ndarray | None = None,
 ) -> Any:
     import lightgbm as lgb
 
     if not len(train_y) or not len(validation_y):
         raise IneligibleFoldError("LightGBM requires non-empty train and validation rows")
+    # CHANGED BY CLAUDE (2026-11-08): read-only invariants on the exact arrays LightGBM receives
+    # (matrices may come back from the prepared cache). Nothing is reordered or repaired.
+    assert_fit_matrices(train_x, train_y, validation_x, validation_y, sample_weight)
+    resource_admission("ESTIMATOR_FIT")
     estimator = _estimator(config, model_threads=model_threads)
     backend = resolve_lightgbm_backend()
+    observer = fit_observer(estimator_key)
+    evaluation = {"eval_X": validation_x, "eval_y": validation_y}
+    callbacks = [
+        lgb.early_stopping(config.early_stopping_rounds, first_metric_only=True, verbose=False),
+    ]
+    if observer is not None:
+        evaluation = {
+            "eval_X": (train_x, validation_x),
+            "eval_y": (train_y, validation_y),
+            "eval_names": ["train", "validation"],
+            "eval_sample_weight": [sample_weight, None],
+            # A callable appends diagnostics AFTER the unchanged default L2 metric.
+            "eval_metric": display_metrics,
+        }
+        callbacks.append(observer)
+        # CHANGED BY CLAUDE (2026-11-02, Phase 3 item 3): the zero-return baseline for the optional
+        # abort rule comes from VALIDATION targets only.
+        observer.zero_baseline_rmse = float(np.sqrt(np.mean(np.square(validation_y))))
+        # CHANGED BY CLAUDE (2026-11-08): run facts + the Validation-only in-fit diagnostics.
+        # ``validation_rows`` maps a partitioned (C0/P0) estimator's rows back to the fold's
+        # Validation table. Monitoring only: never changes the fit, the metrics or stopping.
+        observer.bind_validation(
+            validation_x,
+            validation_y,
+            rows=validation_rows,
+            train_rows=len(train_y),
+            feature_count=int(train_x.shape[1]),
+            model_threads=model_threads,
+            backend_name=backend.name,
+            learning_rate=config.learning_rate,
+        )
     try:
-        estimator.fit(
+        fit_with_device_evidence(
+            estimator,
+            backend,
             train_x,
             train_y,
             sample_weight=sample_weight,
-            eval_X=validation_x,
-            eval_y=validation_y,
-            callbacks=[
-                lgb.early_stopping(
-                    config.early_stopping_rounds, first_metric_only=True, verbose=False
-                ),
-                lgb.log_evaluation(period=0),
-            ],
+            **evaluation,
+            callbacks=callbacks,
         )
+        if observer is not None:
+            observer.finish(estimator)
     except Exception as exc:
+        if observer is not None:
+            try:
+                observer.fail(exc)
+            except Exception as logging_error:
+                exc.add_note(f"Fit failure logging also failed: {type(logging_error).__name__}")
         if backend.gpu_requested:
             raise _backend_error(backend, exc) from exc
         raise
     return estimator
+
+
+def masked_rows(array: np.ndarray, mask: np.ndarray) -> np.ndarray:
+    """Keep exact row order/dtype; use a view only for contiguous selections."""
+    mask = np.asarray(mask, dtype=bool)
+    if mask.ndim != 1 or len(mask) != len(array):
+        raise ValueError("row mask shape mismatch")
+    count = int(np.count_nonzero(mask))
+    if count == len(array):
+        return array
+    if not count:
+        return array[:0]
+    first = int(np.argmax(mask))
+    if np.all(mask[first : first + count]):
+        return array[first : first + count]
+    return array[mask]
 
 
 def _fit_partitioned_estimators(
@@ -185,23 +319,26 @@ def _fit_partitioned_estimators(
     """Fit independent cluster/per-coin estimators under one CPU budget."""
 
     def run(
+        key: str,
         train_mask: np.ndarray,
         validation_mask: np.ndarray,
         sample_weight: np.ndarray | None,
     ) -> Any:
         return _fit(
-            train_x[train_mask],
-            train_y[train_mask],
-            validation_x[validation_mask],
-            validation_y[validation_mask],
+            masked_rows(train_x, train_mask),
+            masked_rows(train_y, train_mask),
+            masked_rows(validation_x, validation_mask),
+            masked_rows(validation_y, validation_mask),
             config=config,
             model_threads=model_threads,
             sample_weight=sample_weight,
+            estimator_key=key,
+            validation_rows=validation_mask,
         )
 
     if estimator_workers == 1 or len(jobs) <= 1:
         return {
-            key: run(train_mask, validation_mask, sample_weight)
+            key: run(key, train_mask, validation_mask, sample_weight)
             for key, train_mask, validation_mask, sample_weight in jobs
         }
     results: dict[str, Any] = {}
@@ -212,7 +349,9 @@ def _fit_partitioned_estimators(
         futures: list[tuple[str, Future[Any]]] = [
             (
                 key,
-                executor.submit(run, train_mask, validation_mask, sample_weight),
+                executor.submit(
+                    copy_context().run, run, key, train_mask, validation_mask, sample_weight
+                ),
             )
             for key, train_mask, validation_mask, sample_weight in jobs
         ]
@@ -240,7 +379,6 @@ class Phase7ModelBundle:
     def predict(self, table: pa.Table) -> tuple[np.ndarray, np.ndarray]:
         base = _matrix(table, self.feature_columns)
         symbols = _symbols(table)
-        predicted = np.full(table.num_rows, np.nan)
         covered = np.zeros(table.num_rows, dtype=bool)
         if self.architecture in {"G0", "H0"}:
             matrix = (
@@ -260,6 +398,7 @@ class Phase7ModelBundle:
                         if cluster in self.cluster_corrections:
                             predicted[index] += self.cluster_corrections[cluster]
         elif self.architecture == "C0":
+            predicted = np.full(table.num_rows, np.nan)
             for symbol in np.unique(symbols):
                 cluster = self.cluster_mapping.get(str(symbol))
                 key = f"cluster:{cluster}" if cluster is not None else ""
@@ -268,12 +407,15 @@ class Phase7ModelBundle:
                     predicted[rows] = self.estimators[key].predict(base[rows])
                     covered[rows] = True
         elif self.architecture == "P0":
+            predicted = np.full(table.num_rows, np.nan)
             for symbol in np.unique(symbols):
                 key = f"symbol:{symbol}"
                 rows = np.flatnonzero(symbols == symbol)
                 if key in self.estimators:
                     predicted[rows] = self.estimators[key].predict(base[rows])
                     covered[rows] = True
+        else:
+            raise ValueError("unsupported architecture")
         if np.any(covered & ~np.isfinite(predicted)):
             raise ValueError("Phase 7 model produced non-finite covered predictions")
         return predicted, covered
@@ -301,7 +443,10 @@ def fit_architecture(
         raise ValueError(f"unknown Phase 7 architecture: {architecture}")
     if model_threads < 1 or estimator_workers < 1:
         raise ValueError("Phase 7 model thread and worker counts must be positive")
-    logical_cpus = os.cpu_count() or model_threads
+    from crypto_ai.phase7.runtime import effective_cpu_count
+
+    logical_cpus = effective_cpu_count()
+    model_threads = min(model_threads, logical_cpus)
     pooled_model_threads = min(logical_cpus, model_threads * estimator_workers)
     partition_workers = max(
         1,
@@ -465,6 +610,10 @@ def fit_architecture(
     cluster_corrections: dict[int, float] = {}
     hybrid_symbol_eligibility: dict[str, dict[str, Any]] = {}
     if architecture == "H0" and hybrid_calibration is not None:
+        if hybrid_calibration is not validation:
+            # CHANGED BY CLAUDE (2026-11-06, closure): the correction rows must not be the
+            # early-stopping rows.
+            _assert_correction_rows_disjoint_from_early_stopping(hybrid_calibration, validation)
         if hybrid_calibration is validation:
             calibration_x = prepared.validation_x
             calibration_symbols = prepared.validation_symbols
@@ -534,6 +683,27 @@ def fit_architecture(
         "compute_backend": backend.name,
     }
     metadata["model_identity"] = stable_hash(metadata)
+    # CHANGED BY CLAUDE (2026-11-02, finding L-04): DOCUMENTED, NOT FIXED. H0 symbol/cluster
+    # corrections are fit on the Validation rows that also drive early stopping, so H0 is not
+    # independent of its stopping set (no TEST rows are involved). A separate slice would need
+    # new fold structure, which this hardening pass does not change. Recorded after the model
+    # identity is computed so existing identities and caches are unaffected.
+    if architecture == "H0":
+        # OLD CODE (kept for reference): always recorded as validation-sourced.
+        # metadata["hybrid_correction_source"] = {
+        #     "status": "VALIDATION_EARLY_STOPPING_SET_NOT_INDEPENDENT",
+        #     "finding": "L-04",
+        #     "test_rows_used": False,
+        # }
+        metadata["hybrid_correction_source"] = {
+            "status": (
+                "VALIDATION_EARLY_STOPPING_SET_NOT_INDEPENDENT"
+                if hybrid_calibration is validation
+                else "SEPARATE_ROWS_DISJOINT_FROM_EARLY_STOPPING"
+            ),
+            "finding": "L-04",
+            "test_rows_used": False,
+        }
     metadata["execution_context"] = backend_metadata(backend)
     metadata["fit_execution"] = {
         "model_threads_per_estimator": model_threads,
@@ -541,6 +711,10 @@ def fit_architecture(
         "effective_partition_workers": partition_workers,
         "pooled_model_threads": pooled_model_threads,
         "global_estimator_reused_from_model_identity": reused_global_identity,
+    }
+    metadata["device_attestation"] = {
+        key: getattr(estimator, "phase7_device_evidence_", {"status": "CPU_ONLY"})
+        for key, estimator in estimators.items()
     }
     return Phase7ModelBundle(
         architecture=architecture,
@@ -575,6 +749,10 @@ def save_model(bundle: Phase7ModelBundle, path: Path) -> Path:
 
 
 def load_model(path: Path) -> Phase7ModelBundle:
+    # CHANGED BY CLAUDE (2026-11-02, finding L-08): verify the file against the hash registry
+    # that lives OUTSIDE the artifact folder before unpickling; mismatch raises and nothing loads.
+    # OLD CODE (kept for reference): payload = joblib.load(path) with no registry check.
+    verify_registered_model(path)
     payload = joblib.load(path)
     if not isinstance(payload, Phase7ModelBundle):
         raise ValueError(f"Unsupported Phase 7 model artifact: {path}")

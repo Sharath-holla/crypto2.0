@@ -3,13 +3,10 @@
 
 from __future__ import annotations
 
-import argparse
 import os
 import sys
-from pathlib import Path
 
-from crypto_ai.phase7.phase7a import CONFIG_PATH, pipeline_dispatcher
-from crypto_ai.phase7.preflight import build_preflight_report
+from crypto_ai.phase7.phase7a import pipeline_dispatcher
 
 REQUIRED_RUNTIME_VARIABLES = (
     "PHASE7_DATA_ROOT",
@@ -33,20 +30,8 @@ def main() -> int:
         raise RuntimeError(
             "Lightning Phase 7A runtime variables are required: " + ", ".join(missing)
         )
-    parser = argparse.ArgumentParser(add_help=False)
-    parser.add_argument("--stage")
-    parser.add_argument("--config", type=Path, default=CONFIG_PATH)
-    args, _ = parser.parse_known_args()
-    if args.stage == "train":
-        validation_path = os.environ.get("PHASE7_GOLD_VALIDATION_REPORT", "").strip()
-        report = build_preflight_report(
-            args.config,
-            gold_validation_report=Path(validation_path) if validation_path else None,
-        )
-        if report["status"] != "PASS":
-            raise RuntimeError(
-                "Lightning preflight failed: " + "; ".join(report["blocking_errors"])
-            )
+    # The canonical dispatcher now owns the single train-stage preflight for
+    # BOTH the direct CLI and this wrapper. Do not smoke-fit a backend twice.
     return pipeline_dispatcher().main()
 
 

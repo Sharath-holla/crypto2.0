@@ -1,0 +1,419 @@
+--- reviewed/src/crypto_ai/phase7/hardening.py
++++ current/src/crypto_ai/phase7/hardening.py
+@@ -344,6 +344,80 @@
+     return test_z @ weights + y_mean
+ 
+ 
++# CHANGED BY CLAUDE (2026-11-08, MR-26 baseline fairness): MATCHED_RIDGE_BASELINE_V3.
++# The v2 Ridge saw a strided <= 500k-row, UNWEIGHTED TRAIN sample while G0 fits every TRAIN row with
++# symbol-balanced weights, so "LightGBM beats Ridge" compared two different objectives. Ridge has a
++# p x p normal-equation system (p = 109), so the EXACT weighted solution on ALL TRAIN rows is cheap:
++# it is accumulated in row blocks (bounded memory) instead of sampling. Same rows, same target, same
++# TRAIN-only standardisation, same weights as the LightGBM fit. Alpha is the predeclared
++# ``baseline_ridge_alpha`` (never tuned). Missing-value policy is unchanged from v2 (z = 0).
++MATCHED_RIDGE_VERSION = "MATCHED_RIDGE_BASELINE_V3_full_train_fit_weights_exact_normal_equations"
++_RIDGE_BLOCK_ROWS = 131_072
++
++
++def matched_ridge_predict(
++    train_x: np.ndarray,
++    train_y: np.ndarray,
++    predict_x: np.ndarray,
++    *,
++    alpha: float,
++    sample_weight: np.ndarray | None = None,
++    block_rows: int = _RIDGE_BLOCK_ROWS,
++) -> np.ndarray:
++    """Exact weighted Ridge over every TRAIN row (no subsample), streamed in row blocks.
++
++    Minimises sum_i w_i (y_i - b - z_i . beta)^2 + alpha |beta|^2 with z the TRAIN-standardised
++    features (weighted mean / std over finite entries; non-finite entries become z = 0) and b the
++    weighted TRAIN mean of y. ``sample_weight=None`` means unit weights.
++    """
++
++    n, p = train_x.shape
++    y_all = np.asarray(train_y, dtype=np.float64)
++    w_all = np.ones(n) if sample_weight is None else np.asarray(sample_weight, dtype=np.float64)
++    if len(y_all) != n or len(w_all) != n:
++        raise ValueError("Ridge TRAIN rows, targets and weights must align")
++    w_all = np.where(np.isfinite(y_all), w_all, 0.0)  # rows without a target do not count
++    if not np.all(np.isfinite(w_all)) or np.any(w_all < 0) or w_all.sum() <= 0:
++        raise ValueError("Ridge weights must be finite, non-negative and not all zero")
++    blocks = range(0, n, max(1, int(block_rows)))
++
++    def block(start: int) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
++        x = np.asarray(train_x[start : start + block_rows], dtype=np.float64)
++        finite = np.isfinite(x)
++        return x, finite, y_all[start : start + block_rows], w_all[start : start + block_rows]
++
++    weight_sum = np.zeros(p)
++    weighted_x = np.zeros(p)
++    for start in blocks:
++        x, finite, _y, w = block(start)
++        weight_sum += (finite * w[:, None]).sum(axis=0)
++        weighted_x += (np.where(finite, x, 0.0) * w[:, None]).sum(axis=0)
++    mean = weighted_x / np.maximum(weight_sum, np.finfo(np.float64).tiny)
++    weighted_var = np.zeros(p)
++    for start in blocks:
++        x, finite, _y, w = block(start)
++        weighted_var += (np.where(finite, x - mean, 0.0) ** 2 * w[:, None]).sum(axis=0)
++    scale = np.sqrt(weighted_var / np.maximum(weight_sum, np.finfo(np.float64).tiny))
++    scale[~(scale > 0)] = 1.0
++    finite_y = np.isfinite(y_all)
++    y_mean = float(np.sum(w_all[finite_y] * y_all[finite_y]) / w_all.sum())
++    gram = alpha * np.eye(p)
++    moment = np.zeros(p)
++    for start in blocks:
++        x, finite, y, w = block(start)
++        z = np.where(finite, (x - mean) / scale, 0.0)
++        wz = z * w[:, None]
++        gram += z.T @ wz
++        moment += wz.T @ np.where(np.isfinite(y), y - y_mean, 0.0)
++    beta = np.linalg.solve(gram, moment)
++    out = np.empty(len(predict_x), dtype=np.float64)
++    for start in range(0, len(predict_x), max(1, int(block_rows))):
++        x = np.asarray(predict_x[start : start + block_rows], dtype=np.float64)
++        z = np.where(np.isfinite(x), (x - mean) / scale, 0.0)
++        out[start : start + block_rows] = z @ beta + y_mean
++    return out
++
++
+ def _delta(left: float | None, right: float | None) -> float | None:
+     return None if left is None or right is None else float(left) - float(right)
+ 
+@@ -423,10 +497,14 @@
+     *,
+     config: HardeningConfig | None = None,
+     validation_times: np.ndarray | None = None,
++    train_weight: np.ndarray | None = None,
++    weight_policy: str = "UNWEIGHTED",
+ ) -> dict[str, Any]:
+     """Score zero-return, TRAIN-mean, Ridge and the model on the SAME covered validation rows.
+ 
+     ``validation_times`` (aligned with ``validation_y``) enables the cross-sectional IC.
++    ``train_weight`` are the TRAIN sample weights the LightGBM fit used (None = unweighted); the
++    matched Ridge (``ridge``) and the TRAIN-mean baseline use the same weights.
+     """
+ 
+     cfg = config or current_config()
+@@ -465,10 +543,19 @@
+     }
+     # CHANGED BY CLAUDE (2026-11-06, closure): no-information TRAIN-mean baseline (constant, same
+     # rows, TRAIN targets only - no information beyond what the model already receives).
+-    finite_train = np.asarray(train_y, dtype=np.float64)
+-    finite_train = finite_train[np.isfinite(finite_train)]
++    # CHANGED BY CLAUDE (2026-11-08, v3): the constant is the fit-weighted TRAIN mean (identical
++    # to the plain mean when the fit is unweighted). OLD CODE: finite_train.mean().
++    all_train = np.asarray(train_y, dtype=np.float64)
++    finite_mask = np.isfinite(all_train)
++    finite_train = all_train[finite_mask]
+     if len(finite_train):
+-        mean_mae, mean_rmse = _errors(y, np.full_like(y, float(finite_train.mean())))
++        train_weights = (
++            np.ones(len(finite_train))
++            if train_weight is None
++            else np.asarray(train_weight, dtype=np.float64)[finite_mask]
++        )
++        train_mean = float(np.sum(train_weights * finite_train) / np.sum(train_weights))
++        mean_mae, mean_rmse = _errors(y, np.full_like(y, train_mean))
+         result["train_mean"] = {"mae": mean_mae, "rmse": mean_rmse}
+         result["lightgbm_beats_train_mean"] = bool(model_rmse < mean_rmse)
+     xs_times = None
+@@ -481,15 +568,42 @@
+     else:
+         result["lightgbm"]["cross_sectional_ic"] = {"status": "NOT_COMPUTED_NO_TIMESTAMPS"}
+     if len(validation_x) == len(validation_y) and len(train_x) == len(train_y) and len(train_y):
+-        ridge = _ridge_predict(
++        # CHANGED BY CLAUDE (2026-11-08, v3): ``ridge`` is now the matched full-TRAIN weighted
++        # Ridge; the v2 strided/unweighted Ridge is kept, explicitly named APPROXIMATE, for audit
++        # continuity only (never used for "beats Ridge").
++        # OLD CODE (kept for reference): ridge = _ridge_predict(train_x, train_y,
++        #     np.asarray(validation_x)[mask], alpha=..., max_rows=cfg.baseline_max_rows)
++        scored_x = np.asarray(validation_x)[mask]
++        ridge = matched_ridge_predict(
+             train_x,
+             train_y,
+-            np.asarray(validation_x)[mask],
++            scored_x,
++            alpha=cfg.baseline_ridge_alpha,
++            sample_weight=train_weight,
++        )
++        legacy = _ridge_predict(
++            train_x,
++            train_y,
++            scored_x,
+             alpha=cfg.baseline_ridge_alpha,
+             max_rows=cfg.baseline_max_rows,
+         )
++        legacy_mae, legacy_rmse = _errors(y, legacy)
++        result["ridge_approximate_v2_strided_unweighted"] = {
++            "status": "APPROXIMATE_NOT_MATCHED_AUDIT_ONLY",
++            "mae": legacy_mae,
++            "rmse": legacy_rmse,
++            "train_rows_used": int(len(train_y[:: _stride(len(train_y), cfg.baseline_max_rows)])),
++        }
+         ridge_mae, ridge_rmse = _errors(y, ridge)
+-        result["ridge"] = {"mae": ridge_mae, "rmse": ridge_rmse, "alpha": cfg.baseline_ridge_alpha}
++        result["ridge"] = {
++            "mae": ridge_mae,
++            "rmse": ridge_rmse,
++            "alpha": cfg.baseline_ridge_alpha,
++            "version": MATCHED_RIDGE_VERSION,
++            "train_rows_used": int(len(train_y)),
++            "weight_policy": weight_policy,
++        }
+         full_ridge = regression_metrics(y, ridge)
+         result["ridge"].update({name: full_ridge.get(name) for name in keep[2:]})
+         result["delta_vs_ridge"] = {
+@@ -509,6 +623,18 @@
+     else:
+         result["ridge"] = {"status": "SKIPPED_MISALIGNED_OR_EMPTY"}
+         result["lightgbm_beats_ridge"] = None
++    result["baseline_fairness"] = {
++        "same_validation_rows": True,
++        "same_target_units": True,
++        "same_fold_and_train_rows": True,
++        "train_weighting": weight_policy,
++        "ridge_features": "PRODUCTION_FEATURES_ONLY (no symbol one-hot)",
++        "pooled_ridge_for_partitioned_architectures": "C0/P0 compare per-partition fits to one "
++        "pooled Ridge: a reference, not an identical model family",
++        "independent_evidence": False,
++        "note": "Validation also drives LightGBM early stopping, so these deltas are DEVELOPMENT "
++        "metrics; superiority requires the registered paired OOS comparison.",
++    }
+     return result
+ 
+ 
+@@ -879,7 +1005,8 @@
+ # CHANGED BY CLAUDE (2026-11-06, closure): v2 adds the TRAIN-mean baseline and the cross-sectional
+ # IC on the same rows; nothing else changes. OLD VALUE:
+ # BASELINE_CONTRACT_VERSION = "baseline_contract_v1_same_rows_same_target_fixed_ridge_validation"
+-BASELINE_CONTRACT_VERSION = "baseline_contract_v2_same_rows_same_target_fixed_ridge_xs_ic"
++# OLD (2026-11-06): "baseline_contract_v2_same_rows_same_target_fixed_ridge_xs_ic"
++BASELINE_CONTRACT_VERSION = "baseline_contract_v3_matched_full_train_fit_weighted_ridge"
+ 
+ 
+ def _per_spec_skill(rows: Sequence[Mapping[str, Any]]) -> dict[str, list[float]]:
+--- reviewed/src/crypto_ai/phase7/training.py
++++ current/src/crypto_ai/phase7/training.py
+@@ -1369,6 +1369,13 @@
+     # TEST and are never fed back into any selection. Nothing above this line changed.
+     hardening_cfg = current_config()
+     validation_prediction, validation_covered = model.predict(validation)
++    # CHANGED BY CLAUDE (2026-11-08, baseline contract v3): the baselines use the SAME TRAIN weights
++    # the global LightGBM fit used (symbol-balanced, from TRAIN symbol row counts only).
++    baseline_weights = (
++        symbol_balanced_weights(prepared.model_inputs.train_symbols)
++        if spec.symbol_balanced
++        else None
++    )
+     baselines = score_baselines(
+         prepared.model_inputs.train_x,
+         prepared.model_inputs.train_y,
+@@ -1382,6 +1389,12 @@
+         .combine_chunks()
+         .cast(pa.int64())
+         .to_numpy(),
++        train_weight=baseline_weights,
++        weight_policy=(
++            "SYMBOL_BALANCED_SAME_AS_GLOBAL_FIT"
++            if spec.symbol_balanced
++            else "UNWEIGHTED_SAME_AS_FIT"
++        ),
+     )
+     test_symbols = [str(item) for item in test.column("symbol").to_pylist()]
+     tier_costs = tier_cost_breakdown(config.costs)
+@@ -1425,12 +1438,7 @@
+             "fit_boundary": fit_boundary_summary,
+             # Global (G0/H0) weights only; C0 balances inside each cluster, P0 is unweighted.
+             "sample_weights": (
+-                sample_weight_summary(
+-                    symbol_balanced_weights(prepared.model_inputs.train_symbols)
+-                    if spec.symbol_balanced
+-                    else None,
+-                    prepared.model_inputs.train_symbols,
+-                )
++                sample_weight_summary(baseline_weights, prepared.model_inputs.train_symbols)
+                 if spec.architecture in {"G0", "H0"}
+                 else {"status": f"PARTITIONED_{spec.architecture}_NOT_SUMMARISED"}
+             ),
+--- reviewed/src/crypto_ai/phase7/training_metrics.py
++++ current/src/crypto_ai/phase7/training_metrics.py
+@@ -319,7 +319,10 @@
+             "metrics": metrics,
+         }
+         if env.iteration == env.begin_iteration or iteration % self.scope.period == 0:
+-            self.emit("FIT_METRICS", **self.last)
++            # CHANGED BY CLAUDE (2026-11-08): the JSON record is always written to the log, but is
++            # echoed to the console only when the readable table is off (no duplicate flooding).
++            # OLD CODE (kept for reference): self.emit("FIT_METRICS", **self.last)
++            self.emit("FIT_METRICS", echo=not current_config().console_table, **self.last)
+             lines = self._monitor_check(env, iteration, metrics)
+             try:
+                 self._console_and_abort(iteration, env.end_iteration, metrics)
+@@ -388,6 +391,7 @@
+             telemetry = {
+                 **common,
+                 "metric_class": METRIC_CLASS_DEVELOPMENT,
++                "elapsed_seconds": time.monotonic() - self.started,
+                 "train_rmse": train.get("rmse"),
+                 "validation_rmse": validation.get("rmse"),
+                 "validation_mae": validation.get("mae"),
+--- reviewed/src/crypto_ai/phase7/training_observer.py
++++ current/src/crypto_ai/phase7/training_observer.py
+@@ -634,15 +634,27 @@
+     return "N/A" if not _finite(value) else f"{float(value) / GIB:.1f} GiB"
+ 
+ 
++def _count(value: Any) -> str:
++    return "N/A" if not _finite(value) else f"{int(value):,}"
++
++
++def _elapsed(seconds: Any) -> str:
++    if not _finite(seconds):
++        return "N/A"
++    total = int(seconds)
++    return f"{total // 3600:d}:{total % 3600 // 60:02d}:{total % 60:02d}"
++
++
+ def format_side(prefix: str, name: str, action: Mapping[str, Any]) -> str:
++    """One LONG / SHORT row. Undefined ratios print N/A; support counts explain why."""
++
+     def part(label: str, key: str) -> str:
+-        value = action.get(f"{prefix}_{key}")
+-        return f"{label} {_plain(value)}" if value is not None else f"{label} N/A"
++        return f"{label} {_plain(action.get(f'{prefix}_{key}'), 3):>5}"
+ 
+     return (
+-        f"{name} {part('P', 'precision')} {part('R', 'recall')} {part('F1', 'f1')} "
+-        f"(predicted {action.get(f'{prefix}_predicted_count', 0)} / "
+-        f"events {action.get(f'{prefix}_support', 0)})"
++        f"{name:<5} {part('precision', 'precision')}  {part('recall', 'recall')}  "
++        f"{part('F1', 'f1')}  | predicted {_count(action.get(f'{prefix}_predicted_count'))}"
++        f" | actual events (support) {_count(action.get(f'{prefix}_support'))}"
+     )
+ 
+ 
+@@ -653,54 +665,76 @@
+     diagnostics: Mapping[str, Any] | None,
+     health: Mapping[str, Any],
+ ) -> list[str]:
+-    """Human-readable continuation lines printed under the main round line."""
+-
+-    prefix = f"[fit {label}] round {iteration:>4} |"
++    """Readable block printed under the main round line every monitoring check.
++
++    VALIDATION rows only. Nothing here is TEST, nothing selects or stops a fit, and nothing here is
++    a profitability statement. Undefined values print ``N/A``.
++    """
++
++    indent = f"[fit {label}]   "
+     lines = [
+-        f"{prefix} resources: RSS {_gib(telemetry.get('rss_bytes'))} | available RAM "
+-        f"{_gib(telemetry.get('effective_memory_available'))} | free disk "
+-        f"{_gib(telemetry.get('disk_free_bytes'))} | rows train {telemetry.get('train_rows')} "
+-        f"val {telemetry.get('validation_rows')} | features {telemetry.get('feature_count')} | "
+-        f"backend {telemetry.get('backend')} | threads {telemetry.get('cpu_threads')} | "
+-        f"lr {telemetry.get('learning_rate')}"
++        f"[fit {label}] ---- round {iteration}/{telemetry.get('round_limit')} | elapsed "
++        f"{_elapsed(telemetry.get('elapsed_seconds'))} | backend {telemetry.get('backend')} "
++        f"x{telemetry.get('cpu_threads')} threads | lr {telemetry.get('learning_rate')} ----",
++        f"{indent}loss        train RMSE {_num(telemetry.get('train_rmse'))}  validation RMSE "
++        f"{_num(telemetry.get('validation_rmse'))}  validation MAE "
++        f"{_num(telemetry.get('validation_mae'))}  gap (val-train)/train "
++        f"{_pct(telemetry.get('relative_generalization_gap'))}",
++        f"{indent}best        validation RMSE {_num(telemetry.get('best_validation_score'))} at "
++        f"round {telemetry.get('best_iteration') or 'N/A'} | rounds since best "
++        f"{telemetry.get('rounds_since_best')} (early stopping: validation L2 only)",
+     ]
+     if diagnostics is not None:
+         reg, action = diagnostics["regression"], diagnostics.get("action") or {}
+-        sampled = "subsample" if diagnostics.get("diagnostic_subsampled") else "all rows"
++        sampled = "fixed subsample" if diagnostics.get("diagnostic_subsampled") else "all rows"
+         xs = diagnostics.get("cross_section") or {}
+-        xs_text = (
+-            f" | xs-IC {_num(xs.get('xs_spearman_ic_mean'))} over "
+-            f"{xs.get('xs_timestamps_scored')} timestamps"
+-            if xs.get("xs_status") == "DEFINED"
+-            else (" | xs-IC N/A (too few assets per timestamp)" if xs else "")
+-        )
+-        lines.append(
+-            f"{prefix} validation diagnostics [{sampled}, n={diagnostics['diagnostic_rows']}, "
+-            f"DESCRIPTIVE]: Pearson {_num(reg.get('pearson'))} Spearman "
+-            f"{_num(reg.get('spearman'))} direction {_plain(reg.get('directional_accuracy'))}"
+-            f"{xs_text} | prediction mean {_num(reg.get('prediction_mean'))} std "
+-            f"{_num(reg.get('prediction_std'))} range [{_num(reg.get('prediction_min'))}, "
+-            f"{_num(reg.get('prediction_max'))}]"
+-        )
++        if xs.get("xs_status") == "DEFINED":
++            xs_text = (
++                f"  xs-IC {_num(xs.get('xs_spearman_ic_mean'))} "
++                f"({_count(xs.get('xs_timestamps_scored'))} timestamps)"
++            )
++        elif xs:
++            xs_text = f"  xs-IC N/A (< {xs.get('xs_min_symbols')} assets per timestamp)"
++        else:
++            xs_text = "  xs-IC not computed this check"
++        lines += [
++            f"{indent}validation  [DESCRIPTIVE, {sampled}, n="
++            f"{_count(diagnostics['diagnostic_rows'])} of "
++            f"{_count(diagnostics['diagnostic_total_rows'])}]  Pearson "
++            f"{_num(reg.get('pearson'))}  Spearman {_num(reg.get('spearman'))}  direction "
++            f"{_plain(reg.get('directional_accuracy'))}{xs_text}",
++            f"{indent}predictions mean {_num(reg.get('prediction_mean'))}  std "
++            f"{_num(reg.get('prediction_std'))} ({_pct(reg.get('prediction_actual_std_ratio'))} "
++            f"of target std)  range [{_num(reg.get('prediction_min'))}, "
++            f"{_num(reg.get('prediction_max'))}]  finite "
++            f"{_pct(reg.get('finite_prediction_fraction'))}",
++        ]
+         if action:
+             event_bps = action["event_threshold_bps"]
+             trigger_bps = action["prediction_threshold_bps"]
+-            lines.append(
+-                f"{prefix} action diagnostics [raw units, event >= {event_bps:g} bps, "
+-                f"prediction >= {trigger_bps:g} bps, DESCRIPTIVE - not selection, not profit]: "
+-                f"{format_side('long', 'LONG', action)} || "
+-                f"{format_side('short', 'SHORT', action)} || action coverage "
+-                f"{_pct(action.get('action_coverage'))} "
+-                f"NO_TRADE {_pct(action.get('no_trade_coverage'))} "
+-                f"action-direction hit-rate {_plain(action.get('action_hit_rate'))}"
+-            )
++            lines += [
++                f"{indent}actions     [raw return; event |actual| >= {event_bps:g} bps, action "
++                f"|predicted| >= {trigger_bps:g} bps; DESCRIPTIVE, not selection, not profit]",
++                f"{indent}  {format_side('long', 'LONG', action)}",
++                f"{indent}  {format_side('short', 'SHORT', action)}",
++                f"{indent}  coverage {_pct(action.get('action_coverage'))}  NO_TRADE "
++                f"{_pct(action.get('no_trade_coverage'))}  action direction hit-rate "
++                f"{_plain(action.get('action_hit_rate'), 3)}",
++            ]
++    lines.append(
++        f"{indent}resources   RSS {_gib(telemetry.get('rss_bytes'))}  available RAM "
++        f"{_gib(telemetry.get('effective_memory_available'))}  free disk "
++        f"{_gib(telemetry.get('disk_free_bytes'))}  | rows train "
++        f"{_count(telemetry.get('train_rows'))} validation "
++        f"{_count(telemetry.get('validation_rows'))} | {telemetry.get('feature_count')} features"
++    )
+     rendered = [
+         f"{flag['severity']} {flag['code']} ({flag['detail']})"
+         for group in ("hard_failures", "warnings", "informational")
+         for flag in health.get(group, [])
+     ]
+     if rendered:
+-        lines.append(f"{prefix} health [heuristic]: " + " | ".join(rendered))
++        lines.append(f"{indent}health      [heuristic] " + " | ".join(rendered))
+     return lines
+ 
+ 
+--- reviewed/tests/phase7/test_phase7a_final_metrics_and_baselines.py
++++ current/tests/phase7/test_phase7a_final_metrics_and_baselines.py
+@@ -97,7 +97,8 @@
+     out = score_baselines(
+         train_x, train_y, val_x, val_y, val_y.copy(), covered, validation_times=times
+     )
+-    assert out["baseline_contract_version"].startswith("baseline_contract_v2")
++    # CHANGED BY CLAUDE (2026-11-08): v3 = matched full-TRAIN fit-weighted Ridge.
++    assert out["baseline_contract_version"].startswith("baseline_contract_v3")
+     assert out["validation_rows_scored"] == int(covered.sum())
+     assert out["train_mean"]["rmse"] > 0
+     assert out["lightgbm"]["cross_sectional_ic"]["mean_xs_spearman_ic"] > 0.99

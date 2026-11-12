@@ -124,7 +124,10 @@ def fold_result_payload(
     metrics = report.get("test_metrics") if isinstance(report.get("test_metrics"), Mapping) else {}
     economic = report.get("economic") if isinstance(report.get("economic"), Mapping) else {}
     trade_summary = trade_summary or {}
-    return {
+    # CHANGED BY CLAUDE (2026-11-02, Phase 3 items 5 and 6): the dict is now built into
+    # ``payload`` so fields that used to be hard-coded None can be filled from the report's
+    # ``phase7b`` block. OLD CODE: ``return {...}`` with those fields always None.
+    payload = {
         "metric_scope": "OUT_OF_SAMPLE_TEST",
         "fold_id": report.get("fold_id"),
         "research_view": report.get("research_view"),
@@ -167,6 +170,30 @@ def fold_result_payload(
         "brier_score": None,
         "elapsed_seconds": elapsed_seconds,
     }
+    extra = report.get("phase7b")
+    if isinstance(extra, Mapping) and isinstance(extra.get("console_fields"), Mapping):
+        for name, value in extra["console_fields"].items():
+            if name in payload and payload[name] is None:
+                payload[name] = value
+    return payload
+
+
+def _heartbeat_fit_rows() -> tuple[tuple[str, Any], ...]:
+    """Last validation metrics of the running fit, for the 600-second heartbeat (Claude, 2026)."""
+
+    from crypto_ai.phase7.hardening import latest_fit_snapshot
+
+    snapshot = latest_fit_snapshot()
+    if not snapshot:
+        return ()
+    validation = snapshot.get("validation", {})
+    return (
+        ("Last fit round", f"{snapshot.get('iteration')}/{snapshot.get('round_limit')}"),
+        ("Last val RMSE", validation.get("rmse")),
+        ("Last val MAE", validation.get("mae")),
+        ("Last val dir. acc.", validation.get("directional_accuracy")),
+        ("Last val trend", snapshot.get("trend")),
+    )
 
 
 def _human_block(title: str, rows: Sequence[tuple[str, Any]], *, border: str = "=") -> str:
@@ -565,6 +592,9 @@ class ProgressReporter:
                             ("Fold elapsed", format_duration(elapsed)),
                             ("RAM", resources.get("ram_gb")),
                             ("Disk free GB", resources.get("disk_free_gb")),
+                            # CHANGED BY CLAUDE (2026-11-02, Phase 3 item 1): last validation
+                            # metrics from the live fit observer (empty before the first check).
+                            *_heartbeat_fit_rows(),
                         ),
                     ),
                 )
@@ -632,10 +662,10 @@ class ProgressReporter:
                     ("Net return sum", fields["net_return_sum"]),
                     ("Expectancy", fields["expectancy"]),
                     ("Profit factor", fields["profit_factor"]),
-                    ("Sharpe", fields["sharpe"]),
-                    ("Sortino", fields["sortino"]),
-                    ("Maximum drawdown", fields["max_drawdown"]),
-                    ("Calmar", fields["calmar"]),
+                    ("Trade-return Sharpe (PROXY, not portfolio)", fields["sharpe"]),
+                    ("Trade-return Sortino (PROXY, not portfolio)", fields["sortino"]),
+                    ("Trade drawdown (PROXY, not portfolio)", fields["max_drawdown"]),
+                    ("Calmar (portfolio: NOT_AVAILABLE)", fields["calmar"]),
                     ("MAE", fields["mae"]),
                     ("RMSE", fields["rmse"]),
                     ("Directional accuracy", fields["directional_accuracy"]),
@@ -771,10 +801,10 @@ class ProgressReporter:
                     ("Win rate", fields["win_rate"]),
                     ("Profit factor", fields["profit_factor"]),
                     ("Expectancy", fields["expectancy"]),
-                    ("Sharpe", fields["sharpe"]),
-                    ("Sortino", fields["sortino"]),
-                    ("Maximum drawdown", fields["max_drawdown"]),
-                    ("Calmar", fields["calmar"]),
+                    ("Trade-return Sharpe (PROXY, not portfolio)", fields["sharpe"]),
+                    ("Trade-return Sortino (PROXY, not portfolio)", fields["sortino"]),
+                    ("Trade drawdown (PROXY, not portfolio)", fields["max_drawdown"]),
+                    ("Calmar (portfolio: NOT_AVAILABLE)", fields["calmar"]),
                     ("Precision", fields["precision"]),
                     ("Recall", fields["recall"]),
                     ("F1", fields["f1"]),

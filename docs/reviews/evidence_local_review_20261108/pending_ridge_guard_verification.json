@@ -1,0 +1,14 @@
+{
+  "current": {
+    "0": "ACCEPTED_INVALID_VALUE",
+    "-1": "ACCEPTED_INVALID_VALUE",
+    "1.5": "TypeError",
+    "True": "ACCEPTED_INVALID_VALUE"
+  },
+  "proposed": {
+    "0": "REJECTED_VALUE_ERROR",
+    "-1": "REJECTED_VALUE_ERROR",
+    "1.5": "REJECTED_VALUE_ERROR",
+    "True": "REJECTED_VALUE_ERROR"
+  }
+}

@@ -1,0 +1,128 @@
+{
+  "by_window": {},
+  "extra_gold_keys_not_in_features": 0,
+  "feature_keys": 12588383,
+  "gold_keys": 12588383,
+  "lost_interior_keys": 0,
+  "lost_keys": 0,
+  "lost_terminal_keys": 0,
+  "max_peer_loss_fraction": 0.0,
+  "per_symbol": {
+    "BCHUSDT": {
+      "feature_keys": 683423,
+      "gold_keys": 683423,
+      "lost_keys": 0
+    },
+    "BLZUSDT": {
+      "feature_keys": 608459,
+      "gold_keys": 608459,
+      "lost_keys": 0
+    },
+    "BTCUSDT": {
+      "feature_keys": 683423,
+      "gold_keys": 683423,
+      "lost_keys": 0
+    },
+    "COMPUSDT": {
+      "feature_keys": 631187,
+      "gold_keys": 631187,
+      "lost_keys": 0
+    },
+    "DOGEUSDT": {
+      "feature_keys": 628307,
+      "gold_keys": 628307,
+      "lost_keys": 0
+    },
+    "ETHUSDT": {
+      "feature_keys": 683423,
+      "gold_keys": 683423,
+      "lost_keys": 0
+    },
+    "FILUSDT": {
+      "feature_keys": 600119,
+      "gold_keys": 600119,
+      "lost_keys": 0
+    },
+    "FLMUSDT": {
+      "feature_keys": 605003,
+      "gold_keys": 605003,
+      "lost_keys": 0
+    },
+    "HNTUSDT": {
+      "feature_keys": 385347,
+      "gold_keys": 385347,
+      "lost_keys": 0
+    },
+    "IOTAUSDT": {
+      "feature_keys": 671231,
+      "gold_keys": 671231,
+      "lost_keys": 0
+    },
+    "KNCUSDT": {
+      "feature_keys": 633493,
+      "gold_keys": 633493,
+      "lost_keys": 0
+    },
+    "KSMUSDT": {
+      "feature_keys": 600683,
+      "gold_keys": 600683,
+      "lost_keys": 0
+    },
+    "NEOUSDT": {
+      "feature_keys": 669782,
+      "gold_keys": 669782,
+      "lost_keys": 0
+    },
+    "OMGUSDT": {
+      "feature_keys": 630611,
+      "gold_keys": 630611,
+      "lost_keys": 0
+    },
+    "ONTUSDT": {
+      "feature_keys": 671518,
+      "gold_keys": 671518,
+      "lost_keys": 0
+    },
+    "STORJUSDT": {
+      "feature_keys": 608747,
+      "gold_keys": 608747,
+      "lost_keys": 0
+    },
+    "TRXUSDT": {
+      "feature_keys": 679294,
+      "gold_keys": 679294,
+      "lost_keys": 0
+    },
+    "UNIUSDT": {
+      "feature_keys": 608171,
+      "gold_keys": 608171,
+      "lost_keys": 0
+    },
+    "ZECUSDT": {
+      "feature_keys": 673247,
+      "gold_keys": 673247,
+      "lost_keys": 0
+    },
+    "ZRXUSDT": {
+      "feature_keys": 632915,
+      "gold_keys": 632915,
+      "lost_keys": 0
+    }
+  },
+  "read_only": true,
+  "schema": "phase7_feature_key_census_v1",
+  "thresholds": {
+    "min_peers": 5,
+    "peer_loss_fraction": 0.1,
+    "timestamp_fraction": 0.01
+  },
+  "timestamp_loss_fraction": 0.0,
+  "timestamps": 683423,
+  "timestamps_with_all_peers_lost": 0,
+  "timestamps_with_material_peer_loss": 0,
+  "timestamps_with_multiple_peers_lost": 0,
+  "timestamps_with_one_peer_lost": 0,
+  "timestamps_with_partial_peer_loss": 0,
+  "timestamps_with_peer_loss": 0,
+  "verdict": "NO_LOSS"
+}

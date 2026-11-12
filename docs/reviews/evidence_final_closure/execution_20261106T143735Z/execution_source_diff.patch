@@ -1,0 +1,260 @@
+diff --git a/pipeline/coinswitch_client.py b/pipeline/coinswitch_client.py
+index 23ddc86..69ac8d7 100644
+--- a/pipeline/coinswitch_client.py
++++ b/pipeline/coinswitch_client.py
+@@ -43,6 +43,14 @@ Install:
+ import json
+ import logging
+ import os
++
++# Fail before optional trading dependencies or credential-bearing live configuration load.
++# The research package never imports this adapter; this also blocks accidental direct imports.
++if os.environ.get("CRYPTO_AI_RESEARCH_MODE") == "1":
++    raise RuntimeError(
++        "RESEARCH_MODE_ORDER_CLIENT_BLOCKED: legacy order module cannot be imported in research mode"
++    )
++
+ import time
+ import urllib.parse
+ import uuid
+diff --git a/src/crypto_ai/phase7/feature_census.py b/src/crypto_ai/phase7/feature_census.py
+index d207c02..b0353a0 100644
+--- a/src/crypto_ai/phase7/feature_census.py
++++ b/src/crypto_ai/phase7/feature_census.py
+@@ -65,15 +65,20 @@ def census_keys(
+     feature_all = {s: np.asarray(feature_keys.get(s, []), dtype=np.int64) for s in symbols}
+     gold_all = {s: np.asarray(gold_keys.get(s, []), dtype=np.int64) for s in symbols}
+     feature_enc, codes = _encode(feature_all)
++    if not len(feature_enc):
++        raise ValueError("DATA_INSUFFICIENT: independent feature-key domain is empty")
+     gold_enc, _ = _encode(gold_all)
+     lost = feature_enc[~np.isin(feature_enc, gold_enc)]
+     extra = gold_enc[~np.isin(gold_enc, feature_enc)]
+     f_times, f_counts = _members(feature_enc)
+     g_times, g_counts = _members(gold_enc)
+     gold_at = np.zeros(len(f_times), dtype=np.int64)
+-    position = np.searchsorted(g_times, f_times)
+-    hit = (position < len(g_times)) & (g_times[np.minimum(position, len(g_times) - 1)] == f_times)
+-    gold_at[hit] = g_counts[position[hit]]
++    if len(g_times):
++        position = np.searchsorted(g_times, f_times)
++        hit = (position < len(g_times)) & (
++            g_times[np.minimum(position, len(g_times) - 1)] == f_times
++        )
++        gold_at[hit] = g_counts[position[hit]]
+     lost_peers = f_counts - gold_at
+     whole = (gold_at == 0) & (f_counts > 0)
+     partial = (lost_peers > 0) & ~whole
+@@ -129,6 +134,8 @@ def census_keys(
+         "timestamps": int(len(f_times)),
+         "timestamps_with_peer_loss": int((lost_peers > 0).sum()),
+         "timestamps_with_partial_peer_loss": int(partial.sum()),
++        "timestamps_with_one_peer_lost": int((lost_peers == 1).sum()),
++        "timestamps_with_multiple_peers_lost": int((lost_peers >= 2).sum()),
+         "timestamps_with_all_peers_lost": int(whole.sum()),
+         "timestamps_with_material_peer_loss": int(big.sum()),
+         "timestamp_loss_fraction": timestamp_fraction,
+@@ -143,21 +150,76 @@ def census_keys(
+     }
+ 
+ 
++def canonical_parquet_paths(path: Path) -> tuple[Path, ...]:
++    """Select explicit manifest references only; never discover data by walking a tree.
++
++    Accept a manifest JSON, a dataset root with manifest.json, the Gold dataset/
++    child of such a root, or one explicitly supplied Parquet file. Unreferenced
++    files (including forensic recovery extras) are never candidates.
++    """
++    path = path.expanduser().resolve()
++    if path.is_file() and path.suffix == ".parquet":
++        records = [{"path": str(path)}]
++        root = path.parent
++    else:
++        if path.is_dir():
++            manifest = path / "manifest.json"
++            if not manifest.is_file() and path.name == "dataset":
++                manifest = path.parent / "manifest.json"
++        else:
++            manifest = path
++        if not manifest.is_file() or manifest.suffix != ".json":
++            raise ValueError(f"DATA_INSUFFICIENT: canonical manifest required at {path}")
++        payload = json.loads(manifest.read_text(encoding="utf-8"))
++        records = payload.get("partition_files", payload.get("partitions"))
++        if not isinstance(records, list) or not records:
++            raise ValueError(f"DATA_INSUFFICIENT: no canonical partitions in {manifest}")
++        root = manifest.parent.resolve()
++    selected = []
++    for record in records:
++        reference = Path(record["path"])
++        resolved = reference.resolve() if reference.is_absolute() else (root / reference).resolve()
++        if not reference.is_absolute() and not resolved.is_relative_to(root):
++            raise ValueError("canonical partition escapes manifest root")
++        if resolved.suffix != ".parquet" or resolved.name.startswith("."):
++            raise ValueError(f"partial/forensic path cannot be a scientific partition: {reference}")
++        if not resolved.is_file():
++            raise ValueError(f"DATA_INSUFFICIENT: missing canonical partition {resolved}")
++        selected.append(resolved)
++    if len(selected) != len(set(selected)):
++        raise ValueError("duplicate canonical partition references")
++    return tuple(selected)
++
++
+ def _keys_from_parquet(path: Path) -> dict[str, np.ndarray]:
+     import pyarrow as pa
+     import pyarrow.dataset as ds
+ 
+-    table = ds.dataset(str(path), format="parquet").to_table(columns=["symbol", "feature_time"])
+-    times = table.column("feature_time").cast(pa.timestamp("ms", tz="UTC")).cast(pa.int64())
+-    symbols = np.asarray(table.column("symbol").to_pylist(), dtype=object)
+-    values = np.asarray(times.to_numpy(zero_copy_only=False), dtype=np.int64)
+-    return {str(s): values[symbols == s] for s in sorted(set(symbols.tolist()))}
++    parts: dict[str, list[np.ndarray]] = {}
++    files = canonical_parquet_paths(path)
++    scanner = ds.dataset([str(p) for p in files], format="parquet").scanner(
++        columns=["symbol", "feature_time"], batch_size=65_536, use_threads=False
++    )
++    for batch in scanner.to_batches():
++        times = batch.column("feature_time").cast(pa.timestamp("ms", tz="UTC")).cast(pa.int64())
++        symbols = np.asarray(batch.column("symbol").to_pylist(), dtype=object)
++        values = np.asarray(times.to_numpy(zero_copy_only=False), dtype=np.int64)
++        for symbol in np.unique(symbols):
++            parts.setdefault(str(symbol), []).append(np.unique(values[symbols == symbol]))
++    return {symbol: np.unique(np.concatenate(chunks)) for symbol, chunks in parts.items()}
+ 
+ 
+ def main(argv: list[str] | None = None) -> int:
+     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+-    parser.add_argument("--features-path", type=Path, required=True)
+-    parser.add_argument("--gold-path", type=Path, required=True)
++    parser.add_argument(
++        "--features-path", type=Path, required=True, help="Canonical key manifest or dataset root"
++    )
++    parser.add_argument(
++        "--gold-path",
++        type=Path,
++        required=True,
++        help="Canonical Gold/context manifest or dataset root",
++    )
+     parser.add_argument("--output", type=Path, required=True)
+     args = parser.parse_args(argv)
+     if args.output.exists():
+diff --git a/tests/phase7/test_feature_census.py b/tests/phase7/test_feature_census.py
+index a34addf..044d712 100644
+--- a/tests/phase7/test_feature_census.py
++++ b/tests/phase7/test_feature_census.py
+@@ -2,6 +2,7 @@
+ 
+ from __future__ import annotations
+ 
++import json
+ from datetime import UTC, datetime, timedelta
+ 
+ import numpy as np
+@@ -24,6 +25,77 @@ def test_no_loss_when_gold_matches_features():
+     assert result["verdict"] == "NO_LOSS" and result["lost_keys"] == 0
+ 
+ 
++def test_completely_empty_gold_cannot_hide_all_peer_loss():
++    features = _keys("ABCDEF", 100)
++    result = fc.census_keys(features, {})
++    assert result["lost_keys"] == 600
++    assert result["timestamps_with_all_peers_lost"] == 100
++    assert result["verdict"] == "MATERIAL_LOSS_SIDECAR_REQUIRED"
++
++
++def test_empty_independent_source_cannot_clear_m01():
++    with pytest.raises(ValueError, match="DATA_INSUFFICIENT"):
++        fc.census_keys({}, {})
++
++
++def test_streamed_key_reader_deduplicates_horizons_and_files(tmp_path):
++    import pyarrow.parquet as pq
++
++    table = _source("ABCDEF", 15)
++    for index in range(2):
++        pq.write_table(pa.concat_tables([table, table]), tmp_path / f"part-{index}.parquet")
++    (tmp_path / "manifest.json").write_text(
++        json.dumps({"partitions": [{"path": f"part-{index}.parquet"} for index in range(2)]})
++    )
++    # Neither a preserved partial nor a tempting unreferenced .parquet may be opened.
++    (tmp_path / ".dataset.parquet.forensic.partial").write_bytes(b"must not be scanned")
++    (tmp_path / "unreferenced.parquet").write_bytes(b"must not be scanned")
++    keys = fc._keys_from_parquet(tmp_path)
++    assert set(keys) == set("ABCDEF")
++    assert all(len(times) == 15 for times in keys.values())
++
++
++def test_unmanifested_directory_is_not_scientific_discovery(tmp_path):
++    with pytest.raises(ValueError, match="canonical manifest required"):
++        fc.canonical_parquet_paths(tmp_path)
++
++
++def test_manifest_cannot_promote_a_forensic_partial(tmp_path):
++    path = tmp_path / ".dataset.parquet.forensic.partial"
++    path.write_bytes(b"preserved")
++    (tmp_path / "manifest.json").write_text(json.dumps({"partitions": [{"path": path.name}]}))
++    with pytest.raises(ValueError, match="partial/forensic"):
++        fc.canonical_parquet_paths(tmp_path)
++
++
++def test_silver_candle_key_projection_matches_actual_feature_producer():
++    from crypto_ai.phase7.config import FeatureConfig
++    from crypto_ai.phase7.features import generate_multiasset_features
++    from crypto_ai.phase7.fixtures import synthetic_candles, synthetic_registry
++
++    candles = synthetic_candles(rows_per_symbol=60)
++    # Missing candles stay missing; feature generation preserves every remaining input key.
++    candles = candles.take(pa.array([i for i in range(candles.num_rows) if i % 13]))
++    result = generate_multiasset_features(
++        candles, registry=synthetic_registry(), config=FeatureConfig()
++    )
++    projected = {
++        (s, t + timedelta(minutes=5))
++        for s, t in zip(
++            candles["symbol"].to_pylist(), candles["open_time"].to_pylist(), strict=True
++        )
++    }
++    actual = set(
++        zip(
++            result.table["symbol"].to_pylist(),
++            result.table["feature_time"].to_pylist(),
++            strict=True,
++        )
++    )
++    assert actual == projected
++    assert len(actual) == candles.num_rows == result.table.num_rows
++
++
+ def test_terminal_edge_loss_is_classified_terminal_and_immaterial():
+     features = _keys("ABCDEFGHIJ", 1000)
+     gold = {s: t[:-3] for s, t in features.items()}  # last 3 bars lack every label
+diff --git a/tests/phase7/test_research_import_boundary.py b/tests/phase7/test_research_import_boundary.py
+index 0495a98..15a9b0a 100644
+--- a/tests/phase7/test_research_import_boundary.py
++++ b/tests/phase7/test_research_import_boundary.py
+@@ -10,6 +10,7 @@ from __future__ import annotations
+ 
+ import ast
+ import importlib
++import sys
+ from pathlib import Path
+ 
+ import pytest
+@@ -107,12 +108,10 @@ def test_the_scan_would_catch_a_planted_live_import(tmp_path: Path) -> None:
+ 
+ 
+ def test_order_client_refuses_to_exist_in_research_mode(monkeypatch: pytest.MonkeyPatch) -> None:
+-    pytest.importorskip("aiohttp")
+-    pytest.importorskip("cryptography")
+     monkeypatch.setenv("CRYPTO_AI_RESEARCH_MODE", "1")
+-    try:
+-        module = importlib.import_module("pipeline.coinswitch_client")
+-    except Exception as error:  # pipeline config may need live settings; never touch them
+-        pytest.skip(f"order client not importable without live configuration: {error!r}")
++    before = set(sys.modules)
+     with pytest.raises(RuntimeError, match="RESEARCH_MODE_ORDER_CLIENT_BLOCKED"):
+-        module.CoinSwitchClient("not-a-real-key", "00")
++        importlib.import_module("pipeline.coinswitch_client")
++    loaded = set(sys.modules) - before
++    assert not loaded & {"aiohttp", "cryptography", "pipeline.config_trader"}
++    assert "pipeline.coinswitch_client" not in sys.modules

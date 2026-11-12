@@ -1,0 +1,91 @@
+"""Controlled Task API sample: SQLite persistence and WSGI JSON endpoints."""
+
+import json
+import sqlite3
+
+
+class TaskAPI:
+    def __init__(self, path):
+        self.path = path
+        with sqlite3.connect(path) as db:
+            db.execute(
+                "CREATE TABLE IF NOT EXISTS tasks(id INTEGER PRIMARY KEY, title TEXT NOT NULL, completed INTEGER NOT NULL DEFAULT 0)"
+            )
+
+    def request(self, method, path, body):
+        parts = path.strip("/").split("/")
+        if not parts or parts[0] != "tasks":
+            return 404, {"error": "not found"}
+        with sqlite3.connect(self.path) as db:
+            db.row_factory = sqlite3.Row
+            if method == "POST" and len(parts) == 1:
+                title = body.get("title")
+                if not isinstance(title, str) or not 1 <= len(title.strip()) <= 200:
+                    return 400, {"error": "title required, at most 200 characters"}
+                cursor = db.execute(
+                    "INSERT INTO tasks(title) VALUES (?)", (title.strip(),)
+                )
+                return 201, dict(
+                    db.execute(
+                        "SELECT * FROM tasks WHERE id=?", (cursor.lastrowid,)
+                    ).fetchone()
+                )
+            if method == "GET" and len(parts) == 1:
+                return 200, [
+                    dict(row) for row in db.execute("SELECT * FROM tasks ORDER BY id")
+                ]
+            if len(parts) != 2 or not parts[1].isdigit():
+                return 404, {"error": "not found"}
+            task_id = int(parts[1])
+            if not db.execute("SELECT id FROM tasks WHERE id=?", (task_id,)).fetchone():
+                return 404, {"error": "not found"}
+            if method == "PATCH":
+                if not body or set(body) - {"title", "completed"}:
+                    return 400, {"error": "invalid fields"}
+                if "title" in body:
+                    title = body["title"]
+                    if not isinstance(title, str) or not 1 <= len(title.strip()) <= 200:
+                        return 400, {"error": "invalid title"}
+                if "completed" in body and not isinstance(body["completed"], bool):
+                    return 400, {"error": "completed must be boolean"}
+                if "title" in body:
+                    db.execute(
+                        "UPDATE tasks SET title=? WHERE id=?",
+                        (body["title"].strip(), task_id),
+                    )
+                if "completed" in body:
+                    db.execute(
+                        "UPDATE tasks SET completed=? WHERE id=?",
+                        (body["completed"], task_id),
+                    )
+                return 200, dict(
+                    db.execute("SELECT * FROM tasks WHERE id=?", (task_id,)).fetchone()
+                )
+            if method == "DELETE":
+                db.execute("DELETE FROM tasks WHERE id=?", (task_id,))
+                return 200, {"deleted": task_id}
+            return 405, {"error": "method not allowed"}
+
+    def __call__(self, environ, start_response):
+        try:
+            length = int(environ.get("CONTENT_LENGTH") or 0)
+            if length < 0 or length > 4096:
+                raise ValueError()
+            raw = environ["wsgi.input"].read(length)
+            body = json.loads(raw) if raw else {}
+            if not isinstance(body, dict):
+                raise TypeError()
+            status, result = self.request(
+                environ["REQUEST_METHOD"], environ["PATH_INFO"], body
+            )
+        except (ValueError, TypeError):
+            status, result = 400, {"error": "invalid JSON request"}
+        payload = json.dumps(result).encode()
+        start_response(
+            str(status) + " Response",
+            [
+                ("Content-Type", "application/json"),
+                ("Content-Length", str(len(payload))),
+            ],
+        )
+        return [payload]
