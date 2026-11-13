@@ -1,0 +1,5 @@
+{"stage": "load_read_only_mmap_cache_with_sha256_validation", "VmRSS": 8.047, "RssAnon": 0.376, "RssFile": 7.672, "peak_anon_gib": 0.377, "peak_rss_gib": 8.211, "seconds": 26.4, "train_x_type": "memmap"}
+{"stage": "production_G0_fit_from_cache", "VmRSS": 8.305, "RssAnon": 0.629, "RssFile": 7.676, "peak_anon_gib": 1.124, "peak_rss_gib": 8.8, "seconds": 33.3}
+{"stage": "predict_calA_calB_test", "VmRSS": 9.837, "RssAnon": 1.183, "RssFile": 8.654, "peak_anon_gib": 1.626, "peak_rss_gib": 10.279}
+{"stage": "timing_fixed_rounds_no_early_stop", "VmRSS": 9.947, "RssAnon": 1.293, "RssFile": 8.654, "peak_anon_gib": 1.708, "peak_rss_gib": 10.362, "rounds": 60, "seconds": 27.5, "seconds_per_round": 0.459, "params": {"num_leaves": 31, "learning_rate": 0.02, "min_child_samples": 100, "subsample": 0.9, "colsample_bytree": 0.9, "n_jobs": 4, "deterministic": true, "force_col_wise": true}}
+{"peak_anon_gib": 1.708, "peak_rss_gib": 10.362, "ru_maxrss_gib": 10.362}

@@ -1,0 +1,4 @@
+{"stage": "imports", "rss_gib": 0.168, "stage_peak_gib": 0.168, "arrow_pool_gib": 0.0, "seconds": 1.7}
+{"stage": "1_load_fold_rows_all_columns", "rss_gib": 6.584, "stage_peak_gib": 11.335, "arrow_pool_gib": 5.176, "seconds": 11.0, "rows": 4922887, "cols": 131, "table_gib": 5.176}
+{"stage": "2_fold_context_source(retained_for_whole_fold)", "rss_gib": 6.816, "stage_peak_gib": 6.844, "arrow_pool_gib": 5.485, "seconds": 0.2, "context_gib": 0.309}
+EXIT=137
