@@ -21,6 +21,7 @@ from crypto_ai.data.ingestion.manifest import read_manifest
 from crypto_ai.data.storage import file_sha256
 from crypto_ai.phase5.calibration import SELECTION_HOLDOUT_FRACTION, fit_calibrator
 from crypto_ai.phase5.folds import FoldPlan, plan_folds
+from crypto_ai.phase7 import low_memory
 from crypto_ai.phase7.admission import assert_backend_admitted
 from crypto_ai.phase7.artifacts import (
     CheckpointStore,
@@ -491,9 +492,25 @@ def _load_fold_rows(
         condition = (
             (ds.field("year") >= plan.train_start.year) & (ds.field("year") <= end_year) & condition
         )
+    # CHANGED BY CLAUDE (2026-11-13, low-memory profile): opt-in column-group read with one shared
+    # stable sort index (same rows, order, schema); the default path below is unchanged.
+    if low_memory.enabled():
+        return low_memory.read_sorted_fold_rows(
+            dataset, condition, list(columns) if columns is not None else None
+        )
     return dataset.to_table(
         filter=condition, **({"columns": list(columns)} if columns is not None else {})
     ).sort_by([("feature_time", "ascending"), ("symbol", "ascending")])
+
+
+def _clear_sliced(sliced: dict[int, MultiAssetFoldData]) -> None:
+    """Forget sliced fold payloads (CHANGED BY CLAUDE 2026-11-13: also deletes low-memory spill)."""
+
+    for fold in sliced.values():
+        low_memory.discard_spilled(fold)
+    sliced.clear()
+    if low_memory.enabled():
+        low_memory.release_unused_memory()
 
 
 def _context_sidecar_path(manifest: dict[str, Any]) -> Path | None:
@@ -569,6 +586,10 @@ def finite_row_accounting(segments: dict[str, tuple[int, int]]) -> dict[str, Any
 
 
 def _finite(table: pa.Table, columns: tuple[str, ...], target: str) -> pa.Table:
+    # CHANGED BY CLAUDE (2026-11-13, low-memory profile): opt-in; identical rows, zero-copy when
+    # the finite rows are one contiguous run.
+    if low_memory.enabled():
+        return low_memory.finite_rows(table, columns, target)
     names = columns + (target,)
     mask: pa.Array | pa.ChunkedArray = pc.is_finite(table.column(names[0]))
     for name in names[1:]:
@@ -614,14 +635,29 @@ def _prepare_training_segments(
             "calibration_b": fold.calibration_b.num_rows,
             "test": fold._test.num_rows,
         },
-        model_inputs=prepare_architecture_inputs(
+        model_inputs=_prepare_model_inputs(
+            train, validation, feature_columns, target, calibration_a
+        ),
+    )
+
+
+def _prepare_model_inputs(
+    train: pa.Table,
+    validation: pa.Table,
+    feature_columns: tuple[str, ...],
+    target: str,
+    calibration_a: pa.Table,
+) -> Any:
+    # CHANGED BY CLAUDE (2026-11-13, low-memory profile): under PHASE7_MEMORY_PROFILE=low_memory the
+    # identical float64 matrices are written into disk-backed memmaps in the spill directory.
+    with low_memory.matrix_storage(low_memory.active_spill_directory()):
+        return prepare_architecture_inputs(
             train,
             validation,
             feature_columns=feature_columns,
             target_column=target,
             eligibility_calibration_a=calibration_a,
-        ),
-    )
+        )
 
 
 def _prediction_target(spec: ExperimentSpec) -> str:
@@ -1612,7 +1648,12 @@ def run_phase7_training(config: Phase7Config, **kwargs: Any) -> dict[str, Any]:
         spec_id=kwargs.get("benchmark_spec_id", "architecture-G0-A6-60m-raw"),
         fold_id=kwargs.get("benchmark_fold_id"),
     )
-    with owned_run(root, root.name, training_source_identity(), mode=mode):
+    # CHANGED BY CLAUDE (2026-11-13, low-memory profile): a process-private spill directory beside
+    # the prepared cache exists only under PHASE7_MEMORY_PROFILE=low_memory; otherwise a no-op.
+    with (
+        owned_run(root, root.name, training_source_identity(), mode=mode),
+        low_memory.spill_session(RuntimePaths.resolve(config.paths).cache_root),
+    ):
         try:
             return _run_phase7_training_owned(config, **kwargs)
         except PreparedOnlyComplete as done:
@@ -1750,7 +1791,7 @@ def _run_phase7_training_owned(
                 return cached[key].fold
             cached.clear()
             if spec.horizon_minutes not in sliced:
-                sliced.clear()
+                _clear_sliced(sliced)
             if cache_mode != "disabled":
                 membership = select_fold_active_universe(
                     registry,
@@ -1834,11 +1875,19 @@ def _run_phase7_training_owned(
                     rows=table.num_rows,
                     **memory_snapshot(),
                 )
+                # CHANGED BY CLAUDE (2026-11-13, low-memory profile): opt-in; the sliced segments
+                # are re-opened memory-mapped from local IPC and the raw fold table is released.
+                if low_memory.enabled():
+                    del table
+                    sliced[spec.horizon_minutes] = low_memory.spill_fold(
+                        sliced[spec.horizon_minutes]
+                    )
+                    low_memory.release_unused_memory()
             return sliced[spec.horizon_minutes]
 
         for research_view in research_views:
             cached.clear()
-            sliced.clear()
+            _clear_sliced(sliced)
             reusable_models = {}
             prepared_cache = cached_bundle = fold_data = None
             try:
@@ -2321,7 +2370,7 @@ def _run_phase7_training_owned(
                 emit_event("CHECKPOINT_SAVED", stage=stage)
                 reports.append(report)
         cached.clear()
-        sliced.clear()
+        _clear_sliced(sliced)
         reusable_models.clear()
         prepared_cache = cached_bundle = fold_data = None
         # CHANGED BY CLAUDE (2026-11-06, closure): always leave the CSV view equal to the ledger

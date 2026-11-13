@@ -750,7 +750,12 @@ class PreparedDataCache:
                 "calibration_b.arrow": prepared.calibration_b,
                 "test.arrow": fold._test,
             }
+            from crypto_ai.phase7 import low_memory
+
             for name, table in table_values.items():
+                # CHANGED BY CLAUDE (2026-11-13): opt-in; byte-identical IPC from zero-copy slices.
+                if low_memory.enabled():
+                    table = low_memory.compact_variable_width(table)
                 _write_table(temporary / name, table)
             input_values = prepared.model_inputs
             array_values = {
@@ -762,7 +767,18 @@ class PreparedDataCache:
                 "validation_symbols.npy": _symbol_array(input_values.validation_symbols),
                 "calibration_symbols.npy": _symbol_array(input_values.calibration_symbols),
             }
+            # CHANGED BY CLAUDE (2026-11-13, low-memory profile): a float64 matrix already written
+            # as a .npy memmap in the low-memory spill directory is moved into the cache instead
+            # of written a second time (same bytes as np.save). Opt-in only; otherwise np.save.
+            originals = {
+                "train_x.npy": input_values.train_x,
+                "validation_x.npy": input_values.validation_x,
+            }
             for name, array in array_values.items():
+                if name in originals and low_memory.adopt_matrix_file(
+                    originals[name], temporary / name
+                ):
+                    continue
                 np.save(temporary / name, array, allow_pickle=False)
             data_files = sorted(table_values) + sorted(array_values)
             files = {name: {"sha256": file_sha256(temporary / name)} for name in data_files}

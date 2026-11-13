@@ -48,6 +48,14 @@ def _matrix(table: pa.Table, columns: tuple[str, ...]) -> np.ndarray:
     missing = [name for name in columns if name not in table.column_names]
     if missing:
         raise ValueError(f"Phase 7 model input is missing features: {missing}")
+    # CHANGED BY CLAUDE (2026-11-13, low-memory profile): opt-in only. Under
+    # PHASE7_MEMORY_PROFILE=low_memory, preparation builds the identical float64 matrix in row
+    # blocks inside a disk-backed .npy memmap; otherwise this function is unchanged.
+    from crypto_ai.phase7 import low_memory
+
+    storage = low_memory.matrix_storage_directory()
+    if storage is not None:
+        return low_memory.build_matrix(table, columns, storage, _floats)
     # Preallocate the final float64 matrix so converting many Arrow columns does
     # not retain a list of full-size temporary arrays alongside column_stack's
     # additional output allocation.

@@ -148,6 +148,12 @@ class MultiAssetFoldData:
 
 
 def _filter_symbols(table: pa.Table, symbols: set[str]) -> pa.Table:
+    # CHANGED BY CLAUDE (2026-11-13, low-memory profile): opt-in vectorized filter with the same
+    # rows and order; returns the input unchanged when every row is eligible.
+    from crypto_ai.phase7 import low_memory
+
+    if low_memory.enabled():
+        return low_memory.filter_symbols(table, symbols)
     values = np.asarray(table.column("symbol").combine_chunks().to_pylist(), dtype=object)
     mask = pa.array([str(value) in symbols for value in values], type=pa.bool_())
     return table.filter(mask)
@@ -352,12 +358,18 @@ def slice_multiasset_fold(
     eligible_table = bind_fold_cross_sectional_context(
         eligible_table, context_source=eligible_context
     )
-    sliced: HardenedFoldData = slice_hardened_fold(
+    # CHANGED BY CLAUDE (2026-11-13, low-memory profile): opt-in zero-copy twin of the Phase 5
+    # slicer (identical segments, purge, embargo, checks and report); Phase 5 is untouched.
+    from crypto_ai.phase7 import low_memory
+
+    slicer = low_memory.slice_hardened_fold if low_memory.enabled() else slice_hardened_fold
+    sliced: HardenedFoldData = slicer(
         eligible_table,
         plan,
         schedule,
         holdout_start,
     )
+    del eligible_table
     clusters, cluster_report = fit_train_only_clusters(
         descriptors,
         train_end=plan.train_end,
