@@ -71,3 +71,7 @@ Thumbs.db
 /audit_fix_review.diff
 /crypto2.0-project-handoff-*.tar.gz
 /project_hold_20260906/
+
+# Real-run outputs (models, metrics, approvals) must NOT be committed: the repository is public.
+# Persist them to the private GCS bucket with scripts/cloud/gcs_results.py instead.
+experiments/phase7_low_memory/runs/

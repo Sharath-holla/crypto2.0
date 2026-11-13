@@ -197,10 +197,12 @@ def qualify(
     cached = {**prepared_digest(bundle.fold, bundle.prepared), "cache_id": bundle.cache_id}
     comparable_uncached = {key: value for key, value in uncached.items() if key != "source"}
     differences = _differences(comparable_uncached, cached)
+    chronology = chronology_checks(bundle.fold, config)
     identities = identity_summary(gold_manifest, sidecar)
     record = {
         "schema": VALIDATION_SCHEMA,
-        "status": "VALIDATED" if not differences else "FAILED",
+        "status": "VALIDATED" if not differences and chronology["all_passed"] else "FAILED",
+        "chronology_and_isolation_checks": chronology,
         "memory_profile": "low_memory",
         "comparison": "UNCACHED_PREPARATION_VS_READ_ONLY_RELOAD",
         "differences": differences,
@@ -218,6 +220,70 @@ def qualify(
         "holdout": config.holdout_status_payload(),
     }
     return record
+
+
+def chronology_checks(fold: Any, config: Any) -> dict[str, Any]:
+    """Protocol checks on the RELOADED segments: purge, embargo, cutoff, holdout, symbols."""
+
+    plan = fold.plan
+    from crypto_ai.phase5.folds import calibration_split_time
+
+    split = calibration_split_time(plan)
+    embargo = int(config.schedule.embargo_minutes) * 60_000_000
+
+    def us(value: Any) -> int:
+        return int(value.timestamp() * 1_000_000)
+
+    def times(table: pa.Table, column: str) -> np.ndarray:
+        return table.column(column).combine_chunks().cast(pa.int64()).to_numpy()
+
+    segments = {
+        "train": (fold.train, plan.train_start, plan.train_end, plan.validation_start, 0),
+        "validation": (
+            fold.validation,
+            plan.validation_start,
+            plan.validation_end,
+            plan.calibration_start,
+            embargo,
+        ),
+        "calibration_a": (fold.calibration_a, plan.calibration_start, split, split, embargo),
+        "calibration_b": (
+            fold.calibration_b,
+            split,
+            plan.calibration_end,
+            plan.test_start,
+            embargo,
+        ),
+        "test": (fold._test, plan.test_start, plan.test_end, None, embargo),
+    }
+    cutoff = us(config.research_cutoff)
+    holdout = us(config.prospective_holdout_start)
+    eligible = set(fold.eligibility_manifest.get("eligible_symbols", []))
+    checks: dict[str, Any] = {}
+    for name, (table, start, end, purge_before, embargo_us) in segments.items():
+        feature = times(table, "feature_time")
+        label_end = times(table, "label_end_time")
+        symbols = set(table.column("symbol").combine_chunks().unique().to_pylist())
+        result = {
+            "rows": table.num_rows,
+            "min_feature_time_us": int(feature.min()) if len(feature) else None,
+            "max_feature_time_us": int(feature.max()) if len(feature) else None,
+            "max_label_end_time_us": int(label_end.max()) if len(label_end) else None,
+            "inside_segment": bool(
+                len(feature) == 0 or (feature.min() >= us(start) and feature.max() < us(end))
+            ),
+            "embargo_respected": bool(len(feature) == 0 or feature.min() >= us(start) + embargo_us),
+            "purged_before_next_segment": bool(
+                purge_before is None or len(label_end) == 0 or label_end.max() < us(purge_before)
+            ),
+            "before_research_cutoff": bool(len(label_end) == 0 or label_end.max() < cutoff),
+            "before_locked_holdout": bool(len(label_end) == 0 or label_end.max() < holdout),
+            "symbols_within_frozen_eligibility": symbols <= eligible,
+        }
+        result["passed"] = all(value for key, value in result.items() if isinstance(value, bool))
+        checks[name] = result
+    checks["all_passed"] = all(item["passed"] for item in checks.values())
+    return checks
 
 
 def require_validation(environ: dict[str, str] | None = None) -> dict[str, Any]:

@@ -22,7 +22,7 @@
   "PREPARATION_DIGEST": "f182174ae75cdbc8bb6a9562f198452ce9f91f09b50d1f023b67e2cec79523e5",
   "EXPERIMENT_CONTROL_DIGEST": "c2a29440094eeed42e31d0e23b4c7cceb9f23633b339a2a8bbe62991c96e537c",
   "SELECTION_PROTOCOL_DIGEST": "562dbf8203f476e446cd9968d336fa74b022924c01e5b1c34f3167c065c73826",
-  "SCIENTIFIC_SOURCE_DIGEST_WITHOUT_SIDECAR": "cf919ec85d59caddc568941e0a425e7597b60a1f18e61345c9b338053fd86351",
+  "SCIENTIFIC_SOURCE_DIGEST_WITHOUT_SIDECAR": "84949de2f6d696646987e3dbd40ae2c1fd6f405795dc8293c8a143d9b1885978",
   "SCIENTIFIC_SOURCE_DIGEST_WITH_SIDECAR": "COMPUTED_AT_REAL_DATA_ADMISSION (depends on the verified sidecar file)"
  },
  "scientific_contract": {
@@ -109,12 +109,12 @@
   {
    "path": "src/crypto_ai/phase7/low_memory_validation.py",
    "v1_commit_sha256": "36d203c7b9ef8d23734e7c96b46fb08b3e78d52472fae1301b8b5485af377fcd",
-   "new_sha256": "156102fb6f1d1346f70b14c1b74cac71635c5828ff928af02bf40fd02103ee4a",
+   "new_sha256": "8a541ef8ea9001659cc8d64fa619349b0cfd336ef9d200fce5c0fc469a468e86",
    "listed_in_v1_9_historical_freeze": false,
    "in_scientific_source_identity": true,
    "in_preparation_identity": false,
    "in_experiment_control_identity": false,
-   "change": "column_digest hashes values and validity as separate continuous streams, making the cached-vs-uncached digest independent of record-batch layout (stricter, not weaker: still NaN-bit exact)."
+   "change": "column_digest hashes values and validity as separate continuous streams, making the cached-vs-uncached digest independent of record-batch layout (stricter, not weaker: still NaN-bit exact). Adds chronology_checks on the reloaded segments (in-segment ranges, embargo, purge before the next segment, research cutoff, locked holdout, frozen symbol eligibility); VALIDATED now also requires all_passed."
   },
   {
    "path": "src/crypto_ai/phase7/preparation_identity.py",

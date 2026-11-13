@@ -554,3 +554,21 @@ def test_prepared_digest_matches_after_read_only_reload_and_detects_changes(
             ),
         )
         assert _differences(uncached, changed) == ["/arrays/train_x/sha256"]
+
+
+def test_chronology_checks_pass_on_reloaded_fixture_and_detect_leakage(
+    world: dict, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from dataclasses import replace
+
+    from crypto_ai.phase7.low_memory_validation import chronology_checks
+
+    monkeypatch.setenv(low_memory.PROFILE_ENV, low_memory.LOW_MEMORY)
+    with low_memory.spill_session(tmp_path / "cache"):
+        fold = _slice(world)
+        checks = chronology_checks(fold, world["config"])
+        assert checks["all_passed"] is True, checks
+        leaked = replace(fold, train=pa.concat_tables([fold.train, fold.validation.slice(0, 5)]))
+        bad = chronology_checks(leaked, world["config"])
+        assert bad["all_passed"] is False
+        assert bad["train"]["inside_segment"] is False
