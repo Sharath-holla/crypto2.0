@@ -169,6 +169,12 @@ def admit_official_training(
         memory_profile = low_memory.memory_profile(env)
     except ValueError as exc:
         raise AdmissionError(str(exc)) from exc
+    from crypto_ai.phase7 import staged_fold
+
+    try:
+        staging_days = staged_fold.staging_days(dict(env))
+    except ValueError as exc:
+        raise AdmissionError(f"BAD_STAGING_CONFIGURATION: {exc}") from exc
     if memory_profile == low_memory.LOW_MEMORY:
         if errors := low_memory_resource_errors(machine, mode):
             raise AdmissionError("LOW_MEMORY_RESOURCES_REQUIRED: " + "; ".join(errors))
@@ -212,6 +218,7 @@ def admit_official_training(
         "backend": "cpu" if smoke else env.get(DEVICE_ENV, "cpu"),
         "model_parallelism": budget.model_parallelism,
         "memory_profile": memory_profile,
+        "staging_days": staging_days,
         "cache_mode": env.get("PHASE7_CACHE_MODE", "auto"),
         "experiment_control_identity": control,
         **protocol,

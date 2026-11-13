@@ -147,7 +147,12 @@ def filter_symbols(table: pa.Table, symbols: set[str]) -> pa.Table:
 
 
 def finite_rows(table: pa.Table, columns: tuple[str, ...], target: str) -> pa.Table:
-    """Exactly ``training._finite``; contiguous selections stay zero-copy."""
+    """Exactly ``training._finite``; contiguous selections stay zero-copy.
+
+    With batch staging active (``PHASE7_STAGING_DAYS``) and a spill directory, a scattered
+    selection is streamed block by block into a local IPC file and returned memory-mapped, so the
+    filtered copy never sits in anonymous memory. Same rows, order and values.
+    """
 
     names = columns + (target,)
     mask: pa.Array | pa.ChunkedArray = pc.is_finite(table.column(names[0]))
@@ -156,7 +161,59 @@ def finite_rows(table: pa.Table, columns: tuple[str, ...], target: str) -> pa.Ta
     valid = pc.fill_null(mask, False)
     if pc.all(valid).as_py() is True:
         return table
-    return filter_rows(table, valid)
+    spill = active_spill_directory()
+    if spill is None or not os.environ.get("PHASE7_STAGING_DAYS", "").strip():
+        return filter_rows(table, valid)
+    values = valid.to_numpy(zero_copy_only=False)
+    kept = np.flatnonzero(values)
+    if len(kept) and int(kept[-1]) - int(kept[0]) + 1 == len(kept):
+        return filter_rows(table, values)
+    return stream_filter_to_file(table, values, spill)
+
+
+_ADOPTABLE_TABLES: dict[int, tuple[pa.Table, Path]] = {}
+
+
+def stream_filter_to_file(
+    table: pa.Table, mask: np.ndarray, directory: Path, *, block_rows: int = MATRIX_BLOCK_ROWS
+) -> pa.Table:
+    """``table.filter(mask)`` written block by block to IPC and re-opened memory-mapped."""
+
+    import pyarrow.ipc as ipc
+
+    path = directory / f"filtered-{uuid.uuid4().hex}.arrow"
+    schema = table.schema
+    with pa.OSFile(str(path), "wb") as sink, ipc.new_file(sink, schema) as writer:
+        wrote = False
+        for start in range(0, table.num_rows, block_rows):
+            block_mask = mask[start : start + block_rows]
+            if not block_mask.any():
+                continue
+            block = table.slice(start, len(block_mask)).filter(pa.array(block_mask))
+            writer.write_table(compact_variable_width(block))
+            wrote = True
+        if not wrote:
+            writer.write_table(schema.empty_table())
+    result = _read_ipc(path)
+    if result.num_rows != int(mask.sum()) or result.schema != schema:
+        raise RuntimeError("streamed filter does not round-trip")
+    _ADOPTABLE_TABLES[id(result)] = (result, path)
+    return result
+
+
+def adopt_table_file(table: pa.Table, destination: Path) -> bool:
+    """Move a streamed IPC file (written by this module, compact strings) into a cache entry."""
+
+    entry = _ADOPTABLE_TABLES.get(id(table))
+    spill = active_spill_directory()
+    if entry is None or entry[0] is not table or spill is None:
+        return False
+    source = entry[1].resolve()
+    if not source.is_relative_to(spill.resolve()) or not source.exists():
+        return False
+    os.replace(source, destination)
+    del _ADOPTABLE_TABLES[id(table)]
+    return True
 
 
 def read_sorted_fold_rows(

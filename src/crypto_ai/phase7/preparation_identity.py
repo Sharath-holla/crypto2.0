@@ -71,6 +71,8 @@ PREPARATION_SOURCE_FILES: tuple[str, ...] = (
     "src/crypto_ai/phase7/quality.py",
     "src/crypto_ai/phase7/registry.py",
     "src/crypto_ai/phase7/segments.py",
+    # ADDED BY CLAUDE (2026-11-13): opt-in chronological batch staging of fold slicing.
+    "src/crypto_ai/phase7/staged_fold.py",
     "src/crypto_ai/phase7/targets.py",
     "src/crypto_ai/phase7/universe.py",
 )

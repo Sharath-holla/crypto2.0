@@ -38,6 +38,7 @@ where = ["src"]
 addopts = "-ra"
 pythonpath = ["src", "."]
 testpaths = ["tests"]
+markers = ["model_fit: test fits a model (deselect with -m 'not model_fit' when fitting is not authorized)"]
 
 [tool.ruff]
 line-length = 100

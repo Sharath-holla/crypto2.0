@@ -753,6 +753,10 @@ class PreparedDataCache:
             from crypto_ai.phase7 import low_memory
 
             for name, table in table_values.items():
+                # CHANGED BY CLAUDE (2026-11-13): staged low-memory filtered tables already exist
+                # as compact IPC files; move them instead of writing a second copy.
+                if low_memory.adopt_table_file(table, temporary / name):
+                    continue
                 # CHANGED BY CLAUDE (2026-11-13): opt-in; byte-identical IPC from zero-copy slices.
                 if low_memory.enabled():
                     table = low_memory.compact_variable_width(table)

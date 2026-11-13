@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import hashlib
 import json
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import numpy as np
@@ -22,7 +22,7 @@ import pytest
 from crypto_ai.phase5.config import CalibrationConfig, ScheduleConfig
 from crypto_ai.phase5.folds import FoldPlan
 from crypto_ai.phase5.folds import slice_hardened_fold as phase5_slice
-from crypto_ai.phase7 import low_memory, training
+from crypto_ai.phase7 import low_memory, staged_fold, training
 from crypto_ai.phase7.config import CostConfig, FeatureConfig, ModelConfig, Phase7Config
 from crypto_ai.phase7.features import generate_multiasset_features
 from crypto_ai.phase7.fixtures import (
@@ -33,6 +33,7 @@ from crypto_ai.phase7.fixtures import (
 )
 from crypto_ai.phase7.folds import _filter_symbols, slice_multiasset_fold
 from crypto_ai.phase7.gold import build_multiasset_gold, feature_ablation_sets
+from crypto_ai.phase7.low_memory_validation import _differences, prepared_digest
 from crypto_ai.phase7.models import _floats, _matrix, fit_architecture
 from crypto_ai.phase7.prepared_cache import PreparedDataCache
 from crypto_ai.phase7.targets import generate_multiasset_targets
@@ -278,28 +279,55 @@ def test_build_matrix_rejects_non_finite_values(world: dict, tmp_path: Path) -> 
         low_memory.build_matrix(table, columns, tmp_path, _floats)
 
 
-def _prepare(world: dict, cache_root: Path, context: bool = True) -> dict:
+def _context_source(world: dict) -> pa.Table:
+    """All-horizon feature-only source, as the production sidecar provides (M-01)."""
+
+    from crypto_ai.phase7.features import FOLD_CONTEXT_SOURCE_COLUMNS
+
+    return world["table"].select(list(FOLD_CONTEXT_SOURCE_COLUMNS))
+
+
+def _slice(world: dict, staged_window: timedelta | None = None):
     config = world["config"]
-    table = world["table"].filter(pc.equal(world["table"]["horizon_minutes"], 60))
-    table = table.sort_by([("feature_time", "ascending"), ("symbol", "ascending")])
-    fold = slice_multiasset_fold(
-        table,
-        PLAN,
-        registry=world["registry"],
-        universe=world["universe"],
-        expansion_policy=world["expansion"],
-        research_view="CORE",
-        descriptors=world["descriptors"],
-        universe_config=world["universe_config"],
-        schedule=config.schedule,
-        holdout_start=config.prospective_holdout_start,
-        cluster_count=config.models.cluster_count,
-        seed=config.models.seed,
-    )
-    fold = low_memory.spill_fold(fold)
+    common = {
+        "registry": world["registry"],
+        "universe": world["universe"],
+        "expansion_policy": world["expansion"],
+        "research_view": "CORE",
+        "descriptors": world["descriptors"],
+        "universe_config": world["universe_config"],
+        "schedule": config.schedule,
+        "holdout_start": config.prospective_holdout_start,
+        "cluster_count": config.models.cluster_count,
+        "seed": config.models.seed,
+    }
+    if staged_window is not None:
+        dataset = ds.dataset(world["paths"], format="parquet", partitioning="hive")
+        return staged_fold.slice_fold_staged(
+            dataset,
+            PLAN,
+            60,
+            context_source=_context_source(world),
+            window=staged_window,
+            directory=low_memory.active_spill_directory(),
+            **common,
+        )
+    # Exactly the production read (hive dataset, year partition column, sorted), per profile.
+    dataset = ds.dataset(world["paths"], format="parquet", partitioning="hive")
+    table = training._load_fold_rows({}, PLAN, 60, dataset=dataset)
+    fold = slice_multiasset_fold(table, PLAN, context_source=_context_source(world), **common)
+    return low_memory.spill_fold(fold)
+
+
+def _prepare(
+    world: dict, cache_root: Path, *, fit: bool, staged_window: timedelta | None = None
+) -> dict:
+    config = world["config"]
+    fold = _slice(world, staged_window)
     prepared = training._prepare_training_segments(
         fold, world["feature_columns"], "raw_future_return"
     )
+    uncached = prepared_digest(fold, prepared)
     identity = {
         "test": "low-memory-equivalence",
         "feature_columns": list(world["feature_columns"]),
@@ -315,24 +343,26 @@ def _prepare(world: dict, cache_root: Path, context: bool = True) -> dict:
         if item.name != "manifest.json" and item.name != "CACHE_COMPLETE"
     }
     loaded = PreparedDataCache(cache_root, "read_only").load(identity, PLAN)
-    model = fit_architecture(
-        "G0",
-        loaded.prepared.train,
-        loaded.prepared.validation,
-        feature_columns=world["feature_columns"],
-        target_column="raw_future_return",
-        config=config.models,
-        model_threads=1,
-        cluster_mapping=loaded.fold.cluster_mapping,
-        eligibility_calibration_a=loaded.prepared.calibration_a,
-        prepared_inputs=loaded.prepared.model_inputs,
-    )
-    predictions = {}
-    for name in ("calibration_a", "calibration_b"):
-        raw, covered = model.predict(getattr(loaded.prepared, name))
-        predictions[name] = hashlib.sha256(
-            np.asarray(raw, dtype=np.float64).tobytes() + np.asarray(covered).tobytes()
-        ).hexdigest()
+    predictions = None
+    if fit:
+        model = fit_architecture(
+            "G0",
+            loaded.prepared.train,
+            loaded.prepared.validation,
+            feature_columns=world["feature_columns"],
+            target_column="raw_future_return",
+            config=config.models,
+            model_threads=1,
+            cluster_mapping=loaded.fold.cluster_mapping,
+            eligibility_calibration_a=loaded.prepared.calibration_a,
+            prepared_inputs=loaded.prepared.model_inputs,
+        )
+        predictions = {}
+        for name in ("calibration_a", "calibration_b"):
+            raw, covered = model.predict(getattr(loaded.prepared, name))
+            predictions[name] = hashlib.sha256(
+                np.asarray(raw, dtype=np.float64).tobytes() + np.asarray(covered).tobytes()
+            ).hexdigest()
     assert prepared.train.num_rows > 1_000 and prepared.validation.num_rows > 100
     assert prepared.train.num_rows < fold.train.num_rows, "finite filter must drop warm-up rows"
     return {
@@ -342,33 +372,127 @@ def _prepare(world: dict, cache_root: Path, context: bool = True) -> dict:
         "report": fold.report,
         "eligibility": fold.eligibility_manifest,
         "predictions": predictions,
+        "uncached_digest": uncached,
+        "reloaded_digest": prepared_digest(loaded.fold, loaded.prepared),
     }
 
 
+def _assert_same_preparation(standard: dict, other: dict) -> None:
+    assert other["report"] == standard["report"]
+    assert other["eligibility"] == standard["eligibility"]
+    for name in ("train", "validation", "calibration_a", "calibration_b"):
+        assert_tables_identical(
+            getattr(standard["prepared"], name), getattr(other["prepared"], name)
+        )
+    assert_tables_identical(standard["fold"]._test, other["fold"]._test)
+    for name in ("train_x", "validation_x", "train_y", "validation_y"):
+        assert np.array_equal(
+            getattr(standard["prepared"].model_inputs, name),
+            np.asarray(getattr(other["prepared"].model_inputs, name)),
+        )
+    assert _differences(standard["uncached_digest"], other["uncached_digest"]) == []
+    assert _differences(other["uncached_digest"], other["reloaded_digest"]) == []
+
+
+def test_low_memory_preparation_and_cache_bytes_are_identical_without_fitting(
+    world: dict, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.delenv(low_memory.PROFILE_ENV, raising=False)
+    standard = _prepare(world, tmp_path / "standard-cache", fit=False)
+    monkeypatch.setenv(low_memory.PROFILE_ENV, low_memory.LOW_MEMORY)
+    with low_memory.spill_session(tmp_path / "low-cache") as spill:
+        assert spill is not None and spill.is_dir()
+        low = _prepare(world, tmp_path / "low-cache", fit=False)
+        assert isinstance(low["prepared"].model_inputs.train_x, np.memmap)
+    assert not spill.exists(), "spill directory must be removed when the session ends"
+    assert low["files"] == standard["files"], "cache file bytes differ"
+    _assert_same_preparation(standard, low)
+
+
+@pytest.mark.model_fit
 def test_end_to_end_preparation_cache_and_fit_are_identical(
     world: dict, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     monkeypatch.delenv(low_memory.PROFILE_ENV, raising=False)
-    standard = _prepare(world, tmp_path / "standard-cache")
+    standard = _prepare(world, tmp_path / "standard-cache", fit=True)
     monkeypatch.setenv(low_memory.PROFILE_ENV, low_memory.LOW_MEMORY)
-    with low_memory.spill_session(tmp_path / "low-cache") as spill:
-        assert spill is not None and spill.is_dir()
-        low = _prepare(world, tmp_path / "low-cache")
-        assert isinstance(low["prepared"].model_inputs.train_x, np.memmap)
-        assert isinstance(low["fold"].train, pa.Table)
-    assert not spill.exists(), "spill directory must be removed when the session ends"
+    with low_memory.spill_session(tmp_path / "low-cache"):
+        low = _prepare(world, tmp_path / "low-cache", fit=True)
     assert low["files"] == standard["files"], "cache file bytes differ"
-    assert low["report"] == standard["report"]
-    assert low["eligibility"] == standard["eligibility"]
     assert low["predictions"] == standard["predictions"]
-    for name in ("train", "validation", "calibration_a", "calibration_b"):
-        assert_tables_identical(getattr(standard["prepared"], name), getattr(low["prepared"], name))
-    assert_tables_identical(standard["fold"]._test, low["fold"]._test)
-    for name in ("train_x", "validation_x", "train_y", "validation_y"):
-        assert np.array_equal(
-            getattr(standard["prepared"].model_inputs, name),
-            np.asarray(getattr(low["prepared"].model_inputs, name)),
+    _assert_same_preparation(standard, low)
+
+
+@pytest.mark.parametrize(
+    "window",
+    [
+        timedelta(hours=5),
+        timedelta(days=1),
+        timedelta(days=3),
+        timedelta(days=7),
+        timedelta(days=30),
+    ],
+)
+def test_batch_staged_preparation_equals_standard_without_fitting(
+    world: dict, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, window: timedelta
+) -> None:
+    monkeypatch.delenv(low_memory.PROFILE_ENV, raising=False)
+    monkeypatch.delenv(staged_fold.STAGING_ENV, raising=False)
+    standard = _prepare(world, tmp_path / "standard-cache", fit=False)
+    monkeypatch.setenv(low_memory.PROFILE_ENV, low_memory.LOW_MEMORY)
+    monkeypatch.setenv(staged_fold.STAGING_ENV, "7")
+    with low_memory.spill_session(tmp_path / "staged-cache"):
+        staged = _prepare(world, tmp_path / "staged-cache", fit=False, staged_window=window)
+        assert staged["fold"].train.column("symbol").num_chunks >= 1
+    _assert_same_preparation(standard, staged)
+    # Matrices are byte-identical files; Arrow tables are logically identical (batch layout may
+    # differ because staged segments are appended per window).
+    for name in ("train_x.npy", "validation_x.npy", "train_y.npy", "validation_y.npy"):
+        assert staged["files"][name] == standard["files"][name]
+
+
+def test_staging_windows_partition_the_fold_and_cut_at_year_boundaries() -> None:
+    plan = FoldPlan(
+        fold_id="fold-window-check",
+        index=0,
+        train_start=datetime(2020, 12, 20, tzinfo=UTC),
+        train_end=datetime(2021, 1, 10, tzinfo=UTC),
+        validation_start=datetime(2021, 1, 10, tzinfo=UTC),
+        validation_end=datetime(2021, 1, 12, tzinfo=UTC),
+        calibration_start=datetime(2021, 1, 12, tzinfo=UTC),
+        calibration_end=datetime(2021, 1, 14, tzinfo=UTC),
+        test_start=datetime(2021, 1, 14, tzinfo=UTC),
+        test_end=datetime(2021, 1, 20, tzinfo=UTC),
+    )
+    for days in staged_fold.SUPPORTED_STAGING_DAYS:
+        parts = staged_fold.windows(plan, timedelta(days=days))
+        assert parts[0][0] == plan.train_start and parts[-1][1] == plan.test_end
+        assert all(a[1] == b[0] for a, b in zip(parts, parts[1:], strict=False))
+        assert all(
+            start < end and start.year == (end - timedelta(microseconds=1)).year
+            for start, end in parts
         )
+        assert datetime(2021, 1, 1, tzinfo=UTC) in {start for start, _ in parts}
+
+
+def test_staging_configuration_is_explicit_and_bounded() -> None:
+    assert staged_fold.staging_days({}) is None
+    with pytest.raises(ValueError, match="requires PHASE7_MEMORY_PROFILE=low_memory"):
+        staged_fold.staging_days({staged_fold.STAGING_ENV: "7"})
+    low = {low_memory.PROFILE_ENV: "low_memory"}
+    assert staged_fold.staging_days({**low, staged_fold.STAGING_ENV: "14"}) == 14
+    for bad in ("0", "2", "365", "seven"):
+        with pytest.raises(ValueError):
+            staged_fold.staging_days({**low, staged_fold.STAGING_ENV: bad})
+
+
+def test_streamed_filter_matches_table_filter(world: dict, tmp_path: Path) -> None:
+    table = world["table"]
+    mask = np.random.default_rng(3).random(table.num_rows) < 0.6
+    streamed = low_memory.stream_filter_to_file(table, mask, tmp_path, block_rows=777)
+    assert_tables_identical(table.filter(pa.array(mask)), streamed)
+    empty = low_memory.stream_filter_to_file(table, np.zeros(table.num_rows, bool), tmp_path)
+    assert empty.num_rows == 0 and empty.schema == table.schema
 
 
 def test_standard_profile_never_spills_or_memmaps(world: dict, tmp_path: Path, monkeypatch) -> None:
@@ -404,7 +528,7 @@ def test_prepared_digest_matches_after_read_only_reload_and_detects_changes(
 
     monkeypatch.setenv(low_memory.PROFILE_ENV, low_memory.LOW_MEMORY)
     with low_memory.spill_session(tmp_path / "cache"):
-        result = _prepare(world, tmp_path / "cache")
+        result = _prepare(world, tmp_path / "cache", fit=False)
         uncached = prepared_digest(result["fold"], result["prepared"])
         cache_dir = next(p for p in (tmp_path / "cache").iterdir() if len(p.name) == 64)
         identity = json.loads((cache_dir / "manifest.json").read_text())["identity"]

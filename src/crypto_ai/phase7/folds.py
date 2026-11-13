@@ -271,23 +271,19 @@ def plan_multiasset_folds(
     return plan_folds(data_start, research_cutoff, holdout_start, schedule)
 
 
-def slice_multiasset_fold(
-    table: pa.Table,
+def fold_membership(
     plan: FoldPlan,
     *,
     registry: SymbolRegistry,
     universe: FrozenUniverse,
-    expansion_policy: ExpansionUniversePolicy | None = None,
-    research_view: Literal["CORE", "EXPANDING"] = "CORE",
+    expansion_policy: ExpansionUniversePolicy | None,
+    research_view: Literal["CORE", "EXPANDING"],
     descriptors: list[SymbolDescriptor],
     universe_config: UniverseConfig,
-    schedule: ScheduleConfig,
-    holdout_start: datetime,
-    cluster_count: int,
-    seed: int,
     unusable_segments: tuple[CausalDataGap, ...] = (),
-    context_source: pa.Table | None = None,
-) -> MultiAssetFoldData:
+) -> tuple[Any, Any, set[str]]:
+    """Point-in-time fold membership and post-TRAIN gap gate (extracted, unchanged)."""
+
     policy = expansion_policy or build_expansion_policy(universe, universe_config)
     membership = select_fold_active_universe(
         registry,
@@ -340,36 +336,24 @@ def slice_multiasset_fold(
         #     f"{later_gaps}"
         # )
         raise PostTrainDataGapError(plan.fold_id, later_gaps)
-    eligible_table = _filter_symbols(table, eligible_symbols)
-    if eligible_table.num_rows == 0:
-        # Eligible symbols exist, yet this fold table carries no rows for them:
-        # a Gold/data coverage defect, not an eligibility outcome. Crash loudly.
-        raise ValueError(
-            f"{plan.fold_id} has point-in-time eligible symbols but zero rows "
-            "in the fold table; Gold coverage defect, not an INELIGIBLE outcome"
-        )
-    # Cross-sectional context must be built from all horizons' feature rows (a
-    # horizon-invariant superset), never from the rows that happen to carry a valid
-    # label for this horizon; otherwise context at time t reveals future label
-    # availability (M-01). The source is restricted to the same eligible symbols.
-    eligible_context = (
-        _filter_symbols(context_source, eligible_symbols) if context_source is not None else None
-    )
-    eligible_table = bind_fold_cross_sectional_context(
-        eligible_table, context_source=eligible_context
-    )
-    # CHANGED BY CLAUDE (2026-11-13, low-memory profile): opt-in zero-copy twin of the Phase 5
-    # slicer (identical segments, purge, embargo, checks and report); Phase 5 is untouched.
-    from crypto_ai.phase7 import low_memory
+    return policy, membership, eligible_symbols
 
-    slicer = low_memory.slice_hardened_fold if low_memory.enabled() else slice_hardened_fold
-    sliced: HardenedFoldData = slicer(
-        eligible_table,
-        plan,
-        schedule,
-        holdout_start,
-    )
-    del eligible_table
+
+def fold_metadata(
+    plan: FoldPlan,
+    *,
+    policy: Any,
+    membership: Any,
+    eligible_symbols: set[str],
+    universe: FrozenUniverse,
+    research_view: Literal["CORE", "EXPANDING"],
+    descriptors: list[SymbolDescriptor],
+    cluster_count: int,
+    seed: int,
+    unusable_segments: tuple[CausalDataGap, ...] = (),
+) -> dict[str, Any]:
+    """TRAIN-only clusters/tiers and the eligibility manifest (extracted, unchanged)."""
+
     clusters, cluster_report = fit_train_only_clusters(
         descriptors,
         train_end=plan.train_end,
@@ -428,6 +412,86 @@ def slice_multiasset_fold(
         "prospective_holdout_used": False,
         "prospective_holdout_evaluation_authorized": False,
     }
+    return {
+        "clusters": clusters,
+        "cluster_report": cluster_report,
+        "liquidity": liquidity,
+        "age_buckets": age_buckets,
+        "eligibility_manifest": eligibility_manifest,
+    }
+
+
+def slice_multiasset_fold(
+    table: pa.Table,
+    plan: FoldPlan,
+    *,
+    registry: SymbolRegistry,
+    universe: FrozenUniverse,
+    expansion_policy: ExpansionUniversePolicy | None = None,
+    research_view: Literal["CORE", "EXPANDING"] = "CORE",
+    descriptors: list[SymbolDescriptor],
+    universe_config: UniverseConfig,
+    schedule: ScheduleConfig,
+    holdout_start: datetime,
+    cluster_count: int,
+    seed: int,
+    unusable_segments: tuple[CausalDataGap, ...] = (),
+    context_source: pa.Table | None = None,
+) -> MultiAssetFoldData:
+    # CHANGED BY CLAUDE (2026-11-13): membership/gap gating and fold metadata were extracted
+    # verbatim into helpers so the opt-in staged slicer reuses them; values are unchanged.
+    policy, membership, eligible_symbols = fold_membership(
+        plan,
+        registry=registry,
+        universe=universe,
+        expansion_policy=expansion_policy,
+        research_view=research_view,
+        descriptors=descriptors,
+        universe_config=universe_config,
+        unusable_segments=unusable_segments,
+    )
+    eligible_table = _filter_symbols(table, eligible_symbols)
+    if eligible_table.num_rows == 0:
+        # Eligible symbols exist, yet this fold table carries no rows for them:
+        # a Gold/data coverage defect, not an eligibility outcome. Crash loudly.
+        raise ValueError(
+            f"{plan.fold_id} has point-in-time eligible symbols but zero rows "
+            "in the fold table; Gold coverage defect, not an INELIGIBLE outcome"
+        )
+    # Cross-sectional context must be built from all horizons' feature rows (a
+    # horizon-invariant superset), never from the rows that happen to carry a valid
+    # label for this horizon; otherwise context at time t reveals future label
+    # availability (M-01). The source is restricted to the same eligible symbols.
+    eligible_context = (
+        _filter_symbols(context_source, eligible_symbols) if context_source is not None else None
+    )
+    eligible_table = bind_fold_cross_sectional_context(
+        eligible_table, context_source=eligible_context
+    )
+    # CHANGED BY CLAUDE (2026-11-13, low-memory profile): opt-in zero-copy twin of the Phase 5
+    # slicer (identical segments, purge, embargo, checks and report); Phase 5 is untouched.
+    from crypto_ai.phase7 import low_memory
+
+    slicer = low_memory.slice_hardened_fold if low_memory.enabled() else slice_hardened_fold
+    sliced: HardenedFoldData = slicer(
+        eligible_table,
+        plan,
+        schedule,
+        holdout_start,
+    )
+    del eligible_table
+    metadata = fold_metadata(
+        plan,
+        policy=policy,
+        membership=membership,
+        eligible_symbols=eligible_symbols,
+        universe=universe,
+        research_view=research_view,
+        descriptors=descriptors,
+        cluster_count=cluster_count,
+        seed=seed,
+        unusable_segments=unusable_segments,
+    )
     return MultiAssetFoldData(
         plan=plan,
         train=sliced.train,
@@ -435,10 +499,10 @@ def slice_multiasset_fold(
         calibration_a=sliced.calibration_a,
         calibration_b=sliced.calibration_b,
         _test=sliced._test,
-        eligibility_manifest=eligibility_manifest,
-        cluster_mapping=clusters,
-        liquidity_tiers=liquidity,
-        age_buckets=age_buckets,
+        eligibility_manifest=metadata["eligibility_manifest"],
+        cluster_mapping=metadata["clusters"],
+        liquidity_tiers=metadata["liquidity"],
+        age_buckets=metadata["age_buckets"],
         research_view=research_view,
         report=sliced.report,
     )

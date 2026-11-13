@@ -21,7 +21,7 @@ from crypto_ai.data.ingestion.manifest import read_manifest
 from crypto_ai.data.storage import file_sha256
 from crypto_ai.phase5.calibration import SELECTION_HOLDOUT_FRACTION, fit_calibrator
 from crypto_ai.phase5.folds import FoldPlan, plan_folds
-from crypto_ai.phase7 import low_memory
+from crypto_ai.phase7 import low_memory, staged_fold
 from crypto_ai.phase7.admission import assert_backend_admitted
 from crypto_ai.phase7.artifacts import (
     CheckpointStore,
@@ -225,6 +225,7 @@ TRAINING_CRITICAL_SOURCE_FILES = (
     # ADDED BY CLAUDE (2026-11-13): opt-in low-memory preparation and its qualification gate.
     "src/crypto_ai/phase7/low_memory.py",
     "src/crypto_ai/phase7/low_memory_validation.py",
+    "src/crypto_ai/phase7/staged_fold.py",
     "src/crypto_ai/phase7/metrics.py",
     "src/crypto_ai/phase7/models.py",
     "src/crypto_ai/phase7/pipeline.py",
@@ -1840,52 +1841,109 @@ def _run_phase7_training_owned(
                 )
                 if gold_dataset is None and gold_paths:
                     gold_dataset = ds.dataset(gold_paths, format="parquet", partitioning="hive")
-                table = _load_fold_rows(
-                    manifest,
-                    plan,
-                    spec.horizon_minutes,
-                    **({"dataset": gold_dataset} if gold_dataset is not None else {}),
-                )
-                if "source" not in fold_context:
-                    fold_context["source"] = _load_fold_context_source(
+                # CHANGED BY CLAUDE (2026-11-13): opt-in chronological batch staging
+                # (PHASE7_MEMORY_PROFILE=low_memory + PHASE7_STAGING_DAYS). Same fold payload as the
+                # branch below without materializing the whole fold table; Gold identity was
+                # already verified for every partition by _load_gold_manifest.
+                staging = staged_fold.staging_days()
+                if staging is not None:
+                    if "source" not in fold_context:
+                        fold_context["source"] = _load_fold_context_source(
+                            manifest,
+                            plan,
+                            config.targets.horizons_minutes,
+                            gold_manifest_sha256=gold_manifest_checksum,
+                            configuration_hash=config.configuration_hash,
+                            **({"dataset": gold_dataset} if gold_dataset is not None else {}),
+                        )
+                    spill_directory = low_memory.active_spill_directory()
+                    if spill_directory is None or gold_dataset is None:
+                        raise RuntimeError("batch staging requires a spill session and Gold paths")
+                    sliced[spec.horizon_minutes] = staged_fold.slice_fold_staged(
+                        gold_dataset,
+                        plan,
+                        spec.horizon_minutes,
+                        context_source=fold_context["source"],
+                        registry=registry,
+                        universe=universe,
+                        expansion_policy=expansion_policy,
+                        research_view=view,
+                        descriptors=descriptors,
+                        universe_config=config.universe,
+                        schedule=config.schedule,
+                        holdout_start=config.prospective_holdout_start,
+                        cluster_count=config.models.cluster_count,
+                        seed=config.models.seed,
+                        unusable_segments=unusable_segments,
+                        window=timedelta(days=staging),
+                        directory=spill_directory,
+                    )
+                    staged = sliced[spec.horizon_minutes]
+                    emit_event(
+                        "FOLD_LOAD_DONE",
+                        fold_id=plan.fold_id,
+                        horizon=spec.horizon_minutes,
+                        staging_days=staging,
+                        segment_rows={
+                            name: getattr(staged, name).num_rows
+                            for name in (
+                                "train",
+                                "validation",
+                                "calibration_a",
+                                "calibration_b",
+                                "_test",
+                            )
+                        },
+                        **memory_snapshot(),
+                    )
+                else:
+                    table = _load_fold_rows(
                         manifest,
                         plan,
-                        config.targets.horizons_minutes,
-                        gold_manifest_sha256=gold_manifest_checksum,
-                        configuration_hash=config.configuration_hash,
+                        spec.horizon_minutes,
                         **({"dataset": gold_dataset} if gold_dataset is not None else {}),
                     )
-                sliced[spec.horizon_minutes] = slice_multiasset_fold(
-                    table,
-                    plan,
-                    registry=registry,
-                    universe=universe,
-                    expansion_policy=expansion_policy,
-                    research_view=view,
-                    descriptors=descriptors,
-                    universe_config=config.universe,
-                    schedule=config.schedule,
-                    holdout_start=config.prospective_holdout_start,
-                    cluster_count=config.models.cluster_count,
-                    seed=config.models.seed,
-                    unusable_segments=unusable_segments,
-                    context_source=fold_context["source"],
-                )
-                emit_event(
-                    "FOLD_LOAD_DONE",
-                    fold_id=plan.fold_id,
-                    horizon=spec.horizon_minutes,
-                    rows=table.num_rows,
-                    **memory_snapshot(),
-                )
-                # CHANGED BY CLAUDE (2026-11-13, low-memory profile): opt-in; the sliced segments
-                # are re-opened memory-mapped from local IPC and the raw fold table is released.
-                if low_memory.enabled():
-                    del table
-                    sliced[spec.horizon_minutes] = low_memory.spill_fold(
-                        sliced[spec.horizon_minutes]
+                    if "source" not in fold_context:
+                        fold_context["source"] = _load_fold_context_source(
+                            manifest,
+                            plan,
+                            config.targets.horizons_minutes,
+                            gold_manifest_sha256=gold_manifest_checksum,
+                            configuration_hash=config.configuration_hash,
+                            **({"dataset": gold_dataset} if gold_dataset is not None else {}),
+                        )
+                    sliced[spec.horizon_minutes] = slice_multiasset_fold(
+                        table,
+                        plan,
+                        registry=registry,
+                        universe=universe,
+                        expansion_policy=expansion_policy,
+                        research_view=view,
+                        descriptors=descriptors,
+                        universe_config=config.universe,
+                        schedule=config.schedule,
+                        holdout_start=config.prospective_holdout_start,
+                        cluster_count=config.models.cluster_count,
+                        seed=config.models.seed,
+                        unusable_segments=unusable_segments,
+                        context_source=fold_context["source"],
                     )
-                    low_memory.release_unused_memory()
+                    emit_event(
+                        "FOLD_LOAD_DONE",
+                        fold_id=plan.fold_id,
+                        horizon=spec.horizon_minutes,
+                        rows=table.num_rows,
+                        **memory_snapshot(),
+                    )
+                    # CHANGED BY CLAUDE (2026-11-13, low-memory profile): opt-in; the sliced
+                    # segments are re-opened memory-mapped from local IPC and the raw fold table
+                    # is released.
+                    if low_memory.enabled():
+                        del table
+                        sliced[spec.horizon_minutes] = low_memory.spill_fold(
+                            sliced[spec.horizon_minutes]
+                        )
+                        low_memory.release_unused_memory()
             return sliced[spec.horizon_minutes]
 
         for research_view in research_views:

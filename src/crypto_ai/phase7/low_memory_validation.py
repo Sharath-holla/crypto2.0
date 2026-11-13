@@ -35,33 +35,37 @@ VALIDATION_SCHEMA = "phase7_low_memory_validation_v1"
 _CHUNK_ROWS = 262_144
 
 
-def _hash_array(digest: Any, array: pa.Array) -> None:
-    if pa.types.is_timestamp(array.type) or pa.types.is_date(array.type):
-        array = array.cast(pa.int64())
-    if (
-        pa.types.is_floating(array.type)
-        or pa.types.is_integer(array.type)
-        or pa.types.is_boolean(array.type)
-    ):
-        values = array.to_numpy(zero_copy_only=False)
-        digest.update(np.ascontiguousarray(values).tobytes())
-        digest.update(
-            np.ascontiguousarray(array.is_null().to_numpy(zero_copy_only=False)).tobytes()
-        )
-        return
-    for value in array.to_pylist():
-        digest.update(b"\x00N" if value is None else b"\x01" + str(value).encode("utf-8"))
-
-
 def column_digest(column: pa.ChunkedArray | pa.Array) -> str:
-    """Physical-layout independent digest of one column's logical values (NaN-bit exact)."""
+    """Digest of one column's logical values, independent of chunk/batch layout.
 
-    digest = hashlib.sha256()
+    Values and validity are hashed as two separate continuous streams (NaN payload bits exact),
+    so a table split into many record batches digests like the same table in one batch.
+    """
+
+    values_hash = hashlib.sha256()
+    validity_hash = hashlib.sha256()
     chunks = column.chunks if isinstance(column, pa.ChunkedArray) else [column]
     for chunk in chunks:
         for start in range(0, len(chunk), _CHUNK_ROWS):
-            _hash_array(digest, chunk.slice(start, _CHUNK_ROWS))
-    return digest.hexdigest()
+            array = chunk.slice(start, _CHUNK_ROWS)
+            if pa.types.is_timestamp(array.type) or pa.types.is_date(array.type):
+                array = array.cast(pa.int64())
+            validity_hash.update(
+                np.ascontiguousarray(array.is_null().to_numpy(zero_copy_only=False)).tobytes()
+            )
+            if (
+                pa.types.is_floating(array.type)
+                or pa.types.is_integer(array.type)
+                or pa.types.is_boolean(array.type)
+            ):
+                values = array.to_numpy(zero_copy_only=False)
+                values_hash.update(np.ascontiguousarray(values).tobytes())
+            else:
+                for value in array.to_pylist():
+                    values_hash.update(
+                        b"\x00N" if value is None else b"\x01" + str(value).encode("utf-8")
+                    )
+    return hashlib.sha256(values_hash.digest() + validity_hash.digest()).hexdigest()
 
 
 def table_digest(table: pa.Table) -> dict[str, Any]:
