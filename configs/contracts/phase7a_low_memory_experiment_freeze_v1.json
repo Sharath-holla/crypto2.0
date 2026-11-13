@@ -1,0 +1,147 @@
+{
+ "freeze_id": "phase7a_low_memory_experiment_freeze_v1",
+ "status": "EXPERIMENTAL_SOURCE_FREEZE",
+ "branch": "experiment/phase7-low-memory-training",
+ "does_not_replace": [
+  "configs/contracts/phase7_scientific_baseline_v1_9.json (historical byte freeze, unchanged)",
+  "verified source package 7a64ee0da53961940932dacaddb5022be7b299bb and its six handoff identities"
+ ],
+ "predecessor": {
+  "commit": "5091590",
+  "verified_source_commit": "7a64ee0da53961940932dacaddb5022be7b299bb",
+  "identities_reproduced_from_predecessor_checkout": {
+   "PREPARATION_DIGEST": "07b510b1ebacdf80e22ad142861318b1052387973260605cdea509d2a9b31581",
+   "EXPERIMENT_CONTROL_DIGEST": "2022b988a5cb05d85f8ff659870896615ac22ca4dd00a4a342dabb38c7a75a3a",
+   "SELECTION_PROTOCOL_DIGEST": "562dbf8203f476e446cd9968d336fa74b022924c01e5b1c34f3167c065c73826",
+   "SCIENTIFIC_SOURCE_DIGEST_WITHOUT_SIDECAR": "3cf436276b4aafd1603627e5f07ff618c5c79f7a9d1d0a5ac5bf52c1316ce00d"
+  },
+  "handoff_SCIENTIFIC_SOURCE_DIGEST_WITH_SIDECAR": "978a97e8b62869c9246fe4797a26c1ff04ec8deab2cf86dc7996a3c56bf483bf"
+ },
+ "frozen_identities": {
+  "PREPARATION_DIGEST": "cc248b41015f539ae95719098a0f497816171defe596e3ff69c5b5150a3ca72e",
+  "EXPERIMENT_CONTROL_DIGEST": "263f46c9e0550b67ad8c2719279af9f8bc61b0a928e72b53e14dac4600db4497",
+  "SELECTION_PROTOCOL_DIGEST": "562dbf8203f476e446cd9968d336fa74b022924c01e5b1c34f3167c065c73826",
+  "SCIENTIFIC_SOURCE_DIGEST_WITHOUT_SIDECAR": "32bbe2cf364aa4e3af3d7aaa57342cfaad9c218a705e141ad470eac952d3b58c",
+  "SCIENTIFIC_SOURCE_DIGEST_WITH_SIDECAR": "COMPUTED_AT_REAL_DATA_ADMISSION (depends on the verified sidecar file)"
+ },
+ "scientific_contract": {
+  "configuration_hash": "93f987736b1a79d26b773957",
+  "scientific_contract_values_changed": false,
+  "core20_symbols_changed": false,
+  "a6_feature_count": 109,
+  "targets_or_horizons_changed": false,
+  "fold_calendar_purge_embargo_changed": false,
+  "model_hyperparameters_changed": false,
+  "precision": "float64 matrices unchanged",
+  "training_data_reduced": false,
+  "prospective_holdout_status": "LOCKED_UNUSED",
+  "prospective_holdout_start": "2026-08-01T00:00:00+00:00",
+  "prospective_holdout_used": false,
+  "prospective_holdout_evaluation_authorized": false,
+  "july_2026_used": false
+ },
+ "profile": {
+  "selector": "PHASE7_MEMORY_PROFILE=low_memory (default 'standard' keeps original code paths)",
+  "standard_profile_admission": "unchanged: >=64 GiB effective RAM, >=8 CPUs, >=150 GB local disk",
+  "low_memory_profile_admission": ">=13 GiB effective RAM, >=4 CPUs, >=14 GiB free (prepare) / >=2 GiB free (train), separate owner approval; training also requires a VALIDATED cached-vs-uncached record for the current source"
+ },
+ "changed_files": [
+  {
+   "path": "src/crypto_ai/phase7/admission.py",
+   "base_sha256": "f6163dea42a11b789f2163512c03e6451a9ddfd67442d479bb44c1d05a534a1b",
+   "new_sha256": "f0cfba0b71aad1b87bad176193d9f5953f033467d27c297ad9007e48baa206da",
+   "listed_in_v1_9_historical_freeze": false,
+   "in_scientific_source_identity": false,
+   "in_preparation_identity": false,
+   "in_experiment_control_identity": true,
+   "change": "Memory profile selection; low-memory floors only under PHASE7_MEMORY_PROFILE=low_memory; standard 64 GiB check unchanged; memory_profile recorded in the admission record."
+  },
+  {
+   "path": "src/crypto_ai/phase7/folds.py",
+   "base_sha256": "22ef6386edcedba9bb2255e42f8988afcc2fab0a6863a9745d0cbeb74255d7a2",
+   "new_sha256": "559b583e22a5d200acb0e84ffc9d7bae2760e1cf64ab6a51f299bc1da0620017",
+   "listed_in_v1_9_historical_freeze": true,
+   "in_scientific_source_identity": true,
+   "in_preparation_identity": true,
+   "in_experiment_control_identity": false,
+   "change": "Opt-in dispatch in _filter_symbols and choice of the Phase 7 zero-copy slicer; explicit release of the eligible_table reference after slicing (no value change)."
+  },
+  {
+   "path": "src/crypto_ai/phase7/low_memory.py",
+   "base_sha256": null,
+   "new_sha256": "39e91b3f91b4b9cd2324dbde278d5f180d9ce80ebe851823dfaf8118f42fc849",
+   "listed_in_v1_9_historical_freeze": false,
+   "in_scientific_source_identity": true,
+   "in_preparation_identity": true,
+   "in_experiment_control_identity": false,
+   "change": "NEW: output-identical low-memory techniques."
+  },
+  {
+   "path": "src/crypto_ai/phase7/low_memory_validation.py",
+   "base_sha256": null,
+   "new_sha256": "36d203c7b9ef8d23734e7c96b46fb08b3e78d52472fae1301b8b5485af377fcd",
+   "listed_in_v1_9_historical_freeze": false,
+   "in_scientific_source_identity": true,
+   "in_preparation_identity": false,
+   "in_experiment_control_identity": false,
+   "change": "NEW: uncached digest, read-only reload qualification CLI, VALIDATED-record admission helper."
+  },
+  {
+   "path": "src/crypto_ai/phase7/models.py",
+   "base_sha256": "430ac640cb6a9ec3b4d888de640824013d5673eb930e58d3abf9ff944920ab1b",
+   "new_sha256": "7d7b3da2663ec24ed4d264f53e879d139c7f4744a9ce5664cf9f5d970d6736e9",
+   "listed_in_v1_9_historical_freeze": true,
+   "in_scientific_source_identity": true,
+   "in_preparation_identity": true,
+   "in_experiment_control_identity": false,
+   "change": "Opt-in: _matrix builds the identical float64 matrix into a row-block .npy memmap when a low-memory matrix directory is active."
+  },
+  {
+   "path": "src/crypto_ai/phase7/preparation_identity.py",
+   "base_sha256": "a2ff80dbe8b94670c052cc2af344419288d66a2c993cb6f3e018c01f31f69e36",
+   "new_sha256": "2d7f2deb543986fd1b7344b889994b46483e1dc16b6a2f3d33b6fd001ce3b494",
+   "listed_in_v1_9_historical_freeze": false,
+   "in_scientific_source_identity": false,
+   "in_preparation_identity": false,
+   "in_experiment_control_identity": false,
+   "change": "low_memory.py added to PREPARATION_SOURCE_FILES."
+  },
+  {
+   "path": "src/crypto_ai/phase7/prepared_cache.py",
+   "base_sha256": "5b48e038732a3e9a864ddfd28f3fff6125e1491231a1c37198888a3ca2dc7eaf",
+   "new_sha256": "87f247796886d4694a29605eb90fc61f9672de09b7de514356d073f7ffe20551",
+   "listed_in_v1_9_historical_freeze": false,
+   "in_scientific_source_identity": true,
+   "in_preparation_identity": true,
+   "in_experiment_control_identity": false,
+   "change": "Opt-in: adopt low-memory matrix files by rename (byte-identical to np.save) and compact variable-width columns before IPC write (byte-identical cache files)."
+  },
+  {
+   "path": "src/crypto_ai/phase7/run_contract.py",
+   "base_sha256": "0e815ed3d11da46f5dc4ecdd5aed80fe5ce93ee9d53fcee884a410bea276530e",
+   "new_sha256": "a713f14e3caee9ed97f0bd0a370b0621ccce64cfbce9fdd2df132fd523c11ea7",
+   "listed_in_v1_9_historical_freeze": false,
+   "in_scientific_source_identity": false,
+   "in_preparation_identity": false,
+   "in_experiment_control_identity": true,
+   "change": "Three new known environment names; LOW_MEMORY_* floors; low_memory_resource_errors; approval_binding gains low-memory keys only under the profile (standard binding byte-identical and called with the original arguments)."
+  },
+  {
+   "path": "src/crypto_ai/phase7/training.py",
+   "base_sha256": "ea64ec1635547fb5c22a185ffaa988cf05aa5adc2b030dced011c9f15560edb5",
+   "new_sha256": "147a882782154f2402c5b8a0998b8ca535febd871efa0ec79c3a39dd1847025e",
+   "listed_in_v1_9_historical_freeze": true,
+   "in_scientific_source_identity": true,
+   "in_preparation_identity": true,
+   "in_experiment_control_identity": false,
+   "change": "Opt-in dispatch in _load_fold_rows and _finite; _prepare_model_inputs helper (matrix storage context); spill and raw-table release after slicing; _clear_sliced (deletes spill files); spill_session around the owned run; uncached-digest observation hook before cache publication; two modules added to TRAINING_CRITICAL_SOURCE_FILES. Standard path: identical calls and values."
+  }
+ ],
+ "verification": {
+  "full_regression_suite": "1503 passed, 0 failed (pytest, Linux x86_64 cloud VM)",
+  "ruff": "check and format pass",
+  "equivalence_tests": "tests/phase7/test_low_memory_equivalence.py (standard vs low_memory: tables, reports, matrices, cache file SHA-256, G0 predictions identical)",
+  "admission_tests": "tests/phase7/test_low_memory_admission.py",
+  "full_scale_synthetic": "experiments/phase7_low_memory/results/repo_profile_fold0.json, repo_profile_worstcase.json"
+ }
+}

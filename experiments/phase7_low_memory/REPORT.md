@@ -57,3 +57,36 @@ Not bottlenecks: LightGBM binned data (~0.65 GiB), context sidecar (0.31 GiB), p
 - Column-wise memmap filling took 589 s (strided writes); row-block filling is required.
 - Disk becomes binding: one prepared cache ~8.3-9.9 GB, spill ~6-9 GB, real data ~11 GB.
 - The 64 GiB floor is an explicit owner policy (`run_contract.smoke_resource_errors`), not derived.
+
+## Implementation (2026-11-13, owner-approved experimental branch)
+
+Opt-in profile `PHASE7_MEMORY_PROFILE=low_memory` (default `standard` = original code paths):
+
+| Technique | Where |
+|---|---|
+| Column-group fold read, one shared stable sort index | `low_memory.read_sorted_fold_rows` via `training._load_fold_rows` |
+| Zero-copy contiguous selection (`slice`, else `filter`) | `low_memory.filter_rows`, `finite_rows` |
+| Vectorized symbol filter, unchanged table when all eligible | `low_memory.filter_symbols` via `folds._filter_symbols` |
+| Phase 7 zero-copy twin of the Phase 5 hardened slicer (Phase 5 untouched) | `low_memory.slice_hardened_fold` via `folds.slice_multiasset_fold` |
+| Arrow pool release; raw fold table dropped after slicing | `low_memory.release_unused_memory`, `training` load path |
+| Fold segments spilled to local IPC and memory-mapped; spill deleted on horizon change/exit | `spill_fold`, `discard_spilled`, `spill_session` |
+| Row-block float64 `.npy` memmap matrices (589 s → 15 s) | `low_memory.build_matrix` via `models._matrix` |
+| Matrices adopted into the cache by rename; compact string columns → byte-identical cache files | `prepared_cache.write` |
+| Sequential execution (one worker) and cache reuse between specifications | unchanged existing admission/cache design |
+| Sequential cache release with manifest receipts; measured disk plan | `low_memory_disk` (`plan`, `release`) |
+
+Admission: the standard 64 GiB/8 CPU/150 GB floor is unchanged. The low-memory profile needs
+>=13 GiB effective (cgroup-aware) RAM, >=4 CPUs, free cache-filesystem space (14 GiB prepare,
+2 GiB train), its own owner approval binding, and for training a `VALIDATED` cached-vs-uncached
+record (`low_memory_validation`) bound to the current scientific/preparation digests.
+
+Full-scale synthetic measurement of the COMMITTED code (`results/repo_profile_*.json`):
+
+| Fold shape | Peak anon | Peak RSS | Extra disk peak | Cached vs uncached |
+|---|---|---|---|---|
+| Fold 0 (4,922,887 rows) | 8.81 GiB | 12.94 GiB | 14.4 GB | IDENTICAL |
+| All 20 symbols full window (5,783,040 rows) | 10.34 GiB | 13.25 GiB | 17.1 GB | IDENTICAL |
+
+The remaining peak is cross-sectional context binding (Python string objects in `features.py`),
+which was deliberately left unchanged. Freeze record:
+`configs/contracts/phase7a_low_memory_experiment_freeze_v1.json`.

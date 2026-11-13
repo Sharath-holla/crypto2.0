@@ -222,6 +222,9 @@ TRAINING_CRITICAL_SOURCE_FILES = (
     "src/crypto_ai/phase7/folds.py",
     "src/crypto_ai/phase7/gold.py",
     "src/crypto_ai/phase7/gold_validation.py",
+    # ADDED BY CLAUDE (2026-11-13): opt-in low-memory preparation and its qualification gate.
+    "src/crypto_ai/phase7/low_memory.py",
+    "src/crypto_ai/phase7/low_memory_validation.py",
     "src/crypto_ai/phase7/metrics.py",
     "src/crypto_ai/phase7/models.py",
     "src/crypto_ai/phase7/pipeline.py",
