@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import shutil
 import sys
 import time
@@ -49,6 +50,64 @@ def plan(*, free_bytes: int, fold_rows: int, pending_input_bytes: int = 0) -> di
         "basis": "MEASURED_BYTES_PER_ROW_FROM_SYNTHETIC_FULL_SCALE_RUNS",
         "sequential_rule": "at most one published cache plus one spill set at a time; release a "
         "cache only after all of its specifications are terminal",
+    }
+
+
+MODEL_AND_REPORT_ALLOWANCE_BYTES = 300 * 10**6
+LOG_ALLOWANCE_BYTES = 300 * 10**6
+
+
+def directory_bytes(path: Path) -> int:
+    if not path.exists():
+        return 0
+    total = 0
+    for root, _dirs, files in os.walk(path):
+        for name in files:
+            try:
+                total += (Path(root) / name).lstat().st_size
+            except OSError:
+                continue
+    return total
+
+
+def budget(
+    *,
+    probe: Path,
+    fold_rows: int,
+    data_bytes_pending: int,
+    occupied: dict[str, Path] | None = None,
+) -> dict[str, Any]:
+    """Peak simultaneous disk use for ONE fold/horizon/target preparation plus its training.
+
+    Free space is measured on the filesystem that holds ``probe`` (the writable allowance), not
+    the device size. Already-occupied items (repository, virtualenv, uv cache, staged data) are
+    reported for transparency; they are already excluded from ``free``.
+    """
+
+    free = shutil.disk_usage(probe).free
+    planned = {
+        "dataset_still_to_download": data_bytes_pending,
+        "spill_unfiltered_fold_segments": fold_rows * SPILL_BYTES_PER_FOLD_ROW,
+        "prepared_cache_tables_and_matrices": fold_rows * CACHE_BYTES_PER_FOLD_ROW,
+        "models_reports_checkpoints": MODEL_AND_REPORT_ALLOWANCE_BYTES,
+        "logs_and_telemetry": LOG_ALLOWANCE_BYTES,
+        "filesystem_safety_margin": SAFETY_BYTES,
+    }
+    peak = sum(planned.values())
+    return {
+        "free_bytes_now": free,
+        "already_occupied_bytes": {
+            name: directory_bytes(path) for name, path in (occupied or {}).items()
+        },
+        "planned_additional_bytes": planned,
+        "planned_peak_bytes": peak,
+        "projected_free_at_peak_bytes": free - peak + SAFETY_BYTES,
+        "fits": free >= peak,
+        "basis": "MEASURED_BYTES_PER_ROW_FROM_SYNTHETIC_FULL_SCALE_RUNS; spill and cache sizes "
+        "are the same for staged and unstaged preparation (staged filtered tables and matrices "
+        "are adopted into the cache by rename)",
+        "rule": "stop before an operation whose planned peak does not fit; never delete a cache "
+        "whose reports are not all terminal",
     }
 
 
@@ -119,6 +178,11 @@ def main(argv: list[str] | None = None) -> int:
     planner.add_argument("--path", type=Path, required=True)
     planner.add_argument("--fold-rows", type=int, required=True)
     planner.add_argument("--pending-input-bytes", type=int, default=0)
+    budgeter = commands.add_parser("budget")
+    budgeter.add_argument("--path", type=Path, required=True)
+    budgeter.add_argument("--fold-rows", type=int, required=True)
+    budgeter.add_argument("--data-bytes-pending", type=int, default=0)
+    budgeter.add_argument("--occupied", action="append", default=[], help="LABEL=PATH")
     releaser = commands.add_parser("release")
     releaser.add_argument("--cache-root", type=Path, required=True)
     releaser.add_argument("--cache-id", required=True)
@@ -127,6 +191,18 @@ def main(argv: list[str] | None = None) -> int:
     releaser.add_argument("--confirm", action="store_true")
     releaser.add_argument("--offline", action="store_true")
     args = parser.parse_args(argv)
+    if args.command == "budget":
+        occupied = dict(
+            (item.split("=", 1)[0], Path(item.split("=", 1)[1])) for item in args.occupied
+        )
+        result = budget(
+            probe=args.path,
+            fold_rows=args.fold_rows,
+            data_bytes_pending=args.data_bytes_pending,
+            occupied=occupied,
+        )
+        print(json.dumps(result, indent=1))
+        return 0 if result["fits"] else 2
     if args.command == "plan":
         result = plan(
             free_bytes=shutil.disk_usage(args.path).free,

@@ -90,3 +90,26 @@ def test_release_rejects_bad_ids_and_aliases(tmp_path) -> None:
             confirm=True,
             offline=True,
         )
+
+
+def test_budget_counts_every_component_and_refuses_unsafe_plans(tmp_path) -> None:
+    (tmp_path / "repo").mkdir()
+    (tmp_path / "repo/file").write_bytes(b"x" * 4096)
+    result = low_memory_disk.budget(
+        probe=tmp_path,
+        fold_rows=4_922_887,
+        data_bytes_pending=10_998_003_736,
+        occupied={"repo": tmp_path / "repo"},
+    )
+    assert result["already_occupied_bytes"] == {"repo": 4096}
+    assert set(result["planned_additional_bytes"]) == {
+        "dataset_still_to_download",
+        "spill_unfiltered_fold_segments",
+        "prepared_cache_tables_and_matrices",
+        "models_reports_checkpoints",
+        "logs_and_telemetry",
+        "filesystem_safety_margin",
+    }
+    assert result["planned_peak_bytes"] == sum(result["planned_additional_bytes"].values())
+    huge = low_memory_disk.budget(probe=tmp_path, fold_rows=10**9, data_bytes_pending=0)
+    assert huge["fits"] is False

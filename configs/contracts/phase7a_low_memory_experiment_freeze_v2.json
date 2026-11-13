@@ -1,0 +1,185 @@
+{
+ "freeze_id": "phase7a_low_memory_experiment_freeze_v2",
+ "status": "EXPERIMENTAL_SOURCE_FREEZE",
+ "branch": "experiment/phase7-cloud-training-prep",
+ "predecessor": {
+  "freeze_id": "phase7a_low_memory_experiment_freeze_v1",
+  "commit": "2da4a749b9b7c0299d90166264d8f289c57dec3a",
+  "frozen_identities": {
+   "PREPARATION_DIGEST": "cc248b41015f539ae95719098a0f497816171defe596e3ff69c5b5150a3ca72e",
+   "EXPERIMENT_CONTROL_DIGEST": "263f46c9e0550b67ad8c2719279af9f8bc61b0a928e72b53e14dac4600db4497",
+   "SELECTION_PROTOCOL_DIGEST": "562dbf8203f476e446cd9968d336fa74b022924c01e5b1c34f3167c065c73826",
+   "SCIENTIFIC_SOURCE_DIGEST_WITHOUT_SIDECAR": "32bbe2cf364aa4e3af3d7aaa57342cfaad9c218a705e141ad470eac952d3b58c",
+   "SCIENTIFIC_SOURCE_DIGEST_WITH_SIDECAR": "COMPUTED_AT_REAL_DATA_ADMISSION (depends on the verified sidecar file)"
+  }
+ },
+ "does_not_replace": [
+  "configs/contracts/phase7_scientific_baseline_v1_9.json (historical byte freeze, unchanged)",
+  "verified source package 7a64ee0da53961940932dacaddb5022be7b299bb and its six handoff identities",
+  "configs/contracts/phase7a_low_memory_experiment_freeze_v1.json (kept byte-identical; anchored to commit 2da4a74)"
+ ],
+ "frozen_identities": {
+  "PREPARATION_DIGEST": "f182174ae75cdbc8bb6a9562f198452ce9f91f09b50d1f023b67e2cec79523e5",
+  "EXPERIMENT_CONTROL_DIGEST": "c2a29440094eeed42e31d0e23b4c7cceb9f23633b339a2a8bbe62991c96e537c",
+  "SELECTION_PROTOCOL_DIGEST": "562dbf8203f476e446cd9968d336fa74b022924c01e5b1c34f3167c065c73826",
+  "SCIENTIFIC_SOURCE_DIGEST_WITHOUT_SIDECAR": "cf919ec85d59caddc568941e0a425e7597b60a1f18e61345c9b338053fd86351",
+  "SCIENTIFIC_SOURCE_DIGEST_WITH_SIDECAR": "COMPUTED_AT_REAL_DATA_ADMISSION (depends on the verified sidecar file)"
+ },
+ "scientific_contract": {
+  "configuration_hash": "93f987736b1a79d26b773957",
+  "scientific_contract_values_changed": false,
+  "core20_symbols_changed": false,
+  "a6_feature_count": 109,
+  "targets_or_horizons_changed": false,
+  "fold_calendar_purge_embargo_changed": false,
+  "model_hyperparameters_changed": false,
+  "precision": "float64 matrices unchanged",
+  "training_data_reduced": false,
+  "prospective_holdout_status": "LOCKED_UNUSED",
+  "prospective_holdout_start": "2026-08-01T00:00:00+00:00",
+  "prospective_holdout_used": false,
+  "prospective_holdout_evaluation_authorized": false,
+  "july_2026_used": false
+ },
+ "profiles": {
+  "selector": "PHASE7_MEMORY_PROFILE=low_memory (default 'standard' keeps original code paths)",
+  "standard_profile_admission": "unchanged: >=64 GiB effective RAM, >=8 CPUs, >=150 GB local disk",
+  "low_memory_profile_admission": ">=13 GiB effective RAM, >=4 CPUs, >=14 GiB free (prepare) / >=2 GiB free (train), separate owner approval; training also requires a VALIDATED cached-vs-uncached record for the current source",
+  "staging_selector": "PHASE7_STAGING_DAYS in {1,3,7,14,30}; requires PHASE7_MEMORY_PROFILE=low_memory; unset = no staging"
+ },
+ "scientific_safety": [
+  "Gold features/labels (rolling windows, warm-ups, lags, HTF as-of joins, horizons) are precomputed columns; staging never recomputes them.",
+  "Symbol eligibility is computed once per fold at train_end (point in time), exactly as before.",
+  "Cross-sectional context groups strictly by feature_time (cross_section.py), so per-window binding with same-window context rows is exact.",
+  "Segment assignment, actual-label_end_time purge and embargo are per-row predicates against fixed fold boundaries.",
+  "Half-open windows partition the fold; rows are appended in (feature_time, symbol) order; no duplicates, no gaps.",
+  "Fold-level checks (segment size, holdout, Cal-A/Cal-B separation) run on the completed segments; the full Gold manifest is still checksum-verified before any read."
+ ],
+ "changed_files": [
+  {
+   "path": "pyproject.toml",
+   "v1_commit_sha256": "8666af4b1a2ebd347c3eb6a26a1c47e6fa5b2b3d76ac017d55230d5d40b1ceba",
+   "new_sha256": "9afb1d23dec6b91802c895e0e26b507995fbf18aedf88c359e6742b2d905d704",
+   "listed_in_v1_9_historical_freeze": false,
+   "in_scientific_source_identity": false,
+   "in_preparation_identity": false,
+   "in_experiment_control_identity": false,
+   "change": "Registers the `model_fit` pytest marker (test selection only)."
+  },
+  {
+   "path": "src/crypto_ai/phase7/admission.py",
+   "v1_commit_sha256": "f0cfba0b71aad1b87bad176193d9f5953f033467d27c297ad9007e48baa206da",
+   "new_sha256": "d39ba3f00247d2a240606a71008a6017a069a4a9187013f23db1a409a4a2a032",
+   "listed_in_v1_9_historical_freeze": false,
+   "in_scientific_source_identity": false,
+   "in_preparation_identity": false,
+   "in_experiment_control_identity": true,
+   "change": "Validates PHASE7_STAGING_DAYS (requires low_memory; 1/3/7/14/30) and records staging_days in the admission record. Standard path unchanged."
+  },
+  {
+   "path": "src/crypto_ai/phase7/folds.py",
+   "v1_commit_sha256": "559b583e22a5d200acb0e84ffc9d7bae2760e1cf64ab6a51f299bc1da0620017",
+   "new_sha256": "c620dc064821da71eac670e53e62443ae84e8c07b37043731b19a079850d5cb5",
+   "listed_in_v1_9_historical_freeze": true,
+   "in_scientific_source_identity": true,
+   "in_preparation_identity": true,
+   "in_experiment_control_identity": false,
+   "change": "slice_multiasset_fold membership/gap gate and TRAIN-only metadata extracted VERBATIM into fold_membership()/fold_metadata() so the staged slicer reuses them; slice_multiasset_fold output unchanged (full suite + equivalence tests)."
+  },
+  {
+   "path": "src/crypto_ai/phase7/low_memory.py",
+   "v1_commit_sha256": "39e91b3f91b4b9cd2324dbde278d5f180d9ce80ebe851823dfaf8118f42fc849",
+   "new_sha256": "fb4a25d74ffa542daf0999cd96a86507b3664a449cd03b44396390d98a79f237",
+   "listed_in_v1_9_historical_freeze": false,
+   "in_scientific_source_identity": true,
+   "in_preparation_identity": true,
+   "in_experiment_control_identity": false,
+   "change": "finite_rows streams scattered selections to IPC only when staging is active; stream_filter_to_file/adopt_table_file added. Non-staged low-memory behavior unchanged (byte-identical cache test still passes)."
+  },
+  {
+   "path": "src/crypto_ai/phase7/low_memory_disk.py",
+   "v1_commit_sha256": "254a709a391c2ebe55b56247b2bbae378c48c107e8d06335fa205756447ad2ce",
+   "new_sha256": "2ec8b53adbda3df9b8efddb39ecdd88770fb702ea1debb9eb6c72590c4ffdaea",
+   "listed_in_v1_9_historical_freeze": false,
+   "in_scientific_source_identity": false,
+   "in_preparation_identity": false,
+   "in_experiment_control_identity": false,
+   "change": "budget(): full peak-disk plan using measured free space and occupied directories."
+  },
+  {
+   "path": "src/crypto_ai/phase7/low_memory_validation.py",
+   "v1_commit_sha256": "36d203c7b9ef8d23734e7c96b46fb08b3e78d52472fae1301b8b5485af377fcd",
+   "new_sha256": "156102fb6f1d1346f70b14c1b74cac71635c5828ff928af02bf40fd02103ee4a",
+   "listed_in_v1_9_historical_freeze": false,
+   "in_scientific_source_identity": true,
+   "in_preparation_identity": false,
+   "in_experiment_control_identity": false,
+   "change": "column_digest hashes values and validity as separate continuous streams, making the cached-vs-uncached digest independent of record-batch layout (stricter, not weaker: still NaN-bit exact)."
+  },
+  {
+   "path": "src/crypto_ai/phase7/preparation_identity.py",
+   "v1_commit_sha256": "2d7f2deb543986fd1b7344b889994b46483e1dc16b6a2f3d33b6fd001ce3b494",
+   "new_sha256": "094d2f00b86c179a8d8ff4bb8d990387c2a9b564465e7c797c32489bffa7cb53",
+   "listed_in_v1_9_historical_freeze": false,
+   "in_scientific_source_identity": false,
+   "in_preparation_identity": false,
+   "in_experiment_control_identity": false,
+   "change": "staged_fold.py added to the preparation identity."
+  },
+  {
+   "path": "src/crypto_ai/phase7/prepared_cache.py",
+   "v1_commit_sha256": "87f247796886d4694a29605eb90fc61f9672de09b7de514356d073f7ffe20551",
+   "new_sha256": "2390e327bb79eb29856cae901af3126665860d0d64d51c4797e66153df23d5e0",
+   "listed_in_v1_9_historical_freeze": false,
+   "in_scientific_source_identity": true,
+   "in_preparation_identity": true,
+   "in_experiment_control_identity": false,
+   "change": "Adopts staged filtered-table IPC files by rename (opt-in, staging only)."
+  },
+  {
+   "path": "src/crypto_ai/phase7/run_contract.py",
+   "v1_commit_sha256": "a713f14e3caee9ed97f0bd0a370b0621ccce64cfbce9fdd2df132fd523c11ea7",
+   "new_sha256": "298710bf819272d000b18adf5fac744ffce4f3abe97bb3c9f776c43faf177df3",
+   "listed_in_v1_9_historical_freeze": false,
+   "in_scientific_source_identity": false,
+   "in_preparation_identity": false,
+   "in_experiment_control_identity": true,
+   "change": "PHASE7_STAGING_DAYS added to the known environment names."
+  },
+  {
+   "path": "src/crypto_ai/phase7/run_persistence.py",
+   "v1_commit_sha256": null,
+   "new_sha256": "5b73d00642ced8a642b8762bab66a951d0545eb231bd9e1fbe21656ecdd45936",
+   "listed_in_v1_9_historical_freeze": false,
+   "in_scientific_source_identity": false,
+   "in_preparation_identity": false,
+   "in_experiment_control_identity": false,
+   "change": "NEW: export/restore of small completed run artifacts with SHA-256 manifest (operational)."
+  },
+  {
+   "path": "src/crypto_ai/phase7/staged_fold.py",
+   "v1_commit_sha256": null,
+   "new_sha256": "6a93d2d79effa3f6f4b2d45464b91b96e1c827b6c3f1cadd83b4ed45b61bc238",
+   "listed_in_v1_9_historical_freeze": false,
+   "in_scientific_source_identity": true,
+   "in_preparation_identity": true,
+   "in_experiment_control_identity": false,
+   "change": "NEW: chronological batch-staged fold slicing (opt-in)."
+  },
+  {
+   "path": "src/crypto_ai/phase7/training.py",
+   "v1_commit_sha256": "147a882782154f2402c5b8a0998b8ca535febd871efa0ec79c3a39dd1847025e",
+   "new_sha256": "4a0751ab17262cde823a8ca371b8dd1d4d06f24e872527bc5729887a2aa74bd5",
+   "listed_in_v1_9_historical_freeze": true,
+   "in_scientific_source_identity": true,
+   "in_preparation_identity": true,
+   "in_experiment_control_identity": false,
+   "change": "Opt-in staged branch in the fold load path (else-branch is the previous code, re-indented only); staged_fold.py added to TRAINING_CRITICAL_SOURCE_FILES."
+  }
+ ],
+ "verification": {
+  "model_fitting_today": "NONE: all tests ran under experiments/phase7_low_memory/tools/no_fit_guard.py",
+  "equivalence": "tests/phase7/test_low_memory_equivalence.py: staged (5h/1d/3d/7d/30d) == standard for tables, report, eligibility, matrix bytes, cached-vs-uncached digest",
+  "full_scale_synthetic_preparation_only": "experiments/phase7_low_memory/results/staged_compare_*.json: identical digests across 2020-2022 year boundaries; peak anon 4.99 GiB staged vs 8.83 GiB unstaged"
+ }
+}
