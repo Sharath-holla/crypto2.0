@@ -38,6 +38,13 @@ def pytest_configure(config: pytest.Config) -> None:
     lgb.sklearn.train = _forbid("lightgbm.sklearn.train")
     lgb.Booster.refit = _forbid("Booster.refit")
     lgb.Booster.update = _forbid("Booster.update")
-    for name in ("Ridge", "RidgeCV", "LinearRegression", "Lasso", "ElasticNet", "LogisticRegression"):
+    for name in (
+        "Ridge",
+        "RidgeCV",
+        "LinearRegression",
+        "Lasso",
+        "ElasticNet",
+        "LogisticRegression",
+    ):
         getattr(linear, name).fit = _forbid(f"sklearn.{name}.fit")
     config.addinivalue_line("markers", "no_fit_guard: model fitting is blocked in this session")
