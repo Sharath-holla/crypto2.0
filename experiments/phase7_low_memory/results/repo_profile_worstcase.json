@@ -1,0 +1,107 @@
+{
+ "summary": {
+  "profile": "low_memory",
+  "peak_rss_gib": 13.252,
+  "peak_anon_gib": 10.338,
+  "min_disk_free_gb": 7.43,
+  "seconds": 217.5,
+  "cached_vs_uncached": "IDENTICAL",
+  "pid": 1853
+ },
+ "stages": [
+  {
+   "stage": "0_start",
+   "rss_gib": 0.171,
+   "anon_gib": 0.099,
+   "stage_peak_rss_gib": 0.171,
+   "stage_peak_anon_gib": 0.099,
+   "disk_free_gb": 24.54,
+   "seconds": 1.2,
+   "spill": "/tmp/claude-0/-home-user-crypto2-0/e101aef6-e7b7-5041-a56a-83ee5bd3d52e/scratchpad/mem/cache/.low-memory-spill-1853-82ab50076c48"
+  },
+  {
+   "stage": "1_load_fold_rows",
+   "rss_gib": 6.631,
+   "anon_gib": 6.553,
+   "stage_peak_rss_gib": 8.064,
+   "stage_peak_anon_gib": 7.987,
+   "disk_free_gb": 24.54,
+   "seconds": 12.6,
+   "rows": 5783040,
+   "columns": 131
+  },
+  {
+   "stage": "2_context_source_sidecar_equivalent",
+   "rss_gib": 6.992,
+   "anon_gib": 6.914,
+   "stage_peak_rss_gib": 7.032,
+   "stage_peak_anon_gib": 6.954,
+   "disk_free_gb": 24.54,
+   "seconds": 0.3
+  },
+  {
+   "stage": "3_filter_and_bind_context",
+   "rss_gib": 7.763,
+   "anon_gib": 7.684,
+   "stage_peak_rss_gib": 10.417,
+   "stage_peak_anon_gib": 10.338,
+   "disk_free_gb": 24.54,
+   "seconds": 44.8
+  },
+  {
+   "stage": "4_slice_and_spill",
+   "rss_gib": 0.838,
+   "anon_gib": 0.759,
+   "stage_peak_rss_gib": 7.834,
+   "stage_peak_anon_gib": 7.755,
+   "disk_free_gb": 18.05,
+   "seconds": 3.8,
+   "segments": {
+    "train": 4210300,
+    "_test": 529440
+   }
+  },
+  {
+   "stage": "5_finite_and_memmap_matrices",
+   "rss_gib": 12.908,
+   "anon_gib": 6.299,
+   "stage_peak_rss_gib": 12.954,
+   "stage_peak_anon_gib": 6.342,
+   "disk_free_gb": 14.01,
+   "seconds": 18.5,
+   "train_x": [
+    4126704,
+    109
+   ]
+  },
+  {
+   "stage": "5b_uncached_digest",
+   "rss_gib": 12.759,
+   "anon_gib": 6.314,
+   "stage_peak_rss_gib": 12.975,
+   "stage_peak_anon_gib": 6.528,
+   "disk_free_gb": 14.01,
+   "seconds": 28.7
+  },
+  {
+   "stage": "6_cache_write_with_matrix_adoption",
+   "rss_gib": 6.391,
+   "anon_gib": 6.38,
+   "stage_peak_rss_gib": 13.252,
+   "stage_peak_anon_gib": 6.838,
+   "disk_free_gb": 7.43,
+   "seconds": 57.1,
+   "cache_gb": 10.62
+  },
+  {
+   "stage": "7_read_only_reload_and_compare",
+   "rss_gib": 10.764,
+   "anon_gib": 1.02,
+   "stage_peak_rss_gib": 10.984,
+   "stage_peak_anon_gib": 6.38,
+   "disk_free_gb": 7.43,
+   "seconds": 49.4,
+   "differences": []
+  }
+ ]
+}

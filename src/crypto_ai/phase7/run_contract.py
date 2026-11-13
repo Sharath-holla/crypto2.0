@@ -44,6 +44,8 @@ KNOWN_ENVIRONMENT = frozenset(
         "PHASE7_LOG_ROOT",
         "PHASE7_LOG_ROTATE_KEEP",
         "PHASE7_LOG_ROTATE_MB",
+        "PHASE7_LOW_MEMORY_VALIDATION_FILE",
+        "PHASE7_MEMORY_PROFILE",
         "PHASE7_METRICS_EVERY",
         "PHASE7_MIN_AVAILABLE_RAM_GB",
         "PHASE7_MIN_FREE_DISK_GB",
@@ -59,6 +61,7 @@ KNOWN_ENVIRONMENT = frozenset(
         "PHASE7_TARGET_VERSION",
         "PHASE7_TEMP_ROOT",
         "PHASE7_TOTAL_CPU_THREADS",
+        "PHASE7_UNCACHED_DIGEST_FILE",
         "PHASE7_UV_BIN",
         "PHASE7_OWNER_APPROVAL_FILE",
     ]
@@ -87,6 +90,32 @@ def smoke_resource_errors(snapshot: Mapping[str, Any]) -> list[str]:
     ):
         if int(snapshot[key]) < minimum:
             errors.append(label)
+    return errors
+
+
+# ADDED BY CLAUDE (2026-11-13): explicit, opt-in low-memory profile floors. They apply ONLY when
+# PHASE7_MEMORY_PROFILE=low_memory; the standard profile keeps the 64 GiB / 8 CPU / 150 GB floor
+# above unchanged. Basis (experiments/phase7_low_memory/REPORT.md, synthetic Fold-0 shape):
+# measured preparation peak anonymous memory 11.15 GiB (10.56 GiB for the all-20-symbols worst
+# case), training from the read-only cache <= 2.0 GiB. RAM is the container-effective total
+# (cgroup-aware); disk is FREE space on the cache filesystem, not device size, because a device
+# can be much larger than the writable allowance.
+LOW_MEMORY_MIN_RAM_BYTES = 13 * 1024**3
+LOW_MEMORY_MIN_CPUS = 4
+LOW_MEMORY_MIN_FREE_DISK_BYTES = {"prepare": 14 * 1024**3, "train": 2 * 1024**3}
+
+
+def low_memory_resource_errors(snapshot: Mapping[str, Any], mode: str) -> list[str]:
+    if mode not in LOW_MEMORY_MIN_FREE_DISK_BYTES:
+        raise ValueError(f"BAD_ADMISSION_MODE: {mode!r}")
+    errors = []
+    if int(snapshot["ram_total_bytes"]) < LOW_MEMORY_MIN_RAM_BYTES:
+        errors.append("low-memory profile: effective RAM >=13 GiB")
+    if int(snapshot["cpu_count"]) < LOW_MEMORY_MIN_CPUS:
+        errors.append("low-memory profile: effective CPUs >=4")
+    if int(snapshot["disk_free_bytes"]) < LOW_MEMORY_MIN_FREE_DISK_BYTES[mode]:
+        gib = LOW_MEMORY_MIN_FREE_DISK_BYTES[mode] // 1024**3
+        errors.append(f"low-memory profile: free cache-filesystem space >={gib} GiB for {mode}")
     return errors
 
 
@@ -125,7 +154,9 @@ def validate_owner_approval(
     }
 
 
-def approval_binding(config: Any, spec_id: str, fold_id: str) -> dict[str, Any]:
+def approval_binding(
+    config: Any, spec_id: str, fold_id: str, *, mode: str | None = None
+) -> dict[str, Any]:
     from crypto_ai.phase5.folds import plan_folds
     from crypto_ai.phase7.context_sidecar import SIDECAR_ENV
     from crypto_ai.phase7.gold_validation import locate_gold_manifest
@@ -142,7 +173,7 @@ def approval_binding(config: Any, spec_id: str, fold_id: str) -> dict[str, Any]:
         raise ValueError("M01_FEATURE_CONTEXT_SIDECAR_REQUIRED")
     gold = locate_gold_manifest(RuntimePaths.resolve(config.paths).gold_root)
     manifest = json.loads(gold.read_text())
-    return {
+    binding = {
         **identity_summary(gold, Path(value)),
         "configuration_hash": config.configuration_hash,
         "dataset_id": manifest["dataset_id"],
@@ -155,6 +186,26 @@ def approval_binding(config: Any, spec_id: str, fold_id: str) -> dict[str, Any]:
         "minimum_effective_cpus": 8,
         "minimum_local_disk_bytes": 150_000_000_000,
     }
+    # ADDED BY CLAUDE (2026-11-13): the low-memory profile needs its OWN explicit owner approval
+    # (a standard-profile approval never matches it), and training additionally binds the exact
+    # VALIDATED cached-versus-uncached record for the current source.
+    from crypto_ai.phase7 import low_memory
+
+    if low_memory.enabled():
+        binding.pop("minimum_local_disk_bytes")
+        binding.update(
+            {
+                "memory_profile": low_memory.LOW_MEMORY,
+                "minimum_effective_ram_bytes": LOW_MEMORY_MIN_RAM_BYTES,
+                "minimum_effective_cpus": LOW_MEMORY_MIN_CPUS,
+                "minimum_free_disk_bytes": LOW_MEMORY_MIN_FREE_DISK_BYTES[mode or "train"],
+            }
+        )
+        if mode == "train":
+            from crypto_ai.phase7.low_memory_validation import require_validation
+
+            binding["low_memory_validation_sha256"] = require_validation()["sha256"]
+    return binding
 
 
 def require_owner_contract(config: Any, mode: str, spec_id: str, fold_id: str) -> dict[str, Any]:
@@ -163,6 +214,11 @@ def require_owner_contract(config: Any, mode: str, spec_id: str, fold_id: str) -
         raise ValueError(
             "OWNER_APPROVAL_REQUIRED: cost/deadline and exact smoke identity must be approved"
         )
-    return validate_owner_approval(
-        Path(value), expected=approval_binding(config, spec_id, fold_id), mode=mode
+    from crypto_ai.phase7 import low_memory
+
+    expected = (
+        approval_binding(config, spec_id, fold_id, mode=mode)
+        if low_memory.enabled()
+        else approval_binding(config, spec_id, fold_id)
     )
+    return validate_owner_approval(Path(value), expected=expected, mode=mode)

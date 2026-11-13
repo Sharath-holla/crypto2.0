@@ -64,6 +64,9 @@ PREPARATION_SOURCE_FILES: tuple[str, ...] = (
     "src/crypto_ai/phase7/folds.py",
     "src/crypto_ai/phase7/gold.py",
     "src/crypto_ai/phase7/gold_validation.py",
+    # ADDED BY CLAUDE (2026-11-13): the opt-in low-memory profile can build the prepared tables
+    # and matrices, so its source binds the cache identity like every other preparation module.
+    "src/crypto_ai/phase7/low_memory.py",
     "src/crypto_ai/phase7/prepared_cache.py",
     "src/crypto_ai/phase7/quality.py",
     "src/crypto_ai/phase7/registry.py",

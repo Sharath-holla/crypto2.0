@@ -395,3 +395,38 @@ def test_stale_spill_directories_of_dead_processes_are_removed(tmp_path: Path) -
     )
     assert low_memory.remove_stale_spill_directories(tmp_path) == [stale.name]
     assert live.exists() and not stale.exists()
+
+
+def test_prepared_digest_matches_after_read_only_reload_and_detects_changes(
+    world: dict, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from crypto_ai.phase7.low_memory_validation import _differences, prepared_digest
+
+    monkeypatch.setenv(low_memory.PROFILE_ENV, low_memory.LOW_MEMORY)
+    with low_memory.spill_session(tmp_path / "cache"):
+        result = _prepare(world, tmp_path / "cache")
+        uncached = prepared_digest(result["fold"], result["prepared"])
+        cache_dir = next(p for p in (tmp_path / "cache").iterdir() if len(p.name) == 64)
+        identity = json.loads((cache_dir / "manifest.json").read_text())["identity"]
+        loaded = PreparedDataCache(tmp_path / "cache", "read_only").load(identity, PLAN)
+        assert _differences(uncached, prepared_digest(loaded.fold, loaded.prepared)) == []
+        altered = loaded.prepared.model_inputs.train_x.copy()
+        altered[0, 0] = np.nextafter(altered[0, 0], np.inf)
+        changed = prepared_digest(
+            loaded.fold,
+            type(loaded.prepared)(
+                **{
+                    **{name: getattr(loaded.prepared, name) for name in loaded.prepared.__slots__},
+                    "model_inputs": type(loaded.prepared.model_inputs)(
+                        **{
+                            **{
+                                name: getattr(loaded.prepared.model_inputs, name)
+                                for name in loaded.prepared.model_inputs.__slots__
+                            },
+                            "train_x": altered,
+                        }
+                    ),
+                }
+            ),
+        )
+        assert _differences(uncached, changed) == ["/arrays/train_x/sha256"]

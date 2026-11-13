@@ -159,7 +159,20 @@ def admit_official_training(
     from crypto_ai.phase7.runtime import system_snapshot
 
     machine = system_snapshot(existing_ancestor(runtime.cache_root))
-    if errors := smoke_resource_errors(machine):
+    # CHANGED BY CLAUDE (2026-11-13): the 64 GiB standard floor is unchanged; only an explicit
+    # PHASE7_MEMORY_PROFILE=low_memory selects the measured low-memory floors (and a separate
+    # owner approval, plus a VALIDATED cached-vs-uncached record for training).
+    from crypto_ai.phase7 import low_memory
+    from crypto_ai.phase7.run_contract import low_memory_resource_errors
+
+    try:
+        memory_profile = low_memory.memory_profile(env)
+    except ValueError as exc:
+        raise AdmissionError(str(exc)) from exc
+    if memory_profile == low_memory.LOW_MEMORY:
+        if errors := low_memory_resource_errors(machine, mode):
+            raise AdmissionError("LOW_MEMORY_RESOURCES_REQUIRED: " + "; ".join(errors))
+    elif errors := smoke_resource_errors(machine):
         raise AdmissionError("SMOKE_RESOURCES_REQUIRED: " + "; ".join(errors))
     from crypto_ai.phase5.folds import plan_folds
 
@@ -198,6 +211,7 @@ def admit_official_training(
         "configuration_hash": config.configuration_hash,
         "backend": "cpu" if smoke else env.get(DEVICE_ENV, "cpu"),
         "model_parallelism": budget.model_parallelism,
+        "memory_profile": memory_profile,
         "cache_mode": env.get("PHASE7_CACHE_MODE", "auto"),
         "experiment_control_identity": control,
         **protocol,

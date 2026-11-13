@@ -2284,6 +2284,14 @@ def _run_phase7_training_owned(
                         elapsed_seconds=time.monotonic() - prep_started,
                         **memory_snapshot(),
                     )
+                    # CHANGED BY CLAUDE (2026-11-13): observation only. With
+                    # PHASE7_UNCACHED_DIGEST_FILE set, record the UNCACHED preparation digest for
+                    # the cached-versus-uncached qualification; nothing here feeds the run.
+                    from crypto_ai.phase7.low_memory_validation import write_uncached_digest
+
+                    write_uncached_digest(
+                        fold_data, prepared_cache, prepared_cache_id(cache_identity)
+                    )
                     cache_path = durable_cache.write(cache_identity, fold_data, prepared_cache)
                     if cache_path is not None:
                         cached_bundle = durable_cache.open_published(cache_identity, plan)
