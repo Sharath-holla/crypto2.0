@@ -25,7 +25,7 @@ from pathlib import Path
 def build(args: argparse.Namespace) -> dict:
     from crypto_ai.phase5.folds import plan_folds
     from crypto_ai.phase7.config import load_phase7_config
-    from crypto_ai.phase7.run_contract import SMOKE_SPEC, approval_binding
+    from crypto_ai.phase7.run_contract import approval_binding
 
     config = load_phase7_config(args.config)
     first = plan_folds(
@@ -43,17 +43,18 @@ def build(args: argparse.Namespace) -> dict:
         "status": "APPROVED",
         "owner": args.owner,
         "mode": args.mode,
-        "binding": approval_binding(config, SMOKE_SPEC, first.fold_id, mode=args.mode),
+        "binding": approval_binding(config, args.spec_id, first.fold_id, mode=args.mode),
         "stop_deadline_utc": deadline.isoformat(),
         "cost_ceiling": args.cost_ceiling,
         "cost_currency": args.currency,
-        "scope": f"ONE {args.mode} run of {SMOKE_SPEC} on {first.fold_id}; nothing else",
+        "scope": f"ONE {args.mode} run of {args.spec_id} on {first.fold_id}; nothing else",
     }
 
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--mode", choices=["prepare", "train"], required=True)
+    parser.add_argument("--spec-id", default="architecture-G0-A6-60m-raw")
     parser.add_argument("--owner", required=True)
     parser.add_argument("--deadline", required=True, help="UTC, e.g. 2026-11-14T18:00:00Z")
     parser.add_argument("--cost-ceiling", type=float, required=True)

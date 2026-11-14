@@ -212,3 +212,47 @@ def test_new_environment_names_are_known() -> None:
         "PHASE7_UNCACHED_DIGEST_FILE": "y",
     }
     assert set(validate_environment(names)) == set(names)
+
+
+def _binding_for(monkeypatch, tmp_path, spec_id: str, fold_index: int = 0, low: bool = True):
+    from crypto_ai.phase5.folds import plan_folds
+    from crypto_ai.phase7 import gold_validation, identity_summary, run_contract
+
+    manifest = tmp_path / "gold-manifest.json"
+    manifest.write_text(json.dumps({"dataset_id": "synthetic-gold"}))
+    monkeypatch.setattr(gold_validation, "locate_gold_manifest", lambda _root: manifest)
+    monkeypatch.setattr(identity_summary, "identity_summary", lambda *_: {"FIXTURE": "identity"})
+    monkeypatch.setenv("PHASE7_FEATURE_CONTEXT_SIDECAR", str(tmp_path / "sidecar"))
+    if low:
+        monkeypatch.setenv("PHASE7_MEMORY_PROFILE", "low_memory")
+    else:
+        monkeypatch.delenv("PHASE7_MEMORY_PROFILE", raising=False)
+    config = load_phase7_config(CONFIG)
+    fold = plan_folds(
+        config.data_start, config.research_cutoff, config.prospective_holdout_start, config.schedule
+    )[fold_index]
+    return run_contract.approval_binding(config, spec_id, fold.fold_id, mode="prepare")
+
+
+def test_v3_scope_admits_exactly_the_fold0_60m_raw_group(env, tmp_path) -> None:
+    from crypto_ai.phase7.phase7a import enumerate_specs
+    from crypto_ai.phase7.run_contract import LOW_MEMORY_FOLD0_SCOPE_V3
+
+    names = {s["name"] for s in enumerate_specs(load_phase7_config(CONFIG))["specs"]}
+    group = {n for n in names if n.startswith("architecture-") and n.endswith("-A6-60m-raw")}
+    assert group == LOW_MEMORY_FOLD0_SCOPE_V3 and len(group) == 6
+    for spec in sorted(group):
+        assert _binding_for(env, tmp_path, spec)["spec_id"] == spec
+
+
+def test_v3_scope_refuses_other_specs_folds_and_the_standard_profile(env, tmp_path) -> None:
+    for spec, fold, low in (
+        ("architecture-C0-A6-15m-raw", 0, True),
+        ("architecture-C0-A6-60m-volatility_normalized", 0, True),
+        ("feature-ablation-G0-A0-60m-raw", 0, True),
+        ("architecture-C0-A6-60m-raw", 1, True),
+        ("architecture-C0-A6-60m-raw", 0, False),
+    ):
+        with pytest.raises(ValueError, match="OWNER_SCOPE_REFUSED"):
+            _binding_for(env, tmp_path, spec, fold, low)
+    assert _binding_for(env, tmp_path, "architecture-G0-A6-60m-raw", 0, False)["spec_id"]

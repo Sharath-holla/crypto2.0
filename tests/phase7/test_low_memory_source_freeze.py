@@ -24,6 +24,8 @@ ROOT = Path(__file__).parents[2]
 CONTRACTS = ROOT / "configs/contracts"
 V1 = CONTRACTS / "phase7a_low_memory_experiment_freeze_v1.json"
 V2 = CONTRACTS / "phase7a_low_memory_experiment_freeze_v2.json"
+V3 = CONTRACTS / "phase7a_low_memory_experiment_freeze_v3.json"
+V2_COMMIT = "57f702e"
 V1_COMMIT = "2da4a749b9b7c0299d90166264d8f289c57dec3a"
 
 
@@ -42,9 +44,16 @@ def test_v1_file_hashes_match_the_v1_commit() -> None:
         assert hashlib.sha256(source).hexdigest() == item["new_sha256"], item["path"]
 
 
-def test_current_identities_match_the_v2_freeze(monkeypatch) -> None:
+def test_v2_record_and_files_are_anchored_to_their_commit() -> None:
+    assert V2.read_bytes() == historical_blob(ROOT, V2_COMMIT, str(V2.relative_to(ROOT)))
+    for item in _load(V2)["changed_files"]:
+        source = historical_blob(ROOT, V2_COMMIT, item["path"])
+        assert hashlib.sha256(source).hexdigest() == item["new_sha256"], item["path"]
+
+
+def test_current_identities_match_the_v3_freeze(monkeypatch) -> None:
     monkeypatch.delenv("PHASE7_FEATURE_CONTEXT_SIDECAR", raising=False)
-    frozen = _load(V2)["frozen_identities"]
+    frozen = _load(V3)["frozen_identities"]
     assert preparation_source_identity()["manifest_sha256"] == frozen["PREPARATION_DIGEST"]
     assert (
         experiment_control_identity(asdict(current_config()))["manifest_sha256"]
@@ -60,10 +69,20 @@ def test_current_identities_match_the_v2_freeze(monkeypatch) -> None:
     )
 
 
-def test_v2_changed_files_record_current_bytes_and_v1_predecessors() -> None:
+def test_v2_predecessor_is_v1() -> None:
     record = _load(V2)
     assert record["predecessor"]["commit"] == V1_COMMIT
     assert record["predecessor"]["frozen_identities"] == _load(V1)["frozen_identities"]
+
+
+def test_v3_changed_files_record_current_bytes_and_scope() -> None:
+    from crypto_ai.phase7.run_contract import LOW_MEMORY_FOLD0_SCOPE_V3
+
+    record = _load(V3)
+    assert record["predecessor"]["frozen_identities"] == _load(V2)["frozen_identities"]
+    assert record["unchanged_by_v3"]["PREPARATION_DIGEST"] is True
+    assert record["unchanged_by_v3"]["SCIENTIFIC_SOURCE_DIGEST_WITHOUT_SIDECAR"] is True
+    assert set(record["approved_scope_v3"]["specs"]) == set(LOW_MEMORY_FOLD0_SCOPE_V3)
     assert record["scientific_contract"]["scientific_contract_values_changed"] is False
     assert record["scientific_contract"]["prospective_holdout_status"] == "LOCKED_UNUSED"
     for item in record["changed_files"]:

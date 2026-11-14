@@ -12,6 +12,18 @@ from typing import Any
 
 APPROVAL_ENV = "PHASE7_OWNER_APPROVAL_FILE"
 SMOKE_SPEC = "architecture-G0-A6-60m-raw"
+# ADDED BY CLAUDE (2026-11-14, freeze v3): the complete Fold-0 CORE/A6/60m/raw group of the frozen
+# Phase 7A grid (4 architectures + 2 G0 ablations). Exactly these names; nothing is derived.
+LOW_MEMORY_FOLD0_SCOPE_V3 = frozenset(
+    {
+        "architecture-G0-A6-60m-raw",
+        "architecture-C0-A6-60m-raw",
+        "architecture-P0-A6-60m-raw",
+        "architecture-H0-A6-60m-raw",
+        "architecture-G0-symbol-id-A6-60m-raw",
+        "architecture-G0-unbalanced-A6-60m-raw",
+    }
+)
 KNOWN_ENVIRONMENT = frozenset(
     [
         "PHASE7_ALLOW_CLOUD_RESEARCH",
@@ -167,8 +179,17 @@ def approval_binding(
     first = plan_folds(
         config.data_start, config.research_cutoff, config.prospective_holdout_start, config.schedule
     )[0]
-    if spec_id != SMOKE_SPEC or fold_id != first.fold_id:
-        raise ValueError("OWNER_SCOPE_REFUSED: only CORE/A6/60m/raw/Fold 0 is eligible")
+    # CHANGED BY CLAUDE (2026-11-14, freeze v3, owner-requested): under the opt-in low-memory
+    # profile the owner may approve, ONE run at a time, any member of the frozen Fold-0
+    # 60m/raw/A6 group below (all share one prepared cache). The standard profile and every other
+    # spec, horizon, target or fold remain refused.
+    from crypto_ai.phase7 import low_memory
+
+    allowed = LOW_MEMORY_FOLD0_SCOPE_V3 if low_memory.enabled() else frozenset({SMOKE_SPEC})
+    if spec_id not in allowed or fold_id != first.fold_id:
+        raise ValueError(
+            "OWNER_SCOPE_REFUSED: only the approved Fold-0 CORE/A6/60m/raw scope is eligible"
+        )
     value = os.environ.get(SIDECAR_ENV, "").strip()
     if not value:
         raise ValueError("M01_FEATURE_CONTEXT_SIDECAR_REQUIRED")

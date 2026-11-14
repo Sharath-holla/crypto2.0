@@ -1,0 +1,87 @@
+{
+ "freeze_id": "phase7a_low_memory_experiment_freeze_v3",
+ "status": "EXPERIMENTAL_SOURCE_FREEZE",
+ "branch": "experiment/phase7-cloud-training-prep",
+ "predecessor": {
+  "freeze_id": "phase7a_low_memory_experiment_freeze_v2",
+  "commit": "57f702e03ca4e73dbe6da7105acfe51917fa230d",
+  "frozen_identities": {
+   "PREPARATION_DIGEST": "f182174ae75cdbc8bb6a9562f198452ce9f91f09b50d1f023b67e2cec79523e5",
+   "EXPERIMENT_CONTROL_DIGEST": "c2a29440094eeed42e31d0e23b4c7cceb9f23633b339a2a8bbe62991c96e537c",
+   "SELECTION_PROTOCOL_DIGEST": "562dbf8203f476e446cd9968d336fa74b022924c01e5b1c34f3167c065c73826",
+   "SCIENTIFIC_SOURCE_DIGEST_WITHOUT_SIDECAR": "84949de2f6d696646987e3dbd40ae2c1fd6f405795dc8293c8a143d9b1885978",
+   "SCIENTIFIC_SOURCE_DIGEST_WITH_SIDECAR": "COMPUTED_AT_REAL_DATA_ADMISSION (depends on the verified sidecar file)"
+  }
+ },
+ "does_not_replace": [
+  "configs/contracts/phase7_scientific_baseline_v1_9.json (historical byte freeze, unchanged)",
+  "verified source package 7a64ee0da53961940932dacaddb5022be7b299bb and its six handoff identities",
+  "configs/contracts/phase7a_low_memory_experiment_freeze_v1.json (kept byte-identical; anchored to commit 2da4a74)",
+  "configs/contracts/phase7a_low_memory_experiment_freeze_v2.json (kept byte-identical; anchored to commit 57f702e)"
+ ],
+ "frozen_identities": {
+  "PREPARATION_DIGEST": "f182174ae75cdbc8bb6a9562f198452ce9f91f09b50d1f023b67e2cec79523e5",
+  "EXPERIMENT_CONTROL_DIGEST": "9c2bf8d88c155cc09654cb99d74b3101eb2afe3fdfc7420bc3cc296d30f5e819",
+  "SELECTION_PROTOCOL_DIGEST": "562dbf8203f476e446cd9968d336fa74b022924c01e5b1c34f3167c065c73826",
+  "SCIENTIFIC_SOURCE_DIGEST_WITHOUT_SIDECAR": "84949de2f6d696646987e3dbd40ae2c1fd6f405795dc8293c8a143d9b1885978",
+  "SCIENTIFIC_SOURCE_DIGEST_WITH_SIDECAR_REAL_DATA": "99e04452e8cde52b31677a1dc7948b2be3a945fc85bc3d09e22b7adda4f184ef (unchanged: run_contract.py is control-only)"
+ },
+ "unchanged_by_v3": {
+  "PREPARATION_DIGEST": true,
+  "SCIENTIFIC_SOURCE_DIGEST_WITHOUT_SIDECAR": true,
+  "consequence": "prepared cache aa280aaf...bd39 and validation record ecd83e71...3702 remain valid"
+ },
+ "approved_scope_v3": {
+  "profile": "low_memory",
+  "fold": "fold-000-a0e9a4f72689 only",
+  "research_view": "CORE",
+  "specs": [
+   "architecture-C0-A6-60m-raw",
+   "architecture-G0-A6-60m-raw",
+   "architecture-G0-symbol-id-A6-60m-raw",
+   "architecture-G0-unbalanced-A6-60m-raw",
+   "architecture-H0-A6-60m-raw",
+   "architecture-P0-A6-60m-raw"
+  ],
+  "already_complete": [
+   "architecture-G0-A6-60m-raw"
+  ],
+  "execution": "one spec per canonical benchmark run, one worker, CPU, read_only cache, separate owner approval per spec"
+ },
+ "scientific_contract": {
+  "configuration_hash": "93f987736b1a79d26b773957",
+  "scientific_contract_values_changed": false,
+  "core20_symbols_changed": false,
+  "a6_feature_count": 109,
+  "targets_or_horizons_changed": false,
+  "fold_calendar_purge_embargo_changed": false,
+  "model_hyperparameters_changed": false,
+  "precision": "float64 matrices unchanged",
+  "training_data_reduced": false,
+  "prospective_holdout_status": "LOCKED_UNUSED",
+  "prospective_holdout_start": "2026-08-01T00:00:00+00:00",
+  "prospective_holdout_used": false,
+  "prospective_holdout_evaluation_authorized": false,
+  "july_2026_used": false
+ },
+ "changed_files": [
+  {
+   "path": "scripts/cloud/write_owner_approval.py",
+   "v2_commit_sha256": "e5b3629868fd156677ce63372767dbe844d9e8583da347d6e1f79395a99a76b2",
+   "new_sha256": "32e559ef1b2d34abf17cc6e27523d69877f95889da4a97b86537751334d9f4e9",
+   "in_scientific_source_identity": false,
+   "in_preparation_identity": false,
+   "in_experiment_control_identity": false,
+   "change": "--spec-id option (default the original smoke spec)."
+  },
+  {
+   "path": "src/crypto_ai/phase7/run_contract.py",
+   "v2_commit_sha256": "298710bf819272d000b18adf5fac744ffce4f3abe97bb3c9f776c43faf177df3",
+   "new_sha256": "62c4f3b00a578a532e182fd916eb05eec0ec0dc18cab77e80251003288136b23",
+   "in_scientific_source_identity": false,
+   "in_preparation_identity": false,
+   "in_experiment_control_identity": true,
+   "change": "Adds LOW_MEMORY_FOLD0_SCOPE_V3 (the exact 6-spec Fold-0 CORE/A6/60m/raw group). approval_binding accepts a member only under PHASE7_MEMORY_PROFILE=low_memory and only for Fold 0; standard profile unchanged (single smoke spec). Each run still needs its own identity-bound owner approval naming that spec."
+  }
+ ]
+}
