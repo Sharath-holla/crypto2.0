@@ -13,7 +13,8 @@ Commands (all read-only unless ``--execute`` is given):
 
   verify  --root DIR [--record OUT]   size + SHA-256 of every listed file under DIR
   plan    --root DIR                  what is missing/invalid, bytes to fetch, disk check, cost
-  fetch   --root DIR --bucket B --prefix P [--execute]
+  fetch   --root DIR (--base-url URL | --bucket B --prefix P) [--path P ...|--batch-file F]
+          [--execute]
                                       download only missing/invalid files by EXACT object name
                                       (no bucket listing), resumable (.part + HTTP Range), each
                                       file SHA-256-verified before an atomic rename; progress is
@@ -138,6 +139,25 @@ def _log(state_dir: Path, event: dict[str, Any]) -> None:
         handle.write(json.dumps({"t": time.time(), **event}) + "\n")
 
 
+def tunnel_url(base_url: str, relative: str) -> str:
+    """Object URL on the Mac transfer server (scripts/cloud/mac_transfer_server.py)."""
+
+    return f"{base_url.rstrip('/')}/files/{urllib.parse.quote(relative, safe='/')}"
+
+
+def select(records: list[dict[str, Any]], paths: list[str] | None) -> list[dict[str, Any]]:
+    """Restrict to a batch; every requested path must be in the verified manifest."""
+
+    if not paths:
+        return records
+    wanted = set(paths)
+    chosen = [r for r in records if r["path"] in wanted]
+    unknown = wanted - {r["path"] for r in chosen}
+    if unknown:
+        raise SystemExit(f"NOT_IN_MANIFEST: {sorted(unknown)[:5]}")
+    return chosen
+
+
 def fetch_one(client: Any, url: str, record: dict[str, Any], root: Path, state_dir: Path) -> str:
     target = root / record["path"]
     part = target.with_name(target.name + ".part")
@@ -148,6 +168,11 @@ def fetch_one(client: Any, url: str, record: dict[str, Any], root: Path, state_d
         offset = 0
     headers = {"Range": f"bytes={offset}-"} if offset else {}
     with client.stream("GET", url, headers=headers) as response:
+        served_sha = response.headers.get("x-content-sha256")
+        if served_sha is not None and served_sha != record["sha256"]:
+            raise RuntimeError(
+                f"SOURCE_MANIFEST_MISMATCH: server SHA-256 differs for {record['path']}"
+            )
         if response.status_code == 416 and offset == int(record["bytes"]):
             pass
         elif response.status_code == 200 and offset:
@@ -179,8 +204,9 @@ def fetch(
     root: Path,
     records: list[dict[str, Any]],
     *,
-    bucket: str,
-    prefix: str,
+    bucket: str | None = None,
+    prefix: str | None = None,
+    base_url: str | None = None,
     execute: bool,
     client: Any = None,
     retries: int = 4,
@@ -195,14 +221,22 @@ def fetch(
         import httpx
 
         client = httpx.Client(timeout=httpx.Timeout(60.0, read=300.0), follow_redirects=True)
+    if (base_url is None) == (bucket is None):
+        raise SystemExit("give exactly one source: --base-url or --bucket/--prefix")
     pending = [r for r in records if file_state(root, r, hash_files=False) != "OK"]
     fetched = 0
+    fetched_bytes = 0
+    started = time.monotonic()
     for index, record in enumerate(pending, start=1):
-        url = object_url(bucket, prefix, record["path"])
+        if base_url is not None:
+            url = tunnel_url(base_url, record["path"])
+        else:
+            url = object_url(bucket, prefix or "", record["path"])
         for attempt in range(retries + 1):
             try:
                 fetch_one(client, url, record, root, state_dir)
                 fetched += 1
+                fetched_bytes += int(record["bytes"])
                 break
             except Exception as exc:  # retried, then surfaced with the file name
                 _log(state_dir, {"path": record["path"], "event": "RETRY", "error": str(exc)})
@@ -210,7 +244,16 @@ def fetch(
                     raise
                 time.sleep(min(30, 2**attempt))
         print(f"fetched {index}/{len(pending)} {record['path']}", file=sys.stderr, flush=True)
-    return {**plan(root, records), "dry_run": False, "fetched": fetched}
+    elapsed = max(time.monotonic() - started, 1e-9)
+    return {
+        **plan(root, records),
+        "dry_run": False,
+        "fetched": fetched,
+        "fetched_bytes": fetched_bytes,
+        "elapsed_seconds": round(elapsed, 2),
+        "throughput_mb_per_s": round(fetched_bytes / elapsed / 1e6, 3),
+        "label": "MEASURED (includes per-file SHA-256 verification)",
+    }
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -219,14 +262,20 @@ def main(argv: list[str] | None = None) -> int:
     for name in ("verify", "plan", "fetch"):
         command = sub.add_parser(name)
         command.add_argument("--root", type=Path, required=True)
+        command.add_argument("--path", action="append", help="limit to this manifest path")
+        command.add_argument("--batch-file", type=Path, help="limit to manifest paths listed")
         if name == "verify":
             command.add_argument("--record", type=Path)
         if name == "fetch":
-            command.add_argument("--bucket", required=True)
-            command.add_argument("--prefix", required=True)
+            command.add_argument("--base-url", help="https://<name>.trycloudflare.com")
+            command.add_argument("--bucket")
+            command.add_argument("--prefix")
             command.add_argument("--execute", action="store_true")
     args = parser.parse_args(argv)
-    records = load_manifest()
+    paths = list(args.path or [])
+    if args.batch_file:
+        paths += [line.strip() for line in args.batch_file.read_text().splitlines() if line.strip()]
+    records = select(load_manifest(), paths)
     if args.command == "verify":
         result = verify(args.root, records)
         if args.record:
@@ -238,7 +287,14 @@ def main(argv: list[str] | None = None) -> int:
         result = plan(args.root, records)
         print(json.dumps(result, indent=1))
         return 0 if result["disk_ok"] else 2
-    result = fetch(args.root, records, bucket=args.bucket, prefix=args.prefix, execute=args.execute)
+    result = fetch(
+        args.root,
+        records,
+        bucket=args.bucket,
+        prefix=args.prefix,
+        base_url=args.base_url,
+        execute=args.execute,
+    )
     print(json.dumps(result, indent=1))
     return 0
 
