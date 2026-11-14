@@ -16,6 +16,15 @@ Security properties:
 * files are opened read-only; startup verifies presence and size of every served file
   (``--verify-sha256`` additionally hashes each one).
 
+Optional RESULT RECEIVING (``--receive-dir``, off by default) for VM -> Mac export of checkpoints,
+logs and reports: ``PUT /upload/<relative path>`` with headers ``X-Upload-Offset``,
+``X-Upload-Total`` and ``X-Content-SHA256`` (whole file). Chunks (<= 64 MiB, below Cloudflare's
+100 MB request limit) append to ``<path>.part`` only at the expected offset (409 + current size
+otherwise, so uploads resume); the completed file is SHA-256-verified, fsynced and renamed.
+Create-only: an existing different file is never overwritten (409). Paths are restricted to
+``[A-Za-z0-9._=-]`` components under the receive directory, which must be outside ``--root``;
+per-file and total byte caps apply. Nothing can be read back through this endpoint.
+
 Endpoints: ``GET|HEAD /files/<url-quoted manifest path>`` (single HTTP Range supported),
 ``GET /healthz`` (counts and expiry). Everything else -> 404; unauthenticated -> 401.
 
@@ -48,6 +57,8 @@ _spec.loader.exec_module(transfer_set)  # type: ignore[union-attr]
 
 CHUNK = 1024 * 1024
 RANGE = re.compile(r"^bytes=(\d+)-(\d*)$")
+SAFE_UPLOAD = re.compile(r"^[A-Za-z0-9_=-][A-Za-z0-9._=-]*(/[A-Za-z0-9_=-][A-Za-z0-9._=-]*)*$")
+MAX_CHUNK = 64 * 1024 * 1024
 
 
 class State:
@@ -61,6 +72,11 @@ class State:
         self.failures = 0
         self.lock = threading.Lock()
         self.bytes_sent = 0
+        self.upload_lock = threading.Lock()
+        self.receive_dir: Path | None = None
+        self.max_file_bytes = 1024**3
+        self.max_receive_bytes = 4 * 1024**3
+        self.bytes_received = 0
 
 
 def build_files(
@@ -135,7 +151,100 @@ def make_handler(state: State, log: Any) -> type[BaseHTTPRequestHandler]:
         def do_POST(self) -> None:  # noqa: N802
             self._send(405)
 
-        do_PUT = do_DELETE = do_PATCH = do_OPTIONS = do_POST  # noqa: N815
+        do_DELETE = do_PATCH = do_OPTIONS = do_POST  # noqa: N815
+
+        def _json(self, status: int, payload: dict) -> None:
+            self._send(status, json.dumps(payload).encode(), {"Content-Type": "application/json"})
+
+        def _drain(self, length: int) -> None:
+            while length > 0:
+                block = self.rfile.read(min(CHUNK, length))
+                if not block:
+                    break
+                length -= len(block)
+
+        def do_PUT(self) -> None:  # noqa: N802
+            length = int(self.headers.get("Content-Length") or 0)
+            if state.receive_dir is None:
+                self._drain(length)
+                self._send(405)
+                return
+            if not self._authorized():
+                self._drain(length)
+                self._send(401, b"unauthorized\n", {"WWW-Authenticate": "Bearer"})
+                return
+            path = urllib.parse.urlsplit(self.path).path
+            relative = (
+                urllib.parse.unquote(path[len("/upload/") :]) if path.startswith("/upload/") else ""
+            )
+            try:
+                offset = int(self.headers["X-Upload-Offset"])
+                total = int(self.headers["X-Upload-Total"])
+                digest = self.headers["X-Content-SHA256"].strip().lower()
+            except (KeyError, ValueError, AttributeError):
+                self._drain(length)
+                self._json(400, {"error": "upload headers required"})
+                return
+            if (
+                not SAFE_UPLOAD.match(relative)
+                or len(relative) > 400
+                or not re.fullmatch(r"[0-9a-f]{64}", digest)
+                or relative.endswith(".part")
+            ):
+                self._drain(length)
+                self._json(400, {"error": "bad path or digest"})
+                return
+            target = (state.receive_dir / relative).resolve()
+            if not target.is_relative_to(state.receive_dir.resolve()):
+                self._drain(length)
+                self._json(400, {"error": "path escapes receive dir"})
+                return
+            if length > MAX_CHUNK or total > state.max_file_bytes or offset < 0 or total < 0:
+                self._drain(length)
+                self._json(413, {"error": "chunk or file too large"})
+                return
+            with state.upload_lock:
+                if target.exists():
+                    self._drain(length)
+                    same = target.stat().st_size == total and (
+                        transfer_set.sha256_file(target) == digest
+                    )
+                    self._json(200 if same else 409, {"complete": same, "exists": True})
+                    return
+                part = target.with_name(target.name + ".part")
+                current = part.stat().st_size if part.exists() else 0
+                if offset != current:
+                    self._drain(length)
+                    self._json(409, {"received": current, "complete": False})
+                    return
+                if state.bytes_received + length > state.max_receive_bytes or (
+                    offset + length > total
+                ):
+                    self._drain(length)
+                    self._json(413, {"error": "receive budget or declared size exceeded"})
+                    return
+                target.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
+                remaining = length
+                with part.open("ab") as handle:
+                    while remaining:
+                        block = self.rfile.read(min(CHUNK, remaining))
+                        if not block:
+                            break
+                        handle.write(block)
+                        remaining -= len(block)
+                state.bytes_received += length - remaining
+                size = part.stat().st_size
+                if size < total:
+                    self._json(200, {"received": size, "complete": False})
+                    return
+                if transfer_set.sha256_file(part) != digest:
+                    part.unlink()
+                    self._json(422, {"error": "SHA-256 mismatch; partial upload discarded"})
+                    return
+                with part.open("rb") as handle:
+                    os.fsync(handle.fileno())
+                os.replace(part, target)
+                self._json(201, {"received": size, "complete": True})
 
         def do_HEAD(self) -> None:  # noqa: N802
             self.do_GET()
@@ -217,14 +326,28 @@ def serve(
     max_failures: int,
     records: list[dict[str, Any]] | None = None,
     ready: Any = None,
+    receive_dir: Path | None = None,
+    max_receive_bytes: int = 4 * 1024**3,
 ) -> State:
-    files = build_files(root, records or transfer_set.load_manifest(), allow, verify_sha)
+    files = build_files(
+        root,
+        records if records is not None else transfer_set.load_manifest(),
+        allow,
+        verify_sha,
+    )
     token = secrets.token_urlsafe(32)
     token_file.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
     fd = os.open(token_file, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
     with os.fdopen(fd, "w") as handle:
         handle.write(token)
     state = State(files, token, time.time() + ttl_minutes * 60, max_failures)
+    if receive_dir is not None:
+        receive = receive_dir.resolve()
+        if receive.is_relative_to(root.resolve()) or root.resolve().is_relative_to(receive):
+            raise SystemExit("REFUSED: --receive-dir must be outside the data root")
+        receive.mkdir(parents=True, exist_ok=True, mode=0o700)
+        state.receive_dir = receive
+        state.max_receive_bytes = max_receive_bytes
     log = log_file.open("a", encoding="utf-8")
     server = ThreadingHTTPServer(("127.0.0.1", port), make_handler(state, log))
     timer = threading.Timer(ttl_minutes * 60, server.shutdown)
@@ -239,6 +362,7 @@ def serve(
                 "token_file": str(token_file),
                 "access_log": str(log_file),
                 "expires_in_minutes": ttl_minutes,
+                "receive_dir": str(state.receive_dir) if state.receive_dir else None,
             }
         ),
         flush=True,
@@ -255,7 +379,12 @@ def serve(
         log.close()
         print(
             json.dumps(
-                {"stopped": True, "bytes_sent": state.bytes_sent, "auth_failures": state.failures}
+                {
+                    "stopped": True,
+                    "bytes_sent": state.bytes_sent,
+                    "bytes_received": state.bytes_received,
+                    "auth_failures": state.failures,
+                }
             ),
             flush=True,
         )
@@ -278,6 +407,10 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--verify-sha256", action="store_true")
     parser.add_argument("--max-auth-failures", type=int, default=30)
     parser.add_argument(
+        "--receive-dir", type=Path, help="enable result uploads into this folder (outside --root)"
+    )
+    parser.add_argument("--max-receive-gb", type=float, default=4.0)
+    parser.add_argument(
         "--token-file", type=Path, default=Path.home() / ".crypto2-transfer" / "token"
     )
     parser.add_argument(
@@ -297,6 +430,8 @@ def main(argv: list[str] | None = None) -> int:
         token_file=args.token_file,
         log_file=args.log_file,
         max_failures=args.max_auth_failures,
+        receive_dir=args.receive_dir,
+        max_receive_bytes=int(args.max_receive_gb * 1024**3),
     )
     return 0
 

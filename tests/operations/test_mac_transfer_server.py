@@ -168,3 +168,131 @@ def test_batch_selection_rejects_paths_outside_the_manifest() -> None:
     assert len(chosen) == 1
     with pytest.raises(SystemExit, match="NOT_IN_MANIFEST"):
         transfer_set.select(records, ["../../etc/passwd"])
+
+
+push_module = _load("push_to_mac")
+
+
+@pytest.fixture
+def receiving(tmp_path: Path):
+    root = tmp_path / "stage"
+    root.mkdir()
+    receive = tmp_path / "mac-results"
+    holder: dict = {}
+    ready = threading.Event()
+
+    def on_ready(server, state):
+        holder.update(server=server, state=state)
+        ready.set()
+
+    thread = threading.Thread(
+        target=server_module.serve,
+        args=(root,),
+        kwargs={
+            "port": 0,
+            "ttl_minutes": 5,
+            "allow": None,
+            "verify_sha": False,
+            "token_file": tmp_path / "secret/token",
+            "log_file": tmp_path / "access.log",
+            "max_failures": 5,
+            "records": [],
+            "ready": on_ready,
+            "receive_dir": receive,
+            "max_receive_bytes": 50_000_000,
+        },
+        daemon=True,
+    )
+    thread.start()
+    assert ready.wait(10)
+    base = f"http://127.0.0.1:{holder['server'].server_address[1]}"
+    token = (tmp_path / "secret/token").read_text()
+    yield {"base": base, "token": token, "receive": receive, "tmp": tmp_path}
+    holder["server"].shutdown()
+
+
+def test_dummy_export_round_trips_to_the_mac_with_chunked_resume(receiving) -> None:
+    source = receiving["tmp"] / "export"
+    (source / "checkpoints").mkdir(parents=True)
+    (source / "checkpoints/stage.json").write_text('{"dummy": true}')
+    blob = os.urandom(5_000_000)
+    (source / "model.joblib").write_bytes(blob)
+    (source / "PERSISTED_MANIFEST.json").write_text("{}")
+    client = httpx.Client(headers={"Authorization": f"Bearer {receiving['token']}"})
+    # simulate an interrupted earlier attempt: part of the model already on the Mac
+    target = receiving["receive"] / "dummy/model.joblib"
+    target.parent.mkdir(parents=True)
+    (target.parent / "model.joblib.part").write_bytes(blob[:1_000_000])
+    result = push_module.push(
+        source,
+        base_url=receiving["base"],
+        dest_prefix="dummy",
+        execute=True,
+        chunk_mb=1,
+        client=client,
+    )
+    assert result["files"] == 3
+    assert target.read_bytes() == blob
+    assert not (target.parent / "model.joblib.part").exists()
+    again = push_module.push(
+        source,
+        base_url=receiving["base"],
+        dest_prefix="dummy",
+        execute=True,
+        chunk_mb=1,
+        client=client,
+    )
+    assert all(item["already_present"] for item in again["results"])
+
+
+def test_upload_endpoint_is_authenticated_create_only_and_confined(receiving) -> None:
+    base, receive = receiving["base"], receiving["receive"]
+    good = {"Authorization": f"Bearer {receiving['token']}"}
+    body = b"hello"
+    digest = hashlib.sha256(body).hexdigest()
+    meta = {"X-Upload-Offset": "0", "X-Upload-Total": "5", "X-Content-SHA256": digest}
+    assert httpx.put(f"{base}/upload/a/b.json", content=body, headers=meta).status_code == 401
+    for bad in ("../escape.json", "%2e%2e/escape.json", ".hidden/x", "a/../../x", "x.part"):
+        response = httpx.put(f"{base}/upload/{bad}", content=body, headers={**good, **meta})
+        assert response.status_code == 400, bad
+    assert (
+        httpx.put(f"{base}/upload/a/b.json", content=body, headers={**good, **meta}).status_code
+        == 201
+    )
+    other = {**meta, "X-Content-SHA256": hashlib.sha256(b"world").hexdigest()}
+    clash = httpx.put(f"{base}/upload/a/b.json", content=b"world", headers={**good, **other})
+    assert clash.status_code == 409 and (receive / "a/b.json").read_bytes() == body
+    wrong = {**meta, "X-Content-SHA256": "0" * 64}
+    assert (
+        httpx.put(f"{base}/upload/a/c.json", content=body, headers={**good, **wrong}).status_code
+        == 422
+    )
+    assert not (receive / "a/c.json").exists() and not (receive / "a/c.json.part").exists()
+    assert httpx.get(f"{base}/upload/a/b.json", headers=good).status_code == 404
+    assert not any(p.name.startswith("escape") for p in receiving["tmp"].rglob("*"))
+
+
+def test_receive_dir_inside_the_data_root_is_refused(tmp_path: Path) -> None:
+    root = tmp_path / "stage"
+    root.mkdir()
+    with pytest.raises(SystemExit, match="outside the data root"):
+        server_module.serve(
+            root,
+            port=0,
+            ttl_minutes=1,
+            allow=None,
+            verify_sha=False,
+            token_file=tmp_path / "t",
+            log_file=tmp_path / "l",
+            max_failures=3,
+            records=[],
+            receive_dir=root / "results",
+        )
+
+
+def test_upload_disabled_by_default(running) -> None:
+    _thread, base, token = running["run"]()
+    response = httpx.put(
+        f"{base}/upload/a.json", content=b"x", headers={"Authorization": f"Bearer {token}"}
+    )
+    assert response.status_code == 405
