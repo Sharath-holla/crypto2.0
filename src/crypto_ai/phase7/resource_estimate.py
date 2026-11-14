@@ -104,14 +104,18 @@ def _reclaimable_cache(root: Path) -> int:
             stats[key] = int(value)
     if "file" in stats:  # cgroup v2
         unreclaimable = (
-            stats.get("shmem", 0) + stats.get("file_dirty", 0) + stats.get("file_writeback", 0)
+            stats.get("shmem", 0)
+            + stats.get("file_dirty", 0)
+            + stats.get("file_writeback", 0)
+            + stats.get("file_mapped", 0)
         )
         return max(0, stats["file"] - unreclaimable)
     cache = stats.get("total_cache", stats.get("cache"))
     if cache is None:
         return 0
     unreclaimable = sum(
-        stats.get(f"total_{name}", stats.get(name, 0)) for name in ("shmem", "dirty", "writeback")
+        stats.get(f"total_{name}", stats.get(name, 0))
+        for name in ("shmem", "dirty", "writeback", "mapped_file")
     )
     return max(0, cache - unreclaimable)
 
@@ -136,8 +140,8 @@ def _direct_cgroup_limits(root: Path) -> dict[str, Any]:
     # CHANGED BY CLAUDE (2026-11-14, real-data run): cgroup usage includes CLEAN page cache that the
     # kernel reclaims on demand (e.g. 8.6 GB of cache vs 0.7 MB of process memory after reading
     # Gold). Counting it as used made the RAM floor refuse a run that had ample memory. Subtract
-    # only clean, reclaimable file cache; shmem, dirty and writeback pages still count as used
-    # (the same working-set rule container runtimes use for memory pressure).
+    # only clean, UNMAPPED file cache (memory.stat); shmem, dirty, writeback and mapped file pages
+    # (e.g. memory-mapped matrices in active use) still count as used. The limit is unchanged.
     if memory_current is not None:
         memory_current = max(0, memory_current - _reclaimable_cache(root))
     cpus: float | None = None
