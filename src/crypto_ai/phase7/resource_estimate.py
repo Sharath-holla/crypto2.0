@@ -91,6 +91,31 @@ def _read(path: Path) -> str | None:
         return None
 
 
+def _reclaimable_cache(root: Path) -> int:
+    """Clean file cache in this cgroup (v2 ``memory.stat`` or v1 ``total_*`` keys); 0 if unknown."""
+
+    raw = _read(root / "memory.stat") or _read(root / "memory/memory.stat")
+    if not raw:
+        return 0
+    stats: dict[str, int] = {}
+    for line in raw.splitlines():
+        key, _, value = line.partition(" ")
+        if value.strip().isdigit():
+            stats[key] = int(value)
+    if "file" in stats:  # cgroup v2
+        unreclaimable = (
+            stats.get("shmem", 0) + stats.get("file_dirty", 0) + stats.get("file_writeback", 0)
+        )
+        return max(0, stats["file"] - unreclaimable)
+    cache = stats.get("total_cache", stats.get("cache"))
+    if cache is None:
+        return 0
+    unreclaimable = sum(
+        stats.get(f"total_{name}", stats.get(name, 0)) for name in ("shmem", "dirty", "writeback")
+    )
+    return max(0, cache - unreclaimable)
+
+
 def _direct_cgroup_limits(root: Path) -> dict[str, Any]:
     """Linux cgroup v2/v1 RAM and CPU limits; all-None on macOS or when unlimited/unreadable."""
 
@@ -108,6 +133,13 @@ def _direct_cgroup_limits(root: Path) -> dict[str, Any]:
         if raw_current and raw_current.isdigit():
             memory_current = int(raw_current)
             break
+    # CHANGED BY CLAUDE (2026-11-14, real-data run): cgroup usage includes CLEAN page cache that the
+    # kernel reclaims on demand (e.g. 8.6 GB of cache vs 0.7 MB of process memory after reading
+    # Gold). Counting it as used made the RAM floor refuse a run that had ample memory. Subtract
+    # only clean, reclaimable file cache; shmem, dirty and writeback pages still count as used
+    # (the same working-set rule container runtimes use for memory pressure).
+    if memory_current is not None:
+        memory_current = max(0, memory_current - _reclaimable_cache(root))
     cpus: float | None = None
     raw = _read(root / "cpu.max")
     if raw:
