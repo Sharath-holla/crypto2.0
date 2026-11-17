@@ -1,3 +1,5 @@
+For the explicit constrained profile, add the gates in `CONSTRAINED_48GB_RUNBOOK_20261117.md`; the standard >=64 GiB resource requirement below remains unchanged. Constrained full fitting requires a separately recorded full-row memory probe PASS.
+
 # Three independently approved stages
 
 ## Owner authorization and host — pending until tomorrow
@@ -7,7 +9,7 @@
 - [ ] Selected live Pod/type, price/hour, maximum session USD and hard UTC stop approved.
 - [ ] New session contract approved for **Linux verification only**, six identities bound.
 - [ ] Outside-Pod stop control supervised/awake, same-scope permission probe and two fresh heartbeats; failure stop path checked. No API key copied to Pod.
-- [ ] Correct frozen 1b6a027b1809 package SHA/inventory; separate operator kit SHA.
+- [ ] Correct frozen package from current runpod_source_manifest.json SHA/inventory; separate operator kit SHA.
 - [ ] Local source/output roots and >=150 GB provider container quota; existing 50 GB network volume mounted correctly.
 
 ## Linux/input/resource stage — STOP AND REPORT after PASS

@@ -1,0 +1,32 @@
+{
+  "schema": "crypto2_runpod_source_manifest_v1",
+  "commit": "e2fbe33211d975e3af88e52ce6180c820ce05cbb",
+  "source_root": "/Users/cortex/Crypto2Data/reports/phase7-constrained-20261117/crypto2-source-e2fbe33211d9",
+  "archive": "/Users/cortex/Crypto2Data/reports/phase7-constrained-20261117/crypto2-source-e2fbe33211d9.tar.gz",
+  "archive_filename": "crypto2-source-e2fbe33211d9.tar.gz",
+  "archive_bytes": 5975581,
+  "archive_sha256": "0b9451abb0553da7438e16fe11193d1d1edebe95cd0abbf861ef740e65cdd0e0",
+  "committed_files": 1270,
+  "committed_bytes": 26579362,
+  "inventory_sha256": "171f179d5a274ab7412263e57c9db44b71b1f7262f8c6aa86bcfde5fdd858758",
+  "source_inventory_digest": "171f179d5a274ab7412263e57c9db44b71b1f7262f8c6aa86bcfde5fdd858758",
+  "shipping_files": 1271,
+  "shipping_bytes": 26811461,
+  "uv_lock_sha256": "d0cf77d737384e0d35e6175daf74bfa9716ece8a9f246d1f107beb0a01556d85",
+  "operator_kit_is_separate": true,
+  "source_export_includes_git": false,
+  "status": "PASS",
+  "resource_profile": "constrained_48gb",
+  "python_requirement": "CPython 3.12 locked dependencies",
+  "identities": {
+    "EXPERIMENT_CONTROL_DIGEST": "3534b3baa7e4de24622e6f9d07a13686aabb9acb6bbe611b451025ad73ffadb3",
+    "GOLD_MANIFEST_SHA": "a142027722424ead5bbc508537e85bf743b3da68b38c3a99c9aabd3ef0e2e711",
+    "PREPARATION_DIGEST": "fa11fc625ea1f7281823b1d1b55644c28b2ab76922c70d60c528d24ca125d587",
+    "SCIENTIFIC_SOURCE_DIGEST": "fd33312fbbd1ee388cb59729a9f4d7b14a1c17380d8f3e526d6baa1a1e44bfc2",
+    "SELECTION_PROTOCOL_DIGEST": "562dbf8203f476e446cd9968d336fa74b022924c01e5b1c34f3167c065c73826",
+    "SIDECAR_SHA": "ea5f25a2a7c009c79a9ecbbe795960234b67074d36d2db7c21424724fabc2048"
+  },
+  "exact_export_tests": 1520,
+  "ruff": "PASS",
+  "format": "PASS"
+}

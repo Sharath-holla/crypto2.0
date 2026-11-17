@@ -1,0 +1,30 @@
+{
+  "schema": "phase7_owner_smoke_approval_v1",
+  "status": "PENDING_OWNER_APPROVAL",
+  "owner": "OWNER_TO_CONFIRM_TOMORROW",
+  "mode": "train",
+  "binding": {
+    "EXPERIMENT_CONTROL_DIGEST": "3534b3baa7e4de24622e6f9d07a13686aabb9acb6bbe611b451025ad73ffadb3",
+    "GOLD_MANIFEST_SHA": "a142027722424ead5bbc508537e85bf743b3da68b38c3a99c9aabd3ef0e2e711",
+    "PREPARATION_DIGEST": "fa11fc625ea1f7281823b1d1b55644c28b2ab76922c70d60c528d24ca125d587",
+    "SCIENTIFIC_SOURCE_DIGEST": "fd33312fbbd1ee388cb59729a9f4d7b14a1c17380d8f3e526d6baa1a1e44bfc2",
+    "SELECTION_PROTOCOL_DIGEST": "562dbf8203f476e446cd9968d336fa74b022924c01e5b1c34f3167c065c73826",
+    "SIDECAR_SHA": "ea5f25a2a7c009c79a9ecbbe795960234b67074d36d2db7c21424724fabc2048",
+    "backend": "cpu",
+    "configuration_hash": "93f987736b1a79d26b773957",
+    "dataset_id": "gold-phase7-0cbf2910e8d96c9d19826598",
+    "fold_id": "fold-000-a0e9a4f72689",
+    "minimum_effective_cpus": 8,
+    "minimum_effective_ram_bytes": 48318382080,
+    "minimum_local_disk_bytes": 150000000000,
+    "research_view": "CORE",
+    "spec_id": "architecture-G0-A6-60m-raw",
+    "workers": 1,
+    "resource_profile": "constrained_48gb"
+  },
+  "stop_deadline_utc": "OWNER_TO_CONFIRM_TOMORROW",
+  "cost_ceiling": "OWNER_TO_CONFIRM_TOMORROW",
+  "cost_currency": "USD",
+  "preemption_policy": "NATIVE_PARTIAL_RESTART_ONLY",
+  "operation": "MEMORY_QUALIFICATION_ONLY"
+}

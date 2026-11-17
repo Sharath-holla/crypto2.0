@@ -1,0 +1,11 @@
+{
+  "status": "PASS",
+  "archive": "/Users/cortex/Crypto2Data/reports/phase7-constrained-20261117/crypto2-constrained-operator-kit-20261117.tar.gz",
+  "archive_bytes": 270689,
+  "sha256": "3963795f2fa0da03cd6ee8693404b37fc114e6dfa0142a8e0591b0bb0a48a59c",
+  "source_commit": "367500235cb39e67d6b0d09594669b0edf8fa40c",
+  "members": 43,
+  "payload_bytes": 1521976,
+  "inventory_sha256": "c77f24d6580db60e11d918a37e29c40135dcbfa9352da24ee659a8324ab8e4fd",
+  "external_manifest_not_in_archive": true
+}

@@ -1,0 +1,11 @@
+{
+  "authorization": "START_ONE_PHASE7A_CPU_SMOKE_NOW_PLUS_CONSTRAINED_48GB",
+  "image": "runpod/base:1.0.2-ubuntu2404",
+  "max_session_usd": 15.77,
+  "name": "crypto2-p7a-48gb-20261117T093106Z",
+  "rate": 0.59,
+  "request_sha256": "c8f91108f8b37b0bd95c16be91377e6affc238e3e070647a761c5708256ffaed",
+  "upper": 0.75,
+  "utc": "2026-11-17T09:31:06.777540+00:00",
+  "wallet_start": 17.7736019747
+}

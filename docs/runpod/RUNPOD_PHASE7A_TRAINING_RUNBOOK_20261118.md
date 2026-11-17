@@ -1,3 +1,7 @@
+# Current constrained workflow supersedes historical package references
+
+For the owner-authorized constrained run, use `CONSTRAINED_48GB_RUNBOOK_20261117.md` and the current `runpod_source_manifest.json` (final source e2fbe33211d9). The 1b6a027 package references below document the historical standard-profile kit; they are not the source to deploy for constrained execution. The owner has already authorized conditional prepare/probe/train artifacts without further prompts, provided every mandatory gate passes.
+
 # Updated preemption/restart source — supersedes the earlier preparation kit
 
 Training source: **1b6a027b180979981eb76a4d6cbdec22510960df**. The 7a64ee0 freeze is historical and must not be used for this runtime. Full details and measured continuation failures are in `../reviews/PHASE7A_PREEMPTION_RESUME_READINESS_20261117.md`.
