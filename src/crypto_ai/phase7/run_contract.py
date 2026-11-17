@@ -62,6 +62,9 @@ KNOWN_ENVIRONMENT = frozenset(
         "PHASE7_UV_BIN",
         "PHASE7_OWNER_APPROVAL_FILE",
         "PHASE7_PREEMPTION_CONFIG",
+        "PHASE7_RESOURCE_PROFILE",
+        "PHASE7_MEMORY_GUARD_CONFIG",
+        "PHASE7_MEMORY_QUALIFICATION_FILE",
     ]
 ) | frozenset(
     f"PHASE7_LEGACY_{family}_ROOT" for family in ("DATA", "GOLD", "ARTIFACT", "MODEL", "REPORT")
@@ -80,9 +83,19 @@ def validate_environment(environ: Mapping[str, str]) -> list[str]:
 
 def smoke_resource_errors(snapshot: Mapping[str, Any]) -> list[str]:
     """Conservative owner-specified first-smoke hardware floor, independent of fit estimates."""
+    from crypto_ai.phase7.memory_profile import minimum_ram, profile
+
     errors = []
     for key, minimum, label in (
-        ("ram_total_bytes", 64 * 1024**3, "effective RAM >=64 GiB"),
+        (
+            "ram_total_bytes",
+            minimum_ram(),
+            (
+                "effective RAM >=64 GiB"
+                if profile() == "standard_smoke"
+                else "constrained RAM >=45 GiB; measured qualification required"
+            ),
+        ),
         ("cpu_count", 8, "effective CPUs >=8"),
         ("disk_total_bytes", 150_000_000_000, "local filesystem capacity >=150 GB"),
     ):
@@ -143,7 +156,10 @@ def approval_binding(config: Any, spec_id: str, fold_id: str) -> dict[str, Any]:
         raise ValueError("M01_FEATURE_CONTEXT_SIDECAR_REQUIRED")
     gold = locate_gold_manifest(RuntimePaths.resolve(config.paths).gold_root)
     manifest = json.loads(gold.read_text())
+    from crypto_ai.phase7.memory_profile import CONSTRAINED, minimum_ram, profile
+
     return {
+        **({"resource_profile": CONSTRAINED} if profile() == CONSTRAINED else {}),
         **identity_summary(gold, Path(value)),
         "configuration_hash": config.configuration_hash,
         "dataset_id": manifest["dataset_id"],
@@ -152,7 +168,7 @@ def approval_binding(config: Any, spec_id: str, fold_id: str) -> dict[str, Any]:
         "research_view": "CORE",
         "backend": "cpu",
         "workers": 1,
-        "minimum_effective_ram_bytes": 64 * 1024**3,
+        "minimum_effective_ram_bytes": minimum_ram(),
         "minimum_effective_cpus": 8,
         "minimum_local_disk_bytes": 150_000_000_000,
     }

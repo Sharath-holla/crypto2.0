@@ -9,7 +9,10 @@ from runpod_phase7_ops import VOLUME, write
 from runpod_stop_controller_phase7 import API
 
 
-def candidates(gpus, cpu_catalogs):
+def candidates(gpus, cpu_catalogs, *, resource_profile="standard_smoke"):
+    if resource_profile not in {"standard_smoke", "constrained_48gb"}:
+        raise ValueError("UNKNOWN_RESOURCE_PROFILE")
+    minimum = (45 if resource_profile == "constrained_48gb" else 64) * 1024**3
     rows = []
     for g in gpus["gpus"]:
         dc = next((x for x in g.get("dataCenters", []) if x["id"] == "EU-SE-1"), None)
@@ -25,7 +28,7 @@ def candidates(gpus, cpu_catalogs):
                 "compute_usd_per_hour": g["price"]["secure"],
                 "catalog_minimum_ram_bytes": ram,
                 "catalog_minimum_vcpu": cpus,
-                "candidate_meets_catalog_floor": ram >= 64 * 1024**3 and cpus >= 8,
+                "candidate_meets_catalog_floor": ram >= minimum and cpus >= 8,
                 "status": "INSIDE_CONTAINER_RESOURCE_AND_LOCAL_DISK_PROBE_STILL_REQUIRED",
             }
         )
@@ -43,7 +46,7 @@ def candidates(gpus, cpu_catalogs):
                     "compute_usd_per_hour": cpu["price"]["securePerVcpu"] * count,
                     "catalog_minimum_ram_bytes": ram,
                     "catalog_minimum_vcpu": count,
-                    "candidate_meets_catalog_floor": ram >= 64 * 1024**3 and count >= 8,
+                    "candidate_meets_catalog_floor": ram >= minimum and count >= 8,
                     "status": "INSIDE_CONTAINER_RESOURCE_AND_LOCAL_DISK_PROBE_STILL_REQUIRED",
                 }
             )
@@ -53,6 +56,11 @@ def candidates(gpus, cpu_catalogs):
 def main():
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("--api-key-file", default="~/.crypto2-transfer/runpod-api-key")
+    p.add_argument(
+        "--resource-profile",
+        choices=["standard_smoke", "constrained_48gb"],
+        default="standard_smoke",
+    )
     p.add_argument("--output", required=True)
     args = p.parse_args()
     api = API(args.api_key_file)
@@ -71,13 +79,14 @@ def main():
     wallet = api.call(
         "POST", "/graphql", {"query": "query { myself { clientBalance currentSpendPerHr } }"}
     )
-    rows = candidates(gpus, cpus)
+    rows = candidates(gpus, cpus, resource_profile=args.resource_profile)
     admitted = [x for x in rows if x["candidate_meets_catalog_floor"]]
     write(
         args.output,
         {
             "captured_utc": datetime.now(UTC).isoformat(),
             "read_only": True,
+            "resource_profile": args.resource_profile,
             "volume": volume,
             "previous_pod": {
                 k: old[k]

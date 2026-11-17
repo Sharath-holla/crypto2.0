@@ -89,8 +89,9 @@ def pod_binding(pod, c):
     if pod["image"] != c["container_image"]:
         raise ValueError("CONTAINER_IMAGE_DIFFERS_FROM_OWNER_APPROVAL")
     allocation = pod.get("gpu") or pod.get("cpu") or {}
-    if float(allocation.get("memory", 0)) * 1e9 < 64 * 1024**3:
-        raise ValueError("PROVIDER_RAM_ALLOCATION_BELOW_64GIB")
+    floor_gib = 45 if c.get("resource_profile") == "constrained_48gb" else 64
+    if float(allocation.get("memory", 0)) * 1e9 < floor_gib * 1024**3:
+        raise ValueError("PROVIDER_RAM_ALLOCATION_BELOW_PROFILE_FLOOR")
 
 
 def ssh_args(pod, key):

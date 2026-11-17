@@ -241,6 +241,7 @@ TRAINING_CRITICAL_SOURCE_FILES = (
     "src/crypto_ai/phase7/environment.py",
     "src/crypto_ai/phase7/training_metrics.py",
     "src/crypto_ai/phase7/preemption.py",
+    "src/crypto_ai/phase7/memory_profile.py",
 )
 EXECUTION_CONTEXT_SOURCE_FILES = (
     "src/crypto_ai/phase7/preflight.py",
@@ -1886,6 +1887,12 @@ def _run_phase7_training_owned(
                     rows=table.num_rows,
                     **memory_snapshot(),
                 )
+            from crypto_ai.phase7.memory_profile import CONSTRAINED, profile
+
+            if profile() == CONSTRAINED and len(specs) == 1:
+                # Slice owns its derived context; no later horizon in this one-spec run
+                # needs the source-only sidecar table. Preserve the calculated fold.
+                fold_context.pop("source", None)
             return sliced[spec.horizon_minutes]
 
         for research_view in research_views:
@@ -2289,6 +2296,15 @@ def _run_phase7_training_owned(
                     )
                     cache_path = durable_cache.write(cache_identity, fold_data, prepared_cache)
                     if cache_path is not None:
+                        from crypto_ai.phase7.memory_profile import CONSTRAINED, profile
+
+                        if profile() == CONSTRAINED:
+                            import gc
+
+                            # Durable exact payload exists: release the in-memory matrices
+                            # BEFORE opening their verified float64 read-only memmap copies.
+                            prepared_cache = None
+                            gc.collect()
                         cached_bundle = durable_cache.open_published(cache_identity, plan)
                         cached[durable_key] = cached_bundle
                         prepared_cache = cached_bundle.prepared

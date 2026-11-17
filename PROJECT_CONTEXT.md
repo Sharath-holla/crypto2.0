@@ -8,6 +8,23 @@ BEFORE MODIFYING OR RUNNING THIS PROJECT.
 - Status: **PROJECT HOLD**
 - Current phase: **Phase 7A CORE20 PRIMARY**
 
+## Owner-authorized constrained smoke — 2026-11-17
+
+The owner subsequently authorized ONE full canonical Fold-0 G0/A6/60m/raw CPU smoke,
+with a separate explicit `PHASE7_RESOURCE_PROFILE=constrained_48gb` execution profile.
+Normal `standard_smoke` remains >=64 GiB. The constrained host must have >=45 GiB
+actual effective RAM, >=8 effective CPUs and >=150 GB local disk, a live independent
+memory guard, full Linux/filesystem/input/identity/cache gates and one full-row 5-round
+`MEMORY_QUALIFICATION_ONLY` probe before any full fit. Require probe peak <82% cgroup
+usage AND >=10 GiB effective headroom; continuously stop at >=88% or <8 GiB headroom.
+No row/feature/target/weight/split/float64/scientific LightGBM parameter reduction.
+The owner permits gated prepare/probe/train approval artifacts without further prompts.
+Derive a fresh live-wallet budget protecting the $1 floor, default $1.75 trigger and
+an operational deadline <=24 hours after deployment. No automatic top-up or restart.
+Use the NEW constrained source freeze/operator manifest, not 1b6a027 or 7a64ee0.
+Mid-fit continuation remains NOT QUALIFIED; retain checkpoints/cache/evidence and stop
+provider compute after completion/failure/preemption. No full grid or July/August use.
+
 ## Latest local readiness — 2026-11-08
 
 ### Preemption runtime update — 2026-11-17

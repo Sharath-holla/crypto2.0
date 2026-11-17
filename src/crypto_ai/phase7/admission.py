@@ -155,6 +155,7 @@ def admit_official_training(
         raise AdmissionError(
             "FULL_GRID_NOT_AUTHORIZED: current admission permits one CPU smoke only"
         )
+    from crypto_ai.phase7.memory_profile import profile
     from crypto_ai.phase7.resources import existing_ancestor
     from crypto_ai.phase7.runtime import system_snapshot
 
@@ -179,6 +180,7 @@ def admit_official_training(
         os.environ["CRYPTO_AI_RESEARCH_MODE"] = "1"
     return {
         "status": "ADMITTED",
+        "resource_profile": profile(),
         "owner_approval": approval,
         "environment_names": environment_names,
         "resolved_configuration": config.model_dump(mode="json"),

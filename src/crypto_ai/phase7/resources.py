@@ -58,6 +58,9 @@ def resource_admission(
     runtime = paths or RuntimePaths.resolve(PathConfig())
     ram_floor = configured_floor("PHASE7_MIN_FREE_RAM_GIB", "PHASE7_MIN_AVAILABLE_RAM_GB")
     disk_floor = configured_floor("PHASE7_MIN_FREE_DISK_GIB", "PHASE7_MIN_FREE_DISK_GB")
+    from crypto_ai.phase7.memory_profile import checkpoint
+
+    checkpoint(stage)
     memory = memory_snapshot()
     roots = {
         name: getattr(runtime, name)

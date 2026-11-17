@@ -33,6 +33,7 @@ STAGES = (
     "preflight",
     "prepare",
     "reload",
+    "memory-probe",
     "restore-cache",
     "train",
     "resume",
@@ -125,7 +126,18 @@ def contract(path):
     if float(c["provider_container_disk_gb"]) < 150:
         raise ValueError("PROVIDER_LOCAL_DISK_QUOTA_BELOW_150GB")
     # Operating headroom is separate from the canonical hardware-capacity minimum.
-    if positive(c["minimum_free_ram_gib"]) < 32 or positive(c["minimum_free_disk_gib"]) < 25:
+    constrained = c.get("resource_profile") == "constrained_48gb"
+    if c.get("resource_profile", "standard_smoke") not in {"standard_smoke", "constrained_48gb"}:
+        raise ValueError("UNKNOWN_RESOURCE_PROFILE")
+    if (
+        constrained
+        and c.get("constrained_memory_authorization") != "OWNER_AUTHORIZED_MEASURED_48GB_SMOKE"
+    ):
+        raise ValueError("CONSTRAINED_OWNER_AUTHORIZATION_REQUIRED")
+    if (
+        positive(c["minimum_free_ram_gib"]) < (8 if constrained else 32)
+        or positive(c["minimum_free_disk_gib"]) < 25
+    ):
         raise ValueError("OPERATING_HEADROOM_FLOOR_TOO_LOW")
     from runpod_wallet_policy_phase7 import policy
 
@@ -259,7 +271,10 @@ def environment(c, source, local, inputs):
     from crypto_ai.phase7.runtime import cpu_availability
 
     cpus = cpu_availability()["effective_cpu_count"]
-    threads = c.get("model_threads", cpus)
+    threads = c.get(
+        "model_threads",
+        max(1, cpus - 1) if c.get("resource_profile") == "constrained_48gb" else cpus,
+    )
     if not isinstance(threads, int) or not 1 <= threads <= cpus:
         raise ValueError("APPROVED_THREAD_BUDGET_EXCEEDS_EFFECTIVE_CPU")
     env = os.environ.copy()
@@ -298,7 +313,8 @@ def environment(c, source, local, inputs):
             "PHASE7_LEGACY_ARTIFACT_ROOT": "/home/nssharath123/crypto2.0/local_artifacts/phase7",
             "PHASE7_TOTAL_CPU_THREADS": str(cpus),
             "PHASE7_MODEL_PARALLELISM": "1",
-            "PHASE7_LIGHTGBM_THREADS_PER_MODEL": str(c.get("model_threads", cpus)),
+            "PHASE7_LIGHTGBM_THREADS_PER_MODEL": str(threads),
+            "PHASE7_RESOURCE_PROFILE": c.get("resource_profile", "standard_smoke"),
             "PHASE7_MIN_FREE_RAM_GIB": str(c["minimum_free_ram_gib"]),
             "PHASE7_MIN_FREE_DISK_GIB": str(c["minimum_free_disk_gib"]),
             "PHASE7_METRICS_EVERY": "25",
@@ -317,6 +333,9 @@ def environment(c, source, local, inputs):
         "tmp",
     ):
         (local / name).mkdir(exist_ok=True)
+    if c.get("resource_profile") == "constrained_48gb":
+        env["PHASE7_MEMORY_GUARD_CONFIG"] = str(local / "control/memory-guard.json")
+        env["PHASE7_MEMORY_QUALIFICATION_FILE"] = str(local / "evidence/memory-qualification.json")
     return env
 
 
@@ -738,6 +757,166 @@ def configure_preemption(args, c, local, qualified, env, previous=None):
     }
 
 
+def start_memory_guard(c, source, local, args):
+    if c.get("resource_profile") != "constrained_48gb":
+        return
+    import atexit
+    import time
+
+    cfg = {
+        "stage": args.stage,
+        "local_root": str(local),
+        "contract_sha256": sha(args.contract),
+        "heartbeat": str(local / "control/memory-guard-heartbeat.json"),
+        "timeline": str(local / "evidence/memory_timeline.jsonl"),
+        "emergency_evidence": str(
+            Path("/workspace/phase7a-evidence")
+            / c["pod_id"]
+            / "memory-guard"
+            / (args.stage + "-" + str(os.getpid()) + ".json")
+        ),
+    }
+    path = local / "control/memory-guard.json"
+    write(path, cfg)
+    guard = subprocess.Popen(
+        [
+            str(source / ".venv/bin/python"),
+            "-m",
+            "crypto_ai.phase7.memory_profile",
+            "--config",
+            str(path),
+            "--pid",
+            str(os.getpid()),
+        ],
+        cwd=source,
+        env=os.environ.copy()
+        | {"PYTHONPATH": str(source / "src"), "PHASE7_RESOURCE_PROFILE": "constrained_48gb"},
+    )
+    atexit.register(guard.terminate)
+    for _ in range(50):
+        if guard.poll() is not None:
+            raise MemoryError("MEMORY_GUARD_DID_NOT_START")
+        if Path(cfg["heartbeat"]).exists():
+            beat = read(cfg["heartbeat"])
+            if (
+                beat.get("target_pid") == os.getpid()
+                and beat.get("contract_sha256") == cfg["contract_sha256"]
+            ):
+                return
+        time.sleep(0.1)
+    guard.terminate()
+    raise MemoryError("MEMORY_GUARD_HEARTBEAT_TIMEOUT")
+
+
+def memory_probe(source, local, inputs, evidence, c, contract_path):
+    from crypto_ai.phase5.folds import plan_folds
+    from crypto_ai.phase7.config import load_phase7_config
+    from crypto_ai.phase7.hardening import current_config
+    from crypto_ai.phase7.memory_profile import checkpoint, fit_fingerprint, probe_scope
+    from crypto_ai.phase7.models import fit_architecture, symbol_balanced_weights
+    from crypto_ai.phase7.phase7a import select_one_spec
+    from crypto_ai.phase7.prepared_cache import PreparedDataCache
+    from crypto_ai.phase7.training import try_build_validation_context
+    from crypto_ai.phase7.training_metrics import training_metric_scope
+
+    qualified = cache_reload(source, local, inputs, evidence)
+    config = load_phase7_config(source / "configs/phase7/research_core20_primary_v1.toml")
+    plan = plan_folds(
+        config.data_start, config.research_cutoff, config.prospective_holdout_start, config.schedule
+    )[0]
+    cache = PreparedDataCache(local / "cache", "read_only")
+    bundle = cache.load(qualified["cache_identity"], plan)
+    prepared = bundle.prepared
+    spec = select_one_spec(config, SPEC)
+    mi = prepared.model_inputs
+    cpus = __import__(
+        "crypto_ai.phase7.runtime", fromlist=["effective_cpu_count"]
+    ).effective_cpu_count()
+    threads = c.get("model_threads", max(1, cpus - 1))
+    weights = symbol_balanced_weights(mi.train_symbols) if spec.symbol_balanced else None
+    fingerprint = fit_fingerprint(
+        config.models, threads, mi.train_x, mi.train_y, mi.validation_x, mi.validation_y, weights
+    )
+    diagnostics, _ = try_build_validation_context(
+        prepared.validation,
+        target_type=spec.target_type,
+        normalization_floor=config.targets.normalization_floor,
+        config=current_config(),
+    )
+    gc.collect()
+    checkpoint("MEMORY_QUALIFICATION_START")
+    short = config.models.model_copy(update={"n_estimators": 5})
+    with (
+        probe_scope(),
+        training_metric_scope(
+            evidence / "memory-probe-metrics",
+            diagnostics=diagnostics,
+            purpose="MEMORY_QUALIFICATION_ONLY",
+            round_limit=5,
+        ),
+    ):
+        model = fit_architecture(
+            "G0",
+            prepared.train,
+            prepared.validation,
+            feature_columns=prepared.feature_columns,
+            target_column=prepared.target_column,
+            config=short,
+            model_threads=threads,
+            estimator_workers=1,
+            cluster_mapping=bundle.fold.cluster_mapping,
+            explicit_symbol_id=spec.explicit_symbol_id,
+            symbol_balanced=spec.symbol_balanced,
+            eligibility_calibration_a=prepared.calibration_a,
+            prepared_inputs=mi,
+        )
+    checkpoint("MEMORY_QUALIFICATION_END")
+    records = [
+        json.loads(line) for line in (evidence / "memory_timeline.jsonl").read_text().splitlines()
+    ]
+    # Include the entire stage, reload/validation and native construction, not only its ending RSS.
+    records = [
+        r
+        for r in records
+        if r["stage"] == "memory-probe" or r["stage"].startswith("MEMORY_QUALIFICATION")
+    ]
+    peak = max(r["cgroup_memory_current_bytes"] for r in records)
+    ratio = max(r["cgroup_ratio"] for r in records)
+    remaining = min(r["ram_available_bytes"] for r in records)
+    if ratio >= 0.82 or remaining < 10 * 1024**3:
+        raise MemoryError(
+            "48GB_HOST_INSUFFICIENT: probe requires <82% cgroup use and >=10 GiB effective headroom"
+        )
+    cache_manifest = cache.cache_path(qualified["cache_identity"]) / "manifest.json"
+    proof = {
+        "status": "PASS",
+        "purpose": "MEMORY_QUALIFICATION_ONLY",
+        "canonical_result": False,
+        "resource_profile": "constrained_48gb",
+        "contract_sha256": sha(contract_path),
+        "cache_manifest": str(cache_manifest),
+        "cache_manifest_sha256": sha(cache_manifest),
+        "cache_id": bundle.cache_id,
+        "fit_fingerprint": fingerprint,
+        "probe_rounds": 5,
+        "observed_rounds": model.estimators["global"].booster_.current_iteration(),
+        "peak_cgroup_bytes": peak,
+        "peak_cgroup_ratio": ratio,
+        "minimum_effective_headroom_bytes": remaining,
+        "peak_process_tree_rss_bytes": max(
+            r.get("process_tree_rss_bytes", r["process_rss_bytes"]) for r in records
+        ),
+        "peak_measurement": "SAMPLED_250MS_PLUS_STAGE_BOUNDARIES; NOT_A_500_ROUND_BOUND",
+        "test_metrics_accessed": False,
+        "scientific_ids": expected(),
+    }
+    write(evidence / "memory-qualification.json", proof)
+    del model, bundle, prepared, mi, weights, diagnostics
+    gc.collect()
+    checkpoint("AFTER_PROBE_OBJECT_RELEASE")
+    return proof
+
+
 def execute(args):
     c, source, local, inputs, evidence = context(args)
     args.authorized_stop_path = local / "control/STOP_REQUEST.json"
@@ -756,6 +935,7 @@ def execute(args):
                 "PYTHONPATH": str(source / "src") + os.pathsep + str(source),
                 "UV_PROJECT": str(source),
                 "UV_PROJECT_ENVIRONMENT": str(source / ".venv"),
+                "PHASE7_RESOURCE_PROFILE": c.get("resource_profile", "standard_smoke"),
             }
         )
         run(["apt-get", "update"], evidence / "apt-update.log")
@@ -793,6 +973,7 @@ def execute(args):
             cwd=source,
             env=bootstrap_env,
         )
+        start_memory_guard(c, source, local, args)
         # Cheap real cgroup admission before the Gold validator or Linux suite.
         probe_code = (
             "import json,sys; from pathlib import Path; "
@@ -817,6 +998,7 @@ def execute(args):
         from crypto_ai.phase7.run_contract import validate_environment
 
         validate_environment(os.environ)
+        start_memory_guard(c, source, local, args)
         require_receipt(evidence, "bootstrap", c, args.contract)
         if args.stage == "verify-transfer":
             from crypto_ai.phase7.resources import resource_admission
@@ -888,6 +1070,12 @@ def execute(args):
                 "resources": "PASS",
                 "next": "STOP_AND_REPORT; separate PREPARE ONE CACHE approval required",
             }
+        elif args.stage == "memory-probe":
+            require_receipt(evidence, "reload", c, args.contract)
+            stage_approval(args, c, "train")
+            if c.get("resource_profile") != "constrained_48gb":
+                raise ValueError("MEMORY_PROBE_REQUIRES_CONSTRAINED_PROFILE")
+            detail = memory_probe(source, local, inputs, evidence, c, args.contract)
         elif args.stage == "restore-cache":
             from crypto_ai.phase7.preemption import copy_qualified_cache
 
@@ -933,6 +1121,8 @@ def execute(args):
             preemption_metadata = {}
             if args.stage in {"train", "resume"}:
                 require_receipt(evidence, "reload", c, args.contract)
+                if c.get("resource_profile") == "constrained_48gb":
+                    require_receipt(evidence, "memory-probe", c, args.contract)
                 # Revalidate exact cache again before fitting; fail instead of rebuilding.
                 qualified = cache_reload(source, local, inputs, evidence)
                 previous = partial_for_restart(args, c) if args.stage == "resume" else None
@@ -995,6 +1185,7 @@ def execute(args):
     receipt = {
         "status": "PASS",
         "stage": args.stage,
+        "resource_profile": c.get("resource_profile", "standard_smoke"),
         "pod_id": c["pod_id"],
         "contract_sha256": sha(args.contract),
         "utc": datetime.now(UTC).isoformat(),

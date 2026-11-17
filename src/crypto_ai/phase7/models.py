@@ -21,7 +21,7 @@ from crypto_ai.phase7.backend import (
 )
 from crypto_ai.phase7.config import ModelConfig, stable_hash
 from crypto_ai.phase7.device_evidence import fit_with_device_evidence
-from crypto_ai.phase7.fit_boundary import assert_fit_matrices
+from crypto_ai.phase7.fit_boundary import _all_finite_blocked, assert_fit_matrices
 from crypto_ai.phase7.folds import IneligibleFoldError
 from crypto_ai.phase7.model_registry import verify_registered_model
 from crypto_ai.phase7.resources import resource_admission
@@ -54,7 +54,7 @@ def _matrix(table: pa.Table, columns: tuple[str, ...]) -> np.ndarray:
     matrix = np.empty((table.num_rows, len(columns)), dtype=np.float64)
     for index, name in enumerate(columns):
         matrix[:, index] = _floats(table, name)
-    if matrix.ndim != 2 or not np.all(np.isfinite(matrix)):
+    if matrix.ndim != 2 or not _all_finite_blocked(matrix):
         raise ValueError("Phase 7 model features must be a finite matrix")
     return matrix
 
@@ -232,11 +232,15 @@ def _fit(
     # (matrices may come back from the prepared cache). Nothing is reordered or repaired.
     assert_fit_matrices(train_x, train_y, validation_x, validation_y, sample_weight)
     resource_admission("ESTIMATOR_FIT")
+    from crypto_ai.phase7.memory_profile import admit_fit, callback
+
+    admit_fit(config, model_threads, train_x, train_y, validation_x, validation_y, sample_weight)
     estimator = _estimator(config, model_threads=model_threads)
     backend = resolve_lightgbm_backend()
     observer = fit_observer(estimator_key)
     evaluation = {"eval_X": validation_x, "eval_y": validation_y}
     callbacks = [
+        callback,
         lgb.early_stopping(config.early_stopping_rounds, first_metric_only=True, verbose=False),
     ]
     if observer is not None:
