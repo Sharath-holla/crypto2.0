@@ -1,0 +1,24 @@
+{
+  "captured_utc": "2026-11-17T10:31:20.177881+00:00",
+  "compute_stopped": true,
+  "model_fitting_held": true,
+  "pods": [
+    {
+      "cost": 0.295,
+      "id": "3hv6n675gud1wu",
+      "status": "EXITED"
+    }
+  ],
+  "volume": {
+    "dataCenter": "EU-SE-1",
+    "id": "kz9axr9t9v",
+    "name": "extra_blush_galliform",
+    "size": 50,
+    "tags": [],
+    "type": "STANDARD"
+  },
+  "wallet": {
+    "clientBalance": 17.7687408636,
+    "currentSpendPerHr": 0.005
+  }
+}

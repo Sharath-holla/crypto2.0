@@ -1,0 +1,38 @@
+{
+  "status": "DRAFT_WAITING_OWNER_START",
+  "execute_now": false,
+  "refresh_quote_and_cuda_availability_before_submission": true,
+  "request": {
+    "name": "GENERATE_UNIQUE_NIGHT_SESSION_NAME",
+    "image": "runpod/pytorch:2.1.0-cu1320-torch280-ubuntu2404",
+    "gpu": {
+      "id": "NVIDIA RTX A6000",
+      "count": 2,
+      "minRamPerGpu": 49,
+      "minVcpuCountPerGpu": 8,
+      "allowedCudaVersions": [
+        "13.2"
+      ]
+    },
+    "dataCenterIds": [
+      "EU-SE-1"
+    ],
+    "disk": 200,
+    "mounts": {
+      "network": [
+        {
+          "volumeId": "kz9axr9t9v",
+          "path": "/workspace"
+        }
+      ]
+    },
+    "ports": [
+      "22/tcp"
+    ],
+    "startSsh": true,
+    "env": {
+      "PUBLIC_KEY": "INJECT_LOCAL_RUNPOD_CRYPTO2_PUBLIC_KEY_AT_LAUNCH"
+    }
+  },
+  "note": "Explicit CUDA compatibility matches the selected image and advertised host version. This is a draft, not proof that a host can be placed. GPU fitting remains disabled."
+}

@@ -1,0 +1,11 @@
+{
+  "authorization": "START_ONE_PHASE7A_CPU_SMOKE_NOW_PLUS_CONSTRAINED_48GB",
+  "image": "runpod/pytorch:2.1.0-cu1320-torch280-ubuntu2404",
+  "max_session_usd": 15.76,
+  "name": "crypto2-p7a-dual-a6000-20261117T102736Z",
+  "rate": 1.38,
+  "request_sha256": "e95145b8900f135be871b0fb89afb62d9e53eb39a41eac320d14069c9a7c7e2c",
+  "upper": 1.7,
+  "utc": "2026-11-17T10:27:36.175248+00:00",
+  "wallet_start": 17.7687408636
+}

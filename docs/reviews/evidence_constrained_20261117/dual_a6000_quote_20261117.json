@@ -1,0 +1,49 @@
+{
+  "captured_utc": "2026-11-17T10:25:45.244380+00:00",
+  "count": 2,
+  "gpu": {
+    "availability": "LOW",
+    "community": true,
+    "cudaVersions": [
+      {
+        "available": true,
+        "version": "13.2"
+      }
+    ],
+    "dataCenters": [
+      {
+        "availability": "LOW",
+        "id": "EU-SE-1",
+        "name": "EU-SE-1"
+      }
+    ],
+    "id": "NVIDIA RTX A6000",
+    "manufacturer": "NVIDIA",
+    "maxCount": {
+      "community": 2,
+      "secure": 10
+    },
+    "memory": 48,
+    "minRam": 100,
+    "minVcpuCount": 19,
+    "name": "RTX A6000",
+    "pool": "AMPERE_48",
+    "price": {
+      "community": 0.33,
+      "secure": 0.69,
+      "serverless": 1.22
+    },
+    "secure": true
+  },
+  "pods": [
+    {
+      "cost": 0.295,
+      "id": "3hv6n675gud1wu",
+      "status": "EXITED"
+    }
+  ],
+  "wallet": {
+    "clientBalance": 17.7687408636,
+    "currentSpendPerHr": 0.005
+  }
+}

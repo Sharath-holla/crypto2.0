@@ -1,0 +1,15 @@
+# Night launch handoff — waiting for the owner
+
+**Model fitting is held until a fresh owner start message. No automatic/scheduled start is configured.**
+
+The owner selected the 2× RTX A6000 / advertised 100 decimal GB RAM / 19-vCPU configuration, then asked to prepare and wait until tonight. The matching live API quote was $1.38/hour compute. The 200 GB local-disk attempt returned HTTP 400 (no instances available), created no Pod and incurred no compute charges. All listed Pods remain EXITED. The network volume and uploaded dataset are preserved. Storage continues billing.
+
+Prepared and rechecked: exact scientific source `e2fbe33211d975e3af88e52ce6180c820ce05cbb`, source archive, separate operator kit, six matching identities, 1,520 passing exact-export tests, 41 passing operator checks, Ruff and formatting. Use `NIGHT_LAUNCH_PLAN_20261117.json` and the current source manifest for exact file paths/hashes. No local scientific cache or real model was built.
+
+`DUAL_A6000_DEPLOYMENT_DRAFT_20261117.json` records the intended request with explicit CUDA 13.2 compatibility for the chosen image. Runpod documents host CUDA constraints under `gpu` ([official create API](https://docs.runpod.io/api-reference-v2/pods/create-a-pod)). Refresh actual stock/quote before any submission; the draft is not a successful reservation. Inject only the local public SSH key, never the private/account API key. Do not submit placeholder fields.
+
+At the owner's start message, derive a NEW live-wallet/session budget and <=24-hour UTC deadline, protect the $1 absolute floor with the dynamic $1.75-or-higher checkpoint trigger, and preserve the historical cumulative ceiling. Old failed-attempt deadlines and quotes are not an active session. Deploy with >=150 GB local disk (200 GB preferred), existing volume at `/workspace`, then verify actual >=64 GiB effective RAM for the selected 100 GB host, effective CPU and local capacity. Keep the tested constrained memory watcher/probe enabled on the larger host. No paid idle waiting for the owner.
+
+Pending remote gates: outside-Pod supervised stop controller/permissions/two heartbeats, bootstrap, transferred input checks, six identities on Linux, Linux/filesystem/resources, one canonical cache preparation, exact double read-only reload, capacity-conditional early persistent-cache copy, and the full-row five-round memory probe. These require an actually available host. They must all pass before a separate training approval is activated. The owner has authorized the gated sequence once they say start; do not ask again between ordinary passing gates.
+
+Train only canonical Fold-0 `architecture-G0-A6-60m-raw`, CORE/A6/109 float64 columns, raw 60m target, CPU, one worker, max 500 rounds/.02 learning rate/50-round early stopping. No TEST metrics during fit, no July/August access, no other model or grid. Native mid-fit continuation stays disabled. Export results/checkpoints/evidence, stop provider compute and confirm EXITED on completion or safety failure.
