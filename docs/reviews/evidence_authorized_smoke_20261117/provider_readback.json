@@ -1,0 +1,58 @@
+{
+  "captured_utc": "2026-11-17T08:28:50.883726+00:00",
+  "new_pod_created": false,
+  "pod_billing": {
+    "metadata": {
+      "query": {
+        "bucketSize": "day",
+        "endTime": "2026-11-18T00:00:00Z",
+        "podId": "3hv6n675gud1wu",
+        "startTime": "2026-11-14T00:00:00Z"
+      },
+      "recordCount": 3,
+      "totals": {
+        "cpuAmount": 0,
+        "diskAmount": 0.09837963036261499,
+        "gpuAmount": 0.8038566336035728,
+        "totalAmount": 0.9022362639661878
+      },
+      "uniquePodCount": 1
+    }
+  },
+  "pods": [
+    {
+      "cost": 0.295,
+      "dataCenterId": "EU-SE-1",
+      "disk": 50,
+      "id": "3hv6n675gud1wu",
+      "image": "runpod/pytorch:2.1.0-cu1320-torch280-ubuntu2404",
+      "status": "EXITED"
+    }
+  ],
+  "read_only": true,
+  "volume": {
+    "dataCenter": "EU-SE-1",
+    "id": "kz9axr9t9v",
+    "name": "extra_blush_galliform",
+    "size": 50,
+    "tags": [],
+    "type": "STANDARD"
+  },
+  "volume_billing": {
+    "metadata": {
+      "query": {
+        "bucketSize": "day",
+        "endTime": "2026-11-18T00:00:00Z",
+        "networkVolumeId": "kz9axr9t9v",
+        "startTime": "2026-11-14T00:00:00Z"
+      },
+      "recordCount": 4,
+      "totals": {
+        "highPerformanceAmount": 0,
+        "standardAmount": 0.31111112236976624,
+        "totalAmount": 0.31111112236976624
+      },
+      "uniqueNetworkVolumeCount": 1
+    }
+  }
+}
