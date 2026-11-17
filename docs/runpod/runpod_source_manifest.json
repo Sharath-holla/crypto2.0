@@ -1,0 +1,29 @@
+{
+  "archive": "/Users/cortex/Crypto2Data/reports/phase7-preemption-20261117/crypto2-source-1b6a027b1809.tar.gz",
+  "archive_bytes": 5719805,
+  "archive_filename": "crypto2-source-1b6a027b1809.tar.gz",
+  "archive_sha256": "f1737c335d98cca4832251dc674b46fa17d6f53cfa434b42c1f0bf55a84c26d9",
+  "commit": "1b6a027b180979981eb76a4d6cbdec22510960df",
+  "committed_bytes": 25118775,
+  "committed_files": 1230,
+  "identities": {
+    "EXPERIMENT_CONTROL_DIGEST": "25dd40e410ed59a835c38f33d103f3ad903bb213ede029d6121eb792c5177f9d",
+    "GOLD_MANIFEST_SHA": "a142027722424ead5bbc508537e85bf743b3da68b38c3a99c9aabd3ef0e2e711",
+    "PREPARATION_DIGEST": "07b510b1ebacdf80e22ad142861318b1052387973260605cdea509d2a9b31581",
+    "SCIENTIFIC_SOURCE_DIGEST": "9e48d9b49b5c75dcb3f7f45132d530c35a095d61a841e1346c2a61b33ce2772f",
+    "SELECTION_PROTOCOL_DIGEST": "562dbf8203f476e446cd9968d336fa74b022924c01e5b1c34f3167c065c73826",
+    "SIDECAR_SHA": "ea5f25a2a7c009c79a9ecbbe795960234b67074d36d2db7c21424724fabc2048"
+  },
+  "inventory_sha256": "50d2a570ac3beb1276635f642ddd72fd04608f177f2d135a45d0735bb9a0e5c6",
+  "operator_kit_is_separate": true,
+  "python_requirement": ">=3.11; locked CPython 3.12 verification",
+  "schema": "crypto2_runpod_source_manifest_v1",
+  "scientific_source_freeze": "NEW_SOURCE_SUPERSEDES_7a64ee0",
+  "shipping_bytes": 25343270,
+  "shipping_files": 1231,
+  "source_export_includes_git": false,
+  "source_inventory_digest": "50d2a570ac3beb1276635f642ddd72fd04608f177f2d135a45d0735bb9a0e5c6",
+  "source_root": "/Users/cortex/Crypto2Data/reports/phase7-preemption-20261117/crypto2-source-1b6a027b1809",
+  "status": "PASS",
+  "uv_lock_sha256": "d0cf77d737384e0d35e6175daf74bfa9716ece8a9f246d1f107beb0a01556d85"
+}

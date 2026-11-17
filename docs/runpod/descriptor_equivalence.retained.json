@@ -1,0 +1,64 @@
+{
+  "status": "PASS",
+  "proof": "Actual canonical Fold-0 TRAIN-only descriptor loader on recovered and relocated staged bytes; exact numerical content hash equality",
+  "results": {
+    "recovered": {
+      "count": 20,
+      "sha256": "b019cbcf78ba5f3cb76023334b702843707afc27b2b303955bac86586505d9a7",
+      "as_of": "2022-01-01T00:00:00+00:00",
+      "symbols": [
+        "BCHUSDT",
+        "BLZUSDT",
+        "BTCUSDT",
+        "COMPUSDT",
+        "DOGEUSDT",
+        "ETHUSDT",
+        "FILUSDT",
+        "FLMUSDT",
+        "HNTUSDT",
+        "IOTAUSDT",
+        "KNCUSDT",
+        "KSMUSDT",
+        "NEOUSDT",
+        "OMGUSDT",
+        "ONTUSDT",
+        "STORJUSDT",
+        "TRXUSDT",
+        "UNIUSDT",
+        "ZECUSDT",
+        "ZRXUSDT"
+      ]
+    },
+    "staged": {
+      "count": 20,
+      "sha256": "b019cbcf78ba5f3cb76023334b702843707afc27b2b303955bac86586505d9a7",
+      "as_of": "2022-01-01T00:00:00+00:00",
+      "symbols": [
+        "BCHUSDT",
+        "BLZUSDT",
+        "BTCUSDT",
+        "COMPUSDT",
+        "DOGEUSDT",
+        "ETHUSDT",
+        "FILUSDT",
+        "FLMUSDT",
+        "HNTUSDT",
+        "IOTAUSDT",
+        "KNCUSDT",
+        "KSMUSDT",
+        "NEOUSDT",
+        "OMGUSDT",
+        "ONTUSDT",
+        "STORJUSDT",
+        "TRXUSDT",
+        "UNIUSDT",
+        "ZECUSDT",
+        "ZRXUSDT"
+      ]
+    }
+  },
+  "supplement_files": 1840,
+  "staged_files": 2777,
+  "staged_bytes": 10998003736,
+  "linux_validation": "NOT_RUN"
+}

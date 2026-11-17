@@ -1,0 +1,169 @@
+{
+  "lightgbm": "4.7.0",
+  "fixture": "1600 artificial non-market rows, 24 columns, weighted TRAIN",
+  "method": "separate processes; native save_model(-1)/init_model; restored public-callback patience state",
+  "real_configuration_modified": false,
+  "cases": [
+    {
+      "case": "before_best",
+      "pause_round": 125,
+      "max_abs_prediction_difference": 0.0016205665978972243,
+      "exact_predictions": false,
+      "same_best_iteration": false,
+      "same_stop_round": false,
+      "baseline": {
+        "best_iteration": 251,
+        "tree_count": 251,
+        "observed_completed_rounds": 301,
+        "best_score": 0.00010968388251141833,
+        "rmse": 0.010473007339254133,
+        "mae": 0.008320619031689009,
+        "serialization_seconds": [
+          0.008853499995893799,
+          0.00913766600569943,
+          0.00843858399457531
+        ],
+        "threads": 1
+      },
+      "continued": {
+        "best_iteration": 262,
+        "tree_count": 262,
+        "observed_completed_rounds": 312,
+        "best_score": 0.00010975148456061445,
+        "rmse": 0.010476234284171673,
+        "mae": 0.008323561502602642,
+        "serialization_seconds": [
+          0.009050790999026503,
+          0.0087152909982251,
+          0.009292333001212683
+        ],
+        "threads": 1
+      },
+      "exact_tree_structure": false
+    },
+    {
+      "case": "after_best",
+      "pause_round": 252,
+      "max_abs_prediction_difference": 0.0006251274212288223,
+      "exact_predictions": false,
+      "same_best_iteration": false,
+      "same_stop_round": false,
+      "baseline": {
+        "best_iteration": 251,
+        "tree_count": 251,
+        "observed_completed_rounds": 301,
+        "best_score": 0.00010968388251141833,
+        "rmse": 0.010473007339254133,
+        "mae": 0.008320619031689009,
+        "serialization_seconds": [
+          0.008853499995893799,
+          0.00913766600569943,
+          0.00843858399457531
+        ],
+        "threads": 1
+      },
+      "continued": {
+        "best_iteration": 268,
+        "tree_count": 268,
+        "observed_completed_rounds": 318,
+        "best_score": 0.00010949897413933743,
+        "rmse": 0.010464175760951372,
+        "mae": 0.008319432135618029,
+        "serialization_seconds": [
+          0.00910445800400339,
+          0.009375082998303697,
+          0.009099250004510395
+        ],
+        "threads": 1
+      },
+      "exact_tree_structure": false
+    },
+    {
+      "case": "inside_patience",
+      "pause_round": 276,
+      "max_abs_prediction_difference": 0.0,
+      "exact_predictions": true,
+      "same_best_iteration": true,
+      "same_stop_round": true,
+      "baseline": {
+        "best_iteration": 251,
+        "tree_count": 251,
+        "observed_completed_rounds": 301,
+        "best_score": 0.00010968388251141833,
+        "rmse": 0.010473007339254133,
+        "mae": 0.008320619031689009,
+        "serialization_seconds": [
+          0.008853499995893799,
+          0.00913766600569943,
+          0.00843858399457531
+        ],
+        "threads": 1
+      },
+      "continued": {
+        "best_iteration": 251,
+        "tree_count": 251,
+        "observed_completed_rounds": 301,
+        "best_score": 0.00010968388251141833,
+        "rmse": 0.010473007339254133,
+        "mae": 0.008320619031689009,
+        "serialization_seconds": [
+          0.009076875001483131,
+          0.008963500004028901,
+          0.008868999997503124
+        ],
+        "threads": 1
+      },
+      "exact_tree_structure": true
+    },
+    {
+      "case": "one_before_early_stop",
+      "pause_round": 300,
+      "max_abs_prediction_difference": 0.0,
+      "exact_predictions": true,
+      "same_best_iteration": true,
+      "same_stop_round": true,
+      "baseline": {
+        "best_iteration": 251,
+        "tree_count": 251,
+        "observed_completed_rounds": 301,
+        "best_score": 0.00010968388251141833,
+        "rmse": 0.010473007339254133,
+        "mae": 0.008320619031689009,
+        "serialization_seconds": [
+          0.008853499995893799,
+          0.00913766600569943,
+          0.00843858399457531
+        ],
+        "threads": 1
+      },
+      "continued": {
+        "best_iteration": 251,
+        "tree_count": 251,
+        "observed_completed_rounds": 301,
+        "best_score": 0.00010968388251141833,
+        "rmse": 0.010473007339254133,
+        "mae": 0.008320619031689009,
+        "serialization_seconds": [
+          0.00833966599748237,
+          0.008454041999357287,
+          0.008268332996522076
+        ],
+        "threads": 1
+      },
+      "exact_tree_structure": true
+    },
+    {
+      "case": "one_before_500_round_cap",
+      "pause_round": 499,
+      "baseline_tree_count": 500,
+      "continued_tree_count": 500,
+      "max_abs_prediction_difference": 7.523209736306352e-05,
+      "exact_predictions": false,
+      "remaining_allowance": 1
+    }
+  ],
+  "full_restart_threads_1_vs_2_max_prediction_difference": 0.0,
+  "full_restart_threads_1_vs_2_same_best_iteration": true,
+  "qualification": "MID_FIT_RESUME_NOT_QUALIFIED",
+  "reason": "Native continuation does not reproduce the uninterrupted stochastic boosting trajectory; production init_model remains disabled."
+}

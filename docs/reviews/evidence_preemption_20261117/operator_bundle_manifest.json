@@ -1,0 +1,13 @@
+{
+  "schema": "crypto2_preemption_operator_bundle_v1",
+  "status": "PASS",
+  "archive": "/Users/cortex/Crypto2Data/reports/phase7-preemption-20261117/crypto2-preemption-operator-kit-20261117.tar.gz",
+  "archive_bytes": 276265,
+  "sha256": "de0a465043ee20454af2fcdea678dc1836cd38c8cb873bc4d72051a667ed0a3f",
+  "members": 47,
+  "payload_bytes": 1524348,
+  "source_commit": "1b6a027b180979981eb76a4d6cbdec22510960df",
+  "external_manifest_not_in_archive": true,
+  "inventory_sha256": "a19187e2877f4340269efd4bcab3c0612b991acb4a4a8c89a345f3dc304b1997",
+  "no_secrets_or_approved_contracts": true
+}

@@ -1,0 +1,23 @@
+{
+  "status": "PASS",
+  "checks": {
+    "runpod_bootstrap_phase7.sh": "SYNTAX_AND_DRY_RUN_PASS",
+    "runpod_collect_evidence_phase7.sh": "SYNTAX_AND_DRY_RUN_PASS",
+    "runpod_preflight_phase7.sh": "SYNTAX_AND_DRY_RUN_PASS",
+    "runpod_prepare_one_cache_phase7.sh": "SYNTAX_AND_DRY_RUN_PASS",
+    "runpod_reload_cache_phase7.sh": "SYNTAX_AND_DRY_RUN_PASS",
+    "runpod_restore_cache_phase7.sh": "SYNTAX_AND_DRY_RUN_PASS",
+    "runpod_resume_one_smoke_phase7.sh": "SYNTAX_AND_DRY_RUN_PASS",
+    "runpod_train_one_smoke_phase7.sh": "SYNTAX_AND_DRY_RUN_PASS",
+    "runpod_verify_transfer_phase7.sh": "SYNTAX_AND_DRY_RUN_PASS",
+    "runpod_stop_controller_phase7.py": "HELP_PASS",
+    "runpod_select_host_phase7.py": "HELP_PASS",
+    "native_checkpoint_verifier": "HELP_PASS",
+    "OWNER_RESUME_TEMPLATE_20261118.json": "PENDING_AND_IDENTITY_BOUND",
+    "OWNER_TRAIN_TEMPLATE_20261118.json": "PENDING_AND_IDENTITY_BOUND",
+    "OWNER_PREPARE_TEMPLATE_20261118.json": "PENDING_AND_IDENTITY_BOUND",
+    "source_archive": "SHA256_SAFE_MEMBERS_COUNTS_PASS"
+  },
+  "cloud_requests": 0,
+  "real_models": 0
+}

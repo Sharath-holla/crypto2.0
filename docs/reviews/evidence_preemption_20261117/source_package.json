@@ -1,0 +1,25 @@
+{
+  "commit": "1b6a027b180979981eb76a4d6cbdec22510960df",
+  "archive": "/Users/cortex/Crypto2Data/reports/phase7-preemption-20261117/crypto2-source-1b6a027b1809.tar.gz",
+  "source_root": "/Users/cortex/Crypto2Data/reports/phase7-preemption-20261117/crypto2-source-1b6a027b1809",
+  "archive_bytes": 5719805,
+  "archive_sha256": "f1737c335d98cca4832251dc674b46fa17d6f53cfa434b42c1f0bf55a84c26d9",
+  "committed_files": 1230,
+  "committed_bytes": 25118775,
+  "inventory_sha256": "50d2a570ac3beb1276635f642ddd72fd04608f177f2d135a45d0735bb9a0e5c6",
+  "shipping_files": 1231,
+  "shipping_bytes": 25343270,
+  "uv_lock_sha256": "d0cf77d737384e0d35e6175daf74bfa9716ece8a9f246d1f107beb0a01556d85",
+  "python_requirement": ">=3.11; locked CPython 3.12 verification",
+  "scientific_source_freeze": "NEW_SOURCE_SUPERSEDES_7a64ee0",
+  "status": "PASS",
+  "exact_export_test_gate": {
+    "tests": 1506,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "ruff": "PASS",
+    "format": "PASS",
+    "formatted_python_files": 754
+  }
+}

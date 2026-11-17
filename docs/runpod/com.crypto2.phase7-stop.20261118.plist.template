@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key><string>com.crypto2.phase7-stop.20261118</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/usr/bin/caffeinate</string><string>-dimsu</string>
+    <string>/Users/cortex/Projects/crypto2.0/.venv/bin/python</string>
+    <string>/Users/cortex/Projects/crypto2.0/scripts/closure/runpod_stop_controller_phase7.py</string>
+    <string>--contract</string><string>/Users/cortex/.crypto2-transfer/phase7-session-approved.json</string>
+    <string>--state</string><string>/Users/cortex/.crypto2-transfer/phase7-20261118-controller</string>
+    <string>--local-root</string><string>/crypto2-session</string>
+    <string>--arm</string>
+  </array>
+  <key>RunAtLoad</key><false/>
+  <key>KeepAlive</key><dict><key>SuccessfulExit</key><false/></dict>
+  <key>ThrottleInterval</key><integer>30</integer>
+  <key>StandardOutPath</key><string>/Users/cortex/.crypto2-transfer/phase7-20261118-controller/stdout.log</string>
+  <key>StandardErrorPath</key><string>/Users/cortex/.crypto2-transfer/phase7-20261118-controller/stderr.log</string>
+</dict>
+</plist>
