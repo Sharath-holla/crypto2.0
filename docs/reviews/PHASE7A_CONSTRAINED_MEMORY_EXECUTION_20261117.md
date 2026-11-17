@@ -97,7 +97,7 @@ The owner's current message authorizes these conditional stages; the blocker her
 | STOP_REASON | RUNPOD_PLACEMENT_UNAVAILABLE |
 | FULL_TRAINING_PEAK_RAM_GIB | NOT_MEASURED |
 | WALLET_START | $17.7736019747 |
-| WALLET_END | $17.7736019747 latest observed; storage continues billing |
+| WALLET_END | $17.7687408636 latest observed; storage continues billing |
 | WALLET_FLOOR | USD_1.00 |
 | LATEST_CHECKPOINT | None from this attempt |
 | PROVIDER | EXITED — all listed Pods |
@@ -106,3 +106,9 @@ The owner's current message authorizes these conditional stages; the blocker her
 | FULL_GRID | NOT_AUTHORIZED |
 
 Detailed source/test/deployment/provider receipts are in [evidence_constrained_20261117](evidence_constrained_20261117/). No profitability conclusion is possible from this attempt.
+
+## Final minimum-profile placement check
+
+After the initial placement failures, one additional request used 49 decimal GB minimum RAM (45.64 GiB), eight vCPU and 150 GB local disk, all still meeting the implemented constrained admission floor. The refreshed catalog selected A6000; A40 was absent. Runpod again returned HTTP 400 with the same no-instances-available message at 2026-11-17T10:17:58Z. No Pod was created and no controller/real cache/probe/fit ran. This confirms the refusal also occurred at the authorized resource minimum rather than only at the preferred larger disk/CPU request. Runtime safety thresholds and scientific workload were never lowered.
+
+Latest readback: **2026-11-17T10:19:35.216811+00:00**, only old Pod **EXITED**, preserved 50 GB network volume, wallet **$17.7687408636**, retained-storage account rate **$0.005/hour**. The source and executable operator kit remain unchanged; the kit contains the earlier immutable audit snapshot, and this final report adds the later placement/readback receipts.

@@ -1,0 +1,31 @@
+{
+  "all_compute_stopped": true,
+  "captured_utc": "2026-11-17T10:19:35.216811+00:00",
+  "new_compute_created": false,
+  "pods": [
+    {
+      "cost": 0.295,
+      "disk": 70,
+      "gpu": {
+        "count": 0,
+        "id": "NVIDIA A40",
+        "memory": 0,
+        "vcpuCount": 0
+      },
+      "id": "3hv6n675gud1wu",
+      "status": "EXITED"
+    }
+  ],
+  "volume": {
+    "dataCenter": "EU-SE-1",
+    "id": "kz9axr9t9v",
+    "name": "extra_blush_galliform",
+    "size": 50,
+    "tags": [],
+    "type": "STANDARD"
+  },
+  "wallet": {
+    "clientBalance": 17.7687408636,
+    "currentSpendPerHr": 0.005
+  }
+}
