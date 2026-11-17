@@ -38,10 +38,15 @@ def minimum_ram() -> int:
 def record(stage: str, root: Path) -> dict[str, Any]:
     import shutil
 
+    import psutil
+
     from crypto_ai.phase7.resource_estimate import cgroup_limits
     from crypto_ai.phase7.runtime import memory_snapshot
 
+    host = psutil.virtual_memory()
     value = {
+        "host_memtotal_bytes": int(host.total),
+        "host_memavailable_bytes": int(host.available),
         "utc": datetime.now(UTC).isoformat(),
         "stage": stage,
         "resource_profile": profile(),
