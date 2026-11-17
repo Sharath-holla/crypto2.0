@@ -240,6 +240,7 @@ TRAINING_CRITICAL_SOURCE_FILES = (
     "src/crypto_ai/phase7/device_evidence.py",
     "src/crypto_ai/phase7/environment.py",
     "src/crypto_ai/phase7/training_metrics.py",
+    "src/crypto_ai/phase7/preemption.py",
 )
 EXECUTION_CONTEXT_SOURCE_FILES = (
     "src/crypto_ai/phase7/preflight.py",
@@ -1175,7 +1176,44 @@ def _run_one(
         normalization_floor=config.targets.normalization_floor,
         config=current_config(),
     )
+    partial_context = nullcontext()
+    preemption_identity = {}
+    if os.environ.get("PHASE7_PREEMPTION_CONFIG"):
+        from crypto_ai.phase7.gold_validation import locate_gold_manifest
+        from crypto_ai.phase7.identity_summary import identity_summary
+        from crypto_ai.phase7.preemption import preemption_scope
+
+        runtime = RuntimePaths.resolve(config.paths)
+        cache_manifest = runtime.cache_root / str(cache_id) / "manifest.json"
+        cache_payload = json.loads(cache_manifest.read_text())
+        partial_config = json.loads(Path(os.environ["PHASE7_PREEMPTION_CONFIG"]).read_text())
+        preemption_identity = {
+            key: partial_config[key] for key in ("logical_run_id", "execution_session_id", "pod_id")
+        }
+        partial_context = preemption_scope(
+            binding={
+                "scientific_ids": identity_summary(
+                    locate_gold_manifest(runtime.gold_root), Path(os.environ[SIDECAR_ENV])
+                ),
+                "scientific_input_identity": checkpoint_identity,
+                "prepared_cache_id": cache_id,
+                "cache_identity": cache_payload["identity"],
+                "cache_manifest_sha256": file_sha256(cache_manifest),
+                "cache_payload_files": cache_payload["files"],
+                "fold_boundaries": fold.plan.to_dict(),
+                "feature_columns": list(feature_columns),
+                "target_column": target,
+                "spec_id": spec.name,
+                "fold_id": fold.plan.fold_id,
+                "architecture": spec.architecture,
+                "horizon_minutes": spec.horizon_minutes,
+                "target_type": spec.target_type,
+                "maximum_rounds": config.models.n_estimators,
+                "early_stopping_rounds": config.models.early_stopping_rounds,
+            }
+        )
     with (
+        partial_context,
         fit_context,
         training_metric_scope(
             log_directory,
@@ -1191,6 +1229,7 @@ def _run_one(
             feature_count=len(feature_columns),
             round_limit=config.models.n_estimators,
             symbol_balanced=spec.symbol_balanced,
+            **preemption_identity,
         ) as metric_scope,
     ):
         model = fit_architecture(
@@ -1612,9 +1651,22 @@ def run_phase7_training(config: Phase7Config, **kwargs: Any) -> dict[str, Any]:
         spec_id=kwargs.get("benchmark_spec_id", "architecture-G0-A6-60m-raw"),
         fold_id=kwargs.get("benchmark_fold_id"),
     )
+    from crypto_ai.phase7.preemption import TrainingPreempted
+
     with owned_run(root, root.name, training_source_identity(), mode=mode):
         try:
             return _run_phase7_training_owned(config, **kwargs)
+        except TrainingPreempted as done:
+            # No calibration, TEST, model publication, canonical result, or COMPLETE checkpoint.
+            payload = {
+                "status": "PREEMPTED_RESTART_REQUIRED",
+                "models_completed": 0,
+                "specs_completed": 0,
+                "run_root": str(root),
+                "receipt": done.receipt,
+            }
+            atomic_json(root / f"preempted-{time.time_ns()}.json", payload)
+            return payload
         except PreparedOnlyComplete as done:
             return {
                 "status": "PREPARED_ONLY",

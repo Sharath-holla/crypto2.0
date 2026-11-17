@@ -61,6 +61,7 @@ KNOWN_ENVIRONMENT = frozenset(
         "PHASE7_TOTAL_CPU_THREADS",
         "PHASE7_UV_BIN",
         "PHASE7_OWNER_APPROVAL_FILE",
+        "PHASE7_PREEMPTION_CONFIG",
     ]
 ) | frozenset(
     f"PHASE7_LEGACY_{family}_ROOT" for family in ("DATA", "GOLD", "ARTIFACT", "MODEL", "REPORT")

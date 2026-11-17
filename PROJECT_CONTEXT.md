@@ -10,6 +10,27 @@ BEFORE MODIFYING OR RUNNING THIS PROJECT.
 
 ## Latest local readiness — 2026-11-08
 
+### Preemption runtime update — 2026-11-17
+
+The owner authorized a runtime/checkpoint implementation and tiny local CPU tests only.
+No new Pod, real cache or real-data fit is authorized. The new implementation supersedes
+7a64ee0 as the training source once its new freeze is packaged; read
+`docs/reviews/PHASE7A_PREEMPTION_RESUME_READINESS_20261117.md` and the new operator source
+manifest for the exact verified commit/archive and content identities.
+
+Mid-fit native LightGBM continuation is **NOT QUALIFIED**: independent-process fixture tests
+show changed predictions/stopping decisions under the approved sampling parameters, even
+with restored patience metadata. Production never passes `init_model`. The implemented
+fallback retains qualified cache, native partial checkpoints and session telemetry; after
+top-up a fresh **RESUME ONE CPU SMOKE** approval permits a new attempt from round zero on
+the same verified cache. Partial checkpoints never become completed model/ledger results.
+The outside-Pod controller enforces a $1 wallet floor with a configurable default $1.75
+checkpoint/stop trigger, additional cost/latency reserves and provider EXITED confirmation.
+No auto-top-up, auto-deployment, automatic restart after funding, GPU fit or full grid.
+Real Linux/filesystem/data/cache gates and fresh session budget/deadline remain mandatory.
+
+The following November 8 evidence is the historical baseline, not the new runtime freeze:
+
 Read `docs/reviews/CRYPTO2_FINAL_MASTER_READINESS_REPORT_20261106.md` for the measured November
 baseline and `docs/reviews/CRYPTO2_LOCAL_REVIEW_20261108.md` for the subsequent local review.
 The latest combined closure is `docs/reviews/CRYPTO2_COMBINED_LOCAL_CLOSURE_20261108.md`:

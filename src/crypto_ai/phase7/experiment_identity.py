@@ -57,6 +57,7 @@ EXPERIMENT_CONTROL_SOURCE_FILES = (
     "src/crypto_ai/phase7/fit_boundary.py",
     "src/crypto_ai/phase7/admission.py",
     "src/crypto_ai/phase7/run_contract.py",
+    "src/crypto_ai/phase7/preemption.py",
     "src/crypto_ai/phase7/result_integrity.py",
     "src/crypto_ai/phase7/selection_chronology.py",
     "src/crypto_ai/phase7/result_ledger.py",

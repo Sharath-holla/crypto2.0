@@ -1,0 +1,326 @@
+"""Operator safety tests only: mocks/temporary files, no cache build or model fit."""
+
+from __future__ import annotations
+
+import copy
+import importlib.util
+import json
+import os
+import sys
+from datetime import UTC, datetime, timedelta
+from pathlib import Path
+from unittest.mock import patch
+
+import pytest
+
+HERE = Path(__file__).resolve().parent
+sys.path.insert(0, str(HERE))
+import runpod_phase7_ops as ops  # noqa: E402
+import runpod_select_host_phase7 as hosts  # noqa: E402
+import runpod_stop_controller_phase7 as controller  # noqa: E402
+
+
+@pytest.fixture
+def approved():
+    value = ops.read(ops.DOC / "RUNPOD_COST_AND_STOP_CONTRACT_TEMPLATE_20261118.json")
+    value.update(
+        status="APPROVED",
+        owner="TEST_FIXTURE_ONLY",
+        pod_id="testpod123",
+        compute_usd_per_hour=0.5,
+        all_in_usd_per_hour_upper_bound=0.6,
+        max_session_usd=2,
+        wallet_usd_at_start=10,
+        identified_cumulative_usd_at_start=1.2,
+        hard_stop_utc=(datetime.now(UTC) + timedelta(hours=1)).isoformat(),
+        session_start_utc=(datetime.now(UTC) - timedelta(minutes=1)).isoformat(),
+    )
+    return value
+
+
+def test_unapproved_template_refused():
+    with pytest.raises(ValueError, match="OWNER_SESSION_APPROVAL_REQUIRED"):
+        ops.contract(ops.DOC / "RUNPOD_COST_AND_STOP_CONTRACT_TEMPLATE_20261118.json")
+
+
+def test_approved_fixture_validates_without_network(tmp_path, approved):
+    p = tmp_path / "contract.json"
+    ops.write(p, approved)
+    assert ops.contract(p)["approval"] == "LINUX_VERIFICATION_ONLY"
+
+
+@pytest.mark.parametrize(
+    "change",
+    [
+        {"max_session_usd": 18},
+        {"max_session_usd": float("nan")},
+        {"hard_stop_utc": "2026-01-01T00:00:00Z"},
+        {"backend": "gpu"},
+        {"workers": 2},
+        {"spec": "grid"},
+        {"volume_id": "wrong"},
+        {"source_commit": "99cf12f"},
+        {"provider_container_disk_gb": 149},
+        {"minimum_free_ram_gib": 0},
+        {"approval": "TRAIN_AND_PREPARE"},
+        {"hard_stop_utc": "2026-11-19T05:00:00+05:30"},
+    ],
+)
+def test_cost_scope_and_deadline_refusals(tmp_path, approved, change):
+    approved.update(change)
+    p = tmp_path / "contract.json"
+    ops.write(p, approved)
+    with pytest.raises((ValueError, TypeError)):
+        ops.contract(p)
+
+
+@pytest.mark.parametrize("stage", ops.STAGES)
+def test_default_plans_do_not_execute(stage, capsys):
+    with patch.object(sys, "argv", ["ops", stage]), patch.object(ops, "execute") as execute:
+        assert ops.main() == 0
+        execute.assert_not_called()
+    assert '"status": "DRY_RUN_ONLY"' in capsys.readouterr().out
+
+
+def test_controller_default_does_not_read_key_or_connect(capsys):
+    with (
+        patch.object(sys, "argv", ["controller", "--contract", "not-a-real-file"]),
+        patch.object(controller, "API") as api,
+    ):
+        assert controller.main() == 0
+        api.assert_not_called()
+    assert '"armed": false' in capsys.readouterr().out
+
+
+def test_non_linux_refused_before_mount_or_writes(tmp_path):
+    with (
+        patch.object(ops.platform, "system", return_value="Darwin"),
+        patch.object(ops, "run") as run,
+    ):
+        with pytest.raises(ValueError, match="REAL_LINUX"):
+            ops.local_mount(tmp_path, 200)
+        run.assert_not_called()
+
+
+def test_network_mount_refused_before_write(tmp_path):
+    with (
+        patch.object(ops.platform, "system", return_value="Linux"),
+        patch.object(ops.platform, "machine", return_value="x86_64"),
+        patch.object(
+            ops,
+            "run",
+            return_value=json.dumps({"filesystems": [{"fstype": "fuse", "options": "rw"}]}),
+        ),
+        pytest.raises(ValueError, match="UNQUALIFIED_OR_NETWORK"),
+    ):
+        ops.local_mount(tmp_path, 200)
+
+
+def test_region_and_gib_conversion():
+    g = {
+        "id": "fixture",
+        "minRam": 64,
+        "minVcpuCount": 8,
+        "price": {"secure": 0.1},
+        "dataCenters": [{"id": "EU-SE-1", "availability": "HIGH"}],
+    }
+    assert hosts.candidates({"gpus": [g]}, {})[0]["candidate_meets_catalog_floor"] is False
+    g["minRam"] = 70
+    assert hosts.candidates({"gpus": [g]}, {})[0]["candidate_meets_catalog_floor"] is True
+    g["dataCenters"][0]["id"] = "US-CA-2"
+    assert hosts.candidates({"gpus": [g]}, {}) == []
+
+
+def test_host_price_order():
+    base = {
+        "minRam": 100,
+        "minVcpuCount": 8,
+        "dataCenters": [{"id": "EU-SE-1", "availability": "HIGH"}],
+    }
+    a, b = copy.deepcopy(base), copy.deepcopy(base)
+    a.update(id="costlier", price={"secure": 1})
+    b.update(id="cheaper", price={"secure": 0.5})
+    assert [x["type"] for x in hosts.candidates({"gpus": [a, b]}, {})] == ["cheaper", "costlier"]
+
+
+def test_stop_only_mutation_is_stop_and_volume_retained(tmp_path):
+    class FakeAPI:
+        def __init__(self):
+            self.calls = []
+            self.stopped = False
+
+        def call(self, method, path, data=None):
+            self.calls.append((method, path, data))
+            if method == "POST":
+                assert path == "/v2/pods/testpod123/action" and data == {"action": "stop"}
+                self.stopped = True
+                return {}
+            if "network-volumes" in path:
+                return {"id": ops.VOLUME}
+            return {"status": "EXITED" if self.stopped else "RUNNING"}
+
+    api = FakeAPI()
+    with patch.object(controller.time, "sleep"):
+        controller.stop(api, {"pod_id": "testpod123"}, tmp_path, "MOCK_DEADLINE")
+    assert ops.read(tmp_path / "stop-receipt.json")["volume_preserved"] == ops.VOLUME
+    assert all(m != "DELETE" for m, _, _ in api.calls)
+
+
+def test_ssh_discovery_requires_trusted_hostkey():
+    command = controller.ssh_args(
+        {"ssh": {"direct": {"host": "127.0.0.1", "port": 22066}}}, "/unused/key"
+    )
+    assert "StrictHostKeyChecking=yes" in command
+    assert "22066" in command and "BatchMode=yes" in command
+
+
+def test_add_only_copy_refuses_changed_historical_file(tmp_path):
+    a, b = tmp_path / "a", tmp_path / "b"
+    a.mkdir()
+    (a / "report.json").write_text("original")
+    ops.mirror_tree(a, b)
+    (a / "report.json").write_text("changed")
+    with pytest.raises(ValueError, match="EXISTING_EVIDENCE_CONFLICT"):
+        ops.mirror_tree(a, b)
+    assert (b / "report.json").read_text() == "original"
+
+
+def test_final_json_not_a_partial_progress_record(tmp_path):
+    p = tmp_path / "log"
+    p.write_text('STAGE\n{"progress": 1}\n{\n "status": "PREPARED_ONLY"\n}\n')
+    assert ops.final_json(p) == {"status": "PREPARED_ONLY"}
+
+
+def test_templates_use_exact_six_identity_keys_and_separate_modes():
+    assert len(ops.expected()) == 6
+    for mode in ("prepare", "train"):
+        template = ops.read(ops.DOC / f"OWNER_{mode.upper()}_TEMPLATE_20261118.json")
+        assert template["mode"] == mode and template["status"] != "APPROVED"
+        assert {k: template["binding"][k] for k in ops.expected()} == ops.expected()
+
+
+def test_frozen_environment_names_and_effective_thread_budget(tmp_path, approved):
+    from crypto_ai.phase7.run_contract import validate_environment
+    from crypto_ai.phase7.runtime import cpu_availability
+
+    with patch.dict(os.environ, {}, clear=True):
+        env = ops.environment(
+            approved, tmp_path / "source", tmp_path, Path("/workspace/phase7a-transfer")
+        )
+    validate_environment(env)
+    assert (
+        int(env["PHASE7_LIGHTGBM_THREADS_PER_MODEL"]) == cpu_availability()["effective_cpu_count"]
+    )
+    assert env["PHASE7_MODEL_PARALLELISM"] == "1"
+    assert env["PHASE7_LGBM_DEVICE"] == "cpu"
+
+
+def test_canonical_cache_api_signatures_exist():
+    import inspect
+
+    from crypto_ai.phase7.prepared_cache import PreparedDataCache
+    from crypto_ai.phase7.training import _prepared_cache_identity
+    from crypto_ai.phase7.universe import select_fold_active_universe
+
+    inspect.signature(PreparedDataCache.load).bind(None, {}, None)
+    assert "source_identity" in inspect.signature(_prepared_cache_identity).parameters
+    assert "unusable_segments" in inspect.signature(select_fold_active_universe).parameters
+    assert importlib.util.find_spec("crypto_ai.phase7.identity_summary") is not None
+
+
+@pytest.mark.parametrize(
+    "trigger,expected_reason",
+    [
+        ("deadline", "HARD_DEADLINE"),
+        ("budget", "SESSION_BUDGET"),
+        ("complete", "NORMAL_COMPLETE"),
+    ],
+)
+def test_controller_mock_end_to_end_stops_compute(tmp_path, approved, trigger, expected_reason):
+    from argparse import Namespace
+
+    approved["container_image"] = "test-image"
+    if trigger == "deadline":
+        approved["hard_stop_utc"] = (datetime.now(UTC) + timedelta(seconds=60)).isoformat()
+    elif trigger == "budget":
+        approved["max_session_usd"] = 0.00001
+    path = tmp_path / "contract.json"
+    ops.write(path, approved)
+
+    class FakeAPI:
+        stopped = False
+
+        def call(self, method, endpoint, data=None):
+            if method == "PATCH":
+                assert data == {"locked": False}
+                return {}
+            if endpoint.endswith("/action"):
+                assert data == {"action": "stop"}
+                self.stopped = True
+                return {}
+            if endpoint == "/graphql":
+                return {"data": {"myself": {"clientBalance": 10, "currentSpendPerHr": 0.6}}}
+            if endpoint.startswith("/v2/billing/"):
+                return {"metadata": {"totals": {"totalAmount": 0}}}
+            if "network-volumes" in endpoint:
+                return {"id": ops.VOLUME}
+            return {
+                "id": "testpod123",
+                "dataCenterId": "EU-SE-1",
+                "locked": False,
+                "disk": 200,
+                "cost": 0.5,
+                "image": "test-image",
+                "gpu": {"memory": 100},
+                "mounts": {"network": [{"path": "/workspace", "volumeId": ops.VOLUME}]},
+                "status": "EXITED" if self.stopped else "RUNNING",
+                "actions": ["stop"],
+                "ssh": {"direct": {"host": "127.0.0.1", "port": 22066}},
+            }
+
+    api = FakeAPI()
+    args = Namespace(
+        contract=str(path),
+        api_key_file="UNUSED",
+        state=str(tmp_path / "state"),
+        ssh_key="UNUSED",
+        local_root="/crypto2-session",
+    )
+    with (
+        patch.object(controller, "API", return_value=api),
+        patch.object(controller.sys, "platform", "darwin"),
+        patch.object(
+            controller, "remote", return_value="NORMAL_COMPLETE" if trigger == "complete" else ""
+        ),
+        patch.object(controller.time, "sleep"),
+    ):
+        controller.monitor(args)
+    assert api.stopped is True
+    receipt = ops.read(tmp_path / "state/stop-receipt.json")
+    assert receipt["reason"] == expected_reason
+    assert receipt["volume_preserved"] == ops.VOLUME
+
+
+def test_expired_restart_still_stops_previously_armed_exact_contract(tmp_path, approved):
+    from argparse import Namespace
+
+    approved["hard_stop_utc"] = (datetime.now(UTC) - timedelta(seconds=1)).isoformat()
+    path = tmp_path / "contract.json"
+    ops.write(path, approved)
+    args = Namespace(contract=str(path), state=str(tmp_path / "state"))
+    ops.write(
+        tmp_path / "state/permission-probe.json",
+        {"status": "PASS", "pod_id": approved["pod_id"], "contract_sha256": ops.sha(path)},
+    )
+    assert controller.stop_contract(args)["pod_id"] == approved["pod_id"]
+
+
+def test_expired_contract_without_prior_arm_proof_cannot_authorize_stop(tmp_path, approved):
+    from argparse import Namespace
+
+    approved["hard_stop_utc"] = (datetime.now(UTC) - timedelta(seconds=1)).isoformat()
+    path = tmp_path / "contract.json"
+    ops.write(path, approved)
+    args = Namespace(contract=str(path), state=str(tmp_path / "state"))
+    with pytest.raises(FileNotFoundError):
+        controller.stop_contract(args)

@@ -265,27 +265,40 @@ def _fit(
             backend_name=backend.name,
             learning_rate=config.learning_rate,
         )
-    try:
-        fit_with_device_evidence(
-            estimator,
-            backend,
-            train_x,
-            train_y,
-            sample_weight=sample_weight,
-            **evaluation,
-            callbacks=callbacks,
-        )
-        if observer is not None:
-            observer.finish(estimator)
-    except Exception as exc:
-        if observer is not None:
-            try:
-                observer.fail(exc)
-            except Exception as logging_error:
-                exc.add_note(f"Fit failure logging also failed: {type(logging_error).__name__}")
-        if backend.gpu_requested:
-            raise _backend_error(backend, exc) from exc
-        raise
+    from crypto_ai.phase7.preemption import TrainingPreempted, checkpoint_callback
+
+    with checkpoint_callback(
+        parameters=lightgbm_estimator_parameters(config, model_threads=model_threads),
+        model_threads=model_threads,
+        sample_weight=sample_weight,
+        observer=observer,
+    ) as partial:
+        if partial is not None:
+            callbacks.append(partial)
+        try:
+            fit_with_device_evidence(
+                estimator,
+                backend,
+                train_x,
+                train_y,
+                sample_weight=sample_weight,
+                **evaluation,
+                callbacks=callbacks,
+            )
+            if observer is not None:
+                observer.finish(estimator)
+        except TrainingPreempted:
+            # A partial native Booster is never returned as a fitted estimator/model bundle.
+            raise
+        except Exception as exc:
+            if observer is not None:
+                try:
+                    observer.fail(exc)
+                except Exception as logging_error:
+                    exc.add_note(f"Fit failure logging also failed: {type(logging_error).__name__}")
+            if backend.gpu_requested:
+                raise _backend_error(backend, exc) from exc
+            raise
     return estimator
 
 
