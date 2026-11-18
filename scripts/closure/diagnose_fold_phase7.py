@@ -116,8 +116,13 @@ def main():
     booster = bundle.estimators["global"].booster_
 
     x = {s: np.load(cache / f"{s}_x.npy", mmap_mode="r") for s in ("train", "validation")}
-    y = {s: np.asarray(np.load(cache / f"{s}_y.npy"), dtype=np.float64) for s in ("train", "validation")}
-    symbols = {s: np.load(cache / f"{s}_symbols.npy", allow_pickle=True) for s in ("train", "validation")}
+    y = {
+        s: np.asarray(np.load(cache / f"{s}_y.npy"), dtype=np.float64)
+        for s in ("train", "validation")
+    }
+    symbols = {
+        s: np.load(cache / f"{s}_symbols.npy", allow_pickle=True) for s in ("train", "validation")
+    }
     for s in ("train", "validation"):
         if x[s].shape != (report["segment_rows"][s], len(cols)) or y[s].shape[0] != x[s].shape[0]:
             raise SystemExit(f"SEGMENT_SHAPE_MISMATCH_{s}")
@@ -136,7 +141,9 @@ def main():
         (out / "fold_diagnosis.json").write_text(json.dumps(result, indent=1))
         raise SystemExit("VALIDATION_RESCORE_MISMATCH")
 
-    sample = np.sort(rng.choice(x["train"].shape[0], size=min(args.sample, x["train"].shape[0]), replace=False))
+    sample = np.sort(
+        rng.choice(x["train"].shape[0], size=min(args.sample, x["train"].shape[0]), replace=False)
+    )
     train_x = np.asarray(x["train"][sample])
     pred_train = booster.predict(train_x, num_iteration=booster.best_iteration)
     result["train_sample"] = scores(y["train"][sample], pred_train)
@@ -190,14 +197,20 @@ def main():
     result["redundancy"] = {
         "train_sample_rows": int(sample.size),
         "pairs_abs_pearson_ge_0_95": sorted(pairs, key=lambda r: -abs(r["pearson"])),
-        "near_constant_features": [u["feature"] for u in univariate if u["train_unique_values_in_sample"] <= 2 or u["train_std"] == 0],
+        "near_constant_features": [
+            u["feature"]
+            for u in univariate
+            if u["train_unique_values_in_sample"] <= 2 or u["train_std"] == 0
+        ],
     }
 
     # Per symbol and chronological blocks (Validation only).
     per_symbol = {}
     for sym in sorted(set(symbols["validation"].tolist())):
         mask = symbols["validation"] == sym
-        per_symbol[str(sym)] = scores(y_val[mask], pred_val[mask]) | {"events_5bps": events(y_val[mask], pred_val[mask])}
+        per_symbol[str(sym)] = scores(y_val[mask], pred_val[mask]) | {
+            "events_5bps": events(y_val[mask], pred_val[mask])
+        }
     result["per_symbol_validation"] = per_symbol
 
     times = table(cache / "validation.arrow").column("feature_time").to_numpy()
