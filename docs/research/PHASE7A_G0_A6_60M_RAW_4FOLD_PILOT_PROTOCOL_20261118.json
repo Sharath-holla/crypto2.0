@@ -1,0 +1,130 @@
+{
+  "schema": "phase7a_pilot_protocol_v1",
+  "status": "FROZEN_BEFORE_NEW_FOLD_RESULTS",
+  "created": "2026-11-18",
+  "owner_authorization": "Sharath N. S., 2026-11-18: APPROVED. PROCEED WITH THE CODE CHANGE AND THE PREDECLARED 4-FOLD PILOT.",
+  "spec": "architecture-G0-A6-60m-raw",
+  "research_view": "CORE",
+  "architecture": "G0",
+  "feature_group": "A6",
+  "feature_contract": {
+    "count": 109,
+    "columns_sha256": "7a1dc6b14613dd174f6d62de2477d4b6d73d3668654c9d0f100ef17f6a17cac7"
+  },
+  "target_contract": {
+    "type": "raw",
+    "horizon_minutes": 60,
+    "target_version": "multiasset_targets_v2"
+  },
+  "model": {
+    "algorithm": "LightGBM LGBMRegressor",
+    "backend": "cpu",
+    "workers": 1,
+    "learning_rate": 0.02,
+    "num_leaves": 31,
+    "min_child_samples": 100,
+    "subsample": 0.9,
+    "subsample_freq": 1,
+    "colsample_bytree": 0.9,
+    "reg_alpha": 0.1,
+    "reg_lambda": 1.0,
+    "random_state": 42,
+    "n_estimators_max": 500,
+    "early_stopping_rounds": 50,
+    "weights": "SYMBOL_BALANCED",
+    "authority": "canonical configuration 93f987736b1a79d26b773957 governs if any listed value differs"
+  },
+  "calibration": "FROZEN canonical CAL_A selection; not changed for the pilot; record type, slope, intercept and sign per fold",
+  "folds": [
+    {
+      "index": 0,
+      "fold_id": "fold-000-a0e9a4f72689",
+      "train_start": "2020-01-01 00:00:00+00:00",
+      "train_end": "2022-01-01 00:00:00+00:00",
+      "validation_start": "2022-01-01 00:00:00+00:00",
+      "validation_end": "2022-04-01 00:00:00+00:00",
+      "calibration_start": "2022-04-01 00:00:00+00:00",
+      "calibration_end": "2022-07-01 00:00:00+00:00",
+      "test_start": "2022-07-01 00:00:00+00:00",
+      "test_end": "2022-10-01 00:00:00+00:00"
+    },
+    {
+      "index": 5,
+      "fold_id": "fold-005-2cf830b9f251",
+      "train_start": "2021-04-01 00:00:00+00:00",
+      "train_end": "2023-04-01 00:00:00+00:00",
+      "validation_start": "2023-04-01 00:00:00+00:00",
+      "validation_end": "2023-07-01 00:00:00+00:00",
+      "calibration_start": "2023-07-01 00:00:00+00:00",
+      "calibration_end": "2023-10-01 00:00:00+00:00",
+      "test_start": "2023-10-01 00:00:00+00:00",
+      "test_end": "2024-01-01 00:00:00+00:00"
+    },
+    {
+      "index": 10,
+      "fold_id": "fold-010-01be2e390a0b",
+      "train_start": "2022-07-01 00:00:00+00:00",
+      "train_end": "2024-07-01 00:00:00+00:00",
+      "validation_start": "2024-07-01 00:00:00+00:00",
+      "validation_end": "2024-10-01 00:00:00+00:00",
+      "calibration_start": "2024-10-01 00:00:00+00:00",
+      "calibration_end": "2025-01-01 00:00:00+00:00",
+      "test_start": "2025-01-01 00:00:00+00:00",
+      "test_end": "2025-04-01 00:00:00+00:00"
+    },
+    {
+      "index": 15,
+      "fold_id": "fold-015-ed49f0aadaf7",
+      "train_start": "2023-10-01 00:00:00+00:00",
+      "train_end": "2025-10-01 00:00:00+00:00",
+      "validation_start": "2025-10-01 00:00:00+00:00",
+      "validation_end": "2026-01-01 00:00:00+00:00",
+      "calibration_start": "2026-01-01 00:00:00+00:00",
+      "calibration_end": "2026-04-01 00:00:00+00:00",
+      "test_start": "2026-04-01 00:00:00+00:00",
+      "test_end": "2026-07-01 00:00:00+00:00"
+    }
+  ],
+  "fold_selection_rule": "Predeclared evenly spaced indices 0,5,10,15 of the frozen 16-fold plan; all end on or before the 2026-07-01 research cutoff; no substitution",
+  "execution": "Sequential 0 -> 5 -> 10 -> 15 under one frozen source and one operator kit; no change between folds; the historical attempt-14 Fold-0 model is diagnostic only and excluded from the formal comparison",
+  "source": {
+    "commit": "133f49ef5b2c5b31d4d6d5ffef3c5c72db5f6e70",
+    "archive_sha256": "a5f1cc244b500a8bae5f7677455462a59ab0ee34ad8a7e8468c0adf83d981b57",
+    "inventory_sha256": "04df3294f495ec5f86cc19f0d20a438bce4700c5b455cd782d96ca987d2cd43b",
+    "identities": {
+      "EXPERIMENT_CONTROL_DIGEST": "96e7005946d49f20e717c2cec354ed5ae2c81de0f9560485da0cb3375232d89d",
+      "GOLD_MANIFEST_SHA": "a142027722424ead5bbc508537e85bf743b3da68b38c3a99c9aabd3ef0e2e711",
+      "PREPARATION_DIGEST": "fa11fc625ea1f7281823b1d1b55644c28b2ab76922c70d60c528d24ca125d587",
+      "SCIENTIFIC_SOURCE_DIGEST": "e05c97318ad3ec40e0986906e15881b82039ce8b168a3f887a553b3072c51b95",
+      "SELECTION_PROTOCOL_DIGEST": "562dbf8203f476e446cd9968d336fa74b022924c01e5b1c34f3167c065c73826",
+      "SIDECAR_SHA": "ea5f25a2a7c009c79a9ecbbe795960234b67074d36d2db7c21424724fabc2048"
+    }
+  },
+  "configuration_hash": "93f987736b1a79d26b773957",
+  "gold_dataset_id": "gold-phase7-0cbf2910e8d96c9d19826598",
+  "cost_assumptions": {
+    "host": "NVIDIA A40-class, EU-SE-1, constrained_48gb profile",
+    "expected_compute_usd": "2.00-2.50",
+    "wallet_floor_usd": 1.0,
+    "dynamic_stop": "enabled",
+    "topup": "none"
+  },
+  "test_policy": "TEST outputs produced by the frozen pipeline are kept as DESCRIPTIVE_OOS_RESULT and never used to change folds, parameters, thresholds or decisions; August 2026 LOCKED_UNUSED",
+  "decision_metrics_scope": "VALIDATION (development metrics; Validation also drives early stopping)",
+  "definitions": {
+    "positive_pearson": "canonical phase7b.baselines.lightgbm.pearson_ic > 0",
+    "positive_spearman": "canonical phase7b.baselines.lightgbm.spearman_ic > 0",
+    "material_beat_zero": "1 - lightgbm.rmse / zero_return.rmse >= 0.0010 (0.10 %)",
+    "beat_ridge": "canonical lightgbm_beats_ridge == true (lightgbm.rmse < matched ridge.rmse)",
+    "severe_shrinkage": "Validation prediction_std / target_std < 0.05",
+    "negative_calibration_slope": "calibration.selected.method == linear and slope < 0"
+  },
+  "decision_rule": {
+    "RECOMMEND_RUN_REMAINING_12_FOLDS": "positive_pearson >= 3/4 AND positive_spearman >= 3/4 AND material_beat_zero >= 3/4 AND beat_ridge >= 3/4 AND severe_shrinkage <= 1/4 AND no critical issue",
+    "STOP_CURRENT_G0_A6_60M_RAW_SPEC_WEAK_SIGNAL": "material_beat_zero <= 1/4 OR (positive_pearson <= 2/4 AND positive_spearman <= 2/4)",
+    "PILOT_INCONCLUSIVE_NEEDS_TARGETED_EXPERIMENT": "any other outcome",
+    "CRITICAL_ISSUE_FOUND_FIX_BEFORE_MORE_TRAINING": "alignment/identity/leakage/data failure in any fold (overrides the above)",
+    "threshold_rationale": "0.10 % relative RMSE is ~8x the historical Fold-0 improvement (0.0126 %) and well above numerical noise between matched baselines; fixed before new folds are observed and not changed afterwards"
+  },
+  "remaining_12_folds": "NOT_STARTED; require separate owner authorization even if the rule recommends them"
+}
