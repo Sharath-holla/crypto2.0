@@ -106,6 +106,38 @@ def approved():
     return value
 
 
+@pytest.mark.parametrize("index", [0, 5, 10, 15])
+def test_contract_binds_one_canonical_fold(tmp_path, approved, index):
+    approved.update(fold_index=index, fold=ops.CANONICAL_FOLDS[index])
+    path = tmp_path / "contract.json"
+    path.write_text(json.dumps(approved))
+    assert ops.selected_fold(ops.contract(path)) == (index, ops.CANONICAL_FOLDS[index])
+
+
+@pytest.mark.parametrize(
+    ("change", "error"),
+    [
+        ({"fold_index": 5}, "CONTRACT_FOLD_ID_MISMATCH"),
+        ({"fold_index": 5, "fold": "fold-010-01be2e390a0b"}, "CONTRACT_FOLD_ID_MISMATCH"),
+        ({"fold_index": 16, "fold": "fold-015-ed49f0aadaf7"}, "CONTRACT_FOLD_INDEX_INVALID"),
+        ({"fold_index": -1}, "CONTRACT_FOLD_INDEX_INVALID"),
+        ({"fold_index": "5", "fold": "fold-005-2cf830b9f251"}, "CONTRACT_FOLD_INDEX_INVALID"),
+        ({"fold_index": True}, "CONTRACT_FOLD_INDEX_INVALID"),
+    ],
+)
+def test_contract_fold_mismatch_fails_closed(tmp_path, approved, change, error):
+    approved.update(change)
+    path = tmp_path / "contract.json"
+    path.write_text(json.dumps(approved))
+    with pytest.raises(ValueError, match=error):
+        ops.contract(path)
+
+
+def test_contract_without_fold_index_is_fold_zero(approved):
+    approved.pop("fold_index", None)
+    assert ops.selected_fold(approved) == (0, ops.FOLD)
+
+
 def test_unapproved_template_refused():
     with pytest.raises(ValueError, match="OWNER_SESSION_APPROVAL_REQUIRED"):
         ops.contract(ops.DOC / "RUNPOD_COST_AND_STOP_CONTRACT_TEMPLATE_20261118.json")

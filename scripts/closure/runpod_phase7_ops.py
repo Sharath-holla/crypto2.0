@@ -22,6 +22,25 @@ from pathlib import Path
 
 SPEC = "architecture-G0-A6-60m-raw"
 FOLD = "fold-000-a0e9a4f72689"
+# The frozen 16-fold plan (configuration 93f987736b1a79d26b773957); a session trains exactly one.
+CANONICAL_FOLDS = (
+    "fold-000-a0e9a4f72689",
+    "fold-001-805307169256",
+    "fold-002-a2dead26c257",
+    "fold-003-a4ba910e38c1",
+    "fold-004-4b03b69d638d",
+    "fold-005-2cf830b9f251",
+    "fold-006-d3b9e1c10821",
+    "fold-007-b137dd293bcc",
+    "fold-008-b22af5bba459",
+    "fold-009-840bf1d34764",
+    "fold-010-01be2e390a0b",
+    "fold-011-d89741db3cd2",
+    "fold-012-7a680fd4ffbe",
+    "fold-013-38fc22d70345",
+    "fold-014-8b62ba7b825a",
+    "fold-015-ed49f0aadaf7",
+)
 RUN = "phase7a-core20-primary-93f987736b1a79d26b773957"
 VOLUME = "kz9axr9t9v"
 DATASET = "gold-phase7-0cbf2910e8d96c9d19826598"
@@ -87,6 +106,16 @@ def source_expectations():
     return read(DOC / "runpod_source_manifest.json")
 
 
+def selected_fold(c):
+    """The contract's approved fold: canonical plan index and its exact ID. Fail closed."""
+    index = c.get("fold_index", 0)
+    if type(index) is not int or not 0 <= index < len(CANONICAL_FOLDS):
+        raise ValueError("CONTRACT_FOLD_INDEX_INVALID")
+    if c.get("fold") != CANONICAL_FOLDS[index]:
+        raise ValueError("CONTRACT_FOLD_ID_MISMATCH")
+    return index, c["fold"]
+
+
 def contract(path):
     c = read(path)
     if c.get("schema") != "crypto2_runpod_phase7_session_v1" or c.get("status") != "APPROVED":
@@ -110,11 +139,11 @@ def contract(path):
         raise ValueError("SESSION_NOT_STARTED")
     if c["source_commit"] != source_expectations()["commit"] or c["identities"] != expected():
         raise ValueError("SESSION_SOURCE_IDENTITY_MISMATCH")
-    if (c["volume_id"], c["region"], c["spec"], c["fold"], c["backend"], c["workers"]) != (
+    selected_fold(c)
+    if (c["volume_id"], c["region"], c["spec"], c["backend"], c["workers"]) != (
         VOLUME,
         "EU-SE-1",
         SPEC,
-        FOLD,
         "cpu",
         1,
     ):
@@ -499,7 +528,7 @@ def transfer(source, local, inputs, evidence):
     }
 
 
-def cache_reload(source, local, inputs, evidence):
+def cache_reload(source, local, inputs, evidence, fold_index=0):
     import numpy as np
     import pyarrow.compute as pc
 
@@ -521,8 +550,12 @@ def cache_reload(source, local, inputs, evidence):
     )
     plan = plan_folds(
         config.data_start, config.research_cutoff, config.prospective_holdout_start, config.schedule
-    )[0]
-    descriptors = dispatcher.pipeline._fold_descriptors(config, registry, data, fold_ids=(FOLD,))
+    )[fold_index]
+    if plan.fold_id != CANONICAL_FOLDS[fold_index]:
+        raise ValueError("CANONICAL_FOLD_PLAN_DRIFT")
+    descriptors = dispatcher.pipeline._fold_descriptors(
+        config, registry, data, fold_ids=(plan.fold_id,)
+    )
     gaps = tuple(
         dispatcher.CausalDataGap.model_validate(x) for x in data.get("unusable_segments", [])
     )
@@ -668,7 +701,7 @@ def stage_approval(args, c, mode):
         Path(args.source_root) / "configs/phase7/research_core20_primary_v1.toml"
     )
     result = validate_owner_approval(
-        Path(args.approval), expected=approval_binding(config, SPEC, FOLD), mode=mode
+        Path(args.approval), expected=approval_binding(config, SPEC, selected_fold(c)[1]), mode=mode
     )
     if (
         result["cost_currency"] != "USD"
@@ -745,7 +778,8 @@ def configure_preemption(args, c, local, qualified, env, previous=None):
 
     cache_id = qualified["loads"][0]["cache_id"]
     logical = "phase7-" + stable_hash(
-        {"identities": expected(), "cache": cache_id, "spec": SPEC, "fold": FOLD}, length=24
+        {"identities": expected(), "cache": cache_id, "spec": SPEC, "fold": selected_fold(c)[1]},
+        length=24,
     )
     if previous and previous["logical_run_id"] != logical:
         raise ValueError("RESUME_LOGICAL_RUN_ID_MISMATCH")
@@ -856,11 +890,14 @@ def memory_probe(source, local, inputs, evidence, c, contract_path):
     from crypto_ai.phase7.training import try_build_validation_context
     from crypto_ai.phase7.training_metrics import training_metric_scope
 
-    qualified = cache_reload(source, local, inputs, evidence)
+    fold_index, fold_id = selected_fold(c)
+    qualified = cache_reload(source, local, inputs, evidence, fold_index)
     config = load_phase7_config(source / "configs/phase7/research_core20_primary_v1.toml")
     plan = plan_folds(
         config.data_start, config.research_cutoff, config.prospective_holdout_start, config.schedule
-    )[0]
+    )[fold_index]
+    if plan.fold_id != fold_id:
+        raise ValueError("CANONICAL_FOLD_PLAN_DRIFT")
     cache = PreparedDataCache(local / "cache", "read_only")
     bundle = cache.load(qualified["cache_identity"], plan)
     prepared = bundle.prepared
@@ -1090,7 +1127,7 @@ def execute(args):
                     "--path",
                     str(local / "cache"),
                     "--fold-index",
-                    "0",
+                    str(selected_fold(c)[0]),
                     "--horizon-minutes",
                     "60",
                     "--config",
@@ -1128,7 +1165,7 @@ def execute(args):
             if sha(source_cache / "manifest.json") != previous["binding"]["cache_manifest_sha256"]:
                 raise ValueError("RESUME_CACHE_PAYLOAD_MISMATCH")
             copy_qualified_cache(source_cache, local / "cache" / cache_id, cache_id)
-            qualified = cache_reload(source, local, inputs, evidence)
+            qualified = cache_reload(source, local, inputs, evidence, selected_fold(c)[0])
             write(
                 evidence / "cache-retention.json",
                 {
@@ -1161,7 +1198,7 @@ def execute(args):
                 if c.get("resource_profile") == "constrained_48gb":
                     require_receipt(evidence, "memory-probe", c, args.contract)
                 # Revalidate exact cache again before fitting; fail instead of rebuilding.
-                qualified = cache_reload(source, local, inputs, evidence)
+                qualified = cache_reload(source, local, inputs, evidence, selected_fold(c)[0])
                 previous = partial_for_restart(args, c) if args.stage == "resume" else None
                 preemption_metadata = configure_preemption(args, c, local, qualified, env, previous)
             env["PHASE7_CACHE_MODE"] = "auto" if args.stage == "prepare" else "read_only"
@@ -1174,6 +1211,8 @@ def execute(args):
                 str(source / "configs/phase7/research_core20_primary_v1.toml"),
                 "--spec-id",
                 SPEC,
+                "--fold-index",
+                str(selected_fold(c)[0]),
                 "--output-root",
                 str(local / "benchmarks/smoke"),
                 "--execute",
@@ -1203,7 +1242,7 @@ def execute(args):
             write(evidence / f"{args.stage}-result.json", result)
             detail = {
                 "spec": SPEC,
-                "fold": FOLD,
+                "fold": selected_fold(c)[1],
                 "backend": "cpu",
                 "workers": 1,
                 "next": "STOP_AND_REPORT",
@@ -1213,7 +1252,7 @@ def execute(args):
         elif args.stage == "reload":
             require_receipt(evidence, "prepare", c, args.contract)
             stage_approval(args, c, "prepare")
-            detail = cache_reload(source, local, inputs, evidence)
+            detail = cache_reload(source, local, inputs, evidence, selected_fold(c)[0])
             retention = persist_cache_if_capacity(local, detail, c)
             write(evidence / "cache-retention.json", retention)
             detail["cache_retention"] = retention
