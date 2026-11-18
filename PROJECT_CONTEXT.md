@@ -4,6 +4,12 @@ BEFORE MODIFYING OR RUNNING THIS PROJECT.
 
 # Crypto 2.0 Project Context
 
+## Latest owner stop — 2026-11-18
+
+**The owner stopped all work and asked for a handoff to Claude tomorrow. No automatic cloud or training restart is authorized.** Read [CLAUDE_HANDOFF_20261118.md](CLAUDE_HANDOFF_20261118.md) before older readiness notes. All Crypto2 compute is verified off; the persistent volume and saved results remain intact. Fifteen launch jobs are disabled and a private driver stop sentinel is active.
+
+The formal four-fold pilot has one completed G0/A6/60m/raw model (fold 0, 109 features). Folds 5/10/15 are untrained. Fold 5 preparation found daily Silver inputs missing from the Fold-0-only transfer subset. The exact 5,335-file, manifest-verified local supplement is prepared but **not uploaded/applied**. The formal fold-0 weights remain on persistent RunPod storage; local reports and a backup are saved. Resume requires a fresh explicit owner cost/deadline contract and input-completeness repair. No full 16-fold study has completed.
+
 - Owner: Sharath N. S.
 - Status: **PROJECT HOLD**
 - Current phase: **Phase 7A CORE20 PRIMARY**
