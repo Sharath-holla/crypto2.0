@@ -22,13 +22,21 @@ from crypto_ai.phase7.runtime import RuntimePaths
 from crypto_ai.phase7.training import PHASE7A_SCOPE, run_phase7_training
 
 
-def benchmark_plan(config: Any, spec_id: str, output_root: Path) -> dict[str, Any]:
+def benchmark_plan(
+    config: Any, spec_id: str, output_root: Path, fold_index: int = 0
+) -> dict[str, Any]:
     if config.configuration_hash != "93f987736b1a79d26b773957":
         raise ValueError("benchmark requires the unchanged canonical Phase 7A configuration")
     spec = select_one_spec(config, spec_id)
-    fold = plan_folds(
+    folds = plan_folds(
         config.data_start, config.research_cutoff, config.prospective_holdout_start, config.schedule
-    )[0]
+    )
+    # Selects one already-existing canonical fold; never constructs or alters folds. Fail closed.
+    if type(fold_index) is not int or not 0 <= fold_index < len(folds):
+        raise ValueError(
+            f"UNKNOWN_CANONICAL_FOLD_INDEX: {fold_index!r} (valid 0..{len(folds) - 1})"
+        )
+    fold = folds[fold_index]
     runtime = RuntimePaths.resolve(config.paths)
     root = output_root.resolve()
     canonical = runtime.artifact_root / f"phase7a-core20-primary-{config.configuration_hash}"
@@ -69,6 +77,12 @@ def main() -> int:
     parser.add_argument("--output-root", type=Path)
     parser.add_argument("--enumerate", action="store_true")
     parser.add_argument(
+        "--fold-index",
+        type=int,
+        default=0,
+        help="Index of one canonical fold in the frozen plan (default 0 = previous behaviour).",
+    )
+    parser.add_argument(
         "--prepare-only",
         action="store_true",
         help="With --execute: build and publish the single selected spec's prepared cache; "
@@ -84,13 +98,18 @@ def main() -> int:
     dispatcher = pipeline_dispatcher()
     dispatcher.validate_phase7a_config(config, load_phase7_config(dispatcher.SOURCE_CONFIG_PATH))
     if args.enumerate:
-        if args.execute or args.spec_id:
-            parser.error("enumeration cannot execute/select a spec")
+        if args.execute or args.spec_id or args.fold_index != 0:
+            parser.error("enumeration cannot execute/select a spec or fold")
         result = enumerate_specs(config)
     else:
         if not args.spec_id or args.output_root is None:
             parser.error("--spec-id and isolated --output-root are required")
-        result = benchmark_plan(config, args.spec_id, args.output_root)
+        try:
+            result = benchmark_plan(
+                config, args.spec_id, args.output_root, fold_index=args.fold_index
+            )
+        except ValueError as exc:
+            parser.error(str(exc))
         if args.prepare_only and not args.execute:
             parser.error("--prepare-only requires --execute")
         if args.execute:

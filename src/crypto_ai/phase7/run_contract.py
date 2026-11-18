@@ -146,11 +146,20 @@ def approval_binding(config: Any, spec_id: str, fold_id: str) -> dict[str, Any]:
     from crypto_ai.phase7.identity_summary import identity_summary
     from crypto_ai.phase7.runtime import RuntimePaths
 
-    first = plan_folds(
-        config.data_start, config.research_cutoff, config.prospective_holdout_start, config.schedule
-    )[0]
-    if spec_id != SMOKE_SPEC or fold_id != first.fold_id:
-        raise ValueError("OWNER_SCOPE_REFUSED: only CORE/A6/60m/raw/Fold 0 is eligible")
+    canonical = {
+        fold.fold_id
+        for fold in plan_folds(
+            config.data_start,
+            config.research_cutoff,
+            config.prospective_holdout_start,
+            config.schedule,
+        )
+    }
+    # One spec on one canonical fold per approval; the approval file binds the exact fold_id.
+    if spec_id != SMOKE_SPEC or fold_id not in canonical:
+        raise ValueError(
+            "OWNER_SCOPE_REFUSED: only CORE/A6/60m/raw on one canonical fold is eligible"
+        )
     value = os.environ.get(SIDECAR_ENV, "").strip()
     if not value:
         raise ValueError("M01_FEATURE_CONTEXT_SIDECAR_REQUIRED")
