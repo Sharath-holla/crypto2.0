@@ -39,13 +39,31 @@ class API:
             method=method,
             headers={"Authorization": "Bearer " + self.key, "Content-Type": "application/json"},
         )
-        try:
-            with urllib.request.urlopen(request, timeout=20) as response:
-                raw = response.read()
-                return json.loads(raw) if raw else {}
-        except urllib.error.HTTPError as exc:
-            # Never dump response body, request headers or credentials.
-            raise RuntimeError(f"RUNPOD_API_HTTP_{exc.code}") from None
+        read_only = method == "GET" or (
+            method == "POST"
+            and path == "/graphql"
+            and isinstance(data, dict)
+            and str(data.get("query", "")).lstrip().startswith("query")
+        )
+        # Two short read attempts take less than the former single 20-second
+        # timeout. Mutations are never automatically replayed here.
+        attempts = 2 if read_only else 1
+        for attempt in range(attempts):
+            try:
+                with urllib.request.urlopen(request, timeout=6 if read_only else 20) as response:
+                    raw = response.read()
+                    return json.loads(raw) if raw else {}
+            except urllib.error.HTTPError as exc:
+                if read_only and attempt == 0 and exc.code in {429, 502, 503, 504}:
+                    time.sleep(0.5)
+                    continue
+                # Never dump response body, request headers or credentials.
+                raise RuntimeError(f"RUNPOD_API_HTTP_{exc.code}") from None
+            except (TimeoutError, urllib.error.URLError):
+                if read_only and attempt == 0:
+                    time.sleep(0.5)
+                    continue
+                raise RuntimeError("RUNPOD_API_NETWORK_UNAVAILABLE") from None
 
 
 def stop_contract(args):

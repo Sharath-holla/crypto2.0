@@ -7,6 +7,7 @@ import importlib.util
 import json
 import os
 import sys
+import urllib.error
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from unittest.mock import patch
@@ -18,6 +19,73 @@ sys.path.insert(0, str(HERE))
 import runpod_phase7_ops as ops  # noqa: E402
 import runpod_select_host_phase7 as hosts  # noqa: E402
 import runpod_stop_controller_phase7 as controller  # noqa: E402
+
+
+@pytest.mark.parametrize(
+    "method,path,payload",
+    [("GET", "/v2/pods/test", None), ("POST", "/graphql", {"query": "query { myself { id } }"})],
+)
+@pytest.mark.parametrize(
+    "first_failure",
+    [TimeoutError(), urllib.error.HTTPError("fixture", 503, "unavailable", None, None)],
+)
+def test_read_only_api_retries_one_timeout_with_shorter_budget(
+    tmp_path, method, path, payload, first_failure
+):
+    key = tmp_path / "key"
+    key.write_text("fixture-only")
+    key.chmod(0o600)
+    api = controller.API(key)
+    from unittest.mock import MagicMock
+
+    response = MagicMock()
+    response.__enter__.return_value.read.return_value = b'{"status":"RUNNING"}'
+    with (
+        patch.object(
+            controller.urllib.request, "urlopen", side_effect=[first_failure, response]
+        ) as send,
+        patch.object(controller.time, "sleep") as sleep,
+    ):
+        assert api.call(method, path, payload) == {"status": "RUNNING"}
+    assert send.call_count == 2
+    assert all(call.kwargs["timeout"] == 6 for call in send.call_args_list)
+    sleep.assert_called_once_with(0.5)
+
+
+@pytest.mark.parametrize("failure", [TimeoutError(), urllib.error.URLError("fixture-unavailable")])
+def test_api_read_exhaustion_fails_closed_and_mutations_are_not_replayed(tmp_path, failure):
+    key = tmp_path / "key"
+    key.write_text("fixture-only")
+    key.chmod(0o600)
+    api = controller.API(key)
+    for method, path, payload, attempts in (
+        ("GET", "/v2/pods/test", None, 2),
+        ("POST", "/v2/pods", {"name": "never-replay-create"}, 1),
+        ("POST", "/graphql", {"query": "mutation { change }"}, 1),
+    ):
+        with (
+            patch.object(controller.urllib.request, "urlopen", side_effect=failure) as send,
+            patch.object(controller.time, "sleep"),
+            pytest.raises(RuntimeError, match="NETWORK_UNAVAILABLE"),
+        ):
+            api.call(method, path, payload)
+        assert send.call_count == attempts
+
+
+def test_api_permission_denial_is_not_retried(tmp_path):
+    key = tmp_path / "key"
+    key.write_text("fixture-only")
+    key.chmod(0o600)
+    with (
+        patch.object(
+            controller.urllib.request,
+            "urlopen",
+            side_effect=urllib.error.HTTPError("fixture", 403, "denied", None, None),
+        ) as send,
+        pytest.raises(RuntimeError, match="HTTP_403"),
+    ):
+        controller.API(key).call("GET", "/v2/pods/test")
+    send.assert_called_once()
 
 
 @pytest.fixture
@@ -183,6 +251,69 @@ def test_add_only_copy_refuses_changed_historical_file(tmp_path):
     with pytest.raises(ValueError, match="EXISTING_EVIDENCE_CONFLICT"):
         ops.mirror_tree(a, b)
     assert (b / "report.json").read_text() == "original"
+
+
+def test_copy_of_a_growing_log_is_verified_against_the_bytes_read(tmp_path):
+    a, b = tmp_path / "a", tmp_path / "b"
+    a.mkdir()
+    log = a / "memory_timeline.jsonl"
+    log.write_text('{"round": 1}\n')
+    real_read, real_copy = Path.read_bytes, ops.shutil.copy2
+
+    def grow():  # the live guard appends right after the copier has read the file
+        with log.open("a") as stream:
+            stream.write('{"round": 2}\n')
+
+    def read_then_grow(path):
+        data = real_read(path)
+        if path == log:
+            grow()
+        return data
+
+    def copy_then_grow(src, dst, **kwargs):
+        result = real_copy(src, dst, **kwargs)
+        if Path(src) == log:
+            grow()
+        return result
+
+    with (
+        patch.object(Path, "read_bytes", read_then_grow),
+        patch.object(ops.shutil, "copy2", copy_then_grow),
+    ):
+        ops.mirror_tree(a, b)
+    assert (b / "memory_timeline.jsonl").read_text() == '{"round": 1}\n'
+
+
+def test_linux_export_retains_junit_without_following_disposable_fixture_symlinks(tmp_path):
+    source, target = tmp_path / "linux", tmp_path / "export"
+    gate = source / ("software-gate-" + "a" * 32)
+    fixtures = gate / "tmp"
+    fixtures.mkdir(parents=True)
+    (gate / "pytest.xml").write_text("<testsuite tests='1520' failures='0'/>")
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    (outside / "private.txt").write_text("never export")
+    (fixtures / "fixture-current").symlink_to(outside, target_is_directory=True)
+    ops.mirror_linux_evidence(source, target)
+    assert (target / gate.name / "pytest.xml").read_text() == (gate / "pytest.xml").read_text()
+    assert not (target / gate.name / "tmp").exists()
+    assert (fixtures / "fixture-current").is_symlink()
+    assert (
+        ops.read(target / "EXPORT_SCOPE.json")["symlinks_outside_disposable_fixtures"] == "REFUSED"
+    )
+    (gate / "metadata-link").symlink_to(outside / "private.txt")
+    with pytest.raises(ValueError, match="SYMLINK_REFUSED"):
+        ops.mirror_linux_evidence(source, tmp_path / "refused-export")
+
+
+def test_linux_export_rejects_symlinked_fixture_root_and_unknown_gate(tmp_path):
+    for gate_name in ("software-gate-" + "b" * 32, "unexpected-gate"):
+        source = tmp_path / gate_name
+        fixtures = source / gate_name / "tmp"
+        fixtures.parent.mkdir(parents=True)
+        fixtures.symlink_to(tmp_path, target_is_directory=True)
+        with pytest.raises(ValueError, match="SYMLINK_REFUSED"):
+            ops.mirror_linux_evidence(source, tmp_path / (gate_name + "-export"))
 
 
 def test_final_json_not_a_partial_progress_record(tmp_path):

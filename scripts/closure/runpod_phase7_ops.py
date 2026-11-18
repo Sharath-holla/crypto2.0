@@ -363,9 +363,11 @@ def final_json(path):
     raise ValueError("CANONICAL_FINAL_JSON_RESULT_MISSING")
 
 
-def mirror_tree(src, dst):
+def mirror_tree(src, dst, *, excluded_roots=()):
     """Add-only byte-equivalent copies. Never overwrite conflicting historical evidence."""
     for p in sorted(src.rglob("*")):
+        if any(p == root or p.is_relative_to(root) for root in excluded_roots):
+            continue
         if p.is_symlink():
             raise ValueError("EVIDENCE_OR_METADATA_SYMLINK_REFUSED")
         if not p.is_file():
@@ -376,11 +378,45 @@ def mirror_tree(src, dst):
             if sha(p) != sha(q):
                 raise ValueError("EXISTING_EVIDENCE_CONFLICT")
         else:
-            shutil.copy2(p, q)
-            with q.open("rb") as stream:
+            # Snapshot once: live logs (memory guard timeline) may still grow while we copy, so the
+            # copy is verified against the exact bytes read, not a later re-read of the source.
+            data = p.read_bytes()
+            with q.open("wb") as stream:
+                stream.write(data)
+                stream.flush()
                 os.fsync(stream.fileno())
-            if sha(p) != sha(q):
+            shutil.copystat(p, q)
+            if hashlib.sha256(data).hexdigest() != sha(q):
                 raise ValueError("COPY_BACK_CHECKSUM_MISMATCH")
+
+
+def mirror_linux_evidence(src, dst):
+    """Retain gate results, excluding only the verifier's disposable pytest fixtures."""
+    excluded = []
+    for gate in src.iterdir():
+        suffix = gate.name.removeprefix("software-gate-")
+        if (
+            gate.name.startswith("software-gate-")
+            and len(suffix) == 32
+            and all(c in "0123456789abcdef" for c in suffix)
+        ):
+            if gate.is_symlink() or not gate.is_dir():
+                raise ValueError("EVIDENCE_OR_METADATA_SYMLINK_REFUSED")
+            fixtures = gate / "tmp"
+            if fixtures.is_symlink():
+                raise ValueError("EVIDENCE_OR_METADATA_SYMLINK_REFUSED")
+            if fixtures.is_dir():
+                excluded.append(fixtures)
+    mirror_tree(src, dst, excluded_roots=tuple(excluded))
+    write(
+        dst / "EXPORT_SCOPE.json",
+        {
+            "status": "PASS",
+            "excluded_disposable_pytest_fixture_roots": [str(p.relative_to(src)) for p in excluded],
+            "junit_gate_logs_and_verification_results": "RETAINED",
+            "symlinks_outside_disposable_fixtures": "REFUSED",
+        },
+    )
 
 
 def transfer(source, local, inputs, evidence):
@@ -793,7 +829,8 @@ def start_memory_guard(c, source, local, args):
         | {"PYTHONPATH": str(source / "src"), "PHASE7_RESOURCE_PROFILE": "constrained_48gb"},
     )
     atexit.register(guard.terminate)
-    for _ in range(50):
+    # A cold container right after uv sync can need well over 5 s for the guard's first imports.
+    for _ in range(300):
         if guard.poll() is not None:
             raise MemoryError("MEMORY_GUARD_DID_NOT_START")
         if Path(cfg["heartbeat"]).exists():
@@ -1226,7 +1263,8 @@ def collect(local, source, c, contract_path):
             mirror_tree(src, target / name)
     for name in (".linux-closure-logs", ".pytest-linux-verification"):
         if (source / name).is_dir():
-            mirror_tree(source / name, target / "linux" / name)
+            copier = mirror_linux_evidence if name == ".pytest-linux-verification" else mirror_tree
+            copier(source / name, target / "linux" / name)
     shutil.copy2(contract_path, target / "session-contract.json")
     write(
         target / "EXPORT_COMPLETE.json",
