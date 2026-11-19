@@ -487,3 +487,36 @@ def test_expired_contract_without_prior_arm_proof_cannot_authorize_stop(tmp_path
     args = Namespace(contract=str(path), state=str(tmp_path / "state"))
     with pytest.raises(FileNotFoundError):
         controller.stop_contract(args)
+
+
+@pytest.mark.parametrize(
+    ("volume", "region", "ok"),
+    [
+        ("kz9axr9t9v", "EU-SE-1", True),
+        ("POD_CONTAINER_DISK", "EU-RO-1", True),
+        ("POD_CONTAINER_DISK", "EU-SE-2", False),
+        ("kz9axr9t9v", "EU-RO-1", False),
+        ("other-volume", "EU-SE-1", False),
+    ],
+)
+def test_contract_placement_is_network_volume_or_pod_local(tmp_path, approved, volume, region, ok):
+    approved.update(volume_id=volume, region=region)
+    path = tmp_path / "contract.json"
+    path.write_text(json.dumps(approved))
+    if ok:
+        ops.contract(path)
+    else:
+        with pytest.raises(ValueError, match="SESSION_SCOPE_MISMATCH"):
+            ops.contract(path)
+
+
+def test_pod_local_binding_requires_region_and_no_network_volume(approved):
+    approved.update(volume_id="POD_CONTAINER_DISK", region="EU-RO-1")
+    pod = {"id": "testpod123", "dataCenterId": "EU-RO-1", "mounts": {"network": []}}
+    with pytest.raises(ValueError, match="POD_LOCKED_OR_DISK_QUOTA_CHANGED"):
+        controller.pod_binding({**pod, "locked": True, "disk": 200}, approved)
+    with pytest.raises(ValueError, match="POD_BINDING_CHANGED"):
+        controller.pod_binding({**pod, "dataCenterId": "EU-CZ-1"}, approved)
+    with pytest.raises(ValueError, match="NETWORK_VOLUME_BINDING_CHANGED"):
+        mounted = {"network": [{"path": "/workspace", "volumeId": "kz9axr9t9v"}]}
+        controller.pod_binding({**pod, "mounts": mounted}, approved)

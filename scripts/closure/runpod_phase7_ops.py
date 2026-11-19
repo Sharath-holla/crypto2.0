@@ -43,6 +43,10 @@ CANONICAL_FOLDS = (
 )
 RUN = "phase7a-core20-primary-93f987736b1a79d26b773957"
 VOLUME = "kz9axr9t9v"
+# Owner 2026-11-19: inputs may instead be uploaded to the Pod's own container disk in one of these
+# regions (no network volume). Evidence must then be copied off the Pod before it stops.
+POD_LOCAL = "POD_CONTAINER_DISK"
+POD_LOCAL_REGIONS = ("EU-RO-1", "EU-CZ-1", "US-NC-1")
 DATASET = "gold-phase7-0cbf2910e8d96c9d19826598"
 KIT = Path(__file__).resolve().parents[2]
 DOC = KIT / "docs/runpod"
@@ -140,13 +144,11 @@ def contract(path):
     if c["source_commit"] != source_expectations()["commit"] or c["identities"] != expected():
         raise ValueError("SESSION_SOURCE_IDENTITY_MISMATCH")
     selected_fold(c)
-    if (c["volume_id"], c["region"], c["spec"], c["backend"], c["workers"]) != (
-        VOLUME,
-        "EU-SE-1",
-        SPEC,
-        "cpu",
-        1,
-    ):
+    placement = (c["volume_id"], c["region"])
+    if (
+        placement != (VOLUME, "EU-SE-1")
+        and not (c["volume_id"] == POD_LOCAL and c["region"] in POD_LOCAL_REGIONS)
+    ) or (c["spec"], c["backend"], c["workers"]) != (SPEC, "cpu", 1):
         raise ValueError("SESSION_SCOPE_MISMATCH")
     if c["approval"] != "LINUX_VERIFICATION_ONLY" or c["gpu_status"] != "GPU_NOT_QUALIFIED":
         raise ValueError("SEPARATE_STAGE_APPROVALS_REQUIRED")
@@ -1310,7 +1312,7 @@ def collect(local, source, c, contract_path):
         {
             "status": "PASS",
             "pod_id": c["pod_id"],
-            "volume_id": VOLUME,
+            "volume_id": c["volume_id"],
             "copied_files": len([p for p in target.rglob("*") if p.is_file()]),
             "cache_policy": (
                 "large local prepared cache not included; "

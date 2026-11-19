@@ -20,7 +20,7 @@ import uuid
 from datetime import UTC, datetime
 from pathlib import Path
 
-from runpod_phase7_ops import VOLUME, contract, read, sha, write
+from runpod_phase7_ops import POD_LOCAL, VOLUME, contract, read, sha, write
 from runpod_wallet_policy_phase7 import decision
 
 
@@ -96,10 +96,16 @@ def stop_contract(args):
 
 
 def pod_binding(pod, c):
-    if pod["id"] != c["pod_id"] or pod["dataCenterId"] != "EU-SE-1":
-        raise ValueError("POD_BINDING_CHANGED")
-    if {"path": "/workspace", "volumeId": VOLUME} not in pod["mounts"]["network"]:
-        raise ValueError("NETWORK_VOLUME_BINDING_CHANGED")
+    if c["volume_id"] == POD_LOCAL:
+        if pod["id"] != c["pod_id"] or pod["dataCenterId"] != c["region"]:
+            raise ValueError("POD_BINDING_CHANGED")
+        if (pod.get("mounts") or {}).get("network"):
+            raise ValueError("NETWORK_VOLUME_BINDING_CHANGED")
+    else:
+        if pod["id"] != c["pod_id"] or pod["dataCenterId"] != "EU-SE-1":
+            raise ValueError("POD_BINDING_CHANGED")
+        if {"path": "/workspace", "volumeId": VOLUME} not in pod["mounts"]["network"]:
+            raise ValueError("NETWORK_VOLUME_BINDING_CHANGED")
     if pod["locked"] or pod["disk"] < c["provider_container_disk_gb"]:
         raise ValueError("POD_LOCKED_OR_DISK_QUOTA_CHANGED")
     if float(pod["cost"]) > float(c["compute_usd_per_hour"]):
@@ -137,6 +143,32 @@ def ssh_args(pod, key):
         "StrictHostKeyChecking=yes",
         "root@" + host,
     ]
+
+
+def download_pod_evidence(ssh, pod_id, state):
+    """Pod-local placement: copy this Pod's exported evidence (model included) to the Mac.
+
+    The container disk is lost when the Pod stops, so this runs before the stop. Fail soft:
+    three attempts, then record the failure and stop anyway (spending limits come first).
+    """
+    target = state / "pod-evidence"
+    for attempt in range(3):
+        archive = state / f"pod-evidence-{attempt}.tar"
+        with archive.open("wb") as out:
+            result = subprocess.run(
+                [*ssh, "tar -C /workspace/phase7a-evidence -cf - " + shlex.quote(pod_id)],
+                stdout=out,
+                stderr=subprocess.PIPE,
+                timeout=900,
+            )
+        if result.returncode == 0:
+            target.mkdir(exist_ok=True)
+            subprocess.run(["tar", "-xf", str(archive), "-C", str(target)], check=True)
+            archive.unlink()
+            write(state / "pod-evidence-download.json", {"status": "PASS", "path": str(target)})
+            return True
+    write(state / "pod-evidence-download.json", {"status": "FAIL_STOPPED_ANYWAY"})
+    return False
 
 
 def remote(ssh, script, payload=None, timeout=25):
@@ -258,9 +290,13 @@ def stop(api, c, state, reason):
         try:
             pod = api.call("GET", "/v2/pods/" + c["pod_id"])
             if pod["status"] == "EXITED":
-                volume = api.call("GET", "/v2/network-volumes/" + VOLUME)
-                if volume["id"] != VOLUME:
-                    raise ValueError("VOLUME_NOT_CONFIRMED")
+                if c.get("volume_id") == POD_LOCAL:
+                    preserved = "NONE_POD_CONTAINER_DISK"
+                else:
+                    volume = api.call("GET", "/v2/network-volumes/" + VOLUME)
+                    if volume["id"] != VOLUME:
+                        raise ValueError("VOLUME_NOT_CONFIRMED")
+                    preserved = VOLUME
                 write(
                     state / "stop-receipt.json",
                     {
@@ -268,7 +304,7 @@ def stop(api, c, state, reason):
                         "reason": reason,
                         "pod_id": c["pod_id"],
                         "provider_status": "EXITED",
-                        "volume_preserved": VOLUME,
+                        "volume_preserved": preserved,
                         "utc": datetime.now(UTC).isoformat(),
                     },
                 )
@@ -277,7 +313,7 @@ def stop(api, c, state, reason):
                     "PROVIDER_EXITED",
                     reason=reason,
                     pod_id=c["pod_id"],
-                    volume_preserved=VOLUME,
+                    volume_preserved=preserved,
                 )
                 return
             api.call("POST", "/v2/pods/" + c["pod_id"] + "/action", {"action": "stop"})
@@ -373,10 +409,10 @@ def monitor(args):
                 )["data"]["myself"]
                 last_wallet = float(wallet["clientBalance"])
                 costs = []
-                for family, field, resource in (
-                    ("pods", "podId", c["pod_id"]),
-                    ("network-volumes", "networkVolumeId", VOLUME),
-                ):
+                billed = [("pods", "podId", c["pod_id"])]
+                if c["volume_id"] != POD_LOCAL:
+                    billed.append(("network-volumes", "networkVolumeId", VOLUME))
+                for family, field, resource in billed:
                     query = urllib.parse.urlencode(
                         {
                             "startTime": c["session_start_utc"],
@@ -418,6 +454,8 @@ def monitor(args):
                 if signal_text:
                     reason = signal_text
                     if reason == "NORMAL_COMPLETE":
+                        if c["volume_id"] == POD_LOCAL:
+                            download_pod_evidence(ssh, c["pod_id"], state)
                         break
                     if reason == "MODEL_ALREADY_PREEMPTED":
                         raw = remote(
