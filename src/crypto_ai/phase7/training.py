@@ -1628,17 +1628,22 @@ def run_phase7_training(config: Phase7Config, **kwargs: Any) -> dict[str, Any]:
         from crypto_ai.phase7.benchmark_one_spec import benchmark_plan
 
         benchmark_plan(config, kwargs["benchmark_spec_id"], root.parent)
-        first = plan_folds(
-            config.data_start,
-            config.research_cutoff,
-            config.prospective_holdout_start,
-            config.schedule,
-        )[0]
+        # CHANGED BY CLAUDE (2026-11-19, 4-fold pilot): any one existing canonical fold, as
+        # selected by benchmark_one_spec --fold-index. OLD CODE: required plan_folds(...)[0].
+        canonical_ids = {
+            fold.fold_id
+            for fold in plan_folds(
+                config.data_start,
+                config.research_cutoff,
+                config.prospective_holdout_start,
+                config.schedule,
+            )
+        }
         if (
-            kwargs.get("benchmark_fold_id") != first.fold_id
+            kwargs.get("benchmark_fold_id") not in canonical_ids
             or store.root.resolve() != (root / "checkpoints").resolve()
         ):
-            raise ValueError("benchmark requires isolated checkpoints and first canonical fold")
+            raise ValueError("benchmark requires isolated checkpoints and one canonical fold")
     elif kwargs.get("benchmark_fold_id") is not None:
         raise ValueError("benchmark fold selector requires exactly one canonical spec")
     from crypto_ai.phase7.admission import admit_official_training
@@ -1725,15 +1730,18 @@ def _run_phase7_training_owned(
 
         benchmark_plan(config, benchmark_spec_id, run_root.parent)
         specs = (select_one_spec(config, benchmark_spec_id),)
-        if benchmark_fold_id != folds[0].fold_id:
-            raise ValueError("benchmark must select exactly the first canonical fold")
+        # CHANGED BY CLAUDE (2026-11-19, 4-fold pilot): train exactly the selected canonical fold.
+        # OLD CODE: required benchmark_fold_id == folds[0].fold_id and trained folds[0].
+        selected = [fold for fold in folds if fold.fold_id == benchmark_fold_id]
+        if len(selected) != 1:
+            raise ValueError("benchmark must select exactly one canonical fold")
         if (
             not run_root.name.startswith("benchmark-only-")
             or checkpoint_store.root.resolve() != (run_root / "checkpoints").resolve()
             or checkpoint_store.run_identity != run_root.name
         ):
             raise ValueError("benchmark requires isolated BENCHMARK_ONLY artifacts/checkpoints")
-        folds = (folds[0],)
+        folds = (selected[0],)
         research_views = ("CORE",)
     elif benchmark_fold_id is not None:
         raise ValueError("benchmark fold selector requires exactly one canonical spec")
