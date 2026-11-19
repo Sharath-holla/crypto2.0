@@ -498,11 +498,16 @@ def monitor(args):
                     ),
                     flush=True,
                 )
+                # Write then rename: a stage must never read a truncated, empty heartbeat.
                 remote(
                     ssh,
                     "mkdir -p "
                     + shlex.quote(str(heartbeat.parent))
                     + "; cat > "
+                    + shlex.quote(str(heartbeat) + ".tmp")
+                    + " && mv -f "
+                    + shlex.quote(str(heartbeat) + ".tmp")
+                    + " "
                     + shlex.quote(str(heartbeat)),
                     receipt,
                 )
