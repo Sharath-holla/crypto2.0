@@ -1,0 +1,23 @@
+{
+  "canonical_fold_complete": false,
+  "canonical_primary_run_complete": false,
+  "configuration_hash": "93f987736b1a79d26b773957",
+  "fold_count": 1,
+  "fold_id": "fold-000-a0e9a4f72689",
+  "prospective_holdout_evaluation_authorized": false,
+  "prospective_holdout_start": "2026-08-01T00:00:00+00:00",
+  "prospective_holdout_status": "LOCKED_UNUSED",
+  "prospective_holdout_used": false,
+  "run_root": "/private/tmp/crypto2-phase7-plan-only-20261117/benchmark-only-f46d8127ce60a5dc6935201e",
+  "spec": {
+    "architecture": "G0",
+    "explicit_symbol_id": false,
+    "feature_group": "A6",
+    "horizon_minutes": 60,
+    "name": "architecture-G0-A6-60m-raw",
+    "symbol_balanced": true,
+    "target_type": "raw"
+  },
+  "spec_count": 1,
+  "status": "BENCHMARK_ONLY"
+}

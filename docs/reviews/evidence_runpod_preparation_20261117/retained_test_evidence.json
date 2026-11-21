@@ -1,0 +1,12 @@
+{
+  "status": "PASS",
+  "counts": {
+    "tests": 1471,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "rerun_tonight": false,
+  "reason": "static-only owner instruction; frozen scientific code unchanged",
+  "junit_sha256": "00e79de153479b2bfdd7ba61059a6a8e3567f42e2ab6308bddc12089c93c394f"
+}

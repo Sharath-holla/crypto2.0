@@ -1,0 +1,22 @@
+usage: runpod_phase7_ops.py [-h] [--execute] [--contract CONTRACT]
+                            [--approval APPROVAL] [--source-root SOURCE_ROOT]
+                            [--local-root LOCAL_ROOT]
+                            [--input-root INPUT_ROOT]
+                            {bootstrap,verify-transfer,preflight,prepare,reload,train,collect,versions}
+
+Operator kit outside the frozen source. Default is a non-executing plan. Never
+imports a mutable checkout: execution requires a verified Git-free 7a64ee0
+export. Cloud creation, cloud start, acquisition and research-grid commands
+are deliberately absent.
+
+positional arguments:
+  {bootstrap,verify-transfer,preflight,prepare,reload,train,collect,versions}
+
+options:
+  -h, --help            show this help message and exit
+  --execute             Requires fresh approvals and external stop heartbeat
+  --contract CONTRACT
+  --approval APPROVAL   Separate canonical prepare/train owner record
+  --source-root SOURCE_ROOT
+  --local-root LOCAL_ROOT
+  --input-root INPUT_ROOT

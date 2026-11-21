@@ -1,0 +1,8 @@
+usage: source_freeze.py [-h] [--repository REPOSITORY] [--manifest MANIFEST]
+
+Verify a committed source export without transferring its .git directory.
+
+options:
+  -h, --help            show this help message and exit
+  --repository REPOSITORY
+  --manifest MANIFEST

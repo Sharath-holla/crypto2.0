@@ -74,7 +74,7 @@ The owner's current message authorizes these conditional stages; the blocker her
 
 | Field | Result |
 | --- | --- |
-| HOST | NOT_DEPLOYED — A40 and A6000 placement rejected |
+| HOST | T_DEPLOYED — A40 and A6000 placement rejected |
 | RATE_USD_HR | No running compute; attempted quotes $0.59 / $0.69 |
 | EFFECTIVE_RAM_GIB | NOT_MEASURED |
 | EFFECTIVE_CPU | NOT_MEASURED |

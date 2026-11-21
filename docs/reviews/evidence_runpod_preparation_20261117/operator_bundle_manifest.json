@@ -1,0 +1,14 @@
+{
+  "status": "PASS",
+  "archive": "/Users/cortex/Crypto2Data/reports/runpod-preparation-20261117/crypto2-operator-kit-20261117.tar.gz",
+  "archive_bytes": 210005,
+  "archive_sha256": "9c3b88b09eb2a4e7a858bdfffc153547ee1cefb68a55560d12c01bd8f5f42ecb",
+  "base_files": 60,
+  "shipping_files_including_operator_inventory": 61,
+  "content_inventory_sha256": "49e805b9dbd85c188fa6c11990dd81828b1ae5a05be72ec6d8179eb5ed995b00",
+  "source_archive_sha256": "b60eaffb1d4272aed053cc48c5c3b2b47537b1ac33513b02862db936910851d8",
+  "checksum_file": "/Users/cortex/Crypto2Data/reports/runpod-preparation-20261117/SHA256SUMS",
+  "source_code_changed": false,
+  "compute_started": false,
+  "controller_armed": false
+}

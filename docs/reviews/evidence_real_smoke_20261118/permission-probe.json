@@ -1,0 +1,7 @@
+{
+  "actual_stop_tested": false,
+  "contract_sha256": "400c6056cf9d2edd84809ac39eaaa62ab4018562eccc46f35948534f26e3eba0",
+  "method": "same-scope no-op pods:write PATCH + unlocked stop action",
+  "pod_id": "nv9qnrc7288pj2",
+  "status": "PASS"
+}

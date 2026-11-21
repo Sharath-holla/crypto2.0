@@ -1,0 +1,17 @@
+usage: resource_estimate.py [-h] --manifest MANIFEST [--path PATH]
+                            [--dtype-bytes {4,8}] [--fold-index FOLD_INDEX]
+                            [--horizon-minutes {15,30,60,120}]
+                            [--config CONFIG] [--json]
+
+Read-only RAM / disk estimate for ONE spec (default:
+architecture-G0-A6-60m-raw).
+
+options:
+  -h, --help            show this help message and exit
+  --manifest MANIFEST
+  --path PATH           where the cache will live
+  --dtype-bytes {4,8}
+  --fold-index FOLD_INDEX
+  --horizon-minutes {15,30,60,120}
+  --config CONFIG
+  --json                machine-readable output only

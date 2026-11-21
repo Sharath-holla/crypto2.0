@@ -1,0 +1,21 @@
+{
+  "schema": "crypto2_operator_revision_v1",
+  "revision": "opsfix2",
+  "utc": "2026-11-18T09:43:36.585704+00:00",
+  "frozen_scientific_source_commit": "e2fbe33211d975e3af88e52ce6180c820ce05cbb",
+  "source_archive_changed": false,
+  "scientific_identities_changed": false,
+  "changes": [
+    "Exclude only disposable software-gate-<32hex>/tmp test fixtures; retain JUnit, all gate logs and strict symlink refusal elsewhere.",
+    "Idempotent read-only API calls: at most two 6-second attempts and one 0.5-second backoff. No replay of mutations. Denials fail immediately; exhausted reads fail closed."
+  ],
+  "operator_tests": "50 PASS; repeat on live Linux",
+  "code_sha256": {
+    "runpod_phase7_ops.py": "dee0f10222f8348c2c4f3497889dcf1c81c60f075d1cb28809c715b39b76c11c",
+    "test_runpod_phase7_ops.py": "e365735acbc55858f8f653554ccf91ebab85c834dc0d4407d6bfd0600ae8307a",
+    "runpod_stop_controller_phase7.py": "cbfb9182c4d607c7a724bed4b94142578913a22fa42cfa899fcff00580ba3453"
+  },
+  "archive": "/Users/cortex/Crypto2Data/reports/phase7-constrained-20261117/crypto2-constrained-operator-kit-e2fbe33211d9-opsfix2.tar.gz",
+  "archive_sha256": "ed46af9abb90c696740269f7ce00f9b8601b54669630017e4043f3f8d296d458",
+  "bytes": 317015
+}

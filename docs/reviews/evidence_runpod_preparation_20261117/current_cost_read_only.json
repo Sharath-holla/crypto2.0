@@ -1,0 +1,60 @@
+{
+  "captured_utc": "2026-11-17T00:52:19.940545+00:00",
+  "billing_start_utc": "2026-11-14T00:00:00Z",
+  "billing_is_lagging": true,
+  "pods": {
+    "metadata": {
+      "query": {
+        "bucketSize": "hour",
+        "endTime": "2026-11-17T01:00:00Z",
+        "podId": "3hv6n675gud1wu",
+        "startTime": "2026-11-14T00:00:00Z"
+      },
+      "recordCount": 20,
+      "totals": {
+        "cpuAmount": 0,
+        "diskAmount": 0.09837963036261499,
+        "gpuAmount": 0.8038566336035728,
+        "totalAmount": 0.9022362639661878
+      },
+      "uniquePodCount": 1
+    }
+  },
+  "network-volumes": {
+    "metadata": {
+      "query": {
+        "bucketSize": "hour",
+        "endTime": "2026-11-17T01:00:00Z",
+        "networkVolumeId": "kz9axr9t9v",
+        "startTime": "2026-11-14T00:00:00Z"
+      },
+      "recordCount": 56,
+      "totals": {
+        "highPerformanceAmount": 0,
+        "standardAmount": 0.27222223207354546,
+        "totalAmount": 0.27222223207354546
+      },
+      "uniqueNetworkVolumeCount": 1
+    }
+  },
+  "identified_billed_total_usd": 1.1744584960397333,
+  "wallet": {
+    "clientBalance": 17.8173519746,
+    "currentSpendPerHr": 0.005
+  },
+  "previous_pod": {
+    "id": "3hv6n675gud1wu",
+    "status": "EXITED",
+    "cost": 0.295,
+    "disk": 50,
+    "dataCenterId": "EU-SE-1"
+  },
+  "volume": {
+    "dataCenter": "EU-SE-1",
+    "id": "kz9axr9t9v",
+    "name": "extra_blush_galliform",
+    "size": 50,
+    "tags": [],
+    "type": "STANDARD"
+  }
+}

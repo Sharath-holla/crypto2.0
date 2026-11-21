@@ -1,0 +1,10 @@
+usage: runpod_select_host_phase7.py [-h] [--api-key-file API_KEY_FILE]
+                                    --output OUTPUT
+
+Read-only live catalog, wallet and stopped-Pod snapshot. Never deploys
+anything.
+
+options:
+  -h, --help            show this help message and exit
+  --api-key-file API_KEY_FILE
+  --output OUTPUT

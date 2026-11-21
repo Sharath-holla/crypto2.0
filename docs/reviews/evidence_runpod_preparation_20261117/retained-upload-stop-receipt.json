@@ -1,0 +1,8 @@
+{
+  "status": "STOPPED_CONFIRMED",
+  "utc": "2026-11-16T18:30:40.618790+00:00",
+  "reason": "UPLOAD_COMPLETE",
+  "pod_id": "3hv6n675gud1wu",
+  "provider_status": "EXITED",
+  "volume_preserved": "kz9axr9t9v"
+}

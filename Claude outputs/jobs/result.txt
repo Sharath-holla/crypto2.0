@@ -1,0 +1,5 @@
+==  ruff-format-check src/crypto_ai/phase7/result_ledger.py  (Sun Nov  8 10:23:59 IST 2026)
+==  ruff-format-check src/crypto_ai/phase7/result_ledger.py  (Sun Nov  8 10:23:59 IST 2026)
+1 file already formatted
+== finished (exit shown above if any)
+(full log: Claude outputs/jobs/logs/20261108-102359-ruff-format-check.log,        3 lines)

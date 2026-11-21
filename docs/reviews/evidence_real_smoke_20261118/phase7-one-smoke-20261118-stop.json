@@ -1,0 +1,8 @@
+{
+  "pod_id": "psnqw2afveit2w",
+  "provider_status": "EXITED",
+  "reason": "SSH_TRUST_OR_CONTROLLER_GATE_FAILURE",
+  "status": "STOPPED_CONFIRMED",
+  "utc": "2026-11-18T08:36:15.363946+00:00",
+  "volume_preserved": "kz9axr9t9v"
+}

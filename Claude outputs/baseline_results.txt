@@ -1,0 +1,54 @@
+== git
+a99f14c
+ M pyproject.toml
+ M src/crypto_ai/phase7/benchmark_one_spec.py
+ M src/crypto_ai/phase7/cross_section.py
+ M src/crypto_ai/phase7/features.py
+ M src/crypto_ai/phase7/preflight.py
+ M src/crypto_ai/phase7/prepared_cache.py
+ M src/crypto_ai/phase7/training.py
+ M src/crypto_ai/research_scope.py
+ M tests/phase7/test_finite_row_accounting.py
+ M tests/phase7/test_fold_context_causality.py
+ M tests/phase7/test_pre_lightning_finalization.py
+ M tests/phase7/test_prepared_cache_lock_recovery.py
+ M tests/phase7/test_training_error_classification.py
+ M tests/test_research_scope_guard.py
+?? "Claude outputs/"
+?? tests/phase7/test_independent_review_accounting.py
+?? tests/phase7/test_independent_review_context.py
+?? tests/phase7/test_independent_review_preparation.py
+== python
+Python 3.12.16
+lightgbm 4.7.0 pyarrow 24.0.0
+== pytest
+........................................................................ [  6%]
+........................................................................ [ 13%]
+........................................................................ [ 19%]
+........................................................................ [ 26%]
+........................................................................ [ 32%]
+........................................................................ [ 39%]
+........................................................................ [ 45%]
+........................................................................ [ 52%]
+........................................................................ [ 58%]
+........................................................................ [ 65%]
+........................................................................ [ 71%]
+........................................................................ [ 78%]
+........................................................................ [ 84%]
+........................................................................ [ 91%]
+........................................................................ [ 97%]
+.......................                                                  [100%]
+1103 passed in 71.99s (0:01:11)
+== ruff check
+All checks passed!
+== ruff format --check
+670 files already formatted
+== verify_linux
+{
+  "checks": [],
+  "failures": [],
+  "linux_validation": "NOT RUN",
+  "reason": "Linux required",
+  "status": "FAIL"
+}
+== done

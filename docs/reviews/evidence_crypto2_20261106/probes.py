@@ -1,0 +1,262 @@
+import json
+import math
+from datetime import UTC, datetime, timedelta
+from pathlib import Path
+from shutil import copyfile
+from tempfile import TemporaryDirectory
+
+import numpy as np
+import pyarrow as pa
+import pyarrow.compute as pc
+
+from crypto_ai.phase5.folds import calibration_split_time, plan_folds
+from crypto_ai.phase7.config import FeatureConfig, load_phase7_config
+from crypto_ai.phase7.economics import select_cal_b_thresholds
+from crypto_ai.phase7.features import (
+    build_fold_context_table,
+    build_higher_timeframe_context,
+    generate_multiasset_features,
+)
+from crypto_ai.phase7.fixtures import synthetic_candles, synthetic_registry
+from crypto_ai.phase7.hardening import evaluate_success, rank_specs_with_correction
+from crypto_ai.phase7.resource_estimate import estimate_spec_resources
+from crypto_ai.phase7.targets import generate_multiasset_targets
+from crypto_ai.phase7.training import (
+    TRAINING_CRITICAL_SOURCE_FILES,
+    _to_raw_predictions,
+    scientific_source_identity,
+)
+
+cfg = load_phase7_config(Path("configs/phase7/research_core20_primary_v1.toml"))
+folds = plan_folds(cfg.data_start, cfg.research_cutoff, cfg.prospective_holdout_start, cfg.schedule)
+out = {
+    "configuration_hash": cfg.configuration_hash,
+    "folds": [p.to_dict() | {"cal_a_end": calibration_split_time(p).isoformat()} for p in folds],
+}
+start = datetime(2021, 1, 1, tzinfo=UTC)
+gap = start + timedelta(minutes=900)
+c = synthetic_candles(rows_per_symbol=260, start=start)
+c = c.filter(
+    pc.invert(pc.and_(pc.equal(c["symbol"], "SOLUSDT"), pc.equal(c["open_time"], pa.scalar(gap))))
+)
+f = generate_multiasset_features(
+    c,
+    registry=synthetic_registry(),
+    config=FeatureConfig(
+        correlation_window_rows=12,
+        liquidity_window_rows=12,
+        volatility_window_rows=12,
+        daily_volatility_rows=12,
+        seven_day_volatility_rows=24,
+        include_12h=False,
+        include_1d=False,
+    ),
+).table
+t = generate_multiasset_targets(c, f, config=cfg.targets, research_cutoff=cfg.research_cutoff).table
+g = f.join(t, keys=["symbol", "feature_time"], join_type="inner")
+featurekeys = set(zip(f["symbol"].to_pylist(), f["feature_time"].to_pylist(), strict=True))
+goldkeys = set(zip(g["symbol"].to_pylist(), g["feature_time"].to_pylist(), strict=True))
+missing = sorted(featurekeys - goldkeys, key=lambda k: (k[1], k[0]))
+out["M01"] = {
+    "synthetic_feature_rows": len(featurekeys),
+    "union_feature_keys": len(goldkeys),
+    "missing_keys": len(missing),
+    "lost_near_gap": [
+        (s, x.isoformat()) for s, x in missing if gap - timedelta(hours=1) <= x <= gap
+    ],
+    "lost_by_symbol": {
+        s: sum(k[0] == s for k in missing) for s in sorted(set(f["symbol"].to_pylist()))
+    },
+}
+try:
+    build_fold_context_table(g, verify_observable_coverage=True)
+except ValueError as exc:
+    out["M01"]["guard_error"] = str(exc)
+early = g.filter(pc.less(g["feature_time"], pa.scalar(gap - timedelta(minutes=20))))
+chosen = min(early["feature_time"].to_pylist())
+removed = early.filter(pc.not_equal(early["feature_time"], pa.scalar(chosen)))
+out["M01"]["all_symbols_at_one_timestamp_removed_guard_passes"] = (
+    build_fold_context_table(removed, verify_observable_coverage=True).num_rows > 0
+)
+base = synthetic_candles(rows_per_symbol=90, start=start)
+feat = pa.table(
+    {
+        "symbol": base["symbol"],
+        "feature_time": pc.add(
+            base["open_time"], pa.scalar(timedelta(minutes=5), type=pa.duration("us"))
+        ),
+        "daily_volatility": [0.01] * base.num_rows,
+        "atr14_pct": [0.01] * base.num_rows,
+    }
+)
+labels = generate_multiasset_targets(
+    base, feat, config=cfg.targets, research_cutoff=cfg.research_cutoff
+).table
+bt = base.filter(pc.equal(base["symbol"], "BTCUSDT"))
+opens = bt["open"].to_numpy()
+a = labels.filter(
+    pc.and_(
+        pc.equal(labels["symbol"], "BTCUSDT"),
+        pc.equal(labels["feature_time"], pa.scalar(start + timedelta(minutes=155))),
+    )
+)
+out["timing"] = []
+for r in a.to_pylist():
+    h = r["horizon_minutes"]
+    expected = opens[32 + h // 5] / opens[32] - 1
+    assert r["entry_time"] == start + timedelta(minutes=160)
+    assert r["label_end_time"] == start + timedelta(minutes=160 + h)
+    assert math.isclose(r["raw_future_return"], expected, abs_tol=1e-15)
+    out["timing"].append(
+        {
+            "horizon": h,
+            "feature": r["feature_time"].isoformat(),
+            "entry": r["entry_time"].isoformat(),
+            "exit": r["label_end_time"].isoformat(),
+            "return": expected,
+        }
+    )
+scale = np.array([0.0, 1e-10, 0.01])
+raw = np.array([0.001] * 3)
+norm = raw / np.maximum(abs(scale), 1e-08)
+out["normalization_inverse"] = {
+    "raw": raw.tolist(),
+    "scale": scale.tolist(),
+    "reconstructed": _to_raw_predictions(
+        pa.table({"ex_ante_volatility_scale": scale}), norm, target_type="volatility_normalized"
+    ).tolist(),
+}
+rows = [
+    {
+        "spec": "s",
+        "fold_id": "same-fold",
+        "lightgbm_skill_vs_zero": 0.01,
+        "net_return_sum": 1.0,
+        "beats_zero": True,
+    }
+    for _ in range(10)
+]
+out["duplicate_ranking"] = rank_specs_with_correction(rows)
+out["duplicate_success"] = evaluate_success(rows)
+out["hardening_module_in_scientific_identity"] = (
+    "src/crypto_ai/phase7/hardening.py" in TRAINING_CRITICAL_SOURCE_FILES
+)
+out["null_FWER_independent"] = {str(n): 1 - (1 - 0.05) ** n for n in [48, 768]}
+out["long_gold_matrix_gib"] = 50352548 * 109 * 8 / 1024**3
+out["one_horizon_average_matrix_gib"] = 50352548 / 4 * 109 * 8 / 1024**3
+out["resource_average_counterexample"] = estimate_spec_resources(
+    total_gold_rows=7, feature_count=109
+)["rows_per_horizon_upper_bound"]
+Path("/tmp/crypto2-audit-20261106/probes.json").write_text(json.dumps(out, indent=2))
+print(json.dumps({k: v for k, v in out.items() if k != "folds"}, indent=2))
+with TemporaryDirectory(prefix="crypto2-source-identity-") as scratch:
+    scratch = Path(scratch)
+    for name in TRAINING_CRITICAL_SOURCE_FILES:
+        dest = scratch / name
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        copyfile(name, dest)
+    dest = scratch / "src/crypto_ai/phase7/hardening.py"
+    copyfile("src/crypto_ai/phase7/hardening.py", dest)
+    before = scientific_source_identity(scratch)["manifest_sha256"]
+    dest.write_text(dest.read_text() + "\n# audit-only change in a temporary copy\n")
+    out["hardening_only_change_preserves_scientific_hash"] = (
+        before == scientific_source_identity(scratch)["manifest_sha256"]
+    )
+q = pa.table(
+    {
+        "symbol": ["BTCUSDT"] * 30,
+        "feature_time": [start + timedelta(hours=2 * i) for i in range(30)],
+        "entry_time": [start + timedelta(hours=2 * i, minutes=5) for i in range(30)],
+        "label_end_time": [start + timedelta(hours=2 * i, minutes=65) for i in range(30)],
+        "raw_future_return": [-0.01] * 30,
+    }
+)
+th, diagnostics = select_cal_b_thresholds(
+    q,
+    np.full(30, 0.05),
+    target_column="raw_future_return",
+    liquidity_tiers={"BTCUSDT": "HIGH_LIQUIDITY"},
+    cluster_mapping={},
+    granularity="global",
+    config=cfg.costs,
+)
+out["all_negative_thresholds"] = {
+    "selected": th.values_bps,
+    "candidates": diagnostics["groups"]["global"]["candidates"],
+}
+htf_start = datetime(2020, 8, 1, tzinfo=UTC)
+
+
+def interval_fixture(count, minutes):
+    src = synthetic_candles(rows_per_symbol=count, start=htf_start)
+    rows = src.to_pylist()
+    counters = {}
+    for row in rows:
+        idx = counters.get(row["symbol"], 0)
+        counters[row["symbol"]] = idx + 1
+        row["open_time"] = htf_start + timedelta(minutes=idx * minutes)
+    return pa.Table.from_pylist(rows)
+
+
+native_start = datetime(2021, 4, 1, tzinfo=UTC)
+boundary = native_start + timedelta(hours=16)
+native = synthetic_candles(rows_per_symbol=300, start=native_start)
+cl = native["close"].to_numpy()
+native = (
+    native.append_column("mark_price", pa.array(cl * 1.001))
+    .append_column("index_price", pa.array(cl * 1.002))
+    .append_column(
+        "funding_rate", pa.array(0.0001 + 1e-05 * np.sin(np.arange(native.num_rows) / 5))
+    )
+)
+h12 = interval_fixture(510, 720)
+h24 = interval_fixture(255, 1440)
+context = build_higher_timeframe_context(h12, h24)
+fc = FeatureConfig(
+    correlation_window_rows=12,
+    liquidity_window_rows=12,
+    volatility_window_rows=12,
+    daily_volatility_rows=12,
+    seven_day_volatility_rows=24,
+)
+full = generate_multiasset_features(
+    native, registry=synthetic_registry(), config=fc, higher_timeframe_context=context
+)
+pre_native = native.filter(pc.less(native["open_time"], pa.scalar(boundary)))
+pre_context = build_higher_timeframe_context(
+    h12.filter(pc.less_equal(h12["open_time"], pa.scalar(boundary - timedelta(hours=12)))),
+    h24.filter(pc.less_equal(h24["open_time"], pa.scalar(boundary - timedelta(days=1)))),
+)
+prefix = generate_multiasset_features(
+    pre_native, registry=synthetic_registry(), config=fc, higher_timeframe_context=pre_context
+)
+left = full.table.filter(pc.less_equal(full.table["feature_time"], pa.scalar(boundary)))
+right = prefix.table
+assert left.select(["symbol", "feature_time"]).equals(right.select(["symbol", "feature_time"]))
+for name in full.feature_columns:
+    np.testing.assert_allclose(
+        left[name].to_numpy(), right[name].to_numpy(), rtol=1e-12, atol=1e-15, equal_nan=True
+    )
+out["full_feature_prefix_probe"] = {
+    "status": "PASS",
+    "columns_checked": len(full.feature_columns),
+    "rows_compared": left.num_rows,
+    "feature_config": "short fixture windows; production column set",
+    "max_relative_tolerance": 1e-12,
+    "max_absolute_tolerance": 1e-15,
+    "actual_gold_equivalence": False,
+}
+Path("/tmp/crypto2-audit-20261106/probes.json").write_text(json.dumps(out, indent=2))
+print(
+    json.dumps(
+        {
+            k: out[k]
+            for k in [
+                "hardening_only_change_preserves_scientific_hash",
+                "all_negative_thresholds",
+                "full_feature_prefix_probe",
+            ]
+        },
+        indent=2,
+    )
+)

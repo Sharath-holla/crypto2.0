@@ -1,0 +1,17 @@
+{
+  "status": "PASS",
+  "commit": "7a64ee0da53961940932dacaddb5022be7b299bb",
+  "committed_files": 1194,
+  "committed_bytes": 23325047,
+  "inventory_sha256": "a89c7c6a739639a51a22bf7e0be4cf462dec1f9b06435e5474f891a6990b004e",
+  "archive_sha256": "b60eaffb1d4272aed053cc48c5c3b2b47537b1ac33513b02862db936910851d8",
+  "archive_bytes": 5557587,
+  "shipping_regular_files_including_source_freeze": 1195,
+  "shipping_regular_bytes_including_source_freeze": 23542655,
+  "git_attribute_crlf_paths": [
+    "aiventra/scripts/bootstrap.ps1",
+    "aiventra/scripts/start.ps1",
+    "aiventra/scripts/stop.ps1"
+  ],
+  "comparison": "Git blob bytes with explicit .gitattributes eol=crlf conversion only; archive bytes equal frozen export"
+}

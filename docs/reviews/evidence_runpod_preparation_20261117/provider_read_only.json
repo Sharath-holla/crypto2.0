@@ -1,0 +1,355 @@
+{
+  "captured_at": "2026-11-16T18:55:08.103722+00:00",
+  "pod": {
+    "http_status": 200,
+    "detail": {
+      "id": "3hv6n675gud1wu",
+      "status": "EXITED",
+      "desiredStatus": null,
+      "costPerHr": null,
+      "adjustedCostPerHr": null,
+      "gpu": {
+        "count": 0,
+        "id": "NVIDIA A40",
+        "memory": 0,
+        "vcpuCount": 0
+      },
+      "cpu": null,
+      "dataCenterId": "EU-SE-1",
+      "machine": null,
+      "diskGB": null,
+      "image": "runpod/pytorch:2.1.0-cu1320-torch280-ubuntu2404",
+      "createdAt": "2026-11-14T16:32:50.186Z",
+      "mounts": {
+        "network": [
+          {
+            "path": "/workspace",
+            "volumeId": "kz9axr9t9v"
+          }
+        ]
+      }
+    }
+  },
+  "volume": {
+    "http_status": 200,
+    "detail": {
+      "id": "kz9axr9t9v",
+      "name": "extra_blush_galliform",
+      "size": 50,
+      "sizeGb": null,
+      "dataCenterId": null,
+      "dataCenter": "EU-SE-1",
+      "type": "STANDARD",
+      "storageType": null
+    }
+  },
+  "gpus": {
+    "http_status": 200,
+    "detail": {
+      "gpus": [
+        {
+          "availability": "LOW",
+          "community": true,
+          "cudaVersions": [
+            {
+              "available": true,
+              "version": "13.2"
+            }
+          ],
+          "dataCenters": [
+            {
+              "availability": "LOW",
+              "id": "EU-SE-1",
+              "name": "EU-SE-1"
+            }
+          ],
+          "id": "NVIDIA RTX A6000",
+          "manufacturer": "NVIDIA",
+          "maxCount": {
+            "community": 2,
+            "secure": 10
+          },
+          "memory": 48,
+          "minRam": 50,
+          "minVcpuCount": 9,
+          "name": "RTX A6000",
+          "pool": "AMPERE_48",
+          "price": {
+            "community": 0.33,
+            "secure": 0.69,
+            "serverless": 1.22
+          },
+          "secure": true
+        }
+      ]
+    }
+  },
+  "cpus": {
+    "http_status": 200,
+    "detail": {
+      "cpus": [
+        {
+          "availability": "HIGH",
+          "dataCenters": [
+            {
+              "availability": "HIGH",
+              "id": "EU-CZ-1",
+              "name": "EU-CZ-1"
+            },
+            {
+              "availability": "HIGH",
+              "id": "EU-NL-1",
+              "name": "EU-NL-1"
+            },
+            {
+              "availability": "HIGH",
+              "id": "EU-RO-1",
+              "name": "EU-RO-1"
+            },
+            {
+              "availability": "HIGH",
+              "id": "EUR-IS-1",
+              "name": "EUR-IS-1"
+            },
+            {
+              "availability": "HIGH",
+              "id": "US-CA-2",
+              "name": "US-CA-2"
+            },
+            {
+              "availability": "HIGH",
+              "id": "US-GA-2",
+              "name": "US-GA-2"
+            },
+            {
+              "availability": "HIGH",
+              "id": "US-MD-1",
+              "name": "US-MD-1"
+            },
+            {
+              "availability": "HIGH",
+              "id": "US-NE-1",
+              "name": "US-NE-1"
+            }
+          ],
+          "group": "CPU3",
+          "id": "cpu3c",
+          "name": "Compute-Optimized",
+          "price": {
+            "securePerVcpu": 0.03,
+            "serverlessPerVcpu": 0.036
+          },
+          "ramGbPerVcpu": 2,
+          "vcpu": {
+            "max": 32,
+            "min": 2
+          }
+        },
+        {
+          "availability": "HIGH",
+          "dataCenters": [
+            {
+              "availability": "HIGH",
+              "id": "EU-CZ-1",
+              "name": "EU-CZ-1"
+            },
+            {
+              "availability": "HIGH",
+              "id": "EU-NL-1",
+              "name": "EU-NL-1"
+            },
+            {
+              "availability": "HIGH",
+              "id": "EU-RO-1",
+              "name": "EU-RO-1"
+            },
+            {
+              "availability": "HIGH",
+              "id": "EUR-IS-1",
+              "name": "EUR-IS-1"
+            },
+            {
+              "availability": "HIGH",
+              "id": "US-CA-2",
+              "name": "US-CA-2"
+            },
+            {
+              "availability": "HIGH",
+              "id": "US-GA-2",
+              "name": "US-GA-2"
+            },
+            {
+              "availability": "HIGH",
+              "id": "US-MD-1",
+              "name": "US-MD-1"
+            },
+            {
+              "availability": "HIGH",
+              "id": "US-NE-1",
+              "name": "US-NE-1"
+            }
+          ],
+          "group": "CPU3",
+          "id": "cpu3g",
+          "name": "General Purpose",
+          "price": {
+            "securePerVcpu": 0.04,
+            "serverlessPerVcpu": 0.05
+          },
+          "ramGbPerVcpu": 4,
+          "vcpu": {
+            "max": 32,
+            "min": 2
+          }
+        },
+        {
+          "availability": "HIGH",
+          "dataCenters": [
+            {
+              "availability": "HIGH",
+              "id": "EU-CZ-1",
+              "name": "EU-CZ-1"
+            },
+            {
+              "availability": "HIGH",
+              "id": "EU-NL-1",
+              "name": "EU-NL-1"
+            },
+            {
+              "availability": "HIGH",
+              "id": "EU-RO-1",
+              "name": "EU-RO-1"
+            },
+            {
+              "availability": "HIGH",
+              "id": "EUR-IS-1",
+              "name": "EUR-IS-1"
+            },
+            {
+              "availability": "HIGH",
+              "id": "US-CA-2",
+              "name": "US-CA-2"
+            },
+            {
+              "availability": "HIGH",
+              "id": "US-GA-2",
+              "name": "US-GA-2"
+            },
+            {
+              "availability": "HIGH",
+              "id": "US-MD-1",
+              "name": "US-MD-1"
+            },
+            {
+              "availability": "HIGH",
+              "id": "US-NE-1",
+              "name": "US-NE-1"
+            }
+          ],
+          "group": "CPU3",
+          "id": "cpu3m",
+          "name": "Memory-Optimized",
+          "price": {
+            "securePerVcpu": 0.055,
+            "serverlessPerVcpu": 0
+          },
+          "ramGbPerVcpu": 8,
+          "vcpu": {
+            "max": 32,
+            "min": 2
+          }
+        },
+        {
+          "availability": "HIGH",
+          "dataCenters": [
+            {
+              "availability": "HIGH",
+              "id": "EU-RO-1",
+              "name": "EU-RO-1"
+            },
+            {
+              "availability": "HIGH",
+              "id": "EUR-IS-1",
+              "name": "EUR-IS-1"
+            }
+          ],
+          "group": "CPU5",
+          "id": "cpu5c",
+          "name": "Compute-Optimized",
+          "price": {
+            "securePerVcpu": 0.035,
+            "serverlessPerVcpu": 0.042
+          },
+          "ramGbPerVcpu": 2,
+          "vcpu": {
+            "max": 32,
+            "min": 2
+          }
+        },
+        {
+          "availability": "HIGH",
+          "dataCenters": [
+            {
+              "availability": "HIGH",
+              "id": "EU-RO-1",
+              "name": "EU-RO-1"
+            },
+            {
+              "availability": "HIGH",
+              "id": "EUR-IS-1",
+              "name": "EUR-IS-1"
+            }
+          ],
+          "group": "CPU5",
+          "id": "cpu5g",
+          "name": "General Purpose",
+          "price": {
+            "securePerVcpu": 0.046,
+            "serverlessPerVcpu": 0.055
+          },
+          "ramGbPerVcpu": 4,
+          "vcpu": {
+            "max": 32,
+            "min": 2
+          }
+        },
+        {
+          "availability": "HIGH",
+          "dataCenters": [
+            {
+              "availability": "HIGH",
+              "id": "EU-RO-1",
+              "name": "EU-RO-1"
+            },
+            {
+              "availability": "HIGH",
+              "id": "EUR-IS-1",
+              "name": "EUR-IS-1"
+            }
+          ],
+          "group": "CPU5",
+          "id": "cpu5m",
+          "name": "Memory-Optimized",
+          "price": {
+            "securePerVcpu": 0.065,
+            "serverlessPerVcpu": 0
+          },
+          "ramGbPerVcpu": 8,
+          "vcpu": {
+            "max": 32,
+            "min": 2
+          }
+        }
+      ]
+    }
+  },
+  "wallet": {
+    "http_status": 200,
+    "data": {
+      "myself": {
+        "clientBalance": 17.8465186412,
+        "currentSpendPerHr": 0.005
+      }
+    }
+  }
+}

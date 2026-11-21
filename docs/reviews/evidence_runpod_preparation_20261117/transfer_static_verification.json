@@ -1,0 +1,44 @@
+{
+  "status": "PASS",
+  "mode": "metadata_only_no_Parquet_read_or_bulk_hash",
+  "files": 2777,
+  "bytes": 10998003736,
+  "missing": [],
+  "size_mismatches": [],
+  "checkpoint_internal_hashes": "PASS",
+  "planned_legacy_mapping": [
+    {
+      "stage": "registry",
+      "checkpoint_hash": "24934db4034c1a02859a8b7a",
+      "references": 2,
+      "status": "STATIC_MAPPING_AND_PROVENANCE_PASS",
+      "reference_content_hashes_recomputed": false
+    },
+    {
+      "stage": "universe",
+      "checkpoint_hash": "c4c137b440c373c38df8645e",
+      "references": 630,
+      "status": "STATIC_MAPPING_AND_PROVENANCE_PASS",
+      "reference_content_hashes_recomputed": false
+    },
+    {
+      "stage": "data",
+      "checkpoint_hash": "1672f63f981a7c2451948685",
+      "references": 121,
+      "status": "STATIC_MAPPING_AND_PROVENANCE_PASS",
+      "reference_content_hashes_recomputed": false
+    },
+    {
+      "stage": "gold",
+      "checkpoint_hash": "74841c7e242ebc20c7d18f27",
+      "references": 140,
+      "status": "STATIC_MAPPING_AND_PROVENANCE_PASS",
+      "reference_content_hashes_recomputed": false
+    }
+  ],
+  "descriptor_supplement_files": 1840,
+  "retained_descriptor_equivalence": "PASS",
+  "retained_descriptor_hash": "b019cbcf78ba5f3cb76023334b702843707afc27b2b303955bac86586505d9a7",
+  "descriptor_proof_sha256": "a67e318077332ea1a7e9231e42b59e7840c38b69e9b6f409b10d8a8195228fb2",
+  "transfer_manifest_sha256": "efae40198f11d0dd818bbad5429055448b6070a96b8c6cb89507c71a40682cfa"
+}

@@ -1,0 +1,383 @@
+{
+  "configuration_hash": "93f987736b1a79d26b773957",
+  "folds": [
+    {
+      "fold_id": "fold-000-a0e9a4f72689",
+      "index": 0,
+      "train_start": "2020-01-01T00:00:00+00:00",
+      "train_end": "2022-01-01T00:00:00+00:00",
+      "validation_start": "2022-01-01T00:00:00+00:00",
+      "validation_end": "2022-04-01T00:00:00+00:00",
+      "calibration_start": "2022-04-01T00:00:00+00:00",
+      "calibration_end": "2022-07-01T00:00:00+00:00",
+      "test_start": "2022-07-01T00:00:00+00:00",
+      "test_end": "2022-10-01T00:00:00+00:00",
+      "cal_a_end": "2022-05-16T12:00:00+00:00"
+    },
+    {
+      "fold_id": "fold-001-805307169256",
+      "index": 1,
+      "train_start": "2020-04-01T00:00:00+00:00",
+      "train_end": "2022-04-01T00:00:00+00:00",
+      "validation_start": "2022-04-01T00:00:00+00:00",
+      "validation_end": "2022-07-01T00:00:00+00:00",
+      "calibration_start": "2022-07-01T00:00:00+00:00",
+      "calibration_end": "2022-10-01T00:00:00+00:00",
+      "test_start": "2022-10-01T00:00:00+00:00",
+      "test_end": "2023-01-01T00:00:00+00:00",
+      "cal_a_end": "2022-08-16T00:00:00+00:00"
+    },
+    {
+      "fold_id": "fold-002-a2dead26c257",
+      "index": 2,
+      "train_start": "2020-07-01T00:00:00+00:00",
+      "train_end": "2022-07-01T00:00:00+00:00",
+      "validation_start": "2022-07-01T00:00:00+00:00",
+      "validation_end": "2022-10-01T00:00:00+00:00",
+      "calibration_start": "2022-10-01T00:00:00+00:00",
+      "calibration_end": "2023-01-01T00:00:00+00:00",
+      "test_start": "2023-01-01T00:00:00+00:00",
+      "test_end": "2023-04-01T00:00:00+00:00",
+      "cal_a_end": "2022-11-16T00:00:00+00:00"
+    },
+    {
+      "fold_id": "fold-003-a4ba910e38c1",
+      "index": 3,
+      "train_start": "2020-10-01T00:00:00+00:00",
+      "train_end": "2022-10-01T00:00:00+00:00",
+      "validation_start": "2022-10-01T00:00:00+00:00",
+      "validation_end": "2023-01-01T00:00:00+00:00",
+      "calibration_start": "2023-01-01T00:00:00+00:00",
+      "calibration_end": "2023-04-01T00:00:00+00:00",
+      "test_start": "2023-04-01T00:00:00+00:00",
+      "test_end": "2023-07-01T00:00:00+00:00",
+      "cal_a_end": "2023-02-15T00:00:00+00:00"
+    },
+    {
+      "fold_id": "fold-004-4b03b69d638d",
+      "index": 4,
+      "train_start": "2021-01-01T00:00:00+00:00",
+      "train_end": "2023-01-01T00:00:00+00:00",
+      "validation_start": "2023-01-01T00:00:00+00:00",
+      "validation_end": "2023-04-01T00:00:00+00:00",
+      "calibration_start": "2023-04-01T00:00:00+00:00",
+      "calibration_end": "2023-07-01T00:00:00+00:00",
+      "test_start": "2023-07-01T00:00:00+00:00",
+      "test_end": "2023-10-01T00:00:00+00:00",
+      "cal_a_end": "2023-05-16T12:00:00+00:00"
+    },
+    {
+      "fold_id": "fold-005-2cf830b9f251",
+      "index": 5,
+      "train_start": "2021-04-01T00:00:00+00:00",
+      "train_end": "2023-04-01T00:00:00+00:00",
+      "validation_start": "2023-04-01T00:00:00+00:00",
+      "validation_end": "2023-07-01T00:00:00+00:00",
+      "calibration_start": "2023-07-01T00:00:00+00:00",
+      "calibration_end": "2023-10-01T00:00:00+00:00",
+      "test_start": "2023-10-01T00:00:00+00:00",
+      "test_end": "2024-01-01T00:00:00+00:00",
+      "cal_a_end": "2023-08-16T00:00:00+00:00"
+    },
+    {
+      "fold_id": "fold-006-d3b9e1c10821",
+      "index": 6,
+      "train_start": "2021-07-01T00:00:00+00:00",
+      "train_end": "2023-07-01T00:00:00+00:00",
+      "validation_start": "2023-07-01T00:00:00+00:00",
+      "validation_end": "2023-10-01T00:00:00+00:00",
+      "calibration_start": "2023-10-01T00:00:00+00:00",
+      "calibration_end": "2024-01-01T00:00:00+00:00",
+      "test_start": "2024-01-01T00:00:00+00:00",
+      "test_end": "2024-04-01T00:00:00+00:00",
+      "cal_a_end": "2023-11-16T00:00:00+00:00"
+    },
+    {
+      "fold_id": "fold-007-b137dd293bcc",
+      "index": 7,
+      "train_start": "2021-10-01T00:00:00+00:00",
+      "train_end": "2023-10-01T00:00:00+00:00",
+      "validation_start": "2023-10-01T00:00:00+00:00",
+      "validation_end": "2024-01-01T00:00:00+00:00",
+      "calibration_start": "2024-01-01T00:00:00+00:00",
+      "calibration_end": "2024-04-01T00:00:00+00:00",
+      "test_start": "2024-04-01T00:00:00+00:00",
+      "test_end": "2024-07-01T00:00:00+00:00",
+      "cal_a_end": "2024-02-15T12:00:00+00:00"
+    },
+    {
+      "fold_id": "fold-008-b22af5bba459",
+      "index": 8,
+      "train_start": "2022-01-01T00:00:00+00:00",
+      "train_end": "2024-01-01T00:00:00+00:00",
+      "validation_start": "2024-01-01T00:00:00+00:00",
+      "validation_end": "2024-04-01T00:00:00+00:00",
+      "calibration_start": "2024-04-01T00:00:00+00:00",
+      "calibration_end": "2024-07-01T00:00:00+00:00",
+      "test_start": "2024-07-01T00:00:00+00:00",
+      "test_end": "2024-10-01T00:00:00+00:00",
+      "cal_a_end": "2024-05-16T12:00:00+00:00"
+    },
+    {
+      "fold_id": "fold-009-840bf1d34764",
+      "index": 9,
+      "train_start": "2022-04-01T00:00:00+00:00",
+      "train_end": "2024-04-01T00:00:00+00:00",
+      "validation_start": "2024-04-01T00:00:00+00:00",
+      "validation_end": "2024-07-01T00:00:00+00:00",
+      "calibration_start": "2024-07-01T00:00:00+00:00",
+      "calibration_end": "2024-10-01T00:00:00+00:00",
+      "test_start": "2024-10-01T00:00:00+00:00",
+      "test_end": "2025-01-01T00:00:00+00:00",
+      "cal_a_end": "2024-08-16T00:00:00+00:00"
+    },
+    {
+      "fold_id": "fold-010-01be2e390a0b",
+      "index": 10,
+      "train_start": "2022-07-01T00:00:00+00:00",
+      "train_end": "2024-07-01T00:00:00+00:00",
+      "validation_start": "2024-07-01T00:00:00+00:00",
+      "validation_end": "2024-10-01T00:00:00+00:00",
+      "calibration_start": "2024-10-01T00:00:00+00:00",
+      "calibration_end": "2025-01-01T00:00:00+00:00",
+      "test_start": "2025-01-01T00:00:00+00:00",
+      "test_end": "2025-04-01T00:00:00+00:00",
+      "cal_a_end": "2024-11-16T00:00:00+00:00"
+    },
+    {
+      "fold_id": "fold-011-d89741db3cd2",
+      "index": 11,
+      "train_start": "2022-10-01T00:00:00+00:00",
+      "train_end": "2024-10-01T00:00:00+00:00",
+      "validation_start": "2024-10-01T00:00:00+00:00",
+      "validation_end": "2025-01-01T00:00:00+00:00",
+      "calibration_start": "2025-01-01T00:00:00+00:00",
+      "calibration_end": "2025-04-01T00:00:00+00:00",
+      "test_start": "2025-04-01T00:00:00+00:00",
+      "test_end": "2025-07-01T00:00:00+00:00",
+      "cal_a_end": "2025-02-15T00:00:00+00:00"
+    },
+    {
+      "fold_id": "fold-012-7a680fd4ffbe",
+      "index": 12,
+      "train_start": "2023-01-01T00:00:00+00:00",
+      "train_end": "2025-01-01T00:00:00+00:00",
+      "validation_start": "2025-01-01T00:00:00+00:00",
+      "validation_end": "2025-04-01T00:00:00+00:00",
+      "calibration_start": "2025-04-01T00:00:00+00:00",
+      "calibration_end": "2025-07-01T00:00:00+00:00",
+      "test_start": "2025-07-01T00:00:00+00:00",
+      "test_end": "2025-10-01T00:00:00+00:00",
+      "cal_a_end": "2025-05-16T12:00:00+00:00"
+    },
+    {
+      "fold_id": "fold-013-38fc22d70345",
+      "index": 13,
+      "train_start": "2023-04-01T00:00:00+00:00",
+      "train_end": "2025-04-01T00:00:00+00:00",
+      "validation_start": "2025-04-01T00:00:00+00:00",
+      "validation_end": "2025-07-01T00:00:00+00:00",
+      "calibration_start": "2025-07-01T00:00:00+00:00",
+      "calibration_end": "2025-10-01T00:00:00+00:00",
+      "test_start": "2025-10-01T00:00:00+00:00",
+      "test_end": "2026-01-01T00:00:00+00:00",
+      "cal_a_end": "2025-08-16T00:00:00+00:00"
+    },
+    {
+      "fold_id": "fold-014-8b62ba7b825a",
+      "index": 14,
+      "train_start": "2023-07-01T00:00:00+00:00",
+      "train_end": "2025-07-01T00:00:00+00:00",
+      "validation_start": "2025-07-01T00:00:00+00:00",
+      "validation_end": "2025-10-01T00:00:00+00:00",
+      "calibration_start": "2025-10-01T00:00:00+00:00",
+      "calibration_end": "2026-01-01T00:00:00+00:00",
+      "test_start": "2026-01-01T00:00:00+00:00",
+      "test_end": "2026-04-01T00:00:00+00:00",
+      "cal_a_end": "2025-11-16T00:00:00+00:00"
+    },
+    {
+      "fold_id": "fold-015-ed49f0aadaf7",
+      "index": 15,
+      "train_start": "2023-10-01T00:00:00+00:00",
+      "train_end": "2025-10-01T00:00:00+00:00",
+      "validation_start": "2025-10-01T00:00:00+00:00",
+      "validation_end": "2026-01-01T00:00:00+00:00",
+      "calibration_start": "2026-01-01T00:00:00+00:00",
+      "calibration_end": "2026-04-01T00:00:00+00:00",
+      "test_start": "2026-04-01T00:00:00+00:00",
+      "test_end": "2026-07-01T00:00:00+00:00",
+      "cal_a_end": "2026-02-15T00:00:00+00:00"
+    }
+  ],
+  "M01": {
+    "synthetic_feature_rows": 1039,
+    "union_feature_keys": 1014,
+    "missing_keys": 25,
+    "lost_near_gap": [
+      [
+        "SOLUSDT",
+        "2021-01-01T14:40:00+00:00"
+      ],
+      [
+        "SOLUSDT",
+        "2021-01-01T14:45:00+00:00"
+      ],
+      [
+        "SOLUSDT",
+        "2021-01-01T14:50:00+00:00"
+      ],
+      [
+        "SOLUSDT",
+        "2021-01-01T14:55:00+00:00"
+      ],
+      [
+        "SOLUSDT",
+        "2021-01-01T15:00:00+00:00"
+      ]
+    ],
+    "lost_by_symbol": {
+      "BTCUSDT": 5,
+      "ETHUSDT": 5,
+      "SOLUSDT": 10,
+      "XRPUSDT": 5
+    },
+    "guard_error": "M01_CONTEXT_SOURCE_INCOMPLETE: the all-horizon union omits observable feature rows; restore verified feature-only context before preparation",
+    "all_symbols_at_one_timestamp_removed_guard_passes": true
+  },
+  "timing": [
+    {
+      "horizon": 15,
+      "feature": "2021-01-01T02:35:00+00:00",
+      "entry": "2021-01-01T02:40:00+00:00",
+      "exit": "2021-01-01T02:55:00+00:00",
+      "return": -4.703387798865588e-05
+    },
+    {
+      "horizon": 30,
+      "feature": "2021-01-01T02:35:00+00:00",
+      "entry": "2021-01-01T02:40:00+00:00",
+      "exit": "2021-01-01T03:10:00+00:00",
+      "return": -0.00014886806017311294
+    },
+    {
+      "horizon": 60,
+      "feature": "2021-01-01T02:35:00+00:00",
+      "entry": "2021-01-01T02:40:00+00:00",
+      "exit": "2021-01-01T03:40:00+00:00",
+      "return": -0.0004916533672891799
+    },
+    {
+      "horizon": 120,
+      "feature": "2021-01-01T02:35:00+00:00",
+      "entry": "2021-01-01T02:40:00+00:00",
+      "exit": "2021-01-01T04:40:00+00:00",
+      "return": -0.001485664533803277
+    }
+  ],
+  "normalization_inverse": {
+    "raw": [
+      0.001,
+      0.001,
+      0.001
+    ],
+    "scale": [
+      0.0,
+      1e-10,
+      0.01
+    ],
+    "reconstructed": [
+      0.0,
+      1e-05,
+      0.001
+    ]
+  },
+  "duplicate_ranking": {
+    "ranking_basis": "VALIDATION_ONLY",
+    "correction": "bonferroni",
+    "specs_tried": 1,
+    "folds_seen": 1,
+    "spec_fold_pairs_tried": 10,
+    "alpha": 0.05,
+    "ranking": [
+      {
+        "spec": "s",
+        "folds_scored": 10,
+        "mean_validation_skill_vs_zero": 0.009999999999999998,
+        "p_one_sided": 1.8400170427736469e-143,
+        "p_bonferroni": 1.8400170427736469e-143,
+        "significant_after_correction": true
+      }
+    ]
+  },
+  "duplicate_success": {
+    "criteria": {
+      "min_net_positive_folds": 10,
+      "min_beats_baseline_folds": 10
+    },
+    "specs": {
+      "s": {
+        "net_positive": 10,
+        "beats": 10,
+        "folds": 10,
+        "passes": true
+      }
+    },
+    "any_spec_passes": true
+  },
+  "hardening_module_in_scientific_identity": false,
+  "null_FWER_independent": {
+    "48": 0.9147424096656918,
+    "768": 1.0
+  },
+  "long_gold_matrix_gib": 40.89197316765785,
+  "one_horizon_average_matrix_gib": 10.222993291914463,
+  "resource_average_counterexample": 1,
+  "hardening_only_change_preserves_scientific_hash": true,
+  "all_negative_thresholds": {
+    "selected": {
+      "global": 10.0
+    },
+    "candidates": [
+      {
+        "threshold_bps": 2.0,
+        "trade_count": 30,
+        "expectancy": -0.0111,
+        "eligible": true
+      },
+      {
+        "threshold_bps": 4.0,
+        "trade_count": 30,
+        "expectancy": -0.0111,
+        "eligible": true
+      },
+      {
+        "threshold_bps": 6.0,
+        "trade_count": 30,
+        "expectancy": -0.0111,
+        "eligible": true
+      },
+      {
+        "threshold_bps": 8.0,
+        "trade_count": 30,
+        "expectancy": -0.0111,
+        "eligible": true
+      },
+      {
+        "threshold_bps": 10.0,
+        "trade_count": 30,
+        "expectancy": -0.0111,
+        "eligible": true
+      }
+    ]
+  },
+  "full_feature_prefix_probe": {
+    "status": "PASS",
+    "columns_checked": 109,
+    "rows_compared": 768,
+    "feature_config": "short fixture windows; production column set",
+    "max_relative_tolerance": 1e-12,
+    "max_absolute_tolerance": 1e-15,
+    "actual_gold_equivalence": false
+  }
+}

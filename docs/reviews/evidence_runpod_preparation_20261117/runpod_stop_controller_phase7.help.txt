@@ -1,0 +1,19 @@
+usage: runpod_stop_controller_phase7.py [-h] --contract CONTRACT [--arm]
+                                        [--api-key-file API_KEY_FILE]
+                                        [--ssh-key SSH_KEY]
+                                        [--local-root LOCAL_ROOT]
+                                        [--state STATE]
+
+Outside-Pod control-plane stop controller. No start/create/delete/resize
+operation. Default only validates/plans. --arm requires the fresh owner
+session contract. Run under a supervised, awake Mac process; never copy the
+account API key to a Pod.
+
+options:
+  -h, --help            show this help message and exit
+  --contract CONTRACT
+  --arm
+  --api-key-file API_KEY_FILE
+  --ssh-key SSH_KEY
+  --local-root LOCAL_ROOT
+  --state STATE

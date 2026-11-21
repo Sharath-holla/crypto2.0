@@ -1,0 +1,9 @@
+usage: filesystem_probe.py [-h] --root ROOT
+
+Exercise production write/lock primitives on an isolated target filesystem
+directory.
+
+options:
+  -h, --help   show this help message and exit
+  --root ROOT  isolated directory on the intended local cache/output
+               filesystem

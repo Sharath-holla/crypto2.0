@@ -1,0 +1,11 @@
+usage: identity_summary.py [-h] --gold-manifest GOLD_MANIFEST --sidecar
+                           SIDECAR [--expect EXPECT]
+
+Portable content identities; reads manifests and source, never trains or
+builds a cache.
+
+options:
+  -h, --help            show this help message and exit
+  --gold-manifest GOLD_MANIFEST
+  --sidecar SIDECAR
+  --expect EXPECT       Require exact match with a saved JSON summary

@@ -1,0 +1,15 @@
+STAGE train
+STAGE train
+{
+  "status": "DRY_RUN_ONLY",
+  "stage": "train",
+  "source_commit": "7a64ee0da53961940932dacaddb5022be7b299bb",
+  "spec": "architecture-G0-A6-60m-raw",
+  "fold": "fold-000-a0e9a4f72689",
+  "backend": "cpu",
+  "workers": 1,
+  "compute_started": false,
+  "cache_built": false,
+  "models_fitted": 0,
+  "requires": "fresh session approval + outside-Pod stop control; prepare/train separately approved"
+}

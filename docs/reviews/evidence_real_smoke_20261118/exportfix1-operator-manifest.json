@@ -1,0 +1,16 @@
+{
+  "schema": "crypto2_operator_revision_v1",
+  "revision": "exportfix1",
+  "created_utc": "2026-11-18T09:26:46.177806+00:00",
+  "frozen_scientific_source_commit": "e2fbe33211d975e3af88e52ce6180c820ce05cbb",
+  "source_archive_changed": false,
+  "scientific_identities_changed": false,
+  "scope": "Exclude only disposable verifier software-gate-<32hex>/tmp fixture subtrees from evidence export. Retain JUnit, gate logs, source verification and strict symlink refusal elsewhere.",
+  "operator_sha256": "dee0f10222f8348c2c4f3497889dcf1c81c60f075d1cb28809c715b39b76c11c",
+  "tests_sha256": "86c57bcd0f285f42ccdd4e329581c620cbe98f604ed8a7b21b49e1e538a6ce74",
+  "operator_tests": "43 PASS; repeat on live Linux before input/preparation stages",
+  "archive": "/Users/cortex/Crypto2Data/reports/phase7-constrained-20261117/crypto2-constrained-operator-kit-e2fbe33211d9-exportfix1.tar.gz",
+  "archive_sha256": "cddf48d6216d45bd7d011c7353d0987d5d07886f7e2ef0a8d0fb8587603dc9c7",
+  "bytes": 311508,
+  "files": 62
+}

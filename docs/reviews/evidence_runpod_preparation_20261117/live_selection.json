@@ -1,0 +1,53 @@
+{
+  "candidates_price_order": [
+    {
+      "candidate_meets_catalog_floor": false,
+      "catalog_minimum_ram_bytes": 50000000000.0,
+      "catalog_minimum_vcpu": 9.0,
+      "compute_usd_per_hour": 0.69,
+      "count": 1,
+      "region": "EU-SE-1",
+      "status": "INSIDE_CONTAINER_RESOURCE_AND_LOCAL_DISK_PROBE_STILL_REQUIRED",
+      "type": "NVIDIA RTX A6000"
+    }
+  ],
+  "captured_utc": "2026-11-17T00:39:37.089838+00:00",
+  "cheapest_catalog_candidate": null,
+  "cost_scenarios": [
+    {
+      "all_in_estimated_usd_by_hours": {
+        "1": 0.7226388888888888,
+        "2": 1.4452777777777777,
+        "4": 2.8905555555555553
+      },
+      "compute_usd_per_hour": 0.69,
+      "local_disk_gb_planning_example": 200,
+      "network_gb_existing": 50,
+      "type": "NVIDIA RTX A6000"
+    }
+  ],
+  "previous_pod": {
+    "cost": 0.295,
+    "createdAt": "2026-11-14T16:32:50.186Z",
+    "dataCenterId": "EU-SE-1",
+    "disk": 50,
+    "id": "3hv6n675gud1wu",
+    "image": "runpod/pytorch:2.1.0-cu1320-torch280-ubuntu2404",
+    "status": "EXITED"
+  },
+  "rates_note": "Public storage reference; 720h planning month, taxes excluded; re-query deployment quote before approval. No runtime promise.",
+  "read_only": true,
+  "selection_status": "NO_QUALIFIED_LIVE_CATALOG_CANDIDATE",
+  "volume": {
+    "dataCenter": "EU-SE-1",
+    "id": "kz9axr9t9v",
+    "name": "extra_blush_galliform",
+    "size": 50,
+    "tags": [],
+    "type": "STANDARD"
+  },
+  "wallet": {
+    "clientBalance": 17.8173519746,
+    "currentSpendPerHr": 0.005
+  }
+}

@@ -1,0 +1,44 @@
+{
+  "shell_runpod_bootstrap_phase7.sh": "SYNTAX_AND_DRY_RUN_PASS",
+  "shell_runpod_collect_evidence_phase7.sh": "SYNTAX_AND_DRY_RUN_PASS",
+  "shell_runpod_preflight_phase7.sh": "SYNTAX_AND_DRY_RUN_PASS",
+  "shell_runpod_prepare_one_cache_phase7.sh": "SYNTAX_AND_DRY_RUN_PASS",
+  "shell_runpod_reload_cache_phase7.sh": "SYNTAX_AND_DRY_RUN_PASS",
+  "shell_runpod_train_one_smoke_phase7.sh": "SYNTAX_AND_DRY_RUN_PASS",
+  "shell_runpod_verify_transfer_phase7.sh": "SYNTAX_AND_DRY_RUN_PASS",
+  "bootstrap_unapproved_refusal": "PASS",
+  "prepare_unapproved_refusal": "PASS",
+  "train_unapproved_refusal": "PASS",
+  "launchd_template": "PARSE_PASS_NOT_INSTALLED",
+  "canonical_benchmark_plan": "ONE_SPEC_ONE_FOLD_NO_EXECUTION_PASS",
+  "source_freeze_final": {
+    "commit": "7a64ee0da53961940932dacaddb5022be7b299bb",
+    "files": 1194,
+    "files_sha256": "a89c7c6a739639a51a22bf7e0be4cf462dec1f9b06435e5474f891a6990b004e",
+    "status": "PASS"
+  },
+  "archive_sha_and_safe_members": "PASS",
+  "operator_ruff": "PASS",
+  "operator_format": "PASS",
+  "operator_tests": {
+    "tests": 38,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "status": "PASS",
+  "mode": "STATIC_AND_MOCK_ONLY",
+  "compute_started": false,
+  "real_cache_built": false,
+  "models_fitted": 0,
+  "live_linux_verification": "NOT_RUN",
+  "live_controller_armed": false,
+  "final_code_sha256": {
+    "runpod_phase7_ops.py": "21db7de1ac9d7d20e8f24cb97518f85ce31539a12f372ed04abb18ec5b9c7e88",
+    "runpod_select_host_phase7.py": "b6de6c47c09dab6e580b91811fad2bb49c09506754ffbbb516a97cbaa48d5fc4",
+    "runpod_stop_controller_phase7.py": "46d7358a01aee1ea9f0aac675b0f2ed77581b2e74d78e81a74d6b741e4fdb9a9",
+    "test_runpod_phase7_ops.py": "1a70c812a0b1925c55eb51cf3a4df8729837a8b5da69b9950f934dd9470dcb99"
+  },
+  "git_scientific_source_diff_from_7a64ee0": "EMPTY",
+  "new_file_whitespace_check": "PASS"
+}

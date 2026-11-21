@@ -1,0 +1,58 @@
+{
+  "audit_date_local": "2026-11-06",
+  "timezone": "Asia/Kolkata",
+  "branch": "fix/phase7a-final-scientific-hardening-20261106",
+  "starting_head": "0eb929676fef183a33afff2f58f15ceb2f21adc7",
+  "source_snapshot_head": "687e697530bdaecd9d981b3541a7bb60182925ff",
+  "final_observed_head": "c249e285248c12d6d97e1a9be3d4c4625b37f258",
+  "source_changes_since_snapshot": [],
+  "python": "3.12.16",
+  "platform": "macOS-27.2-arm64-arm-64bit",
+  "targeted_pytest": {
+    "passed": 689,
+    "seconds": 56.39
+  },
+  "full_pytest": {
+    "passed": 1162,
+    "seconds": 67.1,
+    "exit_code": 0
+  },
+  "ruff_check": {
+    "exit_code": 1,
+    "issues": "3 E501 comments in training.py"
+  },
+  "ruff_format": {
+    "exit_code": 1,
+    "files": [
+      "src/crypto_ai/phase7/hardening.py",
+      "tests/phase7/test_phase7a_final_metrics_and_baselines.py"
+    ]
+  },
+  "feature_inventory_count": 109,
+  "scorecard_components": 41,
+  "production_code_changed_by_audit": false,
+  "actual_market_data_inspected": false,
+  "training_started": false,
+  "cloud_resources_changed": false,
+  "holdout_accessed": false,
+  "linux_gate": "NOT_RUN",
+  "gold_hash_validation": "NOT_VERIFIED",
+  "real_cache_equivalence": "NOT_VERIFIED",
+  "final_status": "GO_AFTER_FIXING_SPECIFIC_BLOCKERS",
+  "reports": {
+    "crypto2_architecture_scorecard_20261106.md": "fc5937e6be3819a420741aea4bd588970405c05632aede422cb0739037e7e4b7",
+    "crypto2_exhaustive_research_audit_20261106.md": "96c4b8b2846f5404e4cf8f79ce1cb3cedf9d6178a3c34d3fab5e8751506fc1fc",
+    "crypto2_literature_comparison_20261106.md": "2d4ffb1e72299d26533b9bfeab462758f9e0475be90df5f93dbf8fbd481a3a10",
+    "crypto2_loophole_register_20261106.md": "db6b277b089a1faf0fb205a9a1bb6398feea04db2405b51f6c4f83e42942541b",
+    "crypto2_training_code_audit_20261106.md": "890d734a9264a0f57e60e4381cbd8d647f4f96a546b70d1d544e504cec686c99"
+  },
+  "evidence": {
+    "pytest.log": "56fa41f9b655f3f9095b6cac0bf41e77c63da7fe087a71dc835939921a16bf03",
+    "probes.json": "4d24720ba24a1d67dcc44adb1ccde0216b28afb9b2b8986874445bdd86778bc0",
+    "probes.log": "84fa7696f8c40af6fc6a838269b261c231fc3677be51ac70def0952c303e886b",
+    "ruff_check.log": "da76ba6fb101c4befddfb958d43e59c8d7871663e99c724488744bfb6a8c1fda",
+    "ruff_format.log": "bfeb769b3ed0e71380d67faff6d21c070a4a5ae68fa0e2ff0ac866e7941144bd",
+    "probes.py": "fdb44791441be1c1f828a427938a8cf09abcf348d021f432e94e2538b6b3067c",
+    "source_snapshot.json": "699985ff39faf20bf625cade61a746a170cfdb84d6d1b2c05852ebd53285e46f"
+  }
+}

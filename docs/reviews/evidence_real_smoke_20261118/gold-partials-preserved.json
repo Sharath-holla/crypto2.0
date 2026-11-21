@@ -1,0 +1,127 @@
+{
+  "schema": "crypto2_preserved_transfer_partials_v1",
+  "utc": "2026-11-18T09:03:36.146645+00:00",
+  "canonical_files_modified": 0,
+  "files": [
+    {
+      "path": "crypto2-persistent/data/gold/phase7a_core20_primary_v1/gold-phase7-0cbf2910e8d96c9d19826598/dataset/symbol=BCHUSDT/year=2024/.part-ec6a751461fb0aad9daa.parquet.ajeLqI",
+      "bytes": 71041024,
+      "symlink": false
+    },
+    {
+      "path": "crypto2-persistent/data/gold/phase7a_core20_primary_v1/gold-phase7-0cbf2910e8d96c9d19826598/dataset/symbol=BCHUSDT/year=2026/.part-ef5ee1e0aa121c5a571b.parquet.bYspDX",
+      "bytes": 12320768,
+      "symlink": false
+    },
+    {
+      "path": "crypto2-persistent/data/gold/phase7a_core20_primary_v1/gold-phase7-0cbf2910e8d96c9d19826598/dataset/symbol=BLZUSDT/year=2022/.part-5aca9f3449c32a9559b1.parquet.vxaUPd",
+      "bytes": 56360960,
+      "symlink": false
+    },
+    {
+      "path": "crypto2-persistent/data/gold/phase7a_core20_primary_v1/gold-phase7-0cbf2910e8d96c9d19826598/dataset/symbol=BLZUSDT/year=2022/.rsync-partial/part-5aca9f3449c32a9559b1.parquet.preserved-156",
+      "bytes": 46333952,
+      "symlink": false
+    },
+    {
+      "path": "crypto2-persistent/data/gold/phase7a_core20_primary_v1/gold-phase7-0cbf2910e8d96c9d19826598/dataset/symbol=BLZUSDT/year=2023/.part-f24113307832d1362e3f.parquet.wsG9Tn",
+      "bytes": 67633152,
+      "symlink": false
+    },
+    {
+      "path": "crypto2-persistent/data/gold/phase7a_core20_primary_v1/gold-phase7-0cbf2910e8d96c9d19826598/dataset/symbol=BLZUSDT/year=2024/.part-5acdc23a330f20e1aa90.parquet.6IpbbF",
+      "bytes": 33816576,
+      "symlink": false
+    },
+    {
+      "path": "crypto2-persistent/data/gold/phase7a_core20_primary_v1/gold-phase7-0cbf2910e8d96c9d19826598/dataset/symbol=BLZUSDT/year=2026/.part-0c0d0883034c2146ada0.parquet.iPnqyH",
+      "bytes": 12582912,
+      "symlink": false
+    },
+    {
+      "path": "crypto2-persistent/data/gold/phase7a_core20_primary_v1/gold-phase7-0cbf2910e8d96c9d19826598/dataset/symbol=BTCUSDT/year=2021/.part-56ba9d955a1ee9f452d4.parquet.CU3tqO",
+      "bytes": 2359296,
+      "symlink": false
+    },
+    {
+      "path": "crypto2-persistent/data/gold/phase7a_core20_primary_v1/gold-phase7-0cbf2910e8d96c9d19826598/dataset/symbol=BTCUSDT/year=2022/.part-7b52944602bbec453afc.parquet.lOnYls",
+      "bytes": 65273856,
+      "symlink": false
+    },
+    {
+      "path": "crypto2-persistent/data/gold/phase7a_core20_primary_v1/gold-phase7-0cbf2910e8d96c9d19826598/dataset/symbol=BTCUSDT/year=2024/.part-52e3c7ab5b58b57a120b.parquet.g83nC8",
+      "bytes": 13107200,
+      "symlink": false
+    },
+    {
+      "path": "crypto2-persistent/data/gold/phase7a_core20_primary_v1/gold-phase7-0cbf2910e8d96c9d19826598/dataset/symbol=BTCUSDT/year=2024/.rsync-partial/part-52e3c7ab5b58b57a120b.parquet.preserved-156",
+      "bytes": 5636096,
+      "symlink": false
+    },
+    {
+      "path": "crypto2-persistent/data/gold/phase7a_core20_primary_v1/gold-phase7-0cbf2910e8d96c9d19826598/dataset/symbol=DOGEUSDT/year=2023/.part-16f8effeab8238729b7e.parquet.tKp52R",
+      "bytes": 61603840,
+      "symlink": false
+    },
+    {
+      "path": "crypto2-persistent/data/gold/phase7a_core20_primary_v1/gold-phase7-0cbf2910e8d96c9d19826598/dataset/symbol=FLMUSDT/year=2024/.part-6385b71a6a80649bec3d.parquet.88SMFw",
+      "bytes": 13631488,
+      "symlink": false
+    },
+    {
+      "path": "crypto2-persistent/data/gold/phase7a_core20_primary_v1/gold-phase7-0cbf2910e8d96c9d19826598/dataset/symbol=FLMUSDT/year=2024/.part-6385b71a6a80649bec3d.parquet.PZXPzh",
+      "bytes": 34865152,
+      "symlink": false
+    },
+    {
+      "path": "crypto2-persistent/data/gold/phase7a_core20_primary_v1/gold-phase7-0cbf2910e8d96c9d19826598/dataset/symbol=FLMUSDT/year=2024/.rsync-partial/part-6385b71a6a80649bec3d.parquet.preserved-107",
+      "bytes": 131072,
+      "symlink": false
+    },
+    {
+      "path": "crypto2-persistent/data/gold/phase7a_core20_primary_v1/gold-phase7-0cbf2910e8d96c9d19826598/dataset/symbol=KNCUSDT/year=2021/.part-edae55a075cc01ce7177.parquet.0CdyEw",
+      "bytes": 14680064,
+      "symlink": false
+    },
+    {
+      "path": "crypto2-persistent/data/gold/phase7a_core20_primary_v1/gold-phase7-0cbf2910e8d96c9d19826598/dataset/symbol=KNCUSDT/year=2021/.part-edae55a075cc01ce7177.parquet.EqP1f1",
+      "bytes": 4980736,
+      "symlink": false
+    },
+    {
+      "path": "crypto2-persistent/data/gold/phase7a_core20_primary_v1/gold-phase7-0cbf2910e8d96c9d19826598/dataset/symbol=KNCUSDT/year=2021/.part-edae55a075cc01ce7177.parquet.P1Rdp1",
+      "bytes": 11534336,
+      "symlink": false
+    },
+    {
+      "path": "crypto2-persistent/data/gold/phase7a_core20_primary_v1/gold-phase7-0cbf2910e8d96c9d19826598/dataset/symbol=KNCUSDT/year=2021/.part-edae55a075cc01ce7177.parquet.cRRufe",
+      "bytes": 50069504,
+      "symlink": false
+    },
+    {
+      "path": "crypto2-persistent/data/gold/phase7a_core20_primary_v1/gold-phase7-0cbf2910e8d96c9d19826598/dataset/symbol=ONTUSDT/year=2021/.part-ccee4afd7cd22860276a.parquet.PUA3AH",
+      "bytes": 262144,
+      "symlink": false
+    },
+    {
+      "path": "crypto2-persistent/data/gold/phase7a_core20_primary_v1/gold-phase7-0cbf2910e8d96c9d19826598/dataset/symbol=UNIUSDT/year=2021/.part-8d012a634fd68a45da3a.parquet.kob3cx",
+      "bytes": 36175872,
+      "symlink": false
+    },
+    {
+      "path": "crypto2-persistent/data/gold/phase7a_core20_primary_v1/gold-phase7-0cbf2910e8d96c9d19826598/dataset/symbol=UNIUSDT/year=2022/.part-016c10b170abd1d5ebb1.parquet.wZdhRD",
+      "bytes": 31719424,
+      "symlink": false
+    },
+    {
+      "path": "crypto2-persistent/data/gold/phase7a_core20_primary_v1/gold-phase7-0cbf2910e8d96c9d19826598/dataset/symbol=ZECUSDT/year=2022/.part-ee7330200526a0e18c09.parquet.GIvYeB",
+      "bytes": 0,
+      "symlink": false
+    }
+  ],
+  "reason": "Non-manifest rsync leftovers fail strict Gold file-count gate; preserve outside canonical tree",
+  "status": "PRESERVED_AND_SEPARATED",
+  "files_moved": 23,
+  "bytes_preserved": 646119424,
+  "canonical_file_count_after": 139
+}

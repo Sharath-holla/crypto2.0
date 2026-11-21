@@ -1,0 +1,9 @@
+usage: verify_linux.py [-h] [--repository REPOSITORY]
+                       [--output-root OUTPUT_ROOT]
+
+Linux software gate only: no Gold scan, backend smoke or production fit.
+
+options:
+  -h, --help            show this help message and exit
+  --repository REPOSITORY
+  --output-root OUTPUT_ROOT

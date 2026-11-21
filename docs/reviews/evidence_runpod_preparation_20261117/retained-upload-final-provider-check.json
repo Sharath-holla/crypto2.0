@@ -1,0 +1,9 @@
+{
+  "utc": "2026-11-16T18:36:33.207573+00:00",
+  "pod_id": "3hv6n675gud1wu",
+  "provider_status": "EXITED",
+  "network_volume_preserved": "kz9axr9t9v",
+  "complete_files": 2777,
+  "complete_bytes": 10998003736,
+  "training_started": false
+}

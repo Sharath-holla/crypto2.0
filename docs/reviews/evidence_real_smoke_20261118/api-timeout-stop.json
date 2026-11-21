@@ -1,0 +1,8 @@
+{
+  "pod_id": "07o6ft0oxzk2qz",
+  "provider_status": "EXITED",
+  "reason": "API_HEALTH_FAILURE",
+  "status": "STOPPED_CONFIRMED",
+  "utc": "2026-11-18T09:32:05.949348+00:00",
+  "volume_preserved": "kz9axr9t9v"
+}
