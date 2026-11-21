@@ -42,6 +42,28 @@ The model is LightGBM; Ridge is the simple linear baseline it is compared agains
 - These are development metrics only. Funding is not modelled, costs are static, and statistics are trade-level rather than portfolio-level.
 - The August 2026 holdout is still `LOCKED_UNUSED`, and July 2026 is unused.
 
+## Diagnosis: why most folds take no trades (21 Nov, 20:45 IST, from Cal-B diagnostics)
+
+**The rule.** `economics._policy_indices` trades only when `|prediction| × 10⁴ ≥ round-trip cost (about 14 bps) + threshold`. The threshold comes from the grid 2–10 bps and is chosen on Cal-B. It needs at least 30 Cal-B trades and strictly positive Cal-B net expectancy; otherwise the result is `NO_TRADE`.
+
+**Blockers by fold:**
+
+| Blocker | Folds |
+|---|---|
+| Fewer than 30 Cal-B trades | 2, 3, 6, 10 (fold 6 had 22–24 trades at +48 to +77 bps) |
+| Negative Cal-B expectancy | 0, 4, 5 |
+| Traded | 1 (Cal-B +200 bps, test +3.4 bps) and 15 (Cal-B +34 bps, test −14.6 bps); Cal-B selection on about 30 trades overfits |
+
+**The real cause is the size of the edge, not the threshold.**
+
+- Calibration-set deciles (`calibration.reliability_after`) show that the top-decile realized return is at most about +10 bps (folds 6 and 10).
+- A top-minus-bottom decile spread averages about **+2 bps** across the 9 folds, ranging from −17 to +14.
+- That is roughly 7× smaller than the ~14 bps cost.
+- So no threshold or rank-based policy change can make the 60m model profitable.
+- The calibrator is effectively a no-op: the raw and calibrated distributions are identical.
+
+**Training runs on CPU.** LightGBM uses about 9 minutes per fold and peaks at 11.7 GB RSS. The Mac is an M5 with 16 GB RAM, so full-size local training is too tight under the kit's 48 GB `constrained_48gb` admission. A reduced research loop (fewer symbols, one fold) could run locally for free.
+
 ## Recommendation (owner: decide later)
 
 1. Fix the model in code on the Mac, without a GPU:
