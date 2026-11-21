@@ -1,0 +1,44 @@
+{
+  "completed": [
+    0,
+    5,
+    10,
+    15
+  ],
+  "folds": {
+    "0": {
+      "fold_id": "fold-000-a0e9a4f72689",
+      "model_sha256": "1562cae6c4d9538c93627480ce2f2f983b6cfac71234cc62b19a064a9c8b7c41",
+      "pod_id": "0qkirtrlazqxdk",
+      "wall_seconds": 2371,
+      "wallet_after_lagging": 14.4246995511,
+      "wallet_before": 15.128160988
+    },
+    "10": {
+      "fold_id": "fold-010-01be2e390a0b",
+      "model_sha256": "7b978e82cd36e1c9628fd14aba053e4c778b43fe09923de98054956114b8451c",
+      "pod_id": "1ic8uzubbnilpp",
+      "recorded_manually": "2026-11-21: driver was stopped by owner request during its 20s post-stop sleep after MODEL fold010 + POD_EXITED; values from pilot.log and train-result.json"
+    },
+    "15": {
+      "fold_id": "fold-015-ed49f0aadaf7",
+      "model_sha256": "f9558ae0120137ebc7372dbf33ce9a3f339553d716c73a7a5ab3869ae32e35b4",
+      "pod_id": "mpmcoe794qqgkr",
+      "wall_seconds": 2655,
+      "wallet_after_lagging": 9.4469933319,
+      "wallet_before": 10.306544282
+    },
+    "5": {
+      "fold_id": "fold-005-2cf830b9f251",
+      "model_sha256": "c2304d6445eb62a0db20a2120131e8f34b399f7330fbe1f73de1d188cfd71c76",
+      "pod_id": "eayophzg59t21w",
+      "wall_seconds": 2504,
+      "wallet_after_lagging": 11.2421832447,
+      "wallet_before": 12.0369914798
+    }
+  },
+  "pod_id": "mpmcoe794qqgkr",
+  "uncreated_intents": [
+    "crypto2-p7a-pilot-20261118T150049Z"
+  ]
+}

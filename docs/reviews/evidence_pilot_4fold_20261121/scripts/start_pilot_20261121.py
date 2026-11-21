@@ -1,0 +1,16 @@
+"""Write the fresh 2026-11-21 session contract ($3 cap, 3-hour window) and owner authorization."""
+import importlib.util, json, hashlib
+from datetime import UTC, datetime, timedelta
+spec = importlib.util.spec_from_file_location("d", "/Users/cortex/.crypto2-transfer/pilot_4fold_20261118.py")
+m = importlib.util.module_from_spec(spec); spec.loader.exec_module(m)
+w = m.wallet(); now = datetime.now(UTC)
+spent = round(12.7773376371 - w, 4)  # 20 Nov session start wallet to now
+s = {"all_in_usd_per_hour_upper_bound": 1.72, "compute_usd_per_hour": 1.4, "hard_stop_utc": (now + timedelta(hours=3)).isoformat(),
+     "identified_cumulative_usd_at_start": round(6.23 + spent, 2),
+     "max_session_usd": 3.0, "session_start_utc": now.isoformat(), "wallet_usd_at_start": w}
+assert not m.SESSION_PATH.exists() and not m.AUTHORIZATION_PATH.exists() and w - s["max_session_usd"] > 1
+m.write(m.SESSION_PATH, s); m.SESSION_PATH.chmod(0o600)
+m.write(m.AUTHORIZATION_PATH, {"instruction": "Owner 2026-11-21 ~04:30Z: 'continue training fold 15'; chose '$3 cap, 3 hours'. EU-SE-1 network volume.",
+    "new_compute_or_training_authorized": True, "session_contract": str(m.SESSION_PATH), "supersedes": ["OWNER_STOP_20261120.json"],
+    "authorization_sha256": hashlib.sha256(m.AUTHORIZATION_NOTE.encode()).hexdigest(), "utc": now.isoformat()})
+print(json.dumps(s))
