@@ -1,0 +1,75 @@
+{
+  "fold-000-a0e9a4f72689": [
+    {
+      "model_file": "0qkirtrlazqxdk/20261118T143835.716117Z/benchmarks/smoke/benchmark-only-f46d8127ce60a5dc6935201e/model/models/core/fold-000-a0e9a4f72689/architecture-G0-A6-60m-raw/model.joblib",
+      "model_sha256": "1562cae6c4d9538c93627480ce2f2f983b6cfac71234cc62b19a064a9c8b7c41",
+      "snapshot": "0qkirtrlazqxdk/20261118T143835.716117Z"
+    },
+    {
+      "model_file": "zded3gh3isg5qd/20261118T114751.174673Z/benchmarks/smoke/benchmark-only-f46d8127ce60a5dc6935201e/model/models/core/fold-000-a0e9a4f72689/architecture-G0-A6-60m-raw/model.joblib",
+      "model_sha256": "ee44671558750c1b85c4d129a607555ce6342ccd299a9eee12881508ddfba1be",
+      "snapshot": "zded3gh3isg5qd/20261118T114751.174673Z"
+    }
+  ],
+  "fold-001-805307169256": [
+    {
+      "model_file": "53cpa3yknhdpiz/20261121T082848.679188Z/benchmarks/smoke/benchmark-only-ab7efda4c8f07e37edd8470d/model/models/core/fold-001-805307169256/architecture-G0-A6-60m-raw/model.joblib",
+      "model_sha256": "c4f24f46adbb4515ec7250342360d632b88a526f8f6f8bd13caadb948915d4a4",
+      "snapshot": "53cpa3yknhdpiz/20261121T082848.679188Z"
+    }
+  ],
+  "fold-002-a2dead26c257": [
+    {
+      "model_file": "0n9epplnxrk8f7/20261121T091939.686618Z/benchmarks/smoke/benchmark-only-3eb7c0aad7d863c8481f021c/model/models/core/fold-002-a2dead26c257/architecture-G0-A6-60m-raw/model.joblib",
+      "model_sha256": "15c25335f6685547dba5d17b175fa1522d42c8aad9637e6a1fd909570095bdaa",
+      "snapshot": "0n9epplnxrk8f7/20261121T091939.686618Z"
+    }
+  ],
+  "fold-003-a4ba910e38c1": [
+    {
+      "model_file": "03n8l57g4y2pg4/20261121T100805.686275Z/benchmarks/smoke/benchmark-only-04dc9a5fd8103ed836fc2807/model/models/core/fold-003-a4ba910e38c1/architecture-G0-A6-60m-raw/model.joblib",
+      "model_sha256": "dc7bec06929cdcd0cda64340e3151f8d6d149b1e6685459dceac21f7dcb1e1f3",
+      "snapshot": "03n8l57g4y2pg4/20261121T100805.686275Z"
+    }
+  ],
+  "fold-004-4b03b69d638d": [
+    {
+      "model_file": "aa07g9gnu38eiq/20261121T105548.708391Z/benchmarks/smoke/benchmark-only-0e2ee1dcf8dcd1dbd4258d46/model/models/core/fold-004-4b03b69d638d/architecture-G0-A6-60m-raw/model.joblib",
+      "model_sha256": "fd4310537f336cd8ed07887b46454a152760a5ae90b9578065419ed7fb8b6f71",
+      "snapshot": "aa07g9gnu38eiq/20261121T105548.708391Z"
+    },
+    {
+      "model_file": "o8k44l38v3yytq/20261121T121331.600856Z/benchmarks/smoke/benchmark-only-0e2ee1dcf8dcd1dbd4258d46/model/models/core/fold-004-4b03b69d638d/architecture-G0-A6-60m-raw/model.joblib",
+      "model_sha256": "2c5da2dc02856c8a868bd11740fc41c4480c47c2446e40c87ff8142c567bda9f",
+      "snapshot": "o8k44l38v3yytq/20261121T121331.600856Z"
+    }
+  ],
+  "fold-005-2cf830b9f251": [
+    {
+      "model_file": "eayophzg59t21w/20261120T193153.497941Z/benchmarks/smoke/benchmark-only-55102aba9abb9f18b63eb089/model/models/core/fold-005-2cf830b9f251/architecture-G0-A6-60m-raw/model.joblib",
+      "model_sha256": "c2304d6445eb62a0db20a2120131e8f34b399f7330fbe1f73de1d188cfd71c76",
+      "snapshot": "eayophzg59t21w/20261120T193153.497941Z"
+    }
+  ],
+  "fold-006-d3b9e1c10821": [
+    {
+      "model_file": "4twnhvipu4ciw7/20261121T125722.872823Z/benchmarks/smoke/benchmark-only-a131a54a1bcd523bf793e680/model/models/core/fold-006-d3b9e1c10821/architecture-G0-A6-60m-raw/model.joblib",
+      "model_sha256": "19e6ef610db26f5edb2c387514c1ec2198ccb8d2c99c83833c8a091e1fbb181e",
+      "snapshot": "4twnhvipu4ciw7/20261121T125722.872823Z"
+    }
+  ],
+  "fold-010-01be2e390a0b": [
+    {
+      "model_file": "1ic8uzubbnilpp/20261120T201405.679928Z/benchmarks/smoke/benchmark-only-1ae77fa7a082f79dc1f7b3aa/model/models/core/fold-010-01be2e390a0b/architecture-G0-A6-60m-raw/model.joblib",
+      "model_sha256": "7b978e82cd36e1c9628fd14aba053e4c778b43fe09923de98054956114b8451c",
+      "snapshot": "1ic8uzubbnilpp/20261120T201405.679928Z"
+    }
+  ],
+  "fold-015-ed49f0aadaf7": [
+    {
+      "model_file": "mpmcoe794qqgkr/20261121T051521.415890Z/benchmarks/smoke/benchmark-only-adbbb55f292f52651d2bbab6/model/models/core/fold-015-ed49f0aadaf7/architecture-G0-A6-60m-raw/model.joblib",
+      "model_sha256": "f9558ae0120137ebc7372dbf33ce9a3f339553d716c73a7a5ab3869ae32e35b4",
+      "snapshot": "mpmcoe794qqgkr/20261121T051521.415890Z"
+    }
+  ]
+}

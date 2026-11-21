@@ -1,0 +1,278 @@
+{
+  "checkpoint_identity": {
+    "architecture": "G0",
+    "artifact_mode": "BENCHMARK_ONLY",
+    "causal_descriptor_identity": "53044b7eb1cf0a5914a6c6038fe283b4d68f2cc1311975853baea857090e0994",
+    "code_version": "1.8.0",
+    "configuration_hash": "93f987736b1a79d26b773957",
+    "core_universe_hash": "f71cdf65d161466037b34420",
+    "core_universe_version": "core_universe_v1",
+    "cost_policy_version": "phase7_nonoverlapping_cal_b_v2",
+    "expansion_policy_hash": "8b07069e46bf6257961ea79d",
+    "expansion_policy_version": "expansion_universe_v2",
+    "experiment_control_identity": "96e7005946d49f20e717c2cec354ed5ae2c81de0f9560485da0cb3375232d89d",
+    "experiment_id": "architecture-G0-A6-60m-raw",
+    "feature_version": "multiasset_features_v2",
+    "fold_context_identity": "b64cac2f594e94bfbb4b455fb5fddff01da4002bd45ca12ba6594d9da79a612f",
+    "fold_id": "fold-004-4b03b69d638d",
+    "fold_membership_hash": "50fcacf8d40ced7a490ebe41",
+    "gold_dataset_id": "gold-phase7-0cbf2910e8d96c9d19826598",
+    "gold_manifest_sha256": "a142027722424ead5bbc508537e85bf743b3da68b38c3a99c9aabd3ef0e2e711",
+    "model_backend_semantics": "cpu",
+    "registry_hash": "b2c973f0050f205e58672558",
+    "registry_version": "symbol_registry_v1",
+    "research_view": "CORE",
+    "scientific_environment": {
+      "dependency_files": {
+        "pyproject.toml": "8666af4b1a2ebd347c3eb6a26a1c47e6fa5b2b3d76ac017d55230d5d40b1ceba",
+        "uv.lock": "d0cf77d737384e0d35e6175daf74bfa9716ece8a9f246d1f107beb0a01556d85"
+      },
+      "identity": "0fdcea98df6d6263c3830318805c17f1263b13e0b429ddabc6b97d44287d1ff1",
+      "numerical_platform": {
+        "machine": "x86_64",
+        "python_implementation": "CPython",
+        "system": "Linux"
+      },
+      "packages": {
+        "joblib": "1.5.3",
+        "lightgbm": "4.7.0",
+        "numpy": "2.4.6",
+        "pyarrow": "24.0.0",
+        "pydantic": "2.13.4",
+        "scikit-learn": "1.9.0"
+      },
+      "python": "3.12.3",
+      "schema": "phase7_dependency_platform_compatibility_v2"
+    },
+    "scientific_resume_identity_schema": "phase7_scientific_resume_identity_v2",
+    "target_horizon_minutes": 60,
+    "target_type": "raw",
+    "target_version": "multiasset_targets_v2",
+    "training_source_identity": {
+      "algorithm": "phase7_scientific_source_manifest_v2",
+      "feature_context_sidecar_sha256": "ea5f25a2a7c009c79a9ecbbe795960234b67074d36d2db7c21424724fabc2048",
+      "files": [
+        {
+          "path": "configs/data/binance.toml",
+          "sha256": "4b7651649234df0a65a0fc8188714b6ac411ab50dad64c66cf640af16b2ee755"
+        },
+        {
+          "path": "configs/data_quality/default.toml",
+          "sha256": "659f7e942fc9865b0f23b3c91e9d686326f049d82d363534a06f07e26adc6571"
+        },
+        {
+          "path": "configs/phase7/research_core20_primary_v1.toml",
+          "sha256": "d202a1f67f50aaa73d0923c540b885fa0c305f46922acd1591db8945f602c2af"
+        },
+        {
+          "path": "configs/phase7/research_v1.toml",
+          "sha256": "75a5878cba0ca786163a347464db1d17b9f7b555875ab1624ab4f325f8344b29"
+        },
+        {
+          "path": "scripts/run_phase7a_pipeline.py",
+          "sha256": "8d88a6debdbcfb3c1af316e22df592eb218616b71228c8dbdb34abae81f9922b"
+        },
+        {
+          "path": "src/crypto_ai/data/ingestion/manifest.py",
+          "sha256": "231008dbaf0a210a10b948102b45e50b8a42b4c093dd99cf36c05cddb01be255"
+        },
+        {
+          "path": "src/crypto_ai/data/schema.py",
+          "sha256": "f41573641ae6c37d560125589bebfa86ae288ead4a05ff7e1ec9d05e59c729d1"
+        },
+        {
+          "path": "src/crypto_ai/data/storage/__init__.py",
+          "sha256": "ea6ecbf660904681cb65772da65dd259781e9eecc15055df395e1bde75b2cde8"
+        },
+        {
+          "path": "src/crypto_ai/data/storage/parquet.py",
+          "sha256": "14c80a337332e5e74e48a251c725713ee94da8c4968cd87311a7b0b5abe284f1"
+        },
+        {
+          "path": "src/crypto_ai/domain/__init__.py",
+          "sha256": "5f3971d1fd0817c8163879dbb69e2507b67bb426a851941e34531075a565dd1c"
+        },
+        {
+          "path": "src/crypto_ai/domain/candle.py",
+          "sha256": "603f40309de863ae00add5e5f702daa329a5f94c3ad3d6414cd770e799c26ae1"
+        },
+        {
+          "path": "src/crypto_ai/features/baseline.py",
+          "sha256": "520fa5bb294ae31c24b14916f3764cc7aa53a762eeae47b18890c76e6e40130e"
+        },
+        {
+          "path": "src/crypto_ai/phase4/asof.py",
+          "sha256": "ec3c2b7cbda48385314899f6b25ff21c2cd956310c5ef07e52e53e607fb1f93e"
+        },
+        {
+          "path": "src/crypto_ai/phase4/features.py",
+          "sha256": "3f399e5b55b9564f472d40edecdd2675da42247337708c4e3023d923e70c99b1"
+        },
+        {
+          "path": "src/crypto_ai/phase4_1/features.py",
+          "sha256": "6b613d63a966a6fcb97bb5fc9a28b1c62e5f31b174226e44bcc95c1cbd2c0fea"
+        },
+        {
+          "path": "src/crypto_ai/phase5/calibration.py",
+          "sha256": "1587b28cefff38cb51df6c760cbbe14783251e5f01b2f60b904c0af82b339944"
+        },
+        {
+          "path": "src/crypto_ai/phase5/config.py",
+          "sha256": "cef5ddd4843ca2a95f049d7025367bcf5b2072bac3baee818728f9c523088f04"
+        },
+        {
+          "path": "src/crypto_ai/phase5/folds.py",
+          "sha256": "def942038e153ccb77a18a5ba3fb36b7b48cd4ec96e14f4f1c527c6488450657"
+        },
+        {
+          "path": "src/crypto_ai/phase6/config.py",
+          "sha256": "5c638f3dbbecb3844fb59d6ff8159ad14ad4052d9600f49dd3fe692c37d0d902"
+        },
+        {
+          "path": "src/crypto_ai/phase6/features.py",
+          "sha256": "d322587cf0e32d6bd98ed54925d975920875e094dce88807a6e6a564555267a5"
+        },
+        {
+          "path": "src/crypto_ai/phase6/labels.py",
+          "sha256": "36c214309d95301a85189d8093412b0e158bdff516fea5d2865d4052776e27d8"
+        },
+        {
+          "path": "src/crypto_ai/phase7/acquisition.py",
+          "sha256": "c5bcef6d20a7ddc7e3052c5908d9faf469c9816d1312be955114c18235d53907"
+        },
+        {
+          "path": "src/crypto_ai/phase7/artifacts.py",
+          "sha256": "be670851138f306ef7ec53620d9c3b29fd613ac515c812f3557c4a82deaaac7d"
+        },
+        {
+          "path": "src/crypto_ai/phase7/backend.py",
+          "sha256": "c1417397517f465be076c110916f9f0ea13f94af8c2b2c0066b16b28812e6851"
+        },
+        {
+          "path": "src/crypto_ai/phase7/benchmark_one_spec.py",
+          "sha256": "09899874f2f77ed0e1054d97776c4dca75fc327176b94f1aa9f4e5b5080c6cbd"
+        },
+        {
+          "path": "src/crypto_ai/phase7/config.py",
+          "sha256": "7eb94d4b9162053675b3e1d22cafa40e5d11b06fe01a2d367a107eedae3b10c0"
+        },
+        {
+          "path": "src/crypto_ai/phase7/context_sidecar.py",
+          "sha256": "456d6c3888238ee884f454965a2c1952c99dc983d179179bb6a2dd092f4396df"
+        },
+        {
+          "path": "src/crypto_ai/phase7/cross_section.py",
+          "sha256": "ea069056d8dc9b846b3706cb2449c06dce87005026d8bd883558ba506a5a7bac"
+        },
+        {
+          "path": "src/crypto_ai/phase7/device_evidence.py",
+          "sha256": "0d7367623f4ee504b469fe72de78c125be5483c9778593745c96b5576e1d2142"
+        },
+        {
+          "path": "src/crypto_ai/phase7/economics.py",
+          "sha256": "ec1c5884d87ba1664ed750eec410b3d6e7932cf6f4f1321835248c47e6a4b8d4"
+        },
+        {
+          "path": "src/crypto_ai/phase7/environment.py",
+          "sha256": "66e3e082c39d8c22aff718d6f1bebd3511b63112870dde241ecc8d6db401f20d"
+        },
+        {
+          "path": "src/crypto_ai/phase7/features.py",
+          "sha256": "81aba3a91582349bbbccc6e2c7f2bc70a5361e1a2710e9fcf7383ee426dcf88e"
+        },
+        {
+          "path": "src/crypto_ai/phase7/folds.py",
+          "sha256": "22ef6386edcedba9bb2255e42f8988afcc2fab0a6863a9745d0cbeb74255d7a2"
+        },
+        {
+          "path": "src/crypto_ai/phase7/gold.py",
+          "sha256": "78b7e0496bfc7168277e65b371143ba80b8141ebbc21d67cbbb79ed61820daf5"
+        },
+        {
+          "path": "src/crypto_ai/phase7/gold_validation.py",
+          "sha256": "ca86ea6117fc94ab568f3d363e61bad192d94eddffcbad31ca70a226c0c07f97"
+        },
+        {
+          "path": "src/crypto_ai/phase7/memory_profile.py",
+          "sha256": "6fb761c661b830c47d8994dbd9ba66ac8123ff9721f5d70ceefdad5c71d979bb"
+        },
+        {
+          "path": "src/crypto_ai/phase7/metrics.py",
+          "sha256": "57613e1528d0d2da760c7a7d23eb47882428c40e2ab96d3a62fce57974e8fba8"
+        },
+        {
+          "path": "src/crypto_ai/phase7/models.py",
+          "sha256": "3f3973538e4fe802fd84df6ae886dc03d9ed2e013fe1f0f56729eab7fda895f4"
+        },
+        {
+          "path": "src/crypto_ai/phase7/phase7a.py",
+          "sha256": "13211cb55faed6dbd48e371a8a8c2dc59c4c84e52e37dcb308633cfa07df50e5"
+        },
+        {
+          "path": "src/crypto_ai/phase7/pipeline.py",
+          "sha256": "a7411a36362ceb7d7d2ec75dfb26b56970710b4ae88b0ec31f0a9ced625fa63e"
+        },
+        {
+          "path": "src/crypto_ai/phase7/preemption.py",
+          "sha256": "2655760e647006ebd70278d53ebd87a0c650b9a05b9f11331a54115b9212bde4"
+        },
+        {
+          "path": "src/crypto_ai/phase7/prepared_cache.py",
+          "sha256": "5b48e038732a3e9a864ddfd28f3fff6125e1491231a1c37198888a3ca2dc7eaf"
+        },
+        {
+          "path": "src/crypto_ai/phase7/quality.py",
+          "sha256": "7d00f78983144ed40d0bbbeb073b5002ba52039eea3bb3621cf276132ddb5518"
+        },
+        {
+          "path": "src/crypto_ai/phase7/recovery.py",
+          "sha256": "062d00152c6d7215b8c2be2117d600070b890e04e7ac28566f25174d0c4697f3"
+        },
+        {
+          "path": "src/crypto_ai/phase7/registry.py",
+          "sha256": "04bfd63eaf615d1cf15c48134be37299062dc56919bd5085cc08239d46734129"
+        },
+        {
+          "path": "src/crypto_ai/phase7/segments.py",
+          "sha256": "ed9f544330aed909360c31249124318c166a9bb6f9b486857ef713aec872d0c6"
+        },
+        {
+          "path": "src/crypto_ai/phase7/targets.py",
+          "sha256": "df3ac2e00e94c6d56605d9e4b41143a273b72d27bbe9f17ce838d4625dd43386"
+        },
+        {
+          "path": "src/crypto_ai/phase7/training.py",
+          "sha256": "b8d09c3729c16b66158a1a6f488777454a05a769d1c37e63e673df078d001ec6"
+        },
+        {
+          "path": "src/crypto_ai/phase7/training_metrics.py",
+          "sha256": "c1dda2f8046be98f9965c12345a0381bb913f4abbd3902fb29ed8e6dd99b9253"
+        },
+        {
+          "path": "src/crypto_ai/phase7/universe.py",
+          "sha256": "39ac575bfd1521a636d10365523860431947062fbfd3e60fda2f62b83637a37c"
+        },
+        {
+          "path": "src/crypto_ai/research/config.py",
+          "sha256": "5bc96c10fd4dda372bff37388e9162d4469c7f2350a0cdc704ac3c7f4119eaba"
+        },
+        {
+          "path": "src/crypto_ai/research/metrics.py",
+          "sha256": "4e6346adbadb7ade53718748303d44689428728f5f030c8d1a488b33ba7e5aca"
+        }
+      ],
+      "manifest_sha256": "9569101c7b56474d56c61108028432ff6d247b57620107fd75d6611ac7de0028"
+    },
+    "universe_definition_version": "dual_universe_v3"
+  },
+  "model_artifact_sha256": "2c5da2dc02856c8a868bd11740fc41c4480c47c2446e40c87ff8142c567bda9f",
+  "publication": {
+    "fold_id": "fold-004-4b03b69d638d",
+    "mode": "benchmark",
+    "run_identity": "benchmark-only-0e2ee1dcf8dcd1dbd4258d46",
+    "spec_id": "architecture-G0-A6-60m-raw",
+    "state": "MODEL_REPORT_PUBLICATION_V1"
+  },
+  "publication_state": "MODEL_PUBLISHED",
+  "receipt_identity": "eb1dd57fd41a34fdeab1dd15bd79d6bf276c5df397331816ab9f540c0435069b"
+}
