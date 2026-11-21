@@ -1,0 +1,102 @@
+[18:14:35Z] hourly feature rows 1,048,996
+[18:14:35Z] 120m chain rows 12,587,882
+[18:14:36Z] r_4h finite 1.000
+[18:14:37Z] r_12h finite 1.000
+[18:14:37Z] r_24h finite 1.000
+[18:14:44Z] h=1h fold=0 2022-01-01 train=279,124 test=43,200 cs_ic lgb=+0.0048 ridge=-0.0061 top10 lgb=-1.7bps (6s)
+[18:14:50Z] h=1h fold=1 2022-04-01 train=309,196 test=43,680 cs_ic lgb=-0.0015 ridge=-0.0018 top10 lgb=-6.0bps (6s)
+[18:14:57Z] h=1h fold=2 2022-07-01 train=335,025 test=44,160 cs_ic lgb=+0.0042 ridge=-0.0017 top10 lgb=+9.4bps (7s)
+[18:15:04Z] h=1h fold=3 2022-10-01 train=349,653 test=44,160 cs_ic lgb=+0.0141 ridge=+0.0059 top10 lgb=+4.7bps (7s)
+[18:15:10Z] h=1h fold=4 2023-01-01 train=350,340 test=43,200 cs_ic lgb=-0.0069 ridge=+0.0003 top10 lgb=-12.5bps (7s)
+[18:15:17Z] h=1h fold=5 2023-04-01 train=350,340 test=43,680 cs_ic lgb=+0.0172 ridge=-0.0064 top10 lgb=+14.1bps (6s)
+[18:15:23Z] h=1h fold=6 2023-07-01 train=350,340 test=44,160 cs_ic lgb=-0.0038 ridge=+0.0056 top10 lgb=-2.1bps (6s)
+[18:15:30Z] h=1h fold=7 2023-10-01 train=350,340 test=44,160 cs_ic lgb=-0.0067 ridge=-0.0000 top10 lgb=+2.8bps (6s)
+[18:15:36Z] h=1h fold=8 2024-01-01 train=350,340 test=43,680 cs_ic lgb=-0.0001 ridge=-0.0085 top10 lgb=+16.5bps (6s)
+[18:15:42Z] h=1h fold=9 2024-04-01 train=350,820 test=42,871 cs_ic lgb=+0.0053 ridge=-0.0019 top10 lgb=+4.2bps (6s)
+[18:15:49Z] h=1h fold=10 2024-07-01 train=350,014 test=41,952 cs_ic lgb=+0.0090 ridge=+0.0045 top10 lgb=-4.8bps (6s)
+/Users/cortex/Projects/crypto2.0/scripts/research/horizon_probe.py:100: ConstantInputWarning: An input array is constant; the correlation coefficient is not defined.
+  values.append(spearmanr(group["p"], group["a"]).statistic)
+/Users/cortex/Projects/crypto2.0/scripts/research/horizon_probe.py:100: ConstantInputWarning: An input array is constant; the correlation coefficient is not defined.
+  values.append(spearmanr(group["p"], group["a"]).statistic)
+[18:15:55Z] h=1h fold=11 2024-10-01 train=347,806 test=41,952 cs_ic lgb=+0.0129 ridge=+0.0077 top10 lgb=+9.8bps (6s)
+[18:16:01Z] h=1h fold=12 2025-01-01 train=345,598 test=41,040 cs_ic lgb=+0.0092 ridge=+0.0092 top10 lgb=-2.0bps (6s)
+[18:16:07Z] h=1h fold=13 2025-04-01 train=343,438 test=41,496 cs_ic lgb=+0.0099 ridge=+0.0092 top10 lgb=+8.8bps (6s)
+[18:16:13Z] h=1h fold=14 2025-07-01 train=341,254 test=41,952 cs_ic lgb=+0.0057 ridge=-0.0036 top10 lgb=+1.3bps (6s)
+[18:16:19Z] h=1h fold=15 2025-10-01 train=339,046 test=41,952 cs_ic lgb=+0.0180 ridge=+0.0091 top10 lgb=+18.2bps (6s)
+[18:16:25Z] h=1h fold=16 2026-01-01 train=336,838 test=41,040 cs_ic lgb=+0.0205 ridge=+0.0087 top10 lgb=+1.0bps (6s)
+[18:16:32Z] h=1h fold=17 2026-04-01 train=334,198 test=41,477 cs_ic lgb=+0.0099 ridge=-0.0045 top10 lgb=+3.1bps (6s)
+[18:16:38Z] h=4h fold=0 2022-01-01 train=279,064 test=43,200 cs_ic lgb=+0.0015 ridge=-0.0036 top10 lgb=-39.9bps (6s)
+[18:16:45Z] h=4h fold=1 2022-04-01 train=309,136 test=43,680 cs_ic lgb=+0.0072 ridge=+0.0169 top10 lgb=+34.5bps (6s)
+[18:16:52Z] h=4h fold=2 2022-07-01 train=334,965 test=44,160 cs_ic lgb=+0.0022 ridge=+0.0102 top10 lgb=-19.9bps (7s)
+[18:17:00Z] h=4h fold=3 2022-10-01 train=349,593 test=44,160 cs_ic lgb=+0.0097 ridge=+0.0046 top10 lgb=+4.7bps (8s)
+[18:17:07Z] h=4h fold=4 2023-01-01 train=350,280 test=43,200 cs_ic lgb=-0.0095 ridge=-0.0037 top10 lgb=+2.5bps (7s)
+[18:17:14Z] h=4h fold=5 2023-04-01 train=350,280 test=43,680 cs_ic lgb=-0.0060 ridge=-0.0115 top10 lgb=-3.7bps (7s)
+[18:17:22Z] h=4h fold=6 2023-07-01 train=350,280 test=44,160 cs_ic lgb=+0.0022 ridge=-0.0023 top10 lgb=-8.1bps (8s)
+[18:17:29Z] h=4h fold=7 2023-10-01 train=350,280 test=44,160 cs_ic lgb=+0.0084 ridge=+0.0013 top10 lgb=+15.3bps (7s)
+[18:17:37Z] h=4h fold=8 2024-01-01 train=350,280 test=43,680 cs_ic lgb=+0.0182 ridge=-0.0024 top10 lgb=+12.0bps (8s)
+[18:17:44Z] h=4h fold=9 2024-04-01 train=350,760 test=42,868 cs_ic lgb=+0.0012 ridge=-0.0119 top10 lgb=+23.8bps (7s)
+[18:17:53Z] h=4h fold=10 2024-07-01 train=349,954 test=41,952 cs_ic lgb=+0.0170 ridge=+0.0169 top10 lgb=+11.5bps (9s)
+[18:24:00Z] h=4h fold=11 2024-10-01 train=347,746 test=41,952 cs_ic lgb=+0.0280 ridge=+0.0146 top10 lgb=+17.4bps (10s)
+[18:27:49Z] h=4h fold=12 2025-01-01 train=345,538 test=41,040 cs_ic lgb=+0.0073 ridge=+0.0138 top10 lgb=+46.0bps (228s)
+[18:43:55Z] h=4h fold=13 2025-04-01 train=343,378 test=41,496 cs_ic lgb=+0.0047 ridge=+0.0087 top10 lgb=+10.1bps (966s)
+[19:01:06Z] h=4h fold=14 2025-07-01 train=341,194 test=41,952 cs_ic lgb=-0.0137 ridge=-0.0095 top10 lgb=-7.4bps (1031s)
+[19:17:52Z] h=4h fold=15 2025-10-01 train=338,986 test=41,952 cs_ic lgb=+0.0277 ridge=+0.0068 top10 lgb=+17.9bps (1005s)
+[19:33:50Z] h=4h fold=16 2026-01-01 train=336,778 test=41,040 cs_ic lgb=+0.0055 ridge=+0.0068 top10 lgb=-6.3bps (958s)
+[20:08:32Z] h=4h fold=17 2026-04-01 train=334,138 test=41,420 cs_ic lgb=+0.0267 ridge=-0.0107 top10 lgb=+3.2bps (2082s)
+[20:18:49Z] h=12h fold=0 2022-01-01 train=278,904 test=43,200 cs_ic lgb=+0.0297 ridge=-0.0118 top10 lgb=+0.4bps (616s)
+[20:34:59Z] h=12h fold=1 2022-04-01 train=308,976 test=43,680 cs_ic lgb=+0.0171 ridge=+0.0315 top10 lgb=+43.7bps (970s)
+[20:50:34Z] h=12h fold=2 2022-07-01 train=334,805 test=44,160 cs_ic lgb=+0.0204 ridge=-0.0077 top10 lgb=-31.3bps (935s)
+[20:50:42Z] h=12h fold=3 2022-10-01 train=349,433 test=44,160 cs_ic lgb=+0.0196 ridge=-0.0177 top10 lgb=-31.5bps (8s)
+[20:50:49Z] h=12h fold=4 2023-01-01 train=350,120 test=43,200 cs_ic lgb=-0.0171 ridge=-0.0227 top10 lgb=+11.6bps (7s)
+[20:50:56Z] h=12h fold=5 2023-04-01 train=350,120 test=43,680 cs_ic lgb=-0.0100 ridge=-0.0136 top10 lgb=+9.1bps (7s)
+[20:51:05Z] h=12h fold=6 2023-07-01 train=350,120 test=44,160 cs_ic lgb=+0.0003 ridge=+0.0247 top10 lgb=-9.7bps (9s)
+[20:51:11Z] h=12h fold=7 2023-10-01 train=350,120 test=44,160 cs_ic lgb=+0.0296 ridge=+0.0178 top10 lgb=+12.1bps (7s)
+[20:51:18Z] h=12h fold=8 2024-01-01 train=350,120 test=43,680 cs_ic lgb=+0.0141 ridge=+0.0066 top10 lgb=+26.1bps (6s)
+[20:51:24Z] h=12h fold=9 2024-04-01 train=350,600 test=42,860 cs_ic lgb=+0.0032 ridge=-0.0088 top10 lgb=+46.2bps (6s)
+[20:51:31Z] h=12h fold=10 2024-07-01 train=349,794 test=41,952 cs_ic lgb=+0.0149 ridge=+0.0113 top10 lgb=+105.4bps (6s)
+[20:51:37Z] h=12h fold=11 2024-10-01 train=347,586 test=41,952 cs_ic lgb=+0.0580 ridge=+0.0457 top10 lgb=+89.0bps (6s)
+[20:51:44Z] h=12h fold=12 2025-01-01 train=345,378 test=41,040 cs_ic lgb=+0.0260 ridge=+0.0176 top10 lgb=+60.7bps (6s)
+[20:51:50Z] h=12h fold=13 2025-04-01 train=343,218 test=41,496 cs_ic lgb=+0.0156 ridge=+0.0149 top10 lgb=+12.6bps (6s)
+[20:51:57Z] h=12h fold=14 2025-07-01 train=341,034 test=41,952 cs_ic lgb=-0.0007 ridge=-0.0200 top10 lgb=-30.1bps (6s)
+[20:52:03Z] h=12h fold=15 2025-10-01 train=338,826 test=41,952 cs_ic lgb=+0.0178 ridge=+0.0119 top10 lgb=+24.8bps (6s)
+[20:52:10Z] h=12h fold=16 2026-01-01 train=336,618 test=41,040 cs_ic lgb=-0.0194 ridge=-0.0121 top10 lgb=+11.2bps (6s)
+[20:52:16Z] h=12h fold=17 2026-04-01 train=333,978 test=41,268 cs_ic lgb=+0.0070 ridge=-0.0234 top10 lgb=+37.3bps (6s)
+[20:52:22Z] h=24h fold=0 2022-01-01 train=278,664 test=43,200 cs_ic lgb=+0.0107 ridge=-0.0042 top10 lgb=+11.1bps (6s)
+[20:52:29Z] h=24h fold=1 2022-04-01 train=308,736 test=43,680 cs_ic lgb=+0.0303 ridge=+0.0271 top10 lgb=+146.3bps (6s)
+[20:52:36Z] h=24h fold=2 2022-07-01 train=334,565 test=44,160 cs_ic lgb=+0.0299 ridge=-0.0166 top10 lgb=-46.4bps (7s)
+[20:52:43Z] h=24h fold=3 2022-10-01 train=349,193 test=44,160 cs_ic lgb=+0.0340 ridge=-0.0020 top10 lgb=+20.6bps (7s)
+[20:52:50Z] h=24h fold=4 2023-01-01 train=349,880 test=43,200 cs_ic lgb=+0.0232 ridge=-0.0221 top10 lgb=+16.5bps (7s)
+[20:52:57Z] h=24h fold=5 2023-04-01 train=349,880 test=43,680 cs_ic lgb=+0.0019 ridge=-0.0401 top10 lgb=+34.1bps (7s)
+[20:53:03Z] h=24h fold=6 2023-07-01 train=349,880 test=44,160 cs_ic lgb=+0.0155 ridge=+0.0274 top10 lgb=-22.9bps (7s)
+[20:53:10Z] h=24h fold=7 2023-10-01 train=349,880 test=44,160 cs_ic lgb=-0.0182 ridge=+0.0175 top10 lgb=-44.3bps (6s)
+[20:53:16Z] h=24h fold=8 2024-01-01 train=349,880 test=43,680 cs_ic lgb=+0.0078 ridge=+0.0134 top10 lgb=+14.3bps (7s)
+[20:53:23Z] h=24h fold=9 2024-04-01 train=350,360 test=42,848 cs_ic lgb=+0.0381 ridge=-0.0119 top10 lgb=+126.9bps (6s)
+[20:53:30Z] h=24h fold=10 2024-07-01 train=349,554 test=41,952 cs_ic lgb=+0.0332 ridge=+0.0077 top10 lgb=+164.2bps (7s)
+[20:53:36Z] h=24h fold=11 2024-10-01 train=347,346 test=41,952 cs_ic lgb=+0.0671 ridge=+0.0816 top10 lgb=+126.1bps (6s)
+[20:53:43Z] h=24h fold=12 2025-01-01 train=345,138 test=41,040 cs_ic lgb=+0.0334 ridge=+0.0248 top10 lgb=+136.1bps (6s)
+[20:53:49Z] h=24h fold=13 2025-04-01 train=342,978 test=41,496 cs_ic lgb=+0.0270 ridge=+0.0186 top10 lgb=-0.3bps (6s)
+[20:53:56Z] h=24h fold=14 2025-07-01 train=340,794 test=41,952 cs_ic lgb=-0.0081 ridge=-0.0323 top10 lgb=-21.5bps (6s)
+[20:54:02Z] h=24h fold=15 2025-10-01 train=338,586 test=41,952 cs_ic lgb=+0.0243 ridge=-0.0146 top10 lgb=+10.8bps (6s)
+[20:54:08Z] h=24h fold=16 2026-01-01 train=336,378 test=41,040 cs_ic lgb=+0.0075 ridge=-0.0336 top10 lgb=+21.1bps (6s)
+[20:54:15Z] h=24h fold=17 2026-04-01 train=333,738 test=41,040 cs_ic lgb=-0.0010 ridge=-0.0502 top10 lgb=+11.0bps (6s)
+                    folds   cs_ic  cs_ic_pos_folds  cs_ic_t  pooled_spearman  direction_acc  edge_all_bps  edge_top10_bps  top10_pos_folds  decile_spread_bps  ls_leg_gross_bps  ls_net_pos_folds  abs_move_median_bps  always_long_bps  \
+horizon_h model                                                                                                                                                                                                                           
+1         lightgbm     18  0.0068               13   3.4756           0.0244         0.4759        1.2851          3.5960                3             5.5110            0.9587                 0              38.7390          -0.0043   
+          ridge        18  0.0014                9   0.9994           0.0107         0.4661        0.4731          1.6483                1             3.6866            0.1836                 0              38.7390          -0.0043   
+4         lightgbm     18  0.0077               15   2.7043           0.0155         0.4755        1.9294          6.3159                6            11.2062            1.3746                 0              78.4238          -0.1009   
+          ridge        18  0.0025               10   1.0674           0.0184         0.4731        2.5560          8.4886                6            15.5154            0.4938                 0              78.4238          -0.1009   
+12        lightgbm     18  0.0126               14   2.8686           0.0306         0.4802        6.0315         21.5248                8            38.9884            2.8748                 0             144.5227          -0.3580   
+          ridge        18  0.0024                9   0.5068           0.0257         0.4765        5.1723         21.5411                8            42.3898            1.9021                 1             144.5227          -0.3580   
+24        lightgbm     18  0.0198               15   4.2005           0.0349         0.4790        6.8647         39.0947               10            74.0552            8.2227                 7             214.5509          -0.7983   
+          ridge        18 -0.0005                8  -0.0717           0.0203         0.4742        5.7372         37.2684               10            67.2546            1.7978                 3             214.5509          -0.7983   
+
+                    edge_top10_net_bps  ls_leg_net_bps  
+horizon_h model                                         
+1         lightgbm            -10.4040        -13.0413  
+          ridge               -12.3517        -13.8164  
+4         lightgbm             -7.6841        -12.6254  
+          ridge                -5.5114        -13.5062  
+12        lightgbm              7.5248        -11.1252  
+          ridge                 7.5411        -12.0979  
+24        lightgbm             25.0947         -5.7773  
+          ridge                23.2684        -12.2022  

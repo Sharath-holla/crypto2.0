@@ -1,0 +1,59 @@
+11 models loaded; trading 15 live symbols (skipped delisted: ['BLZUSDT', 'FLMUSDT', 'HNTUSDT', 'OMGUSDT', 'STORJUSDT'])
+
+=== candle closed 23:20:00 IST — ensemble 60m forecast (bps) ===
+  ZECUSDT      +1.86  models agreeing 100%  -> skip
+  UNIUSDT      +1.71  models agreeing 100%  -> skip
+  FILUSDT      +1.69  models agreeing 100%  -> skip
+  NEOUSDT      +1.26  models agreeing 100%  -> skip
+  ETHUSDT      +1.25  models agreeing 100%  -> skip
+  BTCUSDT      +1.23  models agreeing 100%  -> skip
+  DOGEUSDT     +1.23  models agreeing 100%  -> skip
+  KSMUSDT      +1.23  models agreeing 100%  -> skip
+  ONTUSDT      +1.23  models agreeing 100%  -> skip
+  ZRXUSDT      +1.23  models agreeing 100%  -> skip
+  BCHUSDT      +1.22  models agreeing 100%  -> skip
+  COMPUSDT     +1.17  models agreeing 100%  -> skip
+  KNCUSDT      +1.17  models agreeing 100%  -> skip
+  IOTAUSDT     +1.16  models agreeing 100%  -> skip
+  TRXUSDT      +1.15  models agreeing 100%  -> skip
+  ...waiting for next 5m candle (250s)
+
+=== candle closed 23:25:00 IST — ensemble 60m forecast (bps) ===
+  ZECUSDT      +1.56  models agreeing  91%  -> skip
+  UNIUSDT      +1.41  models agreeing  91%  -> skip
+  FILUSDT      +1.39  models agreeing  91%  -> skip
+  NEOUSDT      +0.96  models agreeing  91%  -> skip
+  ZRXUSDT      +0.96  models agreeing  91%  -> skip
+  ETHUSDT      +0.95  models agreeing  91%  -> skip
+  COMPUSDT     +0.93  models agreeing  91%  -> skip
+  BTCUSDT      +0.93  models agreeing  91%  -> skip
+  DOGEUSDT     +0.93  models agreeing  91%  -> skip
+  KNCUSDT      +0.93  models agreeing  91%  -> skip
+  KSMUSDT      +0.93  models agreeing  91%  -> skip
+  ONTUSDT      +0.93  models agreeing  91%  -> skip
+  BCHUSDT      +0.92  models agreeing  91%  -> skip
+  IOTAUSDT     +0.92  models agreeing  91%  -> skip
+  TRXUSDT      +0.91  models agreeing  91%  -> skip
+  ...waiting for next 5m candle (264s)
+
+=== candle closed 23:30:00 IST — ensemble 60m forecast (bps) ===
+  ZECUSDT      +1.62  models agreeing  91%  -> skip
+  UNIUSDT      +1.48  models agreeing  91%  -> skip
+  FILUSDT      +1.45  models agreeing  91%  -> skip
+  NEOUSDT      +1.03  models agreeing  91%  -> skip
+  ETHUSDT      +1.01  models agreeing  91%  -> skip
+  COMPUSDT     +1.00  models agreeing  91%  -> skip
+  BTCUSDT      +0.99  models agreeing  91%  -> skip
+  DOGEUSDT     +0.99  models agreeing  91%  -> skip
+  KNCUSDT      +0.99  models agreeing  91%  -> skip
+  KSMUSDT      +0.99  models agreeing  91%  -> skip
+  ONTUSDT      +0.99  models agreeing  91%  -> skip
+  ZRXUSDT      +0.99  models agreeing  91%  -> skip
+  BCHUSDT      +0.99  models agreeing  91%  -> skip
+  IOTAUSDT     +0.99  models agreeing  91%  -> skip
+  TRXUSDT      +0.98  models agreeing  91%  -> skip
+
+=== 10-minute paper result at 23:30:43 IST ===
+  NO TRADES — no ensemble forecast cleared cost + threshold (16 bps).
+
+saved: /Users/cortex/Projects/crypto2.0/output/paper_trade/20261121T175020Z

@@ -160,3 +160,19 @@ All values are in bps. At the current 1h horizon, the ~14 bps cost is **25–65%
    - `OWNER_STOP_20261121b.json` moved aside without deleting it;
    - cumulative spend carried forward. The lifetime cap of $18 is nearly reached, so the owner must decide whether to raise it.
 3. A changed model needs a new frozen source export, kit expectations, and a fresh state file. Do not mix it into this `pilot-state.json`.
+
+## 22 Nov 2026 (IST) — full project review and 24h lead
+
+Read `docs/reviews/PROJECT_REVIEW_20261121.md` first. Summary:
+- Phase 7A 60m G0 models: test cross-coin IC ≈ +0.003 over 9 folds (no edge). Early stopping kept
+  1–47 trees in 8 of 9 folds; the linear calibrator is unstable (slopes −14.5 to +53.9). Fold 1's
+  profit came from a sign-flipped calibrator. "Beats Ridge" in the reports is validation-only.
+- Live paper run (`scripts/paper_trade_ensemble.py`): 0 trades in 10 min; features match Gold in
+  91/109 columns; duplicate fold files are now averaged per fold.
+- Local horizon probe (`scripts/research/horizon_probe.py`, results in
+  `docs/reviews/evidence_project_review_20261121/`): LightGBM cross-coin IC 0.007 (1h) → 0.020
+  (24h, 15/18 folds, t ≈ 4.2). The 24h economics are not robust yet (concentrated in Apr 2024 –
+  Mar 2025).
+- Next step (free, Mac): a proper 24h test with a Cal-B threshold, non-overlapping trades, funding,
+  and taker vs maker costs. No GPU until the go/no-go criteria in the review pass.
+- The probe needs pandas/scipy, which are not in the project venv. Use a separate venv.
