@@ -41,21 +41,35 @@ KIT_ARCHIVE = (
 )
 KEY = "/Users/cortex/.ssh/runpod_crypto2"
 # 2026-11-20 resume: fresh owner contract in its own file; the 18 Nov contract and stop sentinel stay untouched.
-SESSION_PATH = PILOT / "pilot-session-20261121.json"
-AUTHORIZATION_PATH = PILOT / "OWNER_AUTHORIZATION_20261121.json"
-AUTHORIZATION_NOTE = "2026-11-21 owner (Sharath): APPROVED. TRAIN FOLD 15 NOW, EU-SE-1; $3 CAP, $1 FLOOR; 3-HOUR WINDOW."
+SESSION_PATH = PILOT / "pilot-session-20261121e.json"
+AUTHORIZATION_PATH = PILOT / "OWNER_AUTHORIZATION_20261121e.json"
+AUTHORIZATION_NOTE = "2026-11-21 owner (Sharath): APPROVED. TRAIN ALL REMAINING FOLDS, EU-SE-1; SPEND UP TO $8.40 (WALLET FLOOR $1); 8-HOUR WINDOW."
 SUPPLEMENT_DIR = BASE / "pilot-daily-supplement-20261118"
 SUPPLEMENT_FILES = (
     ("daily-supplement.tar.gz", "13a236798ea8069f5dc87b1fcd4629b9fff90a41ee9d900b8f62982f18edebcf"),
     ("manifest.json", "19c081c90999d35a58c1ac76d90fc3f121854a605af987e16d7b86ede3852513"),
 )
 SUPPLEMENT_APPLY = (Path("/Users/cortex/.crypto2-transfer/apply_pilot_daily_supplement_20261119.py"), "dd47fdf43d940ece530d0ba2f0ba28d8d4ea436b92e4f6722edbd4d07fb33fcb")
-FOLDS = (0, 5, 10, 15)
+# 2026-11-21: the transfer covered Fold 0 only; supplement A adds folds 5/10/15, supplement B the other 12 folds.
+SUPPLEMENTS = (
+    (SUPPLEMENT_DIR, SUPPLEMENT_FILES, SUPPLEMENT_APPLY, "/workspace/phase7a-supplements/daily-20261118-13a236798ea8"),
+    (
+        BASE / "pilot-daily-supplement-20261121",
+        (
+            ("daily-supplement.tar.gz", "afee451735432d3fa30452931690b807db4da8182d7bd01f10e787ca021aa493"),
+            ("manifest.json", "5be4e5f1a98a443d4700c9b243dfff8488740d1f8604c7c8b58b7ac608414d13"),
+        ),
+        (Path("/Users/cortex/.crypto2-transfer/apply_pilot_daily_supplement_20261121.py"), "5fbc2c98ec215c67bbef22a3bcacacde2677b1486e49ea75f4950e082dbef54c"),
+        "/workspace/phase7a-supplements/daily-20261121-afee45173543",
+    ),
+)
+FOLDS = tuple(range(16))  # 2026-11-21: owner extended the pilot to all 16 canonical folds
 OPERATOR_TESTS = "68 passed"
 RESUME_TAG = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
 LOCAL_ROOT = None
-PILOT_CAP_USD = 3.0
-PILOT_HOURS = 3.0
+MODEL_DOWNLOADS = Path("/Users/cortex/Crypto2Results/models")
+PILOT_CAP_USD = 8.40
+PILOT_HOURS = 8.0
 MAX_COMPUTE_USD_PER_HOUR = 1.40
 ALL_IN_UPPER_USD_PER_HOUR = 1.70
 # Hosts able to meet constrained_48gb (>= 48 GiB RAM, >= 8 effective CPUs), cheapest suitable first
@@ -331,22 +345,46 @@ def upload_inputs(ssh, index):
 
 
 def install_supplement(ssh, scp, d, command, index):
-    """Stage the verified daily Silver supplement once on the volume, then add-only install it."""
+    for supplement in SUPPLEMENTS:
+        install_one_supplement(ssh, scp, d, command, index, *supplement)
+
+
+def install_one_supplement(ssh, scp, d, command, index, SUPPLEMENT_DIR, SUPPLEMENT_FILES, SUPPLEMENT_APPLY, package_root):
+    """Stage one verified daily Silver supplement once on the volume, then add-only install it."""
     assert hashlib.sha256(SUPPLEMENT_APPLY[0].read_bytes()).hexdigest() == SUPPLEMENT_APPLY[1]
     records = [*SUPPLEMENT_FILES, (SUPPLEMENT_APPLY[0].name, SUPPLEMENT_APPLY[1])]
     for name, digest in SUPPLEMENT_FILES:
         assert hashlib.sha256((SUPPLEMENT_DIR / name).read_bytes()).hexdigest() == digest
-    package_root = "/workspace/phase7a-supplements/daily-20261118-13a236798ea8"
     check = "python3 -c " + shlex.quote("from pathlib import Path; import hashlib; p=Path(" + repr(package_root) + "); records=" + repr(records) + "; print('SUPPLEMENT_READY' if all((p/n).is_file() and hashlib.sha256((p/n).read_bytes()).hexdigest()==h for n,h in records) else 'SUPPLEMENT_MISSING')")
     if subprocess.check_output([*ssh, check], text=True, timeout=40).strip() != "SUPPLEMENT_READY":
         incoming = package_root + "-incoming-" + RESUME_TAG
         subprocess.run([*ssh, "mkdir -p " + shlex.quote(incoming)], check=True, timeout=30)
-        subprocess.run([*scp, str(SUPPLEMENT_DIR / SUPPLEMENT_FILES[0][0]), str(SUPPLEMENT_DIR / SUPPLEMENT_FILES[1][0]), str(SUPPLEMENT_APPLY[0]), "root@" + d["host"] + ":" + incoming + "/"], check=True, timeout=600)
+        subprocess.run([*scp, str(SUPPLEMENT_DIR / SUPPLEMENT_FILES[0][0]), str(SUPPLEMENT_DIR / SUPPLEMENT_FILES[1][0]), str(SUPPLEMENT_APPLY[0]), "root@" + d["host"] + ":" + incoming + "/"], check=True, timeout=1800)
         publish = "from pathlib import Path; import hashlib,os; src=Path(" + repr(incoming) + "); dst=Path(" + repr(package_root) + "); dst.mkdir(parents=True,exist_ok=True); records=" + repr(records) + "\nfor n,h in records:\n p=src/n; q=dst/n; assert hashlib.sha256(p.read_bytes()).hexdigest()==h; assert not q.exists() or hashlib.sha256(q.read_bytes()).hexdigest()==h\n if not q.exists(): os.rename(p,q)\nprint('PERSISTENT_SUPPLEMENT_VERIFIED')"
-        command("python3 - <<'PKG'\n" + publish + "\nPKG\n", "persistent-supplement.log")
-    out = command("set -euo pipefail\npython3 -I " + shlex.quote(package_root + "/" + SUPPLEMENT_APPLY[0].name) + " --package " + shlex.quote(package_root) + " --inputs /workspace/phase7a-transfer --audit /workspace/phase7a-supplement-audit --tag " + shlex.quote(f"fold{index:03d}-{RESUME_TAG}") + "\n", "supplement-install.log")
+        command("python3 - <<'PKG'\n" + publish + "\nPKG\n", "persistent-supplement-" + SUPPLEMENT_APPLY[0].stem + ".log")
+    # 2026-11-21: a full re-verify of 21k files on the network volume takes ~6 min and SSH keeps dropping during it.
+    # Reuse an earlier PASS install receipt for this exact archive; the loader still checks every file's SHA-256 at prepare.
+    archive_sha = SUPPLEMENT_FILES[0][1]
+    prior = "python3 -c " + shlex.quote("import json,glob,sys; h=sys.argv[1]; ok=[f for f in glob.glob('/workspace/phase7a-supplement-audit/install-*.json') if (lambda d: d.get('status')=='PASS' and d.get('archive_sha256')==h and d.get('conflicts')==[])(json.load(open(f)))]; print('PRIOR_PASS '+sorted(ok)[0] if ok else 'NO_PRIOR_PASS')") + " " + archive_sha
+    found = subprocess.check_output([*ssh, prior], text=True, timeout=60).strip()
+    if found.startswith("PRIOR_PASS "):
+        log(f"SUPPLEMENT_VERIFIED fold{index:03d} reused {found.split(' ', 1)[1]} archive={archive_sha[:12]}")
+        return
+    out = command("set -euo pipefail\npython3 -I " + shlex.quote(package_root + "/" + SUPPLEMENT_APPLY[0].name) + " --package " + shlex.quote(package_root) + " --inputs /workspace/phase7a-transfer --audit /workspace/phase7a-supplement-audit --tag " + shlex.quote(f"fold{index:03d}-{RESUME_TAG}") + "\n", "supplement-install-" + SUPPLEMENT_APPLY[0].stem + ".log")
     assert "SUPPLEMENT_VERIFIED" in out, "SUPPLEMENT_NOT_VERIFIED"
     log(f"SUPPLEMENT_VERIFIED fold{index:03d} " + out.strip().splitlines()[0][:300])
+
+
+def read_remote(ssh, remote_path, timeout):
+    """Read a small evidence file; retry a dropped SSH transport (exit 255) so a finished stage is not lost."""
+    for attempt in range(6):
+        try:
+            return subprocess.check_output([*ssh, "cat " + shlex.quote(remote_path)], text=True, timeout=timeout)
+        except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as exc:
+            if attempt == 5 or (isinstance(exc, subprocess.CalledProcessError) and exc.returncode != 255):
+                raise
+            log(f"SSH_READ_RETRY {remote_path} attempt={attempt + 1}")
+            time.sleep(10)
 
 
 def run_stages(pod, c, path, work, index):
@@ -357,19 +395,43 @@ def run_stages(pod, c, path, work, index):
     state.mkdir(exist_ok=True)
 
     def command(script, name):
+        # 2026-11-21: SSH kept dropping during multi-minute stages, so each command now runs detached on the Pod
+        # (setsid nohup) and the Mac only polls for its exit code; a dropped poll is retried, not fatal.
         script = script.replace("/crypto2-session", LOCAL_ROOT)
-        with (state / name).open("w") as f:
-            p = subprocess.Popen([*ssh, "bash -s"], stdin=subprocess.PIPE, stdout=f, stderr=subprocess.STDOUT, text=True)
-            p.stdin.write(script)
-            p.stdin.close()
-            code = p.wait()
+        job = LOCAL_ROOT + "/control/jobs/" + name
+        q = shlex.quote
+        launch = ("set -e; mkdir -p " + q(LOCAL_ROOT + "/control/jobs") + "; mkdir " + q(job) + "; cat > " + q(job + "/script.sh") + "; cd /; "
+                  "setsid nohup bash -c " + q("bash " + q(job + "/script.sh") + " > " + q(job + "/out") + " 2>&1; echo $? > " + q(job + "/rc.tmp") + "; mv " + q(job + "/rc.tmp") + " " + q(job + "/rc"))
+                  + " < /dev/null > /dev/null 2>&1 &")
+        for attempt in range(6):
+            started = subprocess.run([*ssh, launch], input=script, text=True, capture_output=True, timeout=60)
+            if started.returncode == 0:
+                break
+            exists = subprocess.run([*ssh, "test -f " + q(job + "/script.sh")], capture_output=True, timeout=30)
+            if exists.returncode == 0:
+                break  # The launch reached the Pod before the transport dropped; never start it twice.
+            if started.returncode != 255 or attempt == 5:
+                (state / name).write_text(started.stdout + started.stderr)
+                raise RuntimeError(f"REMOTE_COMMAND_FAILED_{started.returncode}_{name}")
+            time.sleep(10)
+        misses, deadline = 0, time.monotonic() + 4 * 3600
+        while True:
+            poll = subprocess.run([*ssh, "cat " + q(job + "/rc") + " 2>/dev/null || echo RUNNING"], text=True, capture_output=True, timeout=30)
+            if poll.returncode == 0 and poll.stdout.strip() != "RUNNING":
+                code = int(poll.stdout.strip())
+                break
+            misses = misses + 1 if poll.returncode else 0
+            if misses >= 30 or time.monotonic() > deadline:
+                raise RuntimeError(f"REMOTE_COMMAND_POLL_LOST_{name}")
+            time.sleep(15)
+        (state / name).write_text(read_remote(ssh, job + "/out", 120))
         if code:
             print((state / name).read_text()[-4000:], flush=True)
             raise RuntimeError(f"REMOTE_COMMAND_FAILED_{code}_{name}")
         return (state / name).read_text()
 
     common = "set -euo pipefail\nsource /etc/rp_environment\nexport CRYPTO2_SOURCE_ROOT=/crypto2-session/source\nexport CRYPTO2_LOCAL_ROOT=/crypto2-session\nexport CRYPTO2_SESSION_CONTRACT=/crypto2-session/session-approved.json\nexport KIT=/crypto2-operator-kit\n"
-    scp = ["scp", "-O", "-l", "256", "-i", KEY, "-o", "BatchMode=yes", "-o", "IdentitiesOnly=yes", "-o", "StrictHostKeyChecking=yes", "-o", "ConnectTimeout=10", "-o", "ServerAliveInterval=10", "-P", str(d["port"])]
+    scp = ["scp", "-O", "-l", "2400", "-i", KEY, "-o", "BatchMode=yes", "-o", "IdentitiesOnly=yes", "-o", "StrictHostKeyChecking=yes", "-o", "ConnectTimeout=10", "-o", "ServerAliveInterval=10", "-P", str(d["port"])]
     subprocess.run([*ssh, ("umask 077; mkdir -p /crypto2-session/control; cat > /crypto2-session/session-approved.json").replace("/crypto2-session", LOCAL_ROOT)], input=path.read_text(), text=True, check=True, timeout=30)
     package_root = "/workspace/phase7a-source-packages/0034184cdf9f-opsfix8"
     check = "python3 -c " + shlex.quote("from pathlib import Path; import hashlib,json; p=Path(" + repr(package_root) + "); records=" + repr([SOURCE, KIT_ARCHIVE]) + "; print('PACKAGES_READY' if all((p/n).is_file() and hashlib.sha256((p/n).read_bytes()).hexdigest()==h for n,h in records) else 'PACKAGES_MISSING')")
@@ -377,7 +439,7 @@ def run_stages(pod, c, path, work, index):
     if present != "PACKAGES_READY":
         incoming = package_root + "-incoming-" + RESUME_TAG
         subprocess.run([*ssh, "mkdir -p " + shlex.quote(incoming)], check=True, timeout=30)
-        subprocess.run([*scp, str(BASE / SOURCE[0]), str(BASE / KIT_ARCHIVE[0]), "root@" + d["host"] + ":" + incoming + "/"], check=True, timeout=600)
+        subprocess.run([*scp, str(BASE / SOURCE[0]), str(BASE / KIT_ARCHIVE[0]), "root@" + d["host"] + ":" + incoming + "/"], check=True, timeout=1800)
         publish = "from pathlib import Path; import hashlib,os; src=Path(" + repr(incoming) + "); dst=Path(" + repr(package_root) + "); dst.mkdir(parents=True,exist_ok=True); records=" + repr([SOURCE,KIT_ARCHIVE]) + "\nfor n,h in records:\n p=src/n; q=dst/n; assert hashlib.sha256(p.read_bytes()).hexdigest()==h; assert not q.exists() or hashlib.sha256(q.read_bytes()).hexdigest()==h\n if not q.exists(): os.rename(p,q)\nprint('PERSISTENT_SOURCE_PACKAGES_VERIFIED')"
         command("python3 - <<'PKG'\n" + publish + "\nPKG\n", "persistent-packages.log")
     log(f"PERSISTENT_PACKAGES_READY fold{index:03d}")
@@ -419,7 +481,7 @@ REMOTE
         if stage in ("prepare", "reload", "memory-probe", "train"):
             kind = {"prepare": "PREPARE", "reload": "PREPARE", "memory-probe": "PROBE", "train": "TRAIN"}[stage]
             doc = json.loads((KIT / f"docs/runpod/OWNER_CONSTRAINED_{kind}_TEMPLATE_20261117.json").read_text())
-            doc.update(status="APPROVED", owner="Sharath N. S. — predeclared 4-fold pilot approval", stop_deadline_utc=c["hard_stop_utc"], cost_ceiling=c["max_session_usd"], authorization_reference="OWNER_APPROVED_20261119_RESUME_PREDECLARED_4FOLD_PILOT; ACTIVATED ONLY AFTER PRIOR STAGE PASS")
+            doc.update(status="APPROVED", owner="Sharath N. S. — 2026-11-21 approval: all 16 folds, budget-limited", stop_deadline_utc=c["hard_stop_utc"], cost_ceiling=c["max_session_usd"], authorization_reference="OWNER_APPROVED_20261121_ALL_16_FOLDS_8_40_USD_8H; ACTIVATED ONLY AFTER PRIOR STAGE PASS")
             doc["binding"]["fold_id"] = c["fold"]
             target = "/crypto2-session/owner-" + kind.lower() + "-approved.json"
             payload = json.dumps(doc, indent=2) + "\n"
@@ -429,15 +491,34 @@ REMOTE
         log(f"STAGE_STARTED fold{index:03d} {stage}")
         python = "python3" if stage == "bootstrap" else "/crypto2-session/source/.venv/bin/python"
         command(common + python + " /crypto2-operator-kit/scripts/closure/runpod_phase7_ops.py " + stage + " --execute" + approval + "\n", stage + ".log")
-        receipt = json.loads(subprocess.check_output([*ssh, "cat " + LOCAL_ROOT + "/evidence/" + stage + ".json"], text=True, timeout=30))
+        receipt = json.loads(read_remote(ssh, LOCAL_ROOT + "/evidence/" + stage + ".json", 30))
         assert receipt["status"] == "PASS" and receipt["pod_id"] == c["pod_id"]
         write(state / (stage + ".json"), receipt)
         log(f"STAGE_PASS fold{index:03d} {stage} {time.monotonic() - started:.0f}s")
-    result = json.loads(subprocess.check_output([*ssh, "cat " + LOCAL_ROOT + "/evidence/train-result.json"], text=True, timeout=60))
+    result = json.loads(read_remote(ssh, LOCAL_ROOT + "/evidence/train-result.json", 60))
     write(state / "train-result.json", result)
     report = result["reports"][0]
     assert report["fold_id"] == c["fold"], "TRAINED_FOLD_MISMATCH"
     log(f"MODEL fold{index:03d} {report['fold_id']} sha256={report['model_artifact_sha256']}")
+    # 2026-11-21: models live on the Pod's container disk, which is wiped on stop; download before stopping.
+    try:
+        dest = MODEL_DOWNLOADS / f"fold{index:03d}-{report['fold_id']}"
+        dest.mkdir(parents=True, exist_ok=True)
+        with (state / "model-download.log").open("w") as err:
+            # Benchmark mode writes <output_root>/.../model.joblib (not models/); locate it by its SHA-256 and take its folder.
+            finder = "import hashlib,os,sys; r=sys.argv[1]; h=sys.argv[2]\nfor d,_,fs in os.walk(r):\n if '/cache' in d or '/source' in d: continue\n for f in fs:\n  p=os.path.join(d,f)\n  if os.path.getsize(p)<2**31 and hashlib.sha256(open(p,'rb').read()).hexdigest()==h: print(os.path.relpath(d,r)); sys.exit()\nsys.exit('MODEL_FILE_NOT_FOUND')"
+            remote = "set -e; d=$(python3 -c " + shlex.quote(finder) + " " + shlex.quote(LOCAL_ROOT) + " " + report["model_artifact_sha256"] + "); tar -C " + shlex.quote(LOCAL_ROOT) + " -cf - \"$d\""
+            tar = subprocess.Popen([*ssh, remote], stdout=subprocess.PIPE, stderr=err)
+            untar = subprocess.run(["tar", "-xf", "-", "-C", str(dest)], stdin=tar.stdout, stderr=err, timeout=3600)
+            tar.stdout.close()
+            assert tar.wait(timeout=60) == 0 and untar.returncode == 0, "MODEL_DOWNLOAD_FAILED"
+        files = [p for p in dest.rglob("*") if p.is_file()]
+        digests = {str(p.relative_to(dest)): hashlib.sha256(p.read_bytes()).hexdigest() for p in files}
+        write(dest / "SHA256SUMS.json", digests)
+        found = report["model_artifact_sha256"] in digests.values()
+        log(f"MODEL_DOWNLOADED fold{index:03d} files={len(files)} bytes={sum(p.stat().st_size for p in files)} artifact_sha_match={found} dest={dest}")
+    except Exception as exc:  # never lose the run over a download; the fold report is already saved
+        log(f"MODEL_DOWNLOAD_FAILED fold{index:03d} {type(exc).__name__}: {exc}")
     return report
 
 
@@ -445,7 +526,7 @@ def main():
     global LOCAL_ROOT
     PILOT.mkdir(mode=0o700, exist_ok=True)
     authorized = AUTHORIZATION_PATH.exists() and json.loads(AUTHORIZATION_PATH.read_text()).get("new_compute_or_training_authorized") is True
-    if (PILOT / "OWNER_STOP_20261121.json").exists() or (PILOT / "OWNER_STOP_20261120.json").exists() or (PILOT / "OWNER_STOP_20261119.json").exists() or ((PILOT / "OWNER_STOP_20261118.json").exists() and not authorized):
+    if (PILOT / "OWNER_STOP_20261121b.json").exists() or (PILOT / "OWNER_STOP_20261121.json").exists() or (PILOT / "OWNER_STOP_20261120.json").exists() or (PILOT / "OWNER_STOP_20261119.json").exists() or ((PILOT / "OWNER_STOP_20261118.json").exists() and not authorized):
         log("OWNER_HOLD; no compute or training; explicit new authorization and fresh cost/deadline required")
         return 0
     state_path = PILOT / "pilot-state.json"
@@ -487,8 +568,17 @@ def main():
             report = run_stages(pod, c, path, work, index)
             success = True
         except BaseException as exc:
-            log(f"FOLD_FAILED fold{index:03d} {type(exc).__name__}: {exc}")
-            traceback.print_exc()
+            # 2026-11-21: the controller stops the Pod on SESSION_COMPLETE, which the kit writes only after collect()
+            # mirrored evidence, models and benchmarks to /workspace/phase7a-evidence/<pod>/. If that happened, the
+            # fold is trained and its model is on the volume even though the receipt read lost the race.
+            events = work / "controller/events.jsonl"
+            if c is not None and not isinstance(exc, KeyboardInterrupt) and events.exists() and '"reason": "NORMAL_COMPLETE"' in events.read_text():
+                report = {"fold_id": c["fold"], "model_artifact_sha256": "ON_VOLUME:/workspace/phase7a-evidence/" + c["pod_id"]}
+                success = True
+                log(f"MODEL_ON_VOLUME fold{index:03d} {c['fold']} pod={c['pod_id']} after {type(exc).__name__}")
+            else:
+                log(f"FOLD_FAILED fold{index:03d} {type(exc).__name__}: {exc}")
+                traceback.print_exc()
         finally:
             if state.get("pending_create_name"):
                 owned = api.call("GET", "/v2/pods")

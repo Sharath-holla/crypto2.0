@@ -1,0 +1,12 @@
+{
+  "instruction": "Owner 2026-11-21: budget-limited 16-fold run ended (folds 0-6, 10, 15 trained; 7-9, 11-14 not). Models downloaded to the Mac; owner asked to delete the volume and push everything. Project on hold; no compute until a fresh owner cost/deadline contract.",
+  "new_compute_or_training_authorized": false,
+  "status": "OWNER_HOLD_PROJECT",
+  "supersedes": [
+    "OWNER_AUTHORIZATION_20261121b.json",
+    "OWNER_AUTHORIZATION_20261121c.json",
+    "OWNER_AUTHORIZATION_20261121d.json",
+    "OWNER_AUTHORIZATION_20261121e.json"
+  ],
+  "utc": "2026-11-21T13:00:55.052954+00:00"
+}

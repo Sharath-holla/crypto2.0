@@ -3,7 +3,12 @@
     0,
     5,
     10,
-    15
+    15,
+    1,
+    2,
+    3,
+    4,
+    6
   ],
   "folds": {
     "0": {
@@ -13,6 +18,14 @@
       "wall_seconds": 2371,
       "wallet_after_lagging": 14.4246995511,
       "wallet_before": 15.128160988
+    },
+    "1": {
+      "fold_id": "fold-001-805307169256",
+      "model_sha256": "c4f24f46adbb4515ec7250342360d632b88a526f8f6f8bd13caadb948915d4a4",
+      "pod_id": "53cpa3yknhdpiz",
+      "wall_seconds": 3091,
+      "wallet_after_lagging": 7.3597331356,
+      "wallet_before": 8.4536885114
     },
     "10": {
       "fold_id": "fold-010-01be2e390a0b",
@@ -28,6 +41,28 @@
       "wallet_after_lagging": 9.4469933319,
       "wallet_before": 10.306544282
     },
+    "2": {
+      "fold_id": "fold-002-a2dead26c257",
+      "model_sha256": "15c25335f6685547dba5d17b175fa1522d42c8aad9637e6a1fd909570095bdaa",
+      "pod_id": "0n9epplnxrk8f7",
+      "wall_seconds": 3007,
+      "wallet_after_lagging": 6.3577646597,
+      "wallet_before": 7.3597331356
+    },
+    "3": {
+      "fold_id": "fold-003-a4ba910e38c1",
+      "model_sha256": "dc7bec06929cdcd0cda64340e3151f8d6d149b1e6685459dceac21f7dcb1e1f3",
+      "pod_id": "03n8l57g4y2pg4",
+      "wall_seconds": 2905,
+      "wallet_after_lagging": 5.4561322875,
+      "wallet_before": 6.3577646597
+    },
+    "4": {
+      "fold_id": "fold-004-4b03b69d638d",
+      "model_sha256": "ON_VOLUME:/workspace/phase7a-evidence/o8k44l38v3yytq (also aa07g9gnu38eiq)",
+      "pod_id": "o8k44l38v3yytq",
+      "recorded_manually": "2026-11-21 ~12:25Z: controller recorded NORMAL_COMPLETE for pods aa07g9gnu38eiq and o8k44l38v3yytq; the kit exports evidence, models and benchmarks to the volume before SESSION_COMPLETE, so the receipt-read failure lost only the race, not the model."
+    },
     "5": {
       "fold_id": "fold-005-2cf830b9f251",
       "model_sha256": "c2304d6445eb62a0db20a2120131e8f34b399f7330fbe1f73de1d188cfd71c76",
@@ -35,9 +70,17 @@
       "wall_seconds": 2504,
       "wallet_after_lagging": 11.2421832447,
       "wallet_before": 12.0369914798
+    },
+    "6": {
+      "fold_id": "fold-006-d3b9e1c10821",
+      "model_sha256": "19e6ef610db26f5edb2c387514c1ec2198ccb8d2c99c83833c8a091e1fbb181e",
+      "pod_id": "4twnhvipu4ciw7",
+      "wall_seconds": 2421,
+      "wallet_after_lagging": 2.2900062028,
+      "wallet_before": 3.0300121213
     }
   },
-  "pod_id": "mpmcoe794qqgkr",
+  "pod_id": "pvuiuc64n9cf9g",
   "uncreated_intents": [
     "crypto2-p7a-pilot-20261118T150049Z"
   ]
