@@ -64,6 +64,18 @@ The model is LightGBM; Ridge is the simple linear baseline it is compared agains
 
 **Training runs on CPU.** LightGBM uses about 9 minutes per fold and peaks at 11.7 GB RSS. The Mac is an M5 with 16 GB RAM, so full-size local training is too tight under the kit's 48 GB `constrained_48gb` admission. A reduced research loop (fewer symbols, one fold) could run locally for free.
 
+**Move size vs cost** (median |log return| from local 5m Silver data, Jan 2024 to Jun 2026, no holdout data):
+
+| Symbol | 15m | 1h | 2h | 4h | 12h | 24h |
+|---|---|---|---|---|---|---|
+| BTCUSDT | 11 | 21 | 30 | 43 | 83 | 126 |
+| ETHUSDT | 15 | 30 | 43 | 62 | 119 | 178 |
+| DOGEUSDT | 22 | 42 | 60 | 87 | 166 | 248 |
+| FILUSDT | 24 | 46 | 65 | 94 | 176 | 264 |
+| ZECUSDT | 29 | 57 | 80 | 115 | 209 | 314 |
+
+All values are in bps. At the current 1h horizon, the ~14 bps cost is **25–65% of a typical move**. At 4h it is 12–32%, and at 12h it is 7–17%. A longer horizon is the cheapest lever to try first.
+
 ## Recommendation (owner: decide later)
 
 1. Fix the model in code on the Mac, without a GPU:
