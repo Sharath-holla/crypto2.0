@@ -1,0 +1,14 @@
+# kind cluster WITHOUT the default CNI (kindnet), for installing Calico / Cilium / Flannel by hand.
+#   kind create cluster --config kind-nocni.yaml
+# Calico default pool: 192.168.0.0/16. For Flannel change podSubnet to 10.244.0.0/16.
+# For Cilium kube-proxy replacement add:  kubeProxyMode: "none"  under networking.
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+name: cni
+networking:
+  disableDefaultCNI: true
+  podSubnet: "192.168.0.0/16"
+nodes:
+  - role: control-plane
+  - role: worker
+  - role: worker
